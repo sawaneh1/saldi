@@ -600,8 +600,51 @@ function regnskab($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til, $dato_
 		}
 	}
 
+	function has_children_with_data($parentIndex, $total, $ktonr, $kto_aar, $kto_periode) {
+		global $kontonr, $fra_kto;
+	
+		$from = $fra_kto[$parentIndex];
+		$to = $kontonr[$parentIndex];
+	
+		for ($i = 1; $i <= $total; $i++) {
+			if (
+				$ktonr[$i] >= $from &&
+				$ktonr[$i] <= $to &&
+				($kto_aar[$i] != 0 || $kto_periode[$i] != 0)
+			) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
+	
+	
+	
+	
 	for ($x = 1; $x <= $kontoantal; $x++) {
-		if ($kontonr[$x] >= $konto_fra && $kontonr[$x] <= $konto_til && ($aarsum[$x] || $periodesum[$x] || $kontotype[$x] == 'H' || $kontotype[$x] == 'R' || $show0 || ($kontotype[$x] == 'Z' && $x == $kontoantal))) { #20190220
+		
+		// if ($kontonr[$x] >= $konto_fra && $kontonr[$x] <= $konto_til && ($aarsum[$x] || $periodesum[$x] || $kontotype[$x] == 'H' || $kontotype[$x] == 'R' || $show0 || ($kontotype[$x] == 'Z' && $x == $kontoantal))) { #20190220
+
+			$shouldShow = (
+				$aarsum[$x] ||
+				$periodesum[$x] ||
+				$kontotype[$x] == 'H' ||
+				$kontotype[$x] == 'R' ||
+				$show0
+			);
+		
+			if ($kontotype[$x] == 'Z') {
+				$shouldShow = $shouldShow || has_children_with_data($x, $kontoantal, $ktonr, $kto_aar, $kto_periode);
+			}
+		
+			if (
+				$kontonr[$x] >= $konto_fra &&
+				$kontonr[$x] <= $konto_til &&
+				$shouldShow
+			) {
+			
 			if ($kontotype[$x] == 'H') {
 				$linjebg = $bgcolor;
 				print "<tr><td><br></td></tr>";
@@ -719,7 +762,7 @@ function regnskab($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til, $dato_
 				print "</tr>";
 				fwrite($csv, "\n");
 			}
-		}
+			}
 	}
 	fclose($csv);
 	print "<tr><td colspan=\"$cols6\"><hr></td></tr>";
