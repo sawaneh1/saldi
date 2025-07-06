@@ -183,7 +183,7 @@ $nextfakt1 = strtolower(str_replace(' ','_', $kk));
 
 
 
-
+alert('yessssssssssssssssssssssssssssssssss');
 
 
  #if($h1= db_fetch_array(db_select("select*from grupper where art='OLV' and kode='$valg' and kodenr = '$bruger_id' ",__FILE__ . " linje " . __LINE__))) $q =$h1['box3']; #2021/05/31

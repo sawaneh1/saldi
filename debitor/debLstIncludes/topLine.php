@@ -1,14 +1,27 @@
 <?php
+
+@session_start();
+
 include("../includes/oldDesign/header.php");
 include("../includes/topline_settings.php");
 
 $border = 'border:1px';
 $TableBG = "bgcolor=$bgcolor";
-if(isset($_GET['returside'])){
-	$backUrl = $_GET['returside'];
-}else{
-	$backUrl = '../index/menu.php';
+
+
+if (isset($_GET['returside'])) {
+    $backUrl = $_GET['returside'];
+} elseif (isset($_SESSION['last_main_page'])) {
+    $backUrl = $_SESSION['last_main_page'];
+} else {
+    $backUrl = '../index/menu.php';
 }
+
+
+alert('okk');
+alert($backUrl);
+alert($returside);
+
 
 print "<tr><td height = '25' align = 'center' valign = 'top'>";
 print "<table width=100% align=center border=0 cellspacing=2 cellpadding=0><tbody><td width=10% style=$buttonStyle>"; # Tabel 1.1 ->

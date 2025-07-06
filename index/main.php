@@ -33,7 +33,14 @@ include("../includes/std_func.php");
 include("../includes/connect.php");
 include("../includes/online.php");
 include("../includes/stdFunc/dkDecimal.php");
-
+@session_start();
+if (isset($_POST['main_page'])) {
+    $_SESSION['last_main_page'] = $_POST['main_page'];
+    echo "OK";
+} else {
+    http_response_code(400);
+    echo "Missing main_page";
+}
 
 function check_permissions($permarr)
 {
@@ -47,6 +54,8 @@ function check_permissions($permarr)
 if (substr($brugernavn, 0, 11) == "debitoripad") {
   header('Location: ../debitoripad/await.php');
 }
+
+
 
 ?>
 <meta charset="utf-8">
@@ -379,18 +388,52 @@ console.log('Locaiton', this.contentWindow.document.location.href);
     sidebar.classList.toggle("closed");
   }
 
-  const update_iframe = (uri) => {
-    const iframe = document.querySelector(".content-iframe")
-    const path = iframe.contentWindow.location.href
+let currentMainPage = null;
 
-    if (iframe.contentWindow?.docChange) {
-      if (!window.confirm("Er du sikker på du gerne vil ændre side? Dine ændringer vil ikke blive gemt")) {
-        return;
-      }
+function isMainPage(uri) {
+  const mainPages = [
+    "/debitor/ordreliste.php",
+    "/kreditor/ordreliste.php",
+    "/lager/varer.php",
+    "/index/dashboard.php",
+    "/debitor/debitor.php",
+    "/debitor/rapport.php"
+    // add more as needed
+  ];
+  const cleanUri = uri.split("?")[0];
+  return mainPages.includes(cleanUri);
+}
+
+function storeLastMainPage(uri) {
+  fetch("../includes/set_last_main_page.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "main_page=" + encodeURIComponent(uri)
+  });
+}
+
+ const update_iframe = (uri) => {
+  const iframe = document.querySelector(".content-iframe");
+
+  // If navigating to a main page, store the previous main page
+  if (isMainPage(uri)) {
+    if (currentMainPage && currentMainPage !== uri) {
+      storeLastMainPage(currentMainPage); // Save the previous main page
     }
-
-    iframe.src = (location + "").split("/").splice(0, 4).join("/") + uri
+    currentMainPage = uri;
   }
+
+  iframe.src = (location + "").split("/").splice(0, 4).join("/") + uri;
+}
+
+// On initial load, set currentMainPage if hash is a main page
+document.addEventListener('DOMContentLoaded', function() {
+  let initialUri = window.location.hash == "" ? "/index/dashboard.php" : window.location.hash.replace("#", "");
+  if (isMainPage(initialUri)) {
+    currentMainPage = initialUri;
+  }
+  update_iframe(initialUri);
+});
 
   const redirect_uri = (uri) => {
     window.location = (location + "").split("/").splice(0, 4).join("/") + uri
