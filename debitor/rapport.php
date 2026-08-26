@@ -36,6 +36,8 @@
 // 20260702 CX/PHR Split comma-separated openpost autoudlign account list
 // 20260706 MJ Release session before long read-only reports to avoid blocking navigation.
 // 20260706 MJ Load debtor open items report content asynchronously so the page renders before the heavy table.
+// 20260826 Sawaneh SD-140: kontonr GET branch keeps dato_fra/dato_til and accepts a fra:til range; aging_bucket,
+//                  order_by and order_dir forwarded to the async open-posts iframe.
 
 @session_start();
 $s_id = session_id();
@@ -389,10 +391,12 @@ if (isset($_POST['submit']) || $rapportart) {
 	}
 	unset($_GET['udlign']);
 } elseif (isset($_GET['kontonr'])) {
-	$konto_fra = $_GET['kontonr'];
-	$konto_til = $_GET['kontonr'];
+	list($konto_fra, $konto_til) = openpost_kontonr_range($_GET['kontonr']);
+	$dato_fra = $_GET['dato_fra'] ?? NULL;
+	$dato_til = $_GET['dato_til'] ?? NULL;
+	$returside = $_GET['returside'] ?? NULL;
 	$submit = "ok";
-	$rapportart = $_GET['rapportart'];
+	$rapportart = $_GET['rapportart'] ?? NULL;
 	/*
 				 $row = db_fetch_array(db_select("select * from grupper where art = 'RA' and kodenr='$regnaar'",__FILE__ . " linje " . __LINE__));
 					 $start_md[$x]=$row['box1']*1;
@@ -444,7 +448,7 @@ if ($submit == 'openpost' && !isset($_GET['openpost_content']) && !isset($_POST[
 			'konto_til' => $konto_til,
 			'openpost_content' => 1
 		);
-		foreach (array('vis_aabenpost', 'vis_alle_poster', 'skjul_aabenpost', 'kun_debet', 'kun_kredit', 'showPBS', 'openpost_page', 'openpost_page_size') as $key) {
+		foreach (array('vis_aabenpost', 'vis_alle_poster', 'skjul_aabenpost', 'kun_debet', 'kun_kredit', 'showPBS', 'openpost_page', 'openpost_page_size', 'aging_bucket', 'order_by', 'order_dir') as $key) {
 			if (isset($_GET[$key])) $params[$key] = $_GET[$key];
 			elseif (isset($_POST[$key])) $params[$key] = $_POST[$key];
 		}

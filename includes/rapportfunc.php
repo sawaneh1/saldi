@@ -82,6 +82,8 @@
 // 20260513 CL/PHR kontokort & kontosaldo viser nu dato i toplinje og kontokort tager kun konti med bevægelser i perioden.
 // 20260518 CL/PHR kontokort & kontosaldo viser nu dato i toplinje. Kontokort tager kun konti med bevægelser i perioden. Null-safety og array-initialisering.
 // 20260723 sawaneh Fixed $rbox8->$box8 so the guard against a stock-tracked item used as a fee works in bogfor_rykker.
+// 20260826 Sawaneh SD-140: openpost() no longer overwrites dato/konto with the stored DRV row when the request
+//                  itself carries konto_fra or kontonr (pagination, filter links and the in-report account search).
 include("../includes/reportFunc/showOpenPosts.php");
 
 function openpost($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $kontoart)
@@ -182,7 +184,7 @@ function openpost($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $ko
 		print "<meta http-equiv=\"refresh\" content=\"1;URL=rapport.php?ny_rykker=1&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&rapportart=$rapportart\">";
 	}
 
-	if ($r = db_fetch_array(db_select("select * from grupper where art = '$tekst' and kodenr = '$bruger_id'", __FILE__ . " linje " . __LINE__))) {
+	if (!isset($_GET['konto_fra']) && !isset($_GET['kontonr']) && ($r = db_fetch_array(db_select("select * from grupper where art = '$tekst' and kodenr = '$bruger_id'", __FILE__ . " linje " . __LINE__)))) {
 		$dato_fra = $r['box2'];
 		$dato_til = $r['box3'];
 		$konto_fra = $r['box4'];
