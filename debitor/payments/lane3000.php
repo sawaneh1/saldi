@@ -24,6 +24,10 @@
 // ----------------------------------------------------------------------
 // 20240209 PHR Added indbetaling
 // 20240227 PHR Added $printfile and call to saldiprint.php
+// 20260914 Sawaneh JOB-131: Per-register "terminal prints card receipt" choice - sends Nets
+//                     printerWidth 0 for that register's terminal after login and skips Saldi's
+//                     receipt-printer copy; login status check restored; credentials and bearer
+//                     token no longer logged; request values cast/allow-listed.
 
 @session_start();
 $s_id = session_id();
@@ -54,12 +58,15 @@ function writeLog($message, $level = 'INFO') {
     file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
 }
 
-$raw_amount = (float) usdecimal(if_isset($_GET['amount'], 0));
+$raw_amount    = (float) usdecimal(ifset($_GET, 'amount', 0));
 $pretty_amount = dkdecimal($raw_amount, 2);
-$ordre_id    = if_isset($_GET['id'], 0);
-$indbetaling = if_isset($_GET['indbetaling'], 0);
-$return_url = if_isset($_GET['return_url'], 'pos_ordre.php');
-$kasse = if_isset($_GET["kasse"], $_COOKIE['saldi_pos']);
+$ordre_id      = (int) ifset($_GET, 'id', 0);
+$indbetaling   = (int) ifset($_GET, 'indbetaling', 0);
+$return_url    = ifset($_GET, 'return_url', 'pos_ordre.php');
+if (!in_array($return_url, array('pos_ordre.php', 'ordre.php'), true)) {
+	$return_url = 'pos_ordre.php';
+}
+$kasse = (int) ifset($_GET, 'kasse', ifset($_COOKIE, 'saldi_pos', 0));
 
 // Build the return URL base with all parameters except cardscheme (which is added in JS)
 $return_url_base = '../' . $return_url;
@@ -72,6 +79,7 @@ print "<div id='container'>";
 print "<span>Lane3000 terminal startet, afventer kort.</span>";
 print "<h3>$pretty_amount kr.</h3>";
 print "<div id='status' style='background-color: #fbbc04' >Afventer kort...</div>";
+print "<div id='notice' style='color: #b00; display: none'></div>";
 print "<span>Terminalen timer ud om </span><span id='timestatus'>120</span><span> sekunder</span><br>";
 print "<button id='continue' class='btn' onClick='failed();' disabled style='display: block'>Tilbage</button>";
 print "<button id='continue-success' class='btn' onClick='successed();'>Tilbage</button>";
@@ -90,7 +98,7 @@ $guid = db_fetch_array($q)[0];
 # Get terminal id
 $qtxt = "SELECT box4 FROM grupper WHERE beskrivelse = 'Pos valg' AND kodenr = '2' and fiscal_year = '$regnaar'";
 $q=db_select($qtxt,__FILE__ . " linje " . __LINE__);
-$terminal_id = explode(chr(9),db_fetch_array($q)[0])[$kasse-1];
+$terminal_id = trim(ifset(explode(chr(9), (string) ifset(db_fetch_array($q), 0, '')), $kasse - 1, ''));
 if($terminal_id == "test"){
     include "lane3000-sim.php";
     exit;
@@ -116,11 +124,18 @@ $printfile = 'https://'.$_SERVER['SERVER_NAME'];
 $printfile.= str_replace('debitor/payments/lane3000.php',"temp/$db/receipt_$kasse.txt",$_SERVER['PHP_SELF']);
 
 writeLog("Print file URL: $printfile");
+
+# Per-register choice (Systemdata -> POS): the terminal prints the card receipt itself, or Saldi's receipt printer does.
+# Nets cloud terminals keep this on Nets' side, so lane3000 sends printerWidth 0 for this terminal after each login.
+$terminalPrinter = (get_settings_value("terminal_printer", "POS", "off", null, $kasse) == 'on');
+writeLog("Terminal printer setting for kasse $kasse: " . ($terminalPrinter ? 'on - terminal prints, Saldi receipt print skipped' : 'off - Saldi receipt printer'));
 ?>
 
 <script>
 
 var counting = false;
+const terminalId = <?php print json_encode($terminal_id); ?>;
+const terminalPrinter = <?php print $terminalPrinter ? 'true' : 'false'; ?>;
 
 // Add client-side logging function
 function logToServer(message, level = 'INFO') {
@@ -169,6 +184,13 @@ function fail(err) {
     document.getElementById('continue').disabled = false;
 }
 
+// Non-blocking warning shown under the status while the payment carries on
+function notice(txt) {
+    var elm = document.getElementById('notice');
+    elm.innerText = txt;
+    elm.style.display = 'block';
+}
+
 function leave(cardScheme) {
     if (!finished) {
         setTimeout(function() { leave(cardScheme); }, 2500);
@@ -182,13 +204,19 @@ function leave(cardScheme) {
 async function get_api_key(baseurl) {
     const initialLogPromise = logToServer('Starting API key request', 'INFO');
     document.getElementById('status').innerText = "Authorizer...";
-    console.log("<?php print get_settings_value("username", "move3500", "", null, $kasse);?>", "<?php print get_settings_value("password", "move3500", "", null, $kasse);?>");
     const data = {
-        "username": "<?php print get_settings_value("username", "move3500", "", null, $kasse);?>",
-        "password": "<?php print get_settings_value("password", "move3500", "", null, $kasse);?>"
+        "username": <?php print json_encode(get_settings_value("username", "move3500", "", null, $kasse)); ?>,
+        "password": <?php print json_encode(get_settings_value("password", "move3500", "", null, $kasse)); ?>
+    };
+    if (!data.username || !data.password) {
+        await Promise.allSettled([
+            initialLogPromise,
+            logToServer('Move3500 login is not configured for this register (settings var_grp move3500, pos_id)', 'ERROR'),
+            Promise.resolve(fail(<?php print json_encode(findtekst('5153|Terminal-login er ikke sat op for denne kasse', $sprog_id)); ?>))
+        ]);
+        return null;
     }
-    console.log(data)
-    
+
     try {
         const fetchPromise = fetch(
             `${baseurl}login`,
@@ -202,12 +230,11 @@ async function get_api_key(baseurl) {
         );
         // Wait for both initial logging and fetch request
         const [logResult, fetchResult] = await Promise.allSettled([initialLogPromise, fetchPromise]);
-        console.log(logResult, fetchResult);
         // Check if initial logging failed
         if (logResult.status === 'rejected') {
             console.error('Initial logging failed:', logResult.reason);
         }
-        
+
         // Check if fetch failed
         if (fetchResult.status === 'rejected') {
             const errorMsg = `Network error: ${fetchResult.reason.message}`;
@@ -219,54 +246,33 @@ async function get_api_key(baseurl) {
         }
 
         const res = fetchResult.value;
-        const jsondata = await res.json();
-        
-         // Log the response (don't wait for it to complete)
-        const responseLogPromise = logToServer(`API key request response - Status: ${res.status}, Data: ${JSON.stringify(jsondata)}`, 'INFO');
-        /*
-        // write a put command to the settings for the terminal
-        const putPromise = fetch(
-            `${baseurl}terminal/TERMINAL ID HERER/settings`,
-            {
-                method: 'put',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `bearer ${jsondata.token}`
-                },
-                body: JSON.stringify({
-                    "printerWidth": 0
-                }),
-            }
-        ).then(async (putRes) => {
-            const putData = await putRes.json().catch(() => ({}));
-            if (putRes.ok) {
-                logToServer(`Terminal settings updated successfully - Status: ${putRes.status}`, 'INFO');
-            } else {
-                logToServer(`Terminal settings update failed - Status: ${putRes.status}, Error: ${JSON.stringify(putData)}`, 'ERROR');
-            }
-            return putRes;
-        }).catch((putError) => {
-            logToServer(`Terminal settings update exception: ${putError.message}`, 'ERROR');
-            console.error('Terminal settings PUT failed:', putError);
-        });
+        const jsondata = await res.json().catch(() => ({}));
 
-        if (res.status != 200) {
-            // Wait for both error logging and fail function
+        // Log status only - the body carries the bearer token
+        const responseLogPromise = logToServer(`API key request response - Status: ${res.status}, token received: ${jsondata.token ? 'yes' : 'no'}`, 'INFO');
+
+        if (res.status != 200 || !jsondata.token) {
+            const errorMsg = jsondata.error || `Login failed (HTTP ${res.status})`;
             await Promise.allSettled([
-                logToServer(`API key request failed - Status: ${res.status}, Error: ${jsondata.error}`, 'ERROR'),
-                Promise.resolve(fail(jsondata.error))
+                responseLogPromise,
+                logToServer(`API key request failed - Status: ${res.status}, Error: ${errorMsg}`, 'ERROR'),
+                Promise.resolve(fail(errorMsg))
             ]);
             return null;
-        } */
+        }
+
+        if (terminalPrinter) {
+            await set_terminal_printer(baseurl, jsondata.token);
+        }
 
         // Wait for both success logging and response logging to complete
         await Promise.allSettled([
             logToServer('API key retrieved successfully', 'INFO'),
             responseLogPromise
         ]);
-        
+
         return jsondata.token;
-        
+
     } catch (error) {
         // Handle any unexpected errors
         const errorMsg = `Network error: ${error.message}`;
@@ -275,6 +281,40 @@ async function get_api_key(baseurl) {
             Promise.resolve(fail(errorMsg))
         ]);
         return null;
+    }
+}
+
+// TELL NETS THAT THIS TERMINAL PRINTS ITS OWN RECEIPT
+// Cloud terminals hold the printer choice on Nets' side; printerWidth 0 = "use the terminal's printer".
+// Only sent for registers with the terminal-printer setting on. A failure is logged and shown but
+// does not stop the payment.
+async function set_terminal_printer(baseurl, apikey) {
+    const url = `${baseurl}terminal/${terminalId}/settings`;
+    logToServer(`Terminal settings request - URL: ${url}, Data: {"printerWidth":0}`, 'DEBUG');
+    try {
+        const putRes = await fetch(
+            url,
+            {
+                method: 'put',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `bearer ${apikey}`
+                },
+                body: JSON.stringify({
+                    "printerWidth": 0
+                }),
+            }
+        );
+        const putBody = (await putRes.text().catch(() => '')).substring(0, 500);
+        if (putRes.ok) {
+            await logToServer(`Terminal settings updated (printerWidth 0) - Status: ${putRes.status}`, 'INFO');
+        } else {
+            await logToServer(`Terminal settings update failed - Status: ${putRes.status}, Response: ${putBody}`, 'ERROR');
+            notice(<?php print json_encode(findtekst('5154|Terminalens printerindstilling kunne ikke opdateres hos Nets', $sprog_id)); ?> + ` (HTTP ${putRes.status})`);
+        }
+    } catch (putError) {
+        await logToServer(`Terminal settings update exception: ${putError.message}`, 'ERROR');
+        notice(<?php print json_encode(findtekst('5154|Terminalens printerindstilling kunne ikke opdateres hos Nets', $sprog_id)); ?> + ` (${putError.message})`);
     }
 }
 
@@ -321,13 +361,14 @@ async function print_str(baseurl, apikey, data) {
             ]);
         }
 
-        // Open print window and log it
-        window.open("http://<?php echo $printserver ?>/saldiprint.php?bruger_id=99&bonantal=1&printfil=<?php print $printfile; ?>&skuffe=0&gem=1','','width=200,height=100");
-        
-        await Promise.allSettled([
-            logToServer('Print command sent', 'INFO')
-        ]);
-        
+        if (terminalPrinter) {
+            // The terminal has printed the receipt itself (printerWidth 0) - no copy on Saldi's receipt printer
+            await logToServer('Receipt printed by the terminal - Saldi print skipped', 'INFO');
+        } else {
+            window.open("http://<?php echo $printserver ?>/saldiprint.php?bruger_id=99&bonantal=1&printfil=<?php print $printfile; ?>&skuffe=0&gem=1','','width=200,height=100");
+            await logToServer('Print command sent', 'INFO');
+        }
+
         finished = true;
         
     } catch (error) {
@@ -349,12 +390,12 @@ async function start_payment(baseurl, apikey, amount) {
     }
     
     // Log the exact request details for debugging
-    logToServer(`Transaction request - URL: ${baseurl}terminal/<?php print $terminal_id; ?>/transaction, Data: ${JSON.stringify(data)}`, 'DEBUG');
+    logToServer(`Transaction request - URL: ${baseurl}terminal/${terminalId}/transaction, Data: ${JSON.stringify(data)}`, 'DEBUG');
     console.log('Transaction request data:', data);
     
     try {
         var res = await fetch(
-            `${baseurl}terminal/<?php print $terminal_id; ?>/transaction`,
+            `${baseurl}terminal/${terminalId}/transaction`,
             {
                 method: 'post',
                 headers: {
@@ -381,12 +422,7 @@ async function start_payment(baseurl, apikey, amount) {
             var lines = jsondata.result[0].customerReceipt.split("\r\n");
             lines = lines.join("\n");
 
-            if (true) {
-                await print_str(baseurl, apikey, lines);
-            } else {
-                finished = true;
-            }
-            
+            await print_str(baseurl, apikey, lines);
             leave(cardScheme);
         }
     } catch (error) {

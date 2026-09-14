@@ -102,6 +102,8 @@
 // 20260826 CL/SZ  saveLabel now refuses to save when the label's current template isn't reproducible
 //                 by the visual editor's field model - it was silently discarding formatting it
 //                 doesn't understand on every save (MB-18).
+// 20260914 Sawaneh JOB-131: Save the per-register "card receipt printed by the terminal" checkbox
+//                     (settings terminal_printer/POS/pos_id) from posOptions.
 
 @session_start();
 $s_id = session_id();
@@ -1379,6 +1381,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		$printer_ip         = if_isset($_POST['printer_ip']);
 		$terminal_type      = if_isset($_POST['terminal_type']);
 		$terminal_ip        = if_isset($_POST['terminal_ip']);
+		$terminalPrinter    = ifset($_POST, 'terminal_printer', array());
 		$varenr             = if_isset($_POST['varenr']);
 		$vis_saet           = if_isset($_POST['vis_saet']);
 		$voucher            = if_isset($_POST['voucher']); #20181029
@@ -1537,6 +1540,10 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
                  VALUES ('terminal_type', 'POS', '$termtype', 'What the main payment system should be.', $kasse_id)";
 				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 			}
+
+			# Card receipt printed by the terminal itself (Nets cloud printerWidth 0) - read by debitor/payments/lane3000.php
+			$printerChoice = (ifset($terminalPrinter, $x) == 'on') ? 'on' : 'off';
+			update_settings_value("terminal_printer", "POS", $printerChoice, "Card receipt is printed by the payment terminal instead of the receipt printer", null, $kasse_id);
 
 
 			# ################

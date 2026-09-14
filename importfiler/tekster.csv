@@ -5095,4 +5095,8 @@
 5148	Forstået	Got it	Skjønner
 5149	Brugernavnet må højst være 80 tegn	The username may be at most 80 characters	Brukernavnet kan høyst være 80 tegn
 5150	Regnskabsnavnet må højst være 60 tegn	The account name may be at most 60 characters	Regnskapsnavnet kan høyst være 60 tegn
+5151	Kvit. på terminal	Receipt on terminal	Kvitt. på terminal
+5152	Kortkvitteringen printes på betalingsterminalens egen printer i stedet for bonprinteren (Nets cloud-terminaler: Lane3000/Move3500)	The card receipt is printed on the payment terminal's own printer instead of the receipt printer (Nets cloud terminals: Lane3000/Move3500)	Kortkvitteringen skrives ut på betalingsterminalens egen skriver i stedet for bongskriveren (Nets sky-terminaler: Lane3000/Move3500)
+5153	Terminal-login er ikke sat op for denne kasse	Terminal login is not set up for this register	Terminal-innlogging er ikke satt opp for denne kassen
+5154	Terminalens printerindstilling kunne ikke opdateres hos Nets	The terminal's printer setting could not be updated at Nets	Terminalens skriverinnstilling kunne ikke oppdateres hos Nets
 

@@ -25,6 +25,8 @@
 // Kaldes fra systemdata/diverse.php
 // 20131230 PHR addad fiscal year to groups.
 // 20250503 LOE reordered mix-up text_id from tekster.csv in findtekst()
+// 20260914 Sawaneh JOB-131: Per-register checkbox "card receipt printed by the terminal"
+//                     (settings terminal_printer/POS/pos_id), read by debitor/payments/lane3000.php
 
 function posOptions () {
 	global $bgcolor,$bgcolor5;
@@ -224,6 +226,7 @@ function posOptions () {
 		print "<td title='".findtekst(705,$sprog_id)."'><!--Tekst 705-->".findtekst(704,$sprog_id)."<!--Tekst 704--></td>\n";
 		print "<td title='".findtekst(2313,$sprog_id)."'><!--Tekst 2313-->".findtekst(2312,$sprog_id)."<!--Tekst 2312--></td>\n";
 		print "<td title='".findtekst(707,$sprog_id)."'><!--Tekst 707-->".findtekst(2316,$sprog_id)."<!--Tekst 2316--></td>\n";
+		print "<td title='".findtekst(5152,$sprog_id)."'><!--Tekst 5152-->".findtekst(5151,$sprog_id)."<!--Tekst 5151--></td>\n";
 		print "<td title='".findtekst(726,$sprog_id)."'><!--Tekst 726-->".findtekst(725,$sprog_id)."<!--Tekst 725--></td>\n";
 		if (count($bord)>1) print "<td title='".findtekst(755,$sprog_id)."'><!--Tekst 755-->".findtekst(754,$sprog_id)."<!--Tekst 754--></td>\n";
 		$text=findtekst(765,$sprog_id);
@@ -331,7 +334,11 @@ function posOptions () {
       print " </select>
             </td>\n";
 			print "<td align='center'><input class='inputbox' type='text' style='text-align:right;width:100px;' name='terminal_ip[$x]' value='$terminal_ip[$x]'></td>\n";
-      
+
+			# Card receipt printed by the terminal itself (Nets cloud terminals) instead of the receipt printer
+			$terminalPrinter = (get_settings_value("terminal_printer", "POS", "off", null, $kasse_id) == 'on') ? 'checked' : '';
+			print "<td align='center' title='".findtekst(5152,$sprog_id)."'><input type='checkbox' name='terminal_printer[$x]' $terminalPrinter></td>\n";
+
       print "<td align='center'><input class='inputbox' type='text' style='text-align:right;width:70px;' name='koekkenprinter[$x]' value='$koekkenprinter[$x]'></td>\n";
       
       
