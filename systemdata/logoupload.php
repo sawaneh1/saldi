@@ -35,6 +35,7 @@
 // 20260102 LOE - Added uploading to folders by department
 // 20260220 LOE Background terms now used instead of language terms for clarity, as this is more accurate for what the settings do. The term 'language(sprog)' is still used in the database and code for backwards compatibility, but the user interface now refers to 'backgrounds' instead of 'languages'.
 // 20260320 PHR cleanup (pdftk)
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 session_start();
 $s_id=session_id();
 $css="../css/standard.css";
@@ -42,6 +43,7 @@ $title="SALDI - Logo Upload";
 
 include("../includes/connect.php");
 include("../includes/settings.php");
+$permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/db_query.php");
 include("../includes/std_func.php"); #20210803

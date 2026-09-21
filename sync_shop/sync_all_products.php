@@ -13,6 +13,7 @@
 $s_id = session_id();
 
 include("../includes/connect.php");
+$permission_key = 'any';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

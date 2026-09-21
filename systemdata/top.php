@@ -97,8 +97,8 @@ print "      <tr><td><a href=\"syssetup.php?valg=moms\" accesskey=\"M\">
       <tr><td><a href=\"valuta.php\" accesskey=\"U\">
       <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">".findtekst(776, $sprog_id)."</button></a></td></tr>
 
-      <tr><td><a href=\"brugere.php\" accesskey=\"B\">
-      <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">".findtekst(777, $sprog_id)."</button></a></td></tr>
+      <tr><td><a href=\"usersRoles.php\" accesskey=\"B\">
+      <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">".findtekst('5266|Brugere & roller', $sprog_id)."</button></a></td></tr>
 
       <tr><td><a href=\"regnskabsaar.php\" accesskey=\"R\">
       <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">".findtekst(778, $sprog_id)."</button></a></td></tr>

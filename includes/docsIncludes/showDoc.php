@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------
 // PLBM 2024.01.31
 //20240305 PHR Varioous corrections
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 
 // Check if we're in flexbox layout (docPool-style) or table layout
@@ -44,6 +45,7 @@ if (strtolower(substr($showDoc,-3,3))=='pdf') {
 		@session_start();
 		$s_id = session_id();
 		include_once "../includes/connect.php";
+		$permission_key = 'any';
 		include_once "../includes/online.php";
 	}
 	

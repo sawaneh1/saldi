@@ -60,6 +60,7 @@
 // 20260604 LOE Added 'Performed by' to form dropdown..to be translated later when needed.
 // 20260710 SZ Added Settings search box (settingsSearch.php/.js/.css)
 // 20260911 CDX/LH SD-186 Use the Danish Udført af label for the invoice field.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 @session_start();
 $s_id=session_id();
 
@@ -67,6 +68,7 @@ $title="Formulareditor";
 $css="../css/standard.css";
 
 include("../includes/connect.php");
+$permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

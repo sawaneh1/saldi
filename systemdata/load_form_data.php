@@ -17,6 +17,7 @@ ob_start();
 
 // Include your database connection and standard functions
 include("../includes/connect.php");
+$permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

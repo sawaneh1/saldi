@@ -33,6 +33,7 @@ $kostvalue=0;$lagervalue=0;$salgsvalue=0;
 $dateType = 'levdate';
 
 include("../includes/connect.php");
+$permission_key = 'lager.varer';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

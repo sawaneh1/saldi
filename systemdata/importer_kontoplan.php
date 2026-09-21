@@ -27,6 +27,7 @@
 // 20210713 LOE - Translated some texts
 // 20220404	PHR function vis_data & overfoer_data: Inserted trim($felt[$y],'"');	
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
@@ -41,6 +42,7 @@ $komma=$semikolon=$tabulator=NULL;
 $feltnavn=array();
 	
 include("../includes/connect.php");
+$permission_key = 'settings.importexport';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

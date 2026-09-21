@@ -65,8 +65,8 @@
 #			print "<li><a href=\"rabatgrupper.php\" accesskey=\"V\">Rabatgrp</a></li>\n";
 			print "<li><a href=\"valuta.php\" accesskey=\"U\">Valuta</a></li>\n";
 #			print "<li><a href=\"valuta.php\" accesskey=\"U\">Valuta</a></li>\n";
-			print "<li><a href=\"brugere.php\" accesskey=\"B\">Brugere</a></li>\n";
-#			print "<li><a href=\"brugere.php\" accesskey=\"B\">Brugere</a></li>\n";
+			print "<li><a href=\"usersRoles.php\" accesskey=\"B\">".findtekst('5266|Brugere & roller', $sprog_id)."</a></li>\n";
+#			print "<li><a href=\"usersRoles.php\" accesskey=\"B\">Brugere</a></li>\n";
 			print "<li><a href=\"regnskabsaar.php\" accesskey=\"R\">Regnskabs&aring;r</a></li>\n";
 #			print "<li><a href=\"regnskabsaar.php\" accesskey=\"R\">Regnskabs&aring;r</a></li>\n";
 			print "<li><a href=\"stamkort.php\" accesskey=\"S\">Stamdata</a></li>\n";

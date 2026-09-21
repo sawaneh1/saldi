@@ -39,6 +39,7 @@ $title="Prisliste";
 $linjebg=NULL;
 
 include("../includes/connect.php");
+$permission_key = 'lager.varer';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");
@@ -64,6 +65,7 @@ else {
 	$returside="rapport.php?varegruppe=$varegruppe";
 }
 // 20260714 SZ - GET baseline (covers pagination/back-button/direct-link navigation - a plain GET
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // request with no $_POST at all) first, then an actual search-form submit (POST) overlays on top -
 // same GET-first/POST-overlay shape as includes/salgsstat.php's input handling. Replaces the previous
 // if($_POST)/elseif($_GET csv|autoprint)/elseif(default) fork, whose gaps meant every filter below

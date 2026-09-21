@@ -21,11 +21,13 @@
 // Copyright (c) 2015-2021 Saldi.dk ApS
 // --------------------------------------------------------------------------
 // 20211119 CA  Import PoS menus
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 $saldifileformat="saldi_posmenus";
 $title="Importer POS menuer";
 $css="../css/standard.css";
 include("../includes/connect.php");
+$permission_key = 'settings.importexport';
 include("../includes/online.php");
 include("../includes/db_query.php");
 include("../includes/posmenu_import.php");

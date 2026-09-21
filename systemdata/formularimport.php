@@ -24,6 +24,7 @@
 $s_id=session_id();
 
 include("../includes/connect.php");
+$permission_key = 'settings.importexport';
 include("../includes/online.php");
 include("../includes/db_query.php");
 include("../includes/formularimport.php");

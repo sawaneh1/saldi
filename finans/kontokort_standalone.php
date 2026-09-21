@@ -28,12 +28,14 @@
 //20260824 CL/SZ Cast konto_fra/konto_til to int - unescaped GET values hit the
 //                numeric(15,0) kontonr columns and threw "invalid input syntax
 //                for type numeric" (SST-672)
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 @session_start();
 $s_id = session_id();
 
 $css = "../css/standard.css";
 include("../includes/var_def.php");
 include("../includes/connect.php");
+$permission_key = 'finans.regnskab';
 include("../includes/online.php");
  include("../includes/std_func.php");
 

@@ -1,0 +1,329 @@
+/* Shell topbar (index/main.php via index/mainIncludes/topbar.php)
+   Variant A from the 2026-09-16 requirements: white bar above the content,
+   breadcrumb left; help · bell · user chip right. Panels overlay the iframe. */
+
+:root {
+    --topbar-h: 58px;
+    --topbar-bg: #ffffff;
+    --topbar-line: #e2e6ee;
+    --topbar-txt: #1c2431;
+    --topbar-mut: #68738a;
+    --topbar-hover: #edf0f6;
+    --topbar-red: #e0442c;
+    --topbar-green: #1d9e57;
+    --topbar-accent: #114691;
+    --topbar-accent-soft: #e8f0fe;
+    --topbar-shadow: 0 10px 34px rgba(16, 30, 60, 0.16);
+}
+
+.topbar {
+    height: var(--topbar-h);
+    background: var(--topbar-bg);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 14px 0 12px;
+    position: relative;
+    z-index: 50;
+    color: var(--topbar-txt);
+}
+
+/* Hamburger as in the prototype: collapses the sidebar on desktop, opens it on phones. */
+.topbar-menu-btn {
+    display: flex;
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    border-radius: 9px;
+    align-items: center;
+    justify-content: center;
+    color: #49546b;
+    cursor: pointer;
+    margin-right: 6px;
+}
+.topbar-menu-btn i { font-size: 24px; }
+.topbar-menu-btn:hover { background: var(--topbar-hover); color: var(--topbar-txt); }
+
+.topbar-crumb {
+    font-size: 14px;
+    color: var(--topbar-mut);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 40vw;
+}
+
+.topbar-crumb-page { color: var(--topbar-txt); font-weight: 500; }
+
+.topbar-spacer { flex: 1; }
+
+.topbar-item { position: relative; }
+
+.topbar-icbtn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #49546b;
+    padding: 0;
+}
+.topbar-icbtn i { font-size: 22px; }
+.topbar-icbtn:hover,
+.topbar-icbtn[aria-expanded="true"] { background: var(--topbar-hover); color: var(--topbar-txt); }
+.topbar-icbtn:focus-visible,
+.topbar-chip:focus-visible { outline: 2px solid var(--topbar-accent); outline-offset: 2px; }
+
+.topbar-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: var(--topbar-red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+/* ---- user chip ---- */
+.topbar-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 5px 8px 5px 5px;
+    border-radius: 10px;
+    color: var(--topbar-txt);
+    max-width: 320px;
+}
+.topbar-chip:hover,
+.topbar-chip[aria-expanded="true"] { background: var(--topbar-hover); }
+
+.topbar-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.3px;
+}
+.topbar-avatar-lg { width: 42px; height: 42px; font-size: 15px; }
+
+.topbar-who {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+    min-width: 0;
+    text-align: left;
+}
+.topbar-name {
+    font-size: 13.5px;
+    font-weight: 650;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+.topbar-company {
+    font-size: 11.5px;
+    color: var(--topbar-mut);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+.topbar-chev { font-size: 18px; color: var(--topbar-mut); transition: transform 0.2s ease; }
+.topbar-chip[aria-expanded="true"] .topbar-chev { transform: rotate(180deg); }
+
+/* ---- dropdown panels ---- */
+.topbar-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--topbar-line);
+    border-radius: 12px;
+    box-shadow: var(--topbar-shadow);
+    display: none;
+    z-index: 60;
+    overflow: hidden;
+    color: var(--topbar-txt);
+    text-align: left;
+}
+.topbar-pop.open { display: block; animation: topbar-pop-in 0.14s ease-out; }
+@keyframes topbar-pop-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.topbar-pop-user { width: 300px; }
+.topbar-pop-bell { width: 360px; }
+.topbar-pop-help { width: 280px; }
+
+.topbar-pop-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--topbar-line);
+    font-size: 14.5px;
+    font-weight: 650;
+}
+.topbar-pop-title small { font-size: 12px; font-weight: 400; color: var(--topbar-mut); }
+
+.topbar-pop-head {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--topbar-line);
+}
+.topbar-pop-headtxt { min-width: 0; }
+.topbar-pop-name { font-weight: 650; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-pop-mail { font-size: 12.5px; color: var(--topbar-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-role {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--topbar-accent);
+    background: var(--topbar-accent-soft);
+    border-radius: 20px;
+    padding: 2px 9px;
+}
+
+.topbar-pop-body { padding: 6px 0; }
+
+.topbar-pop-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 13.8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--topbar-txt);
+    text-decoration: none;
+    box-sizing: border-box;
+}
+.topbar-pop-item i { font-size: 18px; color: #49546b; flex-shrink: 0; }
+.topbar-pop-item:hover { background: #f4f6fa; }
+.topbar-pop-item small {
+    margin-left: auto;
+    color: var(--topbar-mut);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+}
+.topbar-pop-item small i { font-size: 15px; transition: transform 0.2s ease; }
+.topbar-pop-item[aria-expanded="true"] small i { transform: rotate(180deg); }
+.topbar-pop-item .topbar-pop-trail { margin-left: auto; font-size: 15px; color: var(--topbar-mut); }
+.topbar-pop-out { color: var(--topbar-red); }
+.topbar-pop-out i { color: var(--topbar-red); }
+
+.topbar-pop-sep { height: 1px; background: var(--topbar-line); margin: 6px 0; }
+
+.topbar-pop-sub {
+    display: none;
+    padding: 2px 12px 10px 43px;
+    font-size: 12.8px;
+    color: var(--topbar-mut);
+    max-height: 220px;
+    overflow-y: auto;
+}
+.topbar-pop-sub.open { display: block; }
+
+.topbar-online-user { padding: 4px 0; display: flex; align-items: center; }
+.topbar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--topbar-green);
+    display: inline-block;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* !important: the shell also carries global submit-button styling (form buttons
+   painted in the theme colour), and these are plain list rows, not action buttons. */
+.topbar-pop form .topbar-year {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100% !important;
+    margin: 0;
+    padding: 6px 8px !important;
+    border: none !important;
+    border-radius: 6px;
+    background: transparent !important;
+    color: var(--topbar-txt) !important;
+    font-size: 12.8px !important;
+    font-weight: 400;
+    font-family: inherit;
+    line-height: 1.3;
+    box-shadow: none !important;
+    cursor: pointer;
+    text-align: left;
+}
+.topbar-pop form .topbar-year i { font-size: 15px; color: var(--topbar-mut); }
+.topbar-pop form .topbar-year:hover:not([disabled]) { background: #f4f6fa !important; }
+.topbar-pop form .topbar-year.active {
+    font-weight: 650;
+    color: var(--topbar-accent) !important;
+    background: var(--topbar-accent-soft) !important;
+    cursor: default;
+    opacity: 1;
+}
+.topbar-pop form .topbar-year.active i { color: var(--topbar-accent); }
+.topbar-pop form .topbar-year small {
+    margin-left: auto;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--topbar-accent);
+}
+
+.topbar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 28px 16px;
+    color: var(--topbar-mut);
+    font-size: 13px;
+}
+.topbar-empty i { font-size: 28px; color: #b3bccc; }
+
+/* ---- narrow screens ---- */
+@media screen and (max-width: 780px) {
+    .topbar-menu-btn { display: flex; }
+    .topbar-who, .topbar-chev { display: none; }
+    .topbar-chip { padding: 3px; }
+    .topbar-crumb { max-width: 30vw; }
+    .topbar-pop-bell, .topbar-pop-user, .topbar-pop-help { width: min(360px, calc(100vw - 24px)); }
+}

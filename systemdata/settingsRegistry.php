@@ -44,6 +44,7 @@
 //                    importfiler/tekster.csv, which has a Dansk/English/Norsk column for every id
 //                    used here) - keep it that way; don't invent settings that aren't actually on
 //                    the page, and don't invent translations that aren't already in tekster.csv.
+// 20260916 Sawaneh userSettings entry now points at systemdata/personalSettings.php (text 5230).
 
 if (!function_exists('getSettingsRegistry')) {
 	function getSettingsRegistry() {
@@ -65,7 +66,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('customer discount matrix','debtor discount group','product discount group','discount matrix','percent discount','amount discount per unit','kr/stk rabat','discount by customer and product group','debitor rabatgruppe','vare rabatgruppe','rabatgrupper','rabat','rabatt')),
 			array('key' => 'valuta',           'url' => 'valuta.php',                   'category' => 'finance', 'textId' => 776,
 				'keywords' => array('currency','currencies','exchange rate','currency code','currency rate','pos currency','valuta','valutakode','kurs')),
-			array('key' => 'brugere',          'url' => 'brugere.php',                  'category' => 'users',   'textId' => 777,
+			array('key' => 'brugere',          'url' => 'usersRoles.php',               'category' => 'users',   'textId' => 5266,
 				'keywords' => array('user','users','user permissions','access rights','user rights','password','change password','two factor authentication','2fa','sms code','auditor','accountant','revisor','revisoradgang','employee link','ip address restriction','allowed ip','user roles','delete user','add user','new user','brugernavn','rettigheder','adgangskode','brukere','brukernavn','passord','tilgangsrettigheter')),
 			array('key' => 'regnskabsaar',     'url' => 'regnskabsaar.php',             'category' => 'finance', 'textId' => 778,
 				'keywords' => array('fiscal year','financial year','accounting year','start month','end month','close year','closed year','delete fiscal year','active fiscal year','set active year','create fiscal year','regnskabsår','regnskapsår')),
@@ -88,7 +89,7 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'provision',             'url' => 'diverse.php?sektion=provision',            'category' => 'diverse', 'textId' => 784,
 				'keywords' => array('commission report settings','commission calculation','sales commission','provisionsrapport','provision','provisjonsberegning','provisjon',
 					'commission basis','invoiced or paid commission','commission source person','customer responsible person commission','reference person commission','cost price source for commission','purchase price commission','product card cost price commission','cutoff date commission calculation')),
-			array('key' => 'userSettings',          'url' => 'diverse.php?sektion=userSettings',         'category' => 'personal', 'textId' => 785,
+			array('key' => 'userSettings',          'url' => 'personalSettings.php',                     'category' => 'personal', 'textId' => 5230,
 				'keywords' => array('personal settings','my settings','profile settings','appearance settings','theme color','button color','background color','text color','menu design','sidebar design','popup window mode','ui color customization','user interface preferences','personlige valg','baggrundsfarve','knapfarve','skift menu design',
 					'highlight color','order highlighting','use popup windows','use top menu','classic layout','classic look','full page workspace','no side menu','background color hex code','browser popup settings','highlight color nuance','red green blue yellow magenta cyan')),
 			array('key' => 'ordre_valg',             'url' => 'diverse.php?sektion=ordre_valg',           'category' => 'diverse', 'textId' => 786,

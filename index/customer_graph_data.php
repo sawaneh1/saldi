@@ -10,6 +10,7 @@ ob_start();
 $s_id = session_id();
 
 require_once('../includes/connect.php');
+$permission_key = 'any';
 require_once('../includes/online.php');
 
 // Function to generate empty hour array

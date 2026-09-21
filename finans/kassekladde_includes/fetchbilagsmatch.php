@@ -50,6 +50,7 @@
 //                   date_score CASE itself (same pattern amountTolerance already used
 //                   correctly), so it now only zeroes the date signal when out of range
 //                   instead of excluding the row outright.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
     // Start buffering
     ob_start();
@@ -57,6 +58,7 @@
     @session_start();
     $s_id=session_id();
     include("../../includes/connect.php");
+    $permission_key = 'finans.kassekladde';
     include("../../includes/online.php");
 
 

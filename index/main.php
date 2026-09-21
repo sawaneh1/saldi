@@ -40,16 +40,40 @@
 //                 ordre.php?inframe=1 = empty new order. Track the shell-written hash explicitly and
 //                 ignore the inframe flag when deciding whether the iframe already shows the target.
 // 20260914 CDX/LH Removed the Guides sidebar entry and its popup.
+// 20260916 Sawaneh Permanent topbar (variant A): user chip with personal settings, fiscal-year
+//                  switch, who-is-online and log out (moved from the sidebar), help (guides) and
+//                  notification bell shell. Markup/data in mainIncludes/topbar.php, css/topbar.css.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 @session_start();
 $s_id = session_id();
 
-$css = "../css/sidebar_style.css?v=20";
+$css = "../css/sidebar_style.css?v=23";
+
+/**
+ * Injected by ../includes/connect.php and ../includes/online.php, included below:
+ * @var string $db
+ * @var string $version
+ * @var string $brugernavn
+ * @var int    $bruger_id
+ * @var string $rettigheder
+ * @var mixed  $revisor
+ * @var mixed  $regnaar
+ * @var int    $sprog_id
+ * @var string $regnskab
+ * @var string $buttonColor
+ * @var string $buttonTxtColor
+ */
 
 include("../includes/connect.php");
 include("../includes/license_func.php");
+include(__DIR__ . "/mainIncludes/topbar.php");
+// Must run while the master connection is active (the `online` table lives there).
+$topbarOnlineRows = topbar_online_rows($s_id);
+$permission_key = 'any';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/stdFunc/dkDecimal.php");
+$topbar = topbar_context($topbarOnlineRows, (string) $brugernavn, (int) $bruger_id, (string) $rettigheder, $revisor, $regnaar, (int) $sprog_id, (string) $regnskab);
 
 function check_permissions($permarr)
 {
@@ -155,7 +179,8 @@ function brightenColor($color, $amount = 0.2) {
 <title>Sidebar</title>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
-<link href='../css/sidebar_style.css?v=22' rel='stylesheet'>
+<link href='../css/sidebar_style.css?v=23' rel='stylesheet'>
+<link href='../css/topbar.css?v=5' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -393,17 +418,6 @@ function brightenColor($color, $amount = 0.2) {
       </ul>
     </li>
 
-    <li>
-      <a href="#" onclick='redirect_uri("/index/logud.php")'>
-        <i class='bx bx-log-out'></i>
-        <span class="link_name"><?php print findtekst('93|Log ud', $sprog_id); ?></span>
-      </a>
-      <ul class="sub-menu blank">
-        <li><a class="" href="#" onclick='redirect_uri("/index/logud.php")'><?php print findtekst('93|Log ud', $sprog_id); ?></a>
-        </li>
-      </ul>
-    </li>
-
   </ul>
 
   <div id="desc-line">
@@ -414,14 +428,13 @@ function brightenColor($color, $amount = 0.2) {
 </div>
 
 <section class="home-section">
-  <div class="topbar">
-    <a href="javascript:void(0)" onclick="document.getElementsByClassName('sidebar')[0].setAttribute(`style`, `width: 210px !important; height: ${window.screen.availHeight+1}px`); document.getElementsByClassName('modalbg')[0].style.display='block'; "><i class='bx bx-menu' style="color: white; font-size: 50px"></i></a>
-  </div>
+  <?php topbar_render($topbar, (int) $sprog_id); ?>
 
   <div class="home-content">
     <iframe
       onLoad="
-      document.title = 'Saldi - ' + this.contentWindow.document.title; 
+      document.title = 'Saldi - ' + this.contentWindow.document.title;
+      topbarSetCrumb(this.contentWindow.document.title, this.contentWindow.location.pathname, this.contentWindow.document.querySelector('h1'));
       console.log('Locaiton', this.contentWindow.document.location.href);
       trigger_iframe_load();
       stopLoading();
@@ -437,6 +450,111 @@ function brightenColor($color, $amount = 0.2) {
 </section>
 
 <script>
+  // ---- topbar (mainIncludes/topbar.php) ----
+  function topbarCloseAll() {
+    document.querySelectorAll('.topbar-pop.open').forEach((el) => el.classList.remove('open'));
+    document.querySelectorAll('.topbar [aria-expanded="true"]').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+  }
+
+  function topbarToggle(event, popId) {
+    event.stopPropagation();
+    const pop = document.getElementById(popId);
+    const wasOpen = pop.classList.contains('open');
+    topbarCloseAll();
+    if (!wasOpen) {
+      pop.classList.add('open');
+      event.currentTarget.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  function topbarToggleSub(event, subId) {
+    event.stopPropagation();
+    const sub = document.getElementById(subId);
+    const open = sub.classList.toggle('open');
+    event.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      const active = sub.querySelector('.active');
+      if (active) {
+        active.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }
+
+  // Hamburger: collapse/expand the sidebar on desktop, open it as an overlay on phones.
+  function topbarMenu() {
+    topbarCloseAll();
+    if (window.innerWidth <= 780) {
+      document.getElementsByClassName('sidebar')[0].setAttribute('style', 'width: 210px !important; height: ' + (window.screen.availHeight + 1) + 'px');
+      document.getElementsByClassName('modalbg')[0].style.display = 'block';
+      return;
+    }
+    document.querySelector('.logo.wide').click();
+  }
+
+  // Carry the current in-app location through the fiscal-year switch so the user
+  // lands back on the same page (topbarAction.php redirects to main.php#<path>).
+  function topbarSubmitYear(form) {
+    form.querySelector('input[name="return_hash"]').value = window.location.hash.replace(/^#/, '');
+    return true;
+  }
+
+  // Breadcrumb: the page's own heading when it has one ("Oversigt - Firma A/S"),
+  // else the translated sidebar entry ("Finans / Kassekladde"), else the page
+  // title (legacy titles are hardcoded Danish, so those come last).
+  function topbarSetCrumb(title, path, heading) {
+    const crumb = document.getElementById('topbar-crumb');
+    if (!crumb) {
+      return;
+    }
+    const headingText = heading ? heading.textContent.replace(/\s+/g, ' ').trim() : '';
+    if (headingText) {
+      crumb.textContent = headingText;
+      return;
+    }
+    const base = location.pathname.split('/').slice(0, -2).join('/');
+    if (path) {
+      for (const a of document.querySelectorAll('.sidebar .nav-links a[onclick]')) {
+        const m = /update_iframe\("([^"?]+)/.exec(a.getAttribute('onclick') || '');
+        if (!m || base + m[1] !== path) {
+          continue;
+        }
+        const item = a.textContent.trim();
+        const top = a.closest('ul.nav-links > li');
+        const moduleEl = top ? top.querySelector('.link_name') : null;
+        const module = moduleEl ? moduleEl.textContent.trim() : '';
+        crumb.textContent = '';
+        if (module && module !== item) {
+          const m1 = document.createElement('span');
+          m1.className = 'topbar-crumb-module';
+          m1.textContent = module + ' / ';
+          crumb.appendChild(m1);
+        }
+        const m2 = document.createElement('span');
+        m2.className = 'topbar-crumb-page';
+        m2.textContent = item;
+        crumb.appendChild(m2);
+        return;
+      }
+    }
+    if (title) {
+      crumb.textContent = title;
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.topbar-pop, .topbar-item')) {
+      topbarCloseAll();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      topbarCloseAll();
+    }
+  });
+  // A click inside the content iframe never reaches this document, but it does
+  // move focus into the frame - close the panels on that instead.
+  window.addEventListener('blur', topbarCloseAll);
+
   function setCookie(cname, cvalue, exdays) {
     console.log(cname, cvalue);
     const d = new Date();

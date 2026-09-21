@@ -29,6 +29,7 @@
 // 20260624 CL/PHR Normalize bank dates before reconciliation, find fiscal year by date interval,
 // 20260624 CL/PHR apply 'vend' during reconciliation, show all CSV columns, and remember 'vend'.
 // 20260624 CL/PHR Normalize bank file text encoding when reconciling.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 ini_set("auto_detect_line_endings", true);
 
@@ -39,6 +40,7 @@ $bankName = NULL;
 
 $title = "BankAfstemning";
 include("../includes/connect.php");
+$permission_key = 'finans.kassekladde';
 include("../includes/online.php");
 include("../includes/settings.php");
 include("../includes/std_func.php");

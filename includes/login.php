@@ -153,6 +153,7 @@ if (($regnskab)&&($regnskab!=$sqdb)) {
 		mkdir("../temp/$db");
 	}
 #	if (!$dbver) {
+	$permission_key = 'any';
 	include("../includes/online.php");
 	if(!strpos($_SERVER['PHP_SELF'],"stillads")&& !strpos($_SERVER['PHP_SELF'],"udvikling")&& !strpos($_SERVER['PHP_SELF'],"beta")) db_modify("update grupper set box3 = 'on' where art='USET'",__FILE__ . " linje " . __LINE__); #fjernes når topmenu fungerer.
 	$query = db_select("select box1 from grupper where art = 'VE'",__FILE__ . " linje " . __LINE__);

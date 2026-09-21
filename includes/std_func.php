@@ -83,6 +83,7 @@
 //                     literal "dummyvalue" Shoptech sends for empty address fields (JOB-115)
 // 20260914 CL/NTR barcode(): no horizontal padding in the SVG so the bars span the full 285 px
 //                  (vertical padding kept at 2 px) as we want to control padding in the print.
+// 20260916 Sawaneh includes/permissions.php (roles, require_permission, audit_log) loaded here so every page has it.
 
 include(__DIR__ . '/stdFunc/dkDecimal.php');
 include(__DIR__ . '/stdFunc/nrCast.php');
@@ -91,6 +92,7 @@ include(__DIR__ . '/stdFunc/usDecimal.php');
 include(__DIR__ . '/stdFunc/dkAmountValid.php');
 include(__DIR__ . '/stdFunc/navStack.php');
 include(__DIR__ . '/stdFunc/fefo.php');
+include_once(__DIR__ . '/permissions.php');
 include(__DIR__ . '/stdFunc/shopApiRequest.php');
 if (!function_exists('locateDir')) {
 	function locateDir($baseRelativeDir) {

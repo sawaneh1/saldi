@@ -104,6 +104,10 @@
 //                 doesn't understand on every save (MB-18).
 // 20260915 CL/NTR Bank Integration settings button only shown when the API credentials
 //                 are configured (bankIntegrationEnabled()).
+// 20260916 Sawaneh Personal settings moved to systemdata/personalSettings.php; sektion=userSettings
+//                  now redirects there and the Diverse menu entry links to the new page.
+// 20260916 Sawaneh Phase 3: SQL tool, API, SMTP/e-mail, integrations and import/export sections
+//                  gated by their own permission keys via require_permission().
 
 @session_start();
 $s_id = session_id();
@@ -169,6 +173,33 @@ if (!isset($exec_path)) $exec_path = "/usr/bin";
 $sektion    = if_isset($_GET, null, 'sektion');
 $pricelists = if_isset($_POST, null, 'pricelists');
 if ($sektion == 'personlige_valg') $sektion = 'userSettings';
+if ($sektion == 'userSettings' && $_SERVER['REQUEST_METHOD'] != 'POST') {
+	print "<meta http-equiv=\"refresh\" content=\"0;URL=personalSettings.php\">";
+	exit;
+}
+// 20260916 Phase 3 (spec R6): dangerous sections are gated by their own permission key.
+// Users without a role inherit these from the Indstillinger bit, so nothing changes for
+// them; a role only gets them when an administrator grants them explicitly.
+$dangerousSections = array(
+	'sqlquery_io' => 'settings.sql',
+	'api_valg' => 'settings.api',
+	'email' => 'settings.smtp',
+	'smtp' => 'settings.smtp',
+	'stripe_valg' => 'settings.integrations',
+	'docubizz' => 'settings.integrations',
+	'upload_dbz' => 'settings.integrations',
+	'shop_valg' => 'settings.integrations',
+	'adresser_io' => 'settings.importexport',
+	'formular_io' => 'settings.importexport',
+	'kontoplan_io' => 'settings.importexport',
+	'solar_io' => 'settings.importexport',
+	'varer_io' => 'settings.importexport',
+	'variant_valg_import_types' => 'settings.importexport',
+	'variant_valg_import_values' => 'settings.importexport',
+);
+if (isset($dangerousSections[$sektion]) && function_exists('require_permission')) {
+	require_permission($dangerousSections[$sektion], ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'write' : 'read');
+}
 $skiftnavn  = if_isset($_GET['skiftnavn']);
 if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 	if ($sektion == 'provision') {
@@ -2174,9 +2205,9 @@ if ($menu != 'T') {
 			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
 			   .findtekst('784|Provisionsberegning', $sprog_id)."</button></a></td></tr>\n";
 
-		print "<tr><td align=left><a href=diverse.php?sektion=userSettings>
+		print "<tr><td align=left><a href=personalSettings.php>
 			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('785|Personlige valg', $sprog_id)."</button></a></td></tr>\n";
+			   .findtekst('5230|Personlige indstillinger', $sprog_id)."</button></a></td></tr>\n";
 
 		print "<tr><td align=left><a href=diverse.php?sektion=ordre_valg>
 			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"

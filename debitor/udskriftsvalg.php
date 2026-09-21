@@ -39,6 +39,7 @@ $css="../css/standard.css";
 
 
 include("../includes/connect.php");
+$permission_key = 'debitor.ordre';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

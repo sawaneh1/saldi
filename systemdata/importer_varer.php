@@ -44,6 +44,7 @@
 // 20251007 PHR aliases
 // 202605## PHR Added Max_execution_time setting.
 // 20260708 PHR defined v_nr as array()
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
@@ -53,6 +54,7 @@ $css="../css/standard.css";
 $title="Import&eacute;r varer";
 
 include("../includes/connect.php");
+$permission_key = 'settings.importexport';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

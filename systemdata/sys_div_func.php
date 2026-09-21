@@ -122,6 +122,7 @@
 //                query (was mislabeled $mySaleTest but still read var_name='mySale');
 //                also dropped the debug echo block referencing it. Never saved
 //                ($_POST['mySaleTest'] was read nowhere) and had no consumer. MB-28.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 include("sys_div_func_includes/chooseProvision.php");
 include_once("../includes/connect.php"); 
 
@@ -157,6 +158,7 @@ function kontoindstillinger($regnskab, $skiftnavn)
 				$max_users = (int)$row['brugerantal'];
 			}
 		}
+	$permission_key = 'system.indstillinger';
 	include("../includes/online.php");
 	if($masterDb == "gratis" || $masterDb == "mini") {
 		$disabled = "disabled";

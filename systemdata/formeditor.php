@@ -70,6 +70,7 @@ $title = "Formulareditor";
 $css   = "../css/standard.css";
 
 include("../includes/connect.php");
+$permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

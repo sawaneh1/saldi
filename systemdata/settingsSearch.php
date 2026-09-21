@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------
 // 20260709 SZ Created: JSON lookup endpoint backing the Settings search box
 // 20260710 SZ Added 3-tier label/keyword/word-fallback matching + Norwegian label support
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // JSON lookup endpoint backing the Settings search box (see settingsRegistry.php).
 
 ob_start();
@@ -29,6 +30,7 @@ $title = "settingsSearch";
 $webservice = true;
 
 include("../includes/connect.php");
+$permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("settingsRegistry.php");

@@ -24,6 +24,7 @@
 // Copyright (c) 2003-2026 Saldi.dk ApS
 // ----------------------------------------------------------------------
 // 20260123 PHR if (!$leveres && !$leveret) changed to if ($leveres == 0 && $leveret == 0) as it did not alert when value is 0.000
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 @session_start();
 $s_id=session_id();
 
@@ -31,6 +32,7 @@ $title="serienummer";
 $css="../css/standard.css";
 
 include("../includes/connect.php");
+$permission_key = 'kreditor.ordre';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

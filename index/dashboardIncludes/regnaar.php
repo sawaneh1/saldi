@@ -21,6 +21,7 @@ if (isset($_GET['aktiver_regnaar']) && $_GET['aktiver_regnaar']) {
     }
     
     // Reload the online.php to update session variables
+    $permission_key = 'any';
     include("../includes/online.php");
     
     // Refresh the page to show the newly selected fiscal year

@@ -63,6 +63,10 @@
 // 20260424 PHR Added thisDb to prevent admins updating in the wrong accunt
 // 20260904 Sawaneh WP-1.3: nav_push popup arg now uses the popup=1 request flag, not the user preference
 // 20260909 CDX/LH SST-782: Use the light default for missing or empty background settings.
+// 20260916 Sawaneh Denied module access is now written to audit_log (the message always said so).
+//                  Phase 3 gate: perm_enforce_request() after the legacy check ($permission_key /
+//                  $permission_level / $permission_post_read declared by the page, $modulnr as
+//                  fallback); auditor sessions get the Revisor role once enforcement is 'deny'.
 
 #include("../includes/connect.php"); #20211001
 if (!isset($buttonColor))    $buttonColor = '#114691';
@@ -267,8 +271,15 @@ if (isset($db_id) && isset($db) && isset($sqdb) && $db != $sqdb) { #20200928
 			$ansat_navn = $brugernavn;
 			$sag_rettigheder = NULL;
 		}
-	} else
+	} else {
 		$bruger_id = -1;
+		// Phase 3 (spec decision 2): once enforcement is 'deny', an auditor/master-admin
+		// session holds the read-only Revisor role instead of every right.
+		include_once(__DIR__ . "/permissions.php");
+		if (perm_tables_ready() && perm_enforcement_mode() === 'deny') {
+			$rettigheder = perm_legacy_string(perm_levels_from_role(perm_role_id_by_key('revisor')));
+		}
+	}
 	if (!$sprog_id)
 		$sprog_id = 1;
 	if (!strpos($css, 'mysale') && $bruger_id) {
@@ -336,9 +347,25 @@ if (isset($db_id) && isset($db) && isset($sqdb) && $db != $sqdb) { #20200928
 	}
 	if (($rettigheder) && ($modulnr) && (substr($rettigheder, $modulnr, 1) < '1')) { #20190529
 		include($relativePath . "includes/std_func.php");
+		if (function_exists('audit_log')) {
+			audit_log('denied', 'modulnr ' . (int) $modulnr . ' ' . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''));
+		}
 		$txt = "Du har ikke nogen rettigheder her - din aktivitet er blevet logget";
 		print tekstboks($txt);
 		exit;
+	}
+	// 20260916 Phase 3 gate (spec R4). Pages declare $permission_key ('any' = every logged-in
+	// user), optionally $permission_level = 'write' and $permission_post_read = true (POST is a
+	// filter, not a write). Undeclared pages fall back to $modulnr. Until the company switches
+	// enforcement to 'deny', this only records what would have been refused in audit_log.
+	if (!$webservice && !$nextver) {
+		include_once(__DIR__ . "/permissions.php");
+		perm_enforce_request(
+			isset($permission_key) ? (string) $permission_key : null,
+			isset($permission_level) ? (string) $permission_level : 'read',
+			!empty($permission_post_read),
+			($modulnr !== NULL && $modulnr !== '') ? (int) $modulnr : null
+		);
 	}
 }
 

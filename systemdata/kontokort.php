@@ -35,6 +35,7 @@
 // 20220605 PHR - php8
 // 20250619 PHR - Somebody broke the code by omitting || in several if statements
 // 20260206	PHR	- discal_year
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id = session_id();
@@ -56,6 +57,7 @@ $css = "../css/standard.css";
 	</script>
 <?php
 include("../includes/connect.php");
+$permission_key = 'system.kontoplan';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/genberegn.php");

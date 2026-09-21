@@ -37,11 +37,13 @@
 // 20240626 PHR Added 'fiscal_year' in queries
 // 20250207 PHR Corrected error in 'bogf_konto' as is used wrong account !
 // 20260908 CDX/LH Lock creditor orders before receipt validation and batch changes (SST-765).
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
 
 include("../includes/connect.php");
+$permission_key = 'kreditor.ordre';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

@@ -24,6 +24,7 @@
 // ----------------------------------------------------------------------
 // 20240209 PHR Added indbetaling
 // 20240227 PHR Added $printfile and call to saldiprint.php
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id = session_id();
@@ -40,6 +41,7 @@ header("Expires: 0");
 $css = "../../css/flatpay.css";
 
 include ("../../includes/connect.php");
+$permission_key = 'debitor.ordre';
 include ("../../includes/online.php");
 include ("../../includes/std_func.php");
 include ("../../includes/stdFunc/dkDecimal.php");

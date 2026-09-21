@@ -20,6 +20,7 @@
 // ----------------------------------------------------------------------
 // Language-specific sender email settings
 // 20260710 SZ Added Settings search box to standalone/topmenu layouts (settingsSearch.php/.js/.css)
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
@@ -28,6 +29,7 @@ $title = "Email Settings";
 $css="../css/standard.css";
 
 include("../includes/connect.php");
+$permission_key = 'settings.smtp';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

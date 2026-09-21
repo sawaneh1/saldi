@@ -20,6 +20,7 @@
 // ----------------------------------------------------------------------
 // 20150122 MAX_FILE_SIZE ændret fra 100000 til 200000
 // 20210713 Added this file and also translated some text
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
@@ -28,6 +29,7 @@ $title="Importer_formularer";
 $css="../css/standard.css";
 $returside="diverse.php?sektion=div_io";
 include("../includes/connect.php");
+$permission_key = 'settings.importexport';
 include("../includes/online.php");
 include("../includes/db_query.php");
 include("../includes/formularimport.php");

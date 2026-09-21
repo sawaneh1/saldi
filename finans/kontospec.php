@@ -29,6 +29,7 @@
 // 20251203 LOE Updated the file to use grid framework
 // 20260821 CL/SZ Faktura column now links to ordre.php/pos_ordre.php via ordre_id
 // 20260826 LOE Linked to debitor/ordre.php instead of finans/ordre.php
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 
 $fakturanr = array();
@@ -46,6 +47,7 @@ $css = "../css/standard.css";
 global $menu;
     
 include("../includes/connect.php");
+$permission_key = 'finans.regnskab';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

@@ -45,6 +45,7 @@
 // 20251106 PHR Corrected date error
 // 20260311 PHR Corrected decimal error
 // 20260320 PHR	Removed 'This didn't work'
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 ini_set("auto_detect_line_endings", true);
 
@@ -55,6 +56,7 @@ $bankName = NULL;
 
 $title="Bankimport";
 include("../includes/connect.php");
+$permission_key = 'finans.kassekladde';
 include("../includes/online.php");
 include("../includes/settings.php");
 include("../includes/std_func.php");

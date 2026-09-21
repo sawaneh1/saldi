@@ -36,6 +36,7 @@ $komma=$semikolon=$tabulator=NULL;
 $feltnavn=array();
 
 include("../includes/connect.php");
+$permission_key = 'settings.importexport';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

@@ -63,6 +63,8 @@ include("../includes/std_func.php");
 
 $title=findtekst('1247|Indlæs sikkerhedskopi', $sprog_id);
 $modulnr=11;
+$permission_key = 'system.backup.restore'; // 20260916 Sawaneh phase 3: restore has its own (dangerous) key
+$permission_level = 'write';
 $css="../css/standard.css";
 $backupdate=$backupdb=$backupver=$backupnavn=$filnavn=$menu=$regnskab=$timezone=$popup=NULL;
 

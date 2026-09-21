@@ -26,12 +26,14 @@
 //
 // 20240529 PHR Block for deleteting invoiced orders
 // 20240603 PBLM Fixed booking deletion when invoice is credited
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
     @session_start();
     $s_id=session_id();
     $header = "nix";
     $bg = "nix";
     include("../includes/connect.php");
+    $permission_key = 'debitor.konti';
     include("../includes/online.php");
     include_once("../includes/stdFunc/ensureTableAndColumns.php");
 /*     $query = db_select("SELECT * FROM online WHERE session_id = '$s_id' ORDER BY logtime DESC LIMIT 1", __FILE__ . " linje " . __LINE__);

@@ -27,6 +27,7 @@
 //20241018 LOE checks that some variables are set before using.
 //20250513 Sawaneh display number of users online.
 //20250805 LOE added close button to settings popup. and also added weekly graph snippet
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 @session_start();
 $s_id = session_id();
 
@@ -60,6 +61,7 @@ $online_people_amount = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . _
 
 $newssnippet = get_settings_value("nyhed", "dashboard", "");
 
+$permission_key = 'any';
 include ("../includes/online.php");
 include ("../includes/stdFunc/dkDecimal.php");
 

@@ -38,6 +38,7 @@
 // 20220530 PHR resetPW was newer hit and no mail sent. Added '&& !$resetPW' to if ($account)  
 // 20230311 PHR Various updates according to PHP8 
 // 20230918 PHR Check if db exists 
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
@@ -183,6 +184,7 @@ if ($account && !$resetPW) {
 	$qtxt.= "('$s_id','". db_escape_string($account) ."','". db_escape_string($db) ."','". db_escape_string($squser) ."',";
 	$qtxt.= "'0',0,'". date('U') ."',FALSE,'1')";
 	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
+	$permission_key = 'any';
 	include ('../includes/online.php');
 
 	$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='ordrelinjer' and ";

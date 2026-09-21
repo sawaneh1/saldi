@@ -59,6 +59,8 @@
 //                  posted from an ISO-8859-1 page is filtered instead of rejected, and the result is converted
 //                  back to the page charset so a non-UTF8 database still matches. Length check now uses the
 //                  shared is_input_too_long() from std_func.php.
+// 20260916 Sawaneh Successful login written to audit_log (roles & permissions, spec R7).
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 ob_start(); //Starter output buffering 
 @session_start();
@@ -389,6 +391,7 @@ if ($db) {
 	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
 }
 else db_modify("delete from online where db=''",__FILE__ . " linje " . __LINE__); 
+$permission_key = 'any';
 include("../includes/online.php"); #20211115 moved from line 259
 # Versions kontrol / opdatering af database.
 if ( $db && $db!=$sqdb ) {
@@ -741,6 +744,10 @@ if ($userId) {
 	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
 	if ($login=="cookie") {setcookie("saldi_std",$regnskab,time()+60*60*24*30);}
 	include("../includes/online.php"); #20111105
+	include_once("../includes/permissions.php");
+	if (function_exists('audit_log')) {
+		audit_log('login', $db);
+	}
 
 	# ###################################################
 	#

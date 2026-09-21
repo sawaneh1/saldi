@@ -94,6 +94,7 @@ $kostvalue=0;$lagervalue=0;$salgsvalue=0;
 $dateType = 'levdate';
 
 include("../includes/connect.php");
+$permission_key = 'lager.varer';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");
@@ -139,6 +140,7 @@ if (isset($_GET['dato']) && $_GET['dato']) {
 	$zStock     = $_GET['zStock'];
 	$showClosed = $_GET['showClosed'];
 	// 20260901 CL/SZ - named $varenrSoeg (not $varenr): this file already has a per-item $varenr[$x]
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 	// array further down (the item number shown in each result row) - reusing the bare name here would
 	// silently clobber that array with this scalar search term, so the request field stays "varenr" but
 	// the PHP variable holding it is renamed to avoid the collision.

@@ -32,6 +32,7 @@
 // 20230123 PHR Corrected error if text in debet or credit
 // 20230304 PHR	Attachments can now be renamed
 // 20260212 LOE Refactored to handle multiple files for orders.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id=session_id();
@@ -39,6 +40,7 @@ $css="../css/standard.css";
 
 $title="Kassebillag";
 include("../includes/connect.php");
+$permission_key = 'any';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

@@ -28,6 +28,10 @@
 // 20260127 PHR update settings value
 // 20260219 PHR Added employeeInitials
 // 20260908 CL/NTR Reject usernames over 80 characters (is_input_too_long) on create/update, matching login.php
+// 20260916 Sawaneh Superseded by systemdata/usersRoles.php (Brugere & roller). Redirects there.
+
+header('Location: usersRoles.php');
+exit;
 
 @session_start();
 $s_id=session_id();

@@ -621,4 +621,47 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify($pool_files_index, __FILE__ . " linje " . __LINE__);
 }
 
+// 20260916 Sawaneh Roles & permissions (user/settings system spec, part 2): roles,
+// role_permissions, brugere.role_id and the audit log. Built-in roles are seeded and users
+// holding every legacy right get the Administrator role; see includes/permissions.php.
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='roles'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "CREATE TABLE roles (
+		id SERIAL PRIMARY KEY NOT NULL,
+		role_key varchar(30),
+		navn varchar(80) NOT NULL,
+		beskrivelse text,
+		system boolean DEFAULT false,
+		oprettet timestamp DEFAULT now())";
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+}
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='role_permissions'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "CREATE TABLE role_permissions (
+		role_id integer NOT NULL,
+		permission_key varchar(60) NOT NULL,
+		level varchar(5) NOT NULL,
+		PRIMARY KEY (role_id, permission_key))";
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+}
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='brugere' AND column_name='role_id'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	db_modify("ALTER TABLE brugere ADD COLUMN role_id integer", __FILE__ . " linje " . __LINE__);
+}
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='audit_log'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "CREATE TABLE audit_log (
+		id SERIAL PRIMARY KEY NOT NULL,
+		bruger_id integer,
+		brugernavn varchar(80),
+		tidspunkt timestamp DEFAULT now(),
+		handling varchar(40) NOT NULL,
+		detaljer text,
+		ip varchar(45))";
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+	db_modify("CREATE INDEX audit_log_tidspunkt_idx ON audit_log (tidspunkt)", __FILE__ . " linje " . __LINE__);
+}
+include_once(__DIR__ . "/permissions.php");
+perm_ensure_default_roles();
+
 ?>

@@ -30,6 +30,7 @@
 // 20260415 LOE  - Added Categories column with search functionality in vareliste. 
 // 20260908 CDX/LH Keep missing stock blank while preserving numeric stock search and sorting (SST-767).
 // 20260910 CDX/PHR Added optional purchased and sold quantity totals from the purchase/sales report sources.
+// 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 @session_start();
 $s_id = session_id();
@@ -39,6 +40,7 @@ $css = "../../css/standard.css?v=20";
 $include_start = microtime(true);
 include("../../includes/std_func.php");
 include("../../includes/connect.php");
+$permission_key = 'lager.varer';
 include("../../includes/online.php");
 include("../../includes/stdFunc/dkDecimal.php");
 

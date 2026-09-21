@@ -25,6 +25,7 @@
 // ----------------------------------------------------------------------
 
 include("../includes/connect.php");
+$permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/db_query.php");
 
