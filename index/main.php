@@ -44,6 +44,9 @@
 //                  switch, who-is-online and log out (moved from the sidebar), help (guides) and
 //                  notification bell shell. Markup/data in mainIncludes/topbar.php, css/topbar.css.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20260922 Sawaneh Topbar spec 2026-09-17 step 1a: global cluster (language, Assist, PoS, chip with
+//                  dashboard hide/edit + print), no breadcrumb, sidebar Kontakt/Print removed,
+//                  Guides and Kassesystem entries added, widget's Assist entry hidden.
 @session_start();
 $s_id = session_id();
 
@@ -180,7 +183,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=23' rel='stylesheet'>
-<link href='../css/topbar.css?v=5' rel='stylesheet'>
+<link href='../css/topbar.css?v=6' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -407,23 +410,43 @@ function brightenColor($color, $amount = 0.2) {
   </ul>
 
   <ul class="nav-links">
+    <?php if ($topbar['posUrl'] !== '' || $topbar['sagerUrl'] !== '') {
+      $shortcutUrl = $topbar['posUrl'] !== '' ? $topbar['posUrl'] : $topbar['sagerUrl'];
+      $shortcutLabel = $topbar['posUrl'] !== '' ? findtekst('5336|Kassesystem', $sprog_id) : findtekst('5337|Sagsstyring', $sprog_id);
+    ?>
     <li>
-      <a href="#" onclick="alert('Kontakt os på tlf: 46 90 22 08 mail: support@saldi.dk')">
-        <i class='bx bx-envelope'></i>
-        <span class="link_name"><?php print findtekst('398|Kontakt', $sprog_id); ?></span>
+      <a href="<?php print htmlspecialchars($shortcutUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_top">
+        <i class='bx bx-store-alt'></i>
+        <span class="link_name"><?php print $shortcutLabel; ?></span>
       </a>
       <ul class="sub-menu blank">
-        <li><a class="" href="#" onclick="alert('Kontakt os på tlf: 46 90 22 08 mail: support@saldi.dk')">Kontakt</a>
-        </li>
+        <li><a class="" href="<?php print htmlspecialchars($shortcutUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_top"><?php print $shortcutLabel; ?></a></li>
       </ul>
     </li>
-
+    <?php } ?>
+    <li>
+      <a href="#" onclick="document.getElementById('guideOverlay').classList.add('active'); return false;">
+        <i class='bx bx-book-open'></i>
+        <span class="link_name"><?php print findtekst('5234|Guides', $sprog_id); ?></span>
+      </a>
+      <ul class="sub-menu blank">
+        <li><a class="" href="#" onclick="document.getElementById('guideOverlay').classList.add('active'); return false;"><?php print findtekst('5234|Guides', $sprog_id); ?></a></li>
+      </ul>
+    </li>
   </ul>
 
   <div id="desc-line">
-    <a href="#" onclick="window.frames['iframe_a'].focus();
-                           window.frames['iframe_a'].print();">Print</a>
     <p title="DB nummer <?php print $db; ?>">Saldi version <?php print $version; ?></p>
+  </div>
+</div>
+
+<div class="guide-overlay" id="guideOverlay" onclick="if (event.target === this) { this.classList.remove('active'); }">
+  <div class="guide-modal">
+    <div class="guide-modal-head"><span><i class='bx bx-book-open'></i> <?php print findtekst('5234|Guides', $sprog_id); ?></span><button type="button" onclick="document.getElementById('guideOverlay').classList.remove('active')">&times;</button></div>
+    <div class="topbar-pop-body">
+      <a class="topbar-pop-item" href="../guides/pdf/finance_guide_da.pdf" target="_blank" rel="noopener"><i class='bx bx-coin-stack'></i><?php print findtekst('5235|Regnskabsguide', $sprog_id); ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
+      <a class="topbar-pop-item" href="../guides/pdf/scaffolding_guide_da.pdf" target="_blank" rel="noopener"><i class='bx bx-layer'></i><?php print findtekst('5236|Stilladsguide', $sprog_id); ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
+    </div>
   </div>
 </div>
 
@@ -434,7 +457,7 @@ function brightenColor($color, $amount = 0.2) {
     <iframe
       onLoad="
       document.title = 'Saldi - ' + this.contentWindow.document.title;
-      topbarSetCrumb(this.contentWindow.document.title, this.contentWindow.location.pathname, this.contentWindow.document.querySelector('h1'));
+      topbarSetDashState(this.contentWindow.location.pathname);
       console.log('Locaiton', this.contentWindow.document.location.href);
       trigger_iframe_load();
       stopLoading();
@@ -491,55 +514,58 @@ function brightenColor($color, $amount = 0.2) {
     document.querySelector('.logo.wide').click();
   }
 
-  // Carry the current in-app location through the fiscal-year switch so the user
-  // lands back on the same page (topbarAction.php redirects to main.php#<path>).
-  function topbarSubmitYear(form) {
+  // Carry the current in-app location through a topbar action (year, language) so
+  // the user lands back on the same page (topbarAction.php redirects to main.php#<path>).
+  function topbarSubmitReturn(form) {
     form.querySelector('input[name="return_hash"]').value = window.location.hash.replace(/^#/, '');
     return true;
   }
 
-  // Breadcrumb: the page's own heading when it has one ("Oversigt - Firma A/S"),
-  // else the translated sidebar entry ("Finans / Kassekladde"), else the page
-  // title (legacy titles are hardcoded Danish, so those come last).
-  function topbarSetCrumb(title, path, heading) {
-    const crumb = document.getElementById('topbar-crumb');
-    if (!crumb) {
-      return;
-    }
-    const headingText = heading ? heading.textContent.replace(/\s+/g, ' ').trim() : '';
-    if (headingText) {
-      crumb.textContent = headingText;
-      return;
-    }
-    const base = location.pathname.split('/').slice(0, -2).join('/');
-    if (path) {
-      for (const a of document.querySelectorAll('.sidebar .nav-links a[onclick]')) {
-        const m = /update_iframe\("([^"?]+)/.exec(a.getAttribute('onclick') || '');
-        if (!m || base + m[1] !== path) {
-          continue;
-        }
-        const item = a.textContent.trim();
-        const top = a.closest('ul.nav-links > li');
-        const moduleEl = top ? top.querySelector('.link_name') : null;
-        const module = moduleEl ? moduleEl.textContent.trim() : '';
-        crumb.textContent = '';
-        if (module && module !== item) {
-          const m1 = document.createElement('span');
-          m1.className = 'topbar-crumb-module';
-          m1.textContent = module + ' / ';
-          crumb.appendChild(m1);
-        }
-        const m2 = document.createElement('span');
-        m2.className = 'topbar-crumb-page';
-        m2.textContent = item;
-        crumb.appendChild(m2);
-        return;
-      }
-    }
-    if (title) {
-      crumb.textContent = title;
-    }
+  // Dashboard items in the chip (Skjul/Rediger oversigt) only act on the dashboard itself.
+  function topbarSetDashState(path) {
+    const onDash = /\/index\/dashboard\.php$/.test(path || '');
+    document.querySelectorAll('.topbar-dash').forEach((el) => { el.disabled = !onDash; });
   }
+  function topbarDashHide() {
+    const iframe = document.querySelector('.content-iframe');
+    const hidden = document.querySelector('.topbar-dash [class*="bx-show"]') !== null;
+    topbarCloseAll();
+    iframe.src = (location + '').split('/').splice(0, 4).join('/') + '/index/dashboard.php?inframe=1&hidden=' + (hidden ? '0' : '1');
+    setTimeout(() => location.reload(), 600);
+  }
+  function topbarDashEdit() {
+    const iframe = document.querySelector('.content-iframe');
+    topbarCloseAll();
+    try {
+      const popup = iframe.contentWindow.document.getElementById('settingpopup');
+      if (popup) { popup.style.display = 'block'; }
+    } catch (e) { /* cross-document access blocked */ }
+  }
+  function topbarPrint() {
+    topbarCloseAll();
+    window.frames['iframe_a'].focus();
+    window.frames['iframe_a'].print();
+  }
+
+  // SALDI Assist: the widget script injects its own launcher; open it directly.
+  function topbarOpenAssist() {
+    topbarCloseAll();
+    const api = window.SaldiAssistWidget || window.Chaty || window.chaty;
+    if (api && typeof api.open === 'function') { api.open(); return; }
+    if (api && typeof api.toggle === 'function') { api.toggle(); return; }
+    const injected = topbarAssistInjectedEntry();
+    if (injected) { injected.click(); return; }
+    const launcher = document.querySelector('[id*="chaty"] button, [class*="chaty"] button, [id*="chaty-launcher"], [class*="assist-launcher"]');
+    if (launcher) { launcher.click(); }
+  }
+  function topbarAssistInjectedEntry() {
+    return Array.from(document.querySelectorAll('.sidebar a, .sidebar button, .sidebar li')).find((el) => /SALDI Assist/i.test(el.textContent || '')) || null;
+  }
+  // The widget's own sidebar entry is replaced by the cluster button (spec 6): hide it once injected.
+  new MutationObserver(() => {
+    const el = topbarAssistInjectedEntry();
+    if (el) { (el.closest('li') || el).style.display = 'none'; }
+  }).observe(document.querySelector('.sidebar'), { childList: true, subtree: true });
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.topbar-pop, .topbar-item')) {

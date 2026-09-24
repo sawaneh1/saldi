@@ -57,9 +57,12 @@ if (!function_exists('darkenColor')) {
 $topCol       = $buttonColor;
 $butDownCol   = brightenColor($buttonColor, 0.2);
 $butUpCol     = darkenColor($buttonColor, 0.2);
-$topStyle     = "border:0;border-color:$topCol;color:$buttonTxtColor;border-radius:5px;background-color:$topCol;"; //height:100%;
-$buttonStyle  = "border:0;border-color:$topCol;color:$buttonTxtColor;border-radius:5px;background-color:$topCol;";
-$butDownStyle = "border:0;border-color:$butDownCol;color:$buttonTxtColor;border-radius:5px;background-color:$butDownCol;";
-$butUpStyle   = "border:0;border-color:$butUpCol;color:$buttonTxtColor;border-radius:5px;background-color:$butUpCol;";
+// 20260922 Sawaneh Page sub-bar (topbar spec 2.4): the bar is white with the page tabs as text
+//                  tabs (active = Saldi-blue underline); only real actions (Luk, Ny, ...) stay
+//                  as blue buttons. Icons in the shared topLine includes use currentColor.
+$topStyle     = "border:0;border-bottom:1px solid #e2e6ee;color:#1c2431;border-radius:0;background-color:#ffffff;";
+$buttonStyle  = "border:0;border-color:$topCol;color:$buttonTxtColor;border-radius:6px;background-color:$topCol;padding:6px 12px;font-weight:600;";
+$butDownStyle = "border:0;border-bottom:2px solid $topCol;color:$topCol;border-radius:0;background-color:#ffffff;padding:6px 10px;font-weight:650;";
+$butUpStyle   = "border:0;border-bottom:2px solid transparent;color:#3a4457;border-radius:0;background-color:transparent;padding:6px 10px;font-weight:500;";
 
 ?>

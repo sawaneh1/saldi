@@ -24,6 +24,9 @@
 // ----------------------------------------------------------------------
 // 20260916 Sawaneh Topbar (variant A): user chip, fiscal-year switcher, who-is-online,
 //                  help (guides) and notification bell shell. Data + view for index/main.php.
+// 20260922 Sawaneh Global cluster per the 2026-09-17 topbar spec (step 1a): language selector,
+//                  SALDI Assist button, PoS shortcut, dashboard hide/edit + Print page in the chip,
+//                  no hamburger/breadcrumb on desktop, mobile fallbacks in the dropdown.
 
 /**
  * Sessions in the master `online` table that belong to the caller's company and
@@ -99,13 +102,23 @@ function topbar_avatar_color(int $userId): array
 }
 
 /**
- * Human-readable role until Part 2 (named roles) lands. Mirrors today's reality:
- * the "Indstillinger" bit (position 1) is what makes a user an administrator.
+ * Human-readable role: the assigned role when one exists, else derived from the
+ * legacy string (Indstillinger bit = administrator), auditor sessions as Revisor.
  */
-function topbar_role_title(string $rettigheder, $revisor, int $sprogId): string
+function topbar_role_title(string $rettigheder, $revisor, int $brugerId, int $sprogId): string
 {
 	if ($revisor) {
 		return findtekst('2562|Revisor', $sprogId);
+	}
+	if (function_exists('perm_tables_ready') && perm_tables_ready() && $brugerId > 0) {
+		$r = db_fetch_array(db_select("select role_id from brugere where id = $brugerId", __FILE__ . " linje " . __LINE__));
+		if ($r && (int) $r['role_id'] > 0) {
+			foreach (perm_roles() as $role) {
+				if ($role['id'] === (int) $r['role_id']) {
+					return perm_role_name($role, $sprogId);
+				}
+			}
+		}
 	}
 	if (substr($rettigheder, 1, 1) === '1') {
 		return findtekst('330|Administrator', $sprogId);
@@ -114,16 +127,36 @@ function topbar_role_title(string $rettigheder, $revisor, int $sprogId): string
 }
 
 /**
+ * Languages as tekster.csv defines them (header row: id, Dansk, English, Norsk).
+ *
+ * @return array<int, array{code: string, label: string}>
+ */
+function topbar_languages(): array
+{
+	$codes = array(1 => 'DA', 2 => 'EN', 3 => 'NO');
+	$labels = array(1 => 'Dansk', 2 => 'English', 3 => 'Norsk');
+	$fp = @fopen(__DIR__ . "/../../importfiler/tekster.csv", "r");
+	if ($fp) {
+		$header = explode("\t", trim((string) fgets($fp)));
+		fclose($fp);
+		for ($i = 1; $i <= 3; $i++) {
+			if (isset($header[$i]) && trim($header[$i]) !== '') {
+				$labels[$i] = trim($header[$i]);
+			}
+		}
+	}
+	$out = array();
+	foreach ($codes as $id => $code) {
+		$out[$id] = array('code' => $code, 'label' => $labels[$id]);
+	}
+	return $out;
+}
+
+/**
  * Everything the topbar view needs, gathered in one place (company connection active).
  *
  * @param array<int, array{brugernavn: string, logtime: int}> $onlineRows From topbar_online_rows().
- * @return array{
- *   name: string, username: string, email: string, initials: string,
- *   avatar: array{bg: string, fg: string}, company: string, role: string, isAdmin: bool,
- *   fiscalYear: string, fiscalYears: array<int, array{kodenr: string, label: string, active: bool}>,
- *   onlineUsers: array<int, string>, guides: array<int, array{url: string, label: string, icon: string}>,
- *   unread: int
- * }
+ * @return array<string, mixed>
  */
 function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, string $rettigheder, $revisor, $regnaar, int $sprogId, string $regnskab): array
 {
@@ -190,7 +223,7 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 
 	$isAdmin = !$revisor && substr($rettigheder, 1, 1) === '1';
 	$onlineUsers = array();
-	if ($isAdmin) {
+	if ($isAdmin || $revisor) {
 		foreach ($onlineRows as $row) {
 			if ($row['brugernavn'] !== '') {
 				$onlineUsers[] = topbar_utf8($resolveName($row['brugernavn']));
@@ -199,6 +232,27 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 		$onlineUsers = array_values(array_unique($onlineUsers));
 	}
 
+	// PoS shortcut: the company runs a cash register this fiscal year and the user may
+	// work with debtor orders (the same gate the PoS pages use today).
+	$posUrl = '';
+	$sagerUrl = '';
+	$regnaarSql = db_escape_string((string) $regnaar);
+	if (db_fetch_array(db_select("select id from grupper where art = 'POS' and box1 >= '1' and fiscal_year = '$regnaarSql'", __FILE__ . " linje " . __LINE__))) {
+		if (substr($rettigheder, 5, 1) >= '1') {
+			$posUrl = '../debitor/pos_ordre.php';
+		}
+	} elseif (db_fetch_array(db_select("select id from settings where var_name = 'orderXpress' and var_value = 'on'", __FILE__ . " linje " . __LINE__))) {
+		$sagerUrl = '../sager/sager.php';
+	}
+
+	$dashHidden = false;
+	if (function_exists('get_settings_value')) {
+		$dashHidden = ((string) get_settings_value('hide_dash', 'dashboard', '0', $brugerId) === '1');
+	}
+
+	$languages = topbar_languages();
+	$langId = isset($languages[$sprogId]) ? $sprogId : 1;
+
 	return array(
 		'name'        => topbar_utf8($name),
 		'username'    => topbar_utf8($brugernavn),
@@ -206,15 +260,16 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 		'initials'    => topbar_initials(topbar_utf8($name), topbar_utf8($initialer), topbar_utf8($brugernavn)),
 		'avatar'      => topbar_avatar_color($brugerId),
 		'company'     => topbar_utf8($company),
-		'role'        => topbar_utf8(topbar_role_title($rettigheder, $revisor, $sprogId)),
-		'isAdmin'     => $isAdmin,
+		'role'        => topbar_utf8(topbar_role_title($rettigheder, $revisor, $brugerId, $sprogId)),
+		'isAdmin'     => $isAdmin || (bool) $revisor,
 		'fiscalYear'  => topbar_utf8($fiscalYear),
 		'fiscalYears' => array_map(function ($y) { $y['label'] = topbar_utf8($y['label']); return $y; }, $fiscalYears),
 		'onlineUsers' => $onlineUsers,
-		'guides'      => array(
-			array('url' => '../guides/pdf/finance_guide_da.pdf',     'label' => topbar_utf8(findtekst('5235|Regnskabsguide', $sprogId)), 'icon' => 'bx-coin-stack'),
-			array('url' => '../guides/pdf/scaffolding_guide_da.pdf', 'label' => topbar_utf8(findtekst('5236|Stilladsguide', $sprogId)),  'icon' => 'bx-layer'),
-		),
+		'languages'   => $languages,
+		'langId'      => $langId,
+		'posUrl'      => $posUrl,
+		'sagerUrl'    => $sagerUrl,
+		'dashHidden'  => $dashHidden,
 		'unread'      => 0,
 	);
 }
@@ -225,8 +280,21 @@ function topbar_h(?string $s): string
 }
 
 /**
- * The topbar itself: hamburger (narrow screens) · breadcrumb · help · bell · user chip.
- * Dropdown panels are siblings of the buttons so they overlay the content iframe.
+ * SALDI Assist icon: chat bubble with two sparkles (spec 2.1).
+ */
+function topbar_assist_icon(): string
+{
+	return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+		. '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.4c-.5.4-1.3.05-1.3-.6V16A2.5 2.5 0 0 1 4 13.5z"/>'
+		. '<path d="M11.5 6.8l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z" fill="currentColor" stroke="none"/>'
+		. '<path d="M15.6 10.3l.4 1.1 1.1.4-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z" fill="currentColor" stroke="none"/>'
+		. '</svg>';
+}
+
+/**
+ * The global cluster in topbar mode: [mobile hamburger] · empty middle · language ·
+ * Assist · PoS · bell · user chip. Dropdown panels are siblings of their buttons so
+ * they overlay the content iframe.
  */
 function topbar_render(array $ctx, int $sprogId): void
 {
@@ -234,21 +302,30 @@ function topbar_render(array $ctx, int $sprogId): void
 		return topbar_h(topbar_utf8(findtekst($text, $sprogId)));
 	};
 	$avatarStyle = 'background:' . topbar_h($ctx['avatar']['bg']) . ';color:' . topbar_h($ctx['avatar']['fg']);
+	$lang = $ctx['languages'][$ctx['langId']];
 	?>
   <header class="topbar" id="topbar">
     <button type="button" class="topbar-menu-btn" aria-label="Menu" title="Menu" onclick="topbarMenu()"><i class='bx bx-menu'></i></button>
-    <span class="topbar-crumb" id="topbar-crumb"><?= $t('2224|Oversigt') ?></span>
     <span class="topbar-spacer"></span>
 
-    <div class="topbar-item">
-      <button type="button" class="topbar-icbtn" id="topbar-help-btn" title="<?= $t('2564|Hjælp') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-help-pop" onclick="topbarToggle(event, 'topbar-help-pop')"><i class='bx bx-help-circle'></i></button>
-      <div class="topbar-pop topbar-pop-help" id="topbar-help-pop" role="menu">
-        <div class="topbar-pop-title"><?= $t('5234|Guides') ?><small><?= $t('5259|Åbn en guide i en ny fane') ?></small></div>
-        <?php foreach ($ctx['guides'] as $g) { ?>
-        <a class="topbar-pop-item" role="menuitem" href="<?= topbar_h($g['url']) ?>" target="_blank" rel="noopener" onclick="topbarCloseAll()"><i class='bx <?= topbar_h($g['icon']) ?>'></i><?= topbar_h($g['label']) ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
-        <?php } ?>
+    <div class="topbar-item topbar-desktop">
+      <button type="button" class="topbar-lang" id="topbar-lang-btn" title="<?= $t('801|Sprog') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-lang-pop" onclick="topbarToggle(event, 'topbar-lang-pop')"><i class='bx bx-globe'></i><span><?= topbar_h($lang['code']) ?></span><i class='bx bx-chevron-down topbar-chev'></i></button>
+      <div class="topbar-pop topbar-pop-lang" id="topbar-lang-pop" role="menu">
+        <form method="post" action="topbarAction.php" onsubmit="return topbarSubmitReturn(this)">
+          <input type="hidden" name="action" value="language">
+          <input type="hidden" name="return_hash" value="">
+          <?php foreach ($ctx['languages'] as $id => $l) { ?>
+          <button type="submit" name="language_id" value="<?= (int) $id ?>" class="topbar-pop-item<?= $id === $ctx['langId'] ? ' active' : '' ?>" role="menuitem"><span class="topbar-lang-code"><?= topbar_h($l['code']) ?></span><?= topbar_h($l['label']) ?><?php if ($id === $ctx['langId']) { ?><i class='bx bx-check topbar-pop-trail'></i><?php } ?></button>
+          <?php } ?>
+        </form>
       </div>
     </div>
+
+    <button type="button" class="topbar-icbtn topbar-assist" id="topbar-assist-btn" title="SALDI Assist" onclick="topbarOpenAssist()"><?= topbar_assist_icon() ?></button>
+
+    <?php if ($ctx['posUrl'] !== '') { ?>
+    <a class="topbar-icbtn topbar-desktop" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top" title="<?= $t('5336|Kassesystem') ?>"><i class='bx bx-store-alt'></i></a>
+    <?php } ?>
 
     <div class="topbar-item">
       <button type="button" class="topbar-icbtn" id="topbar-bell-btn" title="<?= $t('5232|Notifikationer') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-bell-pop" onclick="topbarToggle(event, 'topbar-bell-pop')"><i class='bx bx-bell'></i><?php if ($ctx['unread'] > 0) { ?><span class="topbar-badge"><?= (int) $ctx['unread'] ?></span><?php } ?></button>
@@ -275,10 +352,11 @@ function topbar_render(array $ctx, int $sprogId): void
         </div>
         <div class="topbar-pop-body">
           <a class="topbar-pop-item" role="menuitem" href="#" onclick="topbarCloseAll(); update_iframe('/systemdata/personalSettings.php'); return false;"><i class='bx bx-cog'></i><?= $t('5230|Personlige indstillinger') ?></a>
+
           <?php if (count($ctx['fiscalYears']) > 0) { ?>
           <button type="button" class="topbar-pop-item" role="menuitem" aria-expanded="false" onclick="topbarToggleSub(event, 'topbar-years')"><i class='bx bx-calendar'></i><?= $t('778|Regnskabsår') ?><small><?= topbar_h($ctx['fiscalYear']) ?> <i class='bx bx-chevron-down'></i></small></button>
           <div class="topbar-pop-sub" id="topbar-years">
-            <form method="post" action="topbarAction.php" id="topbar-year-form" onsubmit="return topbarSubmitYear(this)">
+            <form method="post" action="topbarAction.php" id="topbar-year-form" onsubmit="return topbarSubmitReturn(this)">
               <input type="hidden" name="action" value="fiscal_year">
               <input type="hidden" name="return_hash" value="">
               <?php foreach ($ctx['fiscalYears'] as $y) { ?>
@@ -287,6 +365,13 @@ function topbar_render(array $ctx, int $sprogId): void
             </form>
           </div>
           <?php } ?>
+
+          <div class="topbar-pop-section"><?= $t('2224|Oversigt') ?></div>
+          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" data-dash-hide="1" onclick="topbarDashHide()" disabled><i class='bx <?= $ctx['dashHidden'] ? 'bx-show' : 'bx-hide' ?>'></i><span class="topbar-dash-hide-label"><?= $ctx['dashHidden'] ? $t('5334|Vis oversigt') : $t('5333|Skjul oversigt') ?></span></button>
+          <?php if (!$ctx['dashHidden']) { ?>
+          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" onclick="topbarDashEdit()" disabled><i class='bx bx-edit-alt'></i><?= $t('5335|Rediger oversigt') ?></button>
+          <?php } ?>
+
           <?php if ($ctx['isAdmin']) { ?>
           <button type="button" class="topbar-pop-item" role="menuitem" aria-expanded="false" onclick="topbarToggleSub(event, 'topbar-online')"><i class='bx bx-group'></i><?= $t('5231|Hvem er online') ?><small><?= count($ctx['onlineUsers']) ?> <i class='bx bx-chevron-down'></i></small></button>
           <div class="topbar-pop-sub" id="topbar-online">
@@ -295,6 +380,26 @@ function topbar_render(array $ctx, int $sprogId): void
             <?php } ?>
           </div>
           <?php } ?>
+
+          <button type="button" class="topbar-pop-item" role="menuitem" onclick="topbarPrint()"><i class='bx bx-printer'></i><?= $t('5332|Print side') ?></button>
+
+          <div class="topbar-mobile">
+            <div class="topbar-pop-sep"></div>
+            <button type="button" class="topbar-pop-item" role="menuitem" aria-expanded="false" onclick="topbarToggleSub(event, 'topbar-lang-sub')"><i class='bx bx-globe'></i><?= $t('801|Sprog') ?><small><?= topbar_h($lang['code']) ?> <i class='bx bx-chevron-down'></i></small></button>
+            <div class="topbar-pop-sub" id="topbar-lang-sub">
+              <form method="post" action="topbarAction.php" onsubmit="return topbarSubmitReturn(this)">
+                <input type="hidden" name="action" value="language">
+                <input type="hidden" name="return_hash" value="">
+                <?php foreach ($ctx['languages'] as $id => $l) { ?>
+                <button type="submit" name="language_id" value="<?= (int) $id ?>" class="topbar-year<?= $id === $ctx['langId'] ? ' active' : '' ?>"<?= $id === $ctx['langId'] ? ' disabled' : '' ?>><i class='bx <?= $id === $ctx['langId'] ? 'bx-check-circle' : 'bx-globe' ?>'></i><span><?= topbar_h($l['label']) ?></span></button>
+                <?php } ?>
+              </form>
+            </div>
+            <?php if ($ctx['posUrl'] !== '') { ?>
+            <a class="topbar-pop-item" role="menuitem" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top"><i class='bx bx-store-alt'></i><?= $t('5336|Kassesystem') ?></a>
+            <?php } ?>
+          </div>
+
           <div class="topbar-pop-sep"></div>
           <a class="topbar-pop-item topbar-pop-out" role="menuitem" href="#" onclick="redirect_uri('/index/logud.php'); return false;"><i class='bx bx-log-out'></i><?= $t('93|Log ud') ?></a>
         </div>

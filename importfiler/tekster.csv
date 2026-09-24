@@ -5200,3 +5200,13 @@
 5329	Håndhævelsen er ændret	Enforcement changed	Håndhevingen er endret
 5330	Ville være afvist	Would have been denied	Ville blitt avvist
 5331	Skift til "Afvis" først, når listen over sider uden nøgle er tom, og alle "ville være afvist"-hændelser er forventede.	Switch to "Deny" only when the list of pages without a key is empty and every "would have been denied" event is expected.	Bytt til "Avvis" først når listen over sider uten nøkkel er tom, og alle "ville blitt avvist"-hendelser er forventet.
+5332	Print side	Print page	Skriv ut side
+5333	Skjul oversigt	Hide dashboard	Skjul oversikt
+5334	Vis oversigt	Show dashboard	Vis oversikt
+5335	Rediger oversigt	Edit dashboard	Rediger oversikt
+5336	Kassesystem	Point of sale	Kassesystem
+5337	Sagsstyring	Job management	Saksstyring
+5338	Flyt til sidebar	Move to sidebar	Flytt til sidepanel
+5339	Flyt til toppen	Move to top	Flytt til toppen
+5340	Placering af den globale bjælke	Global bar placement	Plassering av den globale linjen
+5341	Topbjælke	Top bar	Topplinje

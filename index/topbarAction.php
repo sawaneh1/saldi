@@ -24,6 +24,7 @@
 // ----------------------------------------------------------------------
 // 20260916 Sawaneh Controller for topbar actions (fiscal-year switch from the user chip).
 //                  POST only, redirects back to the shell (Post/Redirect/Get).
+// 20260922 Sawaneh Language switch action; auditor sessions keep their year in the master revisor table.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -62,6 +63,24 @@ if ($action === 'fiscal_year') {
 		}
 		include(__DIR__ . "/../includes/connect.php");
 		db_modify("update online set regnskabsaar = '$year' where session_id = '" . db_escape_string($s_id) . "'", __FILE__ . " linje " . __LINE__);
+		if ($revisor && isset($db_id)) {
+			// Auditor sessions remember their year per company in the master `revisor` table.
+			db_modify("update revisor set regnskabsaar = '$year' where brugernavn = '" . db_escape_string((string) $brugernavn) . "' and db_id = '" . (int) $db_id . "'", __FILE__ . " linje " . __LINE__);
+		}
+	}
+}
+
+// Language (spec 2.1): persisted on the user, on the session row and in the cookie the
+// login page reads, so the choice follows the user across devices.
+if ($action === 'language') {
+	$languageId = (int) (isset($request['language_id']) ? $request['language_id'] : 0);
+	if ($languageId >= 1 && $languageId <= 3) {
+		if (!$revisor && (int) $bruger_id > 0) {
+			db_modify("update brugere set language_id = $languageId where id = " . (int) $bruger_id, __FILE__ . " linje " . __LINE__);
+		}
+		setcookie('languageId', (string) $languageId, time() + (10 * 365 * 24 * 60 * 60), '/');
+		include(__DIR__ . "/../includes/connect.php");
+		db_modify("update online set language_id = '$languageId' where session_id = '" . db_escape_string($s_id) . "'", __FILE__ . " linje " . __LINE__);
 	}
 }
 

@@ -28,6 +28,7 @@
 //20250513 Sawaneh display number of users online.
 //20250805 LOE added close button to settings popup. and also added weekly graph snippet
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20260922 Sawaneh Dashboard cleanup (topbar spec 5): heading, year/language selectors and buttons removed.
 @session_start();
 $s_id = session_id();
 
@@ -113,25 +114,9 @@ global $regnaar;
 
 	print "<div style='display: flex; flex-direction: column; padding: 2em 1em; gap: 2em;' class='content'>";
 
-	# Titlebar
-	print "<div style='display: flex; justify-content: space-between; flex-wrap: wrap'>";
-	print "<h1>".findtekst('2574|Velkommen', $sprog_id)." - $name</h1>";
-  	if (is_null($regnaar)) {
+	if (is_null($regnaar)) {
 		print "<p>".findtekst('2575|Der er i øjeblikket intet aktivt regnskabsår. Aktivér et regnskabsår gennem System » Indstillinger » Regnskabsår', $sprog_id)."</p>";
 	}
-	print "<div style='display: flex; gap: 2em'>";
-	$qtxt = "SELECT id FROM grupper WHERE art='POS' AND box1>='1' AND fiscal_year='$regnaar'";
-	$state = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-	$qtxt = "SELECT id FROM settings WHERE var_name = 'orderXpress' AND var_value='on'";
-	$orderXpress = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-	if ($state) {
-		print "<button style='padding: 1em; cursor: pointer' onclick='parent.location.href=\"../debitor/pos_ordre.php\"'>".findtekst('2149|Åbn kassesystem', $sprog_id)."</button>";
-	} elseif ($orderXpress) {
-		print "<button style='padding: 1em; cursor: pointer' onclick='parent.location.href=\"../sager/sager.php\"'>".findtekst('2150|Åbn sagsstyring', $sprog_id)."</button>";
-	}
-
-	print "</div>";
-	print "</div>";
 	// Expiry warning for users without finance access but with inventory access
 	if (check_permissions(array(12))) {
 		$_expiry_warn_days = get_due_date_warning_days($bruger_id);
@@ -312,34 +297,9 @@ if (check_permissions(array(12))) {
 	}
 }
 
-# Titlebar
-print "<div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2em; align-items: center;'>";
-print "<h1>".findtekst('2224|Oversigt', $sprog_id)." - $name</h1>";
-
-print "<div style='display: flex; gap: 2em;'>";
-
-# Regnaar selector
-include "dashboardIncludes/regnaar.php";
-include "dashboardIncludes/language.php";
-print "<button style='padding: 1em; cursor: pointer' onclick='document.location.href = \"dashboard.php?hidden=". ($hide_dash === "1" ? "0" : "1") ."\"'>". ($hide_dash !== "1" ? findtekst('1132|Skjul', $sprog_id) : findtekst('1133|Vis', $sprog_id)) ." ".strtolower(findtekst('2224|Oversigt', $sprog_id))."</button>";
-if ($hide_dash !== "1") print "<button style='padding: 1em; cursor: pointer' onclick='document.getElementById(\"settingpopup\").style.display = \"block\"'>".findtekst('2148|Rediger', $sprog_id). " " .strtolower(findtekst('2224|Oversigt', $sprog_id))."</button>";
-
-# Kassesystem eller ej
-$qtxt = "SELECT id FROM grupper WHERE art='POS' AND box1>='1' AND fiscal_year='$regnaar'";
-$state = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-$qtxt = "SELECT id FROM settings WHERE var_name = 'orderXpress' AND var_value='on'";
-$orderXpress = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-if ($state) {
-	print "<button style='padding: 1em; cursor: pointer' onclick='parent.location.href=\"../debitor/pos_ordre.php\"'>".findtekst('2149|Åbn kassesystem', $sprog_id)."</button>";
-} elseif ($orderXpress) {
-	print "<button style='padding: 1em; cursor: pointer' onclick='parent.location.href=\"../sager/sager.php\"'>".findtekst('2150|Åbn sagsstyring', $sprog_id)."</button>";
-} else {
-	print "<button style='padding: 1em; cursor: not-allowed' disabled>" .findtekst('2149|Åbn kassesystem', $sprog_id)."</button>";
-}
-
-print "</div>";
-print "</div>";
-
+// 20260922 Sawaneh Topbar spec 5: heading, fiscal-year/language selectors and the hide/edit/PoS
+// buttons moved to the shell (user chip, global cluster, sidebar). The hidden= handling and the
+// #settingpopup editor below stay; the chip drives them.
 if ($hide_dash === "1" || is_null($regnaar)) {
 	exit;
 }
