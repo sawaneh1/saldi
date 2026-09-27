@@ -338,7 +338,7 @@ function ur_copy_role(int $id): string
 	if (!$source) {
 		return 'tab=roles';
 	}
-	$navn = findtekst('5317|Kopi af', (int) $sprog_id) . ' ' . perm_role_name($source, (int) $sprog_id);
+	$navn = findtekst('5587|Kopi af', (int) $sprog_id) . ' ' . perm_role_name($source, (int) $sprog_id);
 	$navnSql = db_escape_string(mb_substr($navn, 0, 80));
 	$beskSql = db_escape_string($source['beskrivelse']);
 	db_modify("insert into roles (role_key, navn, beskrivelse, system) values (null, '$navnSql', '$beskSql', 'f')", __FILE__ . " linje " . __LINE__);

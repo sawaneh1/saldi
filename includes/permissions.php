@@ -47,12 +47,12 @@ function perm_level_valid(string $level): string
 function perm_level_label(string $level, int $sprogId): string
 {
 	if ($level === 'write') {
-		return findtekst('5277|Fuld adgang', $sprogId);
+		return findtekst('5547|Fuld adgang', $sprogId);
 	}
 	if ($level === 'read') {
 		return findtekst('2475|Kun visning', $sprogId);
 	}
-	return findtekst('5276|Ingen adgang', $sprogId);
+	return findtekst('5546|Ingen adgang', $sprogId);
 }
 
 // ------------------------------------------------------------------ schema
@@ -275,7 +275,7 @@ function perm_refuse(string $what, string $page): void
 	audit_log('denied', $what . ' ' . $page);
 	// std_func.php (findtekst/tekstboks) may not be loaded yet when called from online.php.
 	$txt = function_exists('findtekst')
-		? findtekst('5278|Du har ikke adgang til denne funktion. Kontakt din administrator.', isset($sprog_id) ? (int) $sprog_id : 1)
+		? findtekst('5548|Du har ikke adgang til denne funktion. Kontakt din administrator.', isset($sprog_id) ? (int) $sprog_id : 1)
 		: 'Du har ikke adgang til denne funktion. Kontakt din administrator.';
 	if (function_exists('tekstboks')) {
 		print tekstboks($txt);

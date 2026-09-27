@@ -5098,115 +5098,115 @@
 5151	Eksporter CSV (alle sider)	Export CSV (all pages)	Eksporter CSV (alle sider)
 5152	Eksporter alle konti under de valgte filtre til CSV, uden sideopdeling	Export all accounts under the selected filters to CSV, without pagination	Eksporter alle kontoer under de valgte filtrene til CSV, uten sideinndeling
 
-5230	Personlige indstillinger	Personal settings	Personlige innstillinger
-5231	Hvem er online	Who is online	Hvem er pålogget
-5232	Notifikationer	Notifications	Varsler
-5233	Ingen notifikationer endnu	No notifications yet	Ingen varsler ennå
-5234	Guides	Guides	Guider
-5235	Regnskabsguide	Finance guide	Regnskapsguide
-5236	Stilladsguide	Scaffolding guide	Stillasguide
-5237	Skift regnskabsår	Switch financial year	Bytt regnskapsår
-5238	Udseende	Appearance	Utseende
-5239	Knapfarve	Button colour	Knappfarge
-5240	Tekstfarve på knapper	Button text colour	Tekstfarge på knapper
-5241	Sikkerhed	Security	Sikkerhet
-5242	Nuværende adgangskode	Current password	Nåværende passord
-5243	Ny adgangskode	New password	Nytt passord
-5244	Bekræft ny adgangskode	Confirm new password	Bekreft nytt passord
-5245	Tofaktor-login (kode via SMS eller e-mail)	Two-factor login (code by SMS or email)	Tofaktor-innlogging (kode via SMS eller e-post)
-5246	Tofaktor-login kræver et telefonnummer eller en e-mail	Two-factor login requires a phone number or an email address	Tofaktor-innlogging krever et telefonnummer eller en e-postadresse
-5247	Dine indstillinger er gemt	Your settings have been saved	Innstillingene dine er lagret
-5248	Adgangskoden er ændret	Your password has been changed	Passordet er endret
-5249	Den nuværende adgangskode er forkert	The current password is wrong	Det nåværende passordet er feil
-5250	De to nye adgangskoder er ikke ens	The two new passwords do not match	De to nye passordene er ikke like
-5251	Konto	Account	Konto
-5252	Gælder kun for dig, ikke for andre brugere i regnskabet	Applies only to you, not to other users in the company	Gjelder bare deg, ikke andre brukere i regnskapet
-5253	Bruges til tofaktor-koder	Used for two-factor codes	Brukes til tofaktorkoder
-5254	Vinduer og advarsler	Windows and warnings	Vinduer og advarsler
-5255	Lad felterne stå tomme for at beholde din adgangskode	Leave the fields empty to keep your password	La feltene stå tomme for å beholde passordet ditt
-5256	Farverne bruges i menuen og på knapper	The colours are used in the menu and on buttons	Fargene brukes i menyen og på knapper
-5257	Eksempel	Preview	Eksempel
-5258	Adgangskoden kan ikke ændres i demoversionen	The password cannot be changed in the demo version	Passordet kan ikke endres i demoversjonen
-5259	Åbn en guide i en ny fane	Open a guide in a new tab	Åpne en guide i en ny fane
-5260	Brugernavn	Username	Brukernavn
-5261	Navn	Name	Navn
-5262	Du har ændringer, der ikke er gemt	You have unsaved changes	Du har endringer som ikke er lagret
-5263	Personlige indstillinger findes kun for regnskabets egne brugere. Du er logget ind som revisor/administrator udefra.	Personal settings only exist for the company's own users. You are logged in as an external auditor/administrator.	Personlige innstillinger finnes bare for regnskapets egne brukere. Du er logget inn som revisor/administrator utenfra.
-5264	Aktivt	Active	Aktivt
-5265	Kontaktoplysninger, tofaktor-login og adgangskode hører til regnskabets egne brugere og kan ikke ændres her, da du er logget ind som revisor/administrator udefra.	Contact details, two-factor login and password belong to the company's own users and cannot be changed here, as you are logged in as an external auditor/administrator.	Kontaktopplysninger, tofaktor-innlogging og passord tilhører regnskapets egne brukere og kan ikke endres her, siden du er logget inn som revisor/administrator utenfra.
-5266	Brugere & roller	Users & roles	Brukere & roller
-5267	Integrationer	Integrations	Integrasjoner
-5268	SQL-værktøj	SQL tool	SQL-verktøy
-5269	Import & eksport	Import & export	Import & eksport
-5270	API-nøgler	API keys	API-nøkler
-5271	E-mail/SMTP	Email/SMTP	E-post/SMTP
-5272	Gendan sikkerhedskopi	Restore backup	Gjenopprett sikkerhetskopi
-5273	Bogholder	Bookkeeper	Regnskapsfører
-5274	Salg	Sales	Salg
-5275	Indkøb	Purchasing	Innkjøp
-5276	Ingen adgang	No access	Ingen tilgang
-5277	Fuld adgang	Full access	Full tilgang
-5278	Du har ikke adgang til denne funktion. Kontakt din administrator.	You do not have access to this function. Contact your administrator.	Du har ikke tilgang til denne funksjonen. Kontakt administratoren din.
-5279	Brugere	Users	Brukere
-5280	Roller	Roles	Roller
-5281	Log	Log	Logg
-5282	Søg bruger…	Search user…	Søk bruker…
-5283	Rolle	Role	Rolle
-5284	Ingen rolle	No role	Ingen rolle
-5285	Forslag	Suggested	Forslag
-5286	Sidst aktiv	Last active	Sist aktiv
-5287	Status	Status	Status
-5288	Aktiv	Active	Aktiv
-5289	Lukket	Closed	Stengt
-5290	Tildel rolle til valgte	Assign role to selected	Tildel rolle til valgte
-5291	%s brugere har endnu ingen rolle. Deres rettigheder er overført uændret, og der vises et forslag i listen.	%s users have no role yet. Their rights were carried over unchanged and a suggestion is shown in the list.	%s brukere har ennå ingen rolle. Rettighetene er overført uendret, og et forslag vises i listen.
-5292	Anvend foreslåede roller	Apply suggested roles	Bruk foreslåtte roller
-5293	Brugere med denne rolle	Users with this role	Brukere med denne rollen
-5294	Indbygget	Built-in	Innebygd
-5295	Ny rolle	New role	Ny rolle
-5296	Kopiér	Copy	Kopier
-5297	Rediger	Edit	Rediger
-5298	Beskrivelse	Description	Beskrivelse
-5299	Rettigheder	Permissions	Rettigheter
-5300	Tilladte IP-adresser	Allowed IP addresses	Tillatte IP-adresser
-5301	Denne bruger er regnskabets revisor	This user is the company's auditor	Denne brukeren er regnskapets revisor
-5302	Brugeren er gemt	User saved	Brukeren er lagret
-5303	Brugeren er slettet	User deleted	Brukeren er slettet
-5304	Rollen er gemt	Role saved	Rollen er lagret
-5305	Rollen er slettet	Role deleted	Rollen er slettet
-5306	Rollen kan ikke slettes, mens brugere har den	The role cannot be deleted while users hold it	Rollen kan ikke slettes mens brukere har den
-5307	Du kan ikke tildele flere rettigheder, end du selv har	You cannot grant more permissions than you hold yourself	Du kan ikke tildele flere rettigheter enn du selv har
-5308	Brugernavnet findes allerede	The username already exists	Brukernavnet finnes allerede
-5309	Du kan ikke slette din egen bruger	You cannot delete your own user	Du kan ikke slette din egen bruker
-5310	Rollerne er tildelt	Roles assigned	Rollene er tildelt
-5311	Tidspunkt	Time	Tidspunkt
-5312	Handling	Action	Handling
-5313	Detaljer	Details	Detaljer
-5314	Ingen hændelser endnu	No events yet	Ingen hendelser ennå
-5315	Slet bruger?	Delete user?	Slette bruker?
-5316	Slet rolle?	Delete role?	Slette rolle?
-5317	Kopi af	Copy of	Kopi av
-5318	Tilpasset	Custom	Tilpasset
-5319	Adgangskoden og gentagelsen er ikke ens	Password and repeat do not match	Passordet og gjentakelsen er ikke like
-5320	Adgangskode er påkrævet for en ny bruger	A password is required for a new user	Passord er påkrevd for en ny bruker
-5321	Brugere uden rolle beholder deres nuværende rettigheder, indtil en rolle tildeles.	Users without a role keep their current rights until a role is assigned.	Brukere uten rolle beholder sine nåværende rettigheter til en rolle tildeles.
-5322	Kun de seneste 200 hændelser vises	Only the latest 200 events are shown	Bare de siste 200 hendelsene vises
-5323	Ingen brugere fundet	No users found	Ingen brukere funnet
-5324	Farlige funktioner (kun administratorer som standard)	Dangerous functions (administrators only by default)	Farlige funksjoner (bare administratorer som standard)
-5325	Håndhævelse	Enforcement	Håndheving
-5326	Log kun (intet blokeres)	Log only (nothing is blocked)	Bare logg (ingenting blokkeres)
-5327	Afvis (standard-afvis er slået til)	Deny (default-deny is on)	Avvis (standard-avvis er slått på)
-5328	Sider uden rettighedsnøgle set i logperioden	Pages without a permission key seen during the logging period	Sider uten rettighetsnøkkel sett i loggperioden
-5329	Håndhævelsen er ændret	Enforcement changed	Håndhevingen er endret
-5330	Ville være afvist	Would have been denied	Ville blitt avvist
-5331	Skift til "Afvis" først, når listen over sider uden nøgle er tom, og alle "ville være afvist"-hændelser er forventede.	Switch to "Deny" only when the list of pages without a key is empty and every "would have been denied" event is expected.	Bytt til "Avvis" først når listen over sider uten nøkkel er tom, og alle "ville blitt avvist"-hendelser er forventet.
-5332	Print side	Print page	Skriv ut side
-5333	Skjul oversigt	Hide dashboard	Skjul oversikt
-5334	Vis oversigt	Show dashboard	Vis oversikt
-5335	Rediger oversigt	Edit dashboard	Rediger oversikt
-5336	Kassesystem	Point of sale	Kassesystem
-5337	Sagsstyring	Job management	Saksstyring
-5338	Flyt til sidebar	Move to sidebar	Flytt til sidepanel
-5339	Flyt til toppen	Move to top	Flytt til toppen
-5340	Placering af den globale bjælke	Global bar placement	Plassering av den globale linjen
-5341	Topbjælke	Top bar	Topplinje
+5500	Personlige indstillinger	Personal settings	Personlige innstillinger
+5501	Hvem er online	Who is online	Hvem er pålogget
+5502	Notifikationer	Notifications	Varsler
+5503	Ingen notifikationer endnu	No notifications yet	Ingen varsler ennå
+5504	Guides	Guides	Guider
+5505	Regnskabsguide	Finance guide	Regnskapsguide
+5506	Stilladsguide	Scaffolding guide	Stillasguide
+5507	Skift regnskabsår	Switch financial year	Bytt regnskapsår
+5508	Udseende	Appearance	Utseende
+5509	Knapfarve	Button colour	Knappfarge
+5510	Tekstfarve på knapper	Button text colour	Tekstfarge på knapper
+5511	Sikkerhed	Security	Sikkerhet
+5512	Nuværende adgangskode	Current password	Nåværende passord
+5513	Ny adgangskode	New password	Nytt passord
+5514	Bekræft ny adgangskode	Confirm new password	Bekreft nytt passord
+5515	Tofaktor-login (kode via SMS eller e-mail)	Two-factor login (code by SMS or email)	Tofaktor-innlogging (kode via SMS eller e-post)
+5516	Tofaktor-login kræver et telefonnummer eller en e-mail	Two-factor login requires a phone number or an email address	Tofaktor-innlogging krever et telefonnummer eller en e-postadresse
+5517	Dine indstillinger er gemt	Your settings have been saved	Innstillingene dine er lagret
+5518	Adgangskoden er ændret	Your password has been changed	Passordet er endret
+5519	Den nuværende adgangskode er forkert	The current password is wrong	Det nåværende passordet er feil
+5520	De to nye adgangskoder er ikke ens	The two new passwords do not match	De to nye passordene er ikke like
+5521	Konto	Account	Konto
+5522	Gælder kun for dig, ikke for andre brugere i regnskabet	Applies only to you, not to other users in the company	Gjelder bare deg, ikke andre brukere i regnskapet
+5523	Bruges til tofaktor-koder	Used for two-factor codes	Brukes til tofaktorkoder
+5524	Vinduer og advarsler	Windows and warnings	Vinduer og advarsler
+5525	Lad felterne stå tomme for at beholde din adgangskode	Leave the fields empty to keep your password	La feltene stå tomme for å beholde passordet ditt
+5526	Farverne bruges i menuen og på knapper	The colours are used in the menu and on buttons	Fargene brukes i menyen og på knapper
+5527	Eksempel	Preview	Eksempel
+5528	Adgangskoden kan ikke ændres i demoversionen	The password cannot be changed in the demo version	Passordet kan ikke endres i demoversjonen
+5529	Åbn en guide i en ny fane	Open a guide in a new tab	Åpne en guide i en ny fane
+5530	Brugernavn	Username	Brukernavn
+5531	Navn	Name	Navn
+5532	Du har ændringer, der ikke er gemt	You have unsaved changes	Du har endringer som ikke er lagret
+5533	Personlige indstillinger findes kun for regnskabets egne brugere. Du er logget ind som revisor/administrator udefra.	Personal settings only exist for the company's own users. You are logged in as an external auditor/administrator.	Personlige innstillinger finnes bare for regnskapets egne brukere. Du er logget inn som revisor/administrator utenfra.
+5534	Aktivt	Active	Aktivt
+5535	Kontaktoplysninger, tofaktor-login og adgangskode hører til regnskabets egne brugere og kan ikke ændres her, da du er logget ind som revisor/administrator udefra.	Contact details, two-factor login and password belong to the company's own users and cannot be changed here, as you are logged in as an external auditor/administrator.	Kontaktopplysninger, tofaktor-innlogging og passord tilhører regnskapets egne brukere og kan ikke endres her, siden du er logget inn som revisor/administrator utenfra.
+5536	Brugere & roller	Users & roles	Brukere & roller
+5537	Integrationer	Integrations	Integrasjoner
+5538	SQL-værktøj	SQL tool	SQL-verktøy
+5539	Import & eksport	Import & export	Import & eksport
+5540	API-nøgler	API keys	API-nøkler
+5541	E-mail/SMTP	Email/SMTP	E-post/SMTP
+5542	Gendan sikkerhedskopi	Restore backup	Gjenopprett sikkerhetskopi
+5543	Bogholder	Bookkeeper	Regnskapsfører
+5544	Salg	Sales	Salg
+5545	Indkøb	Purchasing	Innkjøp
+5546	Ingen adgang	No access	Ingen tilgang
+5547	Fuld adgang	Full access	Full tilgang
+5548	Du har ikke adgang til denne funktion. Kontakt din administrator.	You do not have access to this function. Contact your administrator.	Du har ikke tilgang til denne funksjonen. Kontakt administratoren din.
+5549	Brugere	Users	Brukere
+5550	Roller	Roles	Roller
+5551	Log	Log	Logg
+5552	Søg bruger…	Search user…	Søk bruker…
+5553	Rolle	Role	Rolle
+5554	Ingen rolle	No role	Ingen rolle
+5555	Forslag	Suggested	Forslag
+5556	Sidst aktiv	Last active	Sist aktiv
+5557	Status	Status	Status
+5558	Aktiv	Active	Aktiv
+5559	Lukket	Closed	Stengt
+5560	Tildel rolle til valgte	Assign role to selected	Tildel rolle til valgte
+5561	%s brugere har endnu ingen rolle. Deres rettigheder er overført uændret, og der vises et forslag i listen.	%s users have no role yet. Their rights were carried over unchanged and a suggestion is shown in the list.	%s brukere har ennå ingen rolle. Rettighetene er overført uendret, og et forslag vises i listen.
+5562	Anvend foreslåede roller	Apply suggested roles	Bruk foreslåtte roller
+5563	Brugere med denne rolle	Users with this role	Brukere med denne rollen
+5564	Indbygget	Built-in	Innebygd
+5565	Ny rolle	New role	Ny rolle
+5566	Kopiér	Copy	Kopier
+5567	Rediger	Edit	Rediger
+5568	Beskrivelse	Description	Beskrivelse
+5569	Rettigheder	Permissions	Rettigheter
+5570	Tilladte IP-adresser	Allowed IP addresses	Tillatte IP-adresser
+5571	Denne bruger er regnskabets revisor	This user is the company's auditor	Denne brukeren er regnskapets revisor
+5572	Brugeren er gemt	User saved	Brukeren er lagret
+5573	Brugeren er slettet	User deleted	Brukeren er slettet
+5574	Rollen er gemt	Role saved	Rollen er lagret
+5575	Rollen er slettet	Role deleted	Rollen er slettet
+5576	Rollen kan ikke slettes, mens brugere har den	The role cannot be deleted while users hold it	Rollen kan ikke slettes mens brukere har den
+5577	Du kan ikke tildele flere rettigheder, end du selv har	You cannot grant more permissions than you hold yourself	Du kan ikke tildele flere rettigheter enn du selv har
+5578	Brugernavnet findes allerede	The username already exists	Brukernavnet finnes allerede
+5579	Du kan ikke slette din egen bruger	You cannot delete your own user	Du kan ikke slette din egen bruker
+5580	Rollerne er tildelt	Roles assigned	Rollene er tildelt
+5581	Tidspunkt	Time	Tidspunkt
+5582	Handling	Action	Handling
+5583	Detaljer	Details	Detaljer
+5584	Ingen hændelser endnu	No events yet	Ingen hendelser ennå
+5585	Slet bruger?	Delete user?	Slette bruker?
+5586	Slet rolle?	Delete role?	Slette rolle?
+5587	Kopi af	Copy of	Kopi av
+5588	Tilpasset	Custom	Tilpasset
+5589	Adgangskoden og gentagelsen er ikke ens	Password and repeat do not match	Passordet og gjentakelsen er ikke like
+5590	Adgangskode er påkrævet for en ny bruger	A password is required for a new user	Passord er påkrevd for en ny bruker
+5591	Brugere uden rolle beholder deres nuværende rettigheder, indtil en rolle tildeles.	Users without a role keep their current rights until a role is assigned.	Brukere uten rolle beholder sine nåværende rettigheter til en rolle tildeles.
+5592	Kun de seneste 200 hændelser vises	Only the latest 200 events are shown	Bare de siste 200 hendelsene vises
+5593	Ingen brugere fundet	No users found	Ingen brukere funnet
+5594	Farlige funktioner (kun administratorer som standard)	Dangerous functions (administrators only by default)	Farlige funksjoner (bare administratorer som standard)
+5595	Håndhævelse	Enforcement	Håndheving
+5596	Log kun (intet blokeres)	Log only (nothing is blocked)	Bare logg (ingenting blokkeres)
+5597	Afvis (standard-afvis er slået til)	Deny (default-deny is on)	Avvis (standard-avvis er slått på)
+5598	Sider uden rettighedsnøgle set i logperioden	Pages without a permission key seen during the logging period	Sider uten rettighetsnøkkel sett i loggperioden
+5599	Håndhævelsen er ændret	Enforcement changed	Håndhevingen er endret
+5600	Ville være afvist	Would have been denied	Ville blitt avvist
+5601	Skift til "Afvis" først, når listen over sider uden nøgle er tom, og alle "ville være afvist"-hændelser er forventede.	Switch to "Deny" only when the list of pages without a key is empty and every "would have been denied" event is expected.	Bytt til "Avvis" først når listen over sider uten nøkkel er tom, og alle "ville blitt avvist"-hendelser er forventet.
+5602	Print side	Print page	Skriv ut side
+5603	Skjul oversigt	Hide dashboard	Skjul oversikt
+5604	Vis oversigt	Show dashboard	Vis oversikt
+5605	Rediger oversigt	Edit dashboard	Rediger oversikt
+5606	Kassesystem	Point of sale	Kassesystem
+5607	Sagsstyring	Job management	Saksstyring
+5608	Flyt til sidebar	Move to sidebar	Flytt til sidepanel
+5609	Flyt til toppen	Move to top	Flytt til toppen
+5610	Placering af den globale bjælke	Global bar placement	Plassering av den globale linjen
+5611	Topbjælke	Top bar	Topplinje

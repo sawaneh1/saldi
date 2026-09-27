@@ -412,7 +412,7 @@ function brightenColor($color, $amount = 0.2) {
   <ul class="nav-links">
     <?php if ($topbar['posUrl'] !== '' || $topbar['sagerUrl'] !== '') {
       $shortcutUrl = $topbar['posUrl'] !== '' ? $topbar['posUrl'] : $topbar['sagerUrl'];
-      $shortcutLabel = $topbar['posUrl'] !== '' ? findtekst('5336|Kassesystem', $sprog_id) : findtekst('5337|Sagsstyring', $sprog_id);
+      $shortcutLabel = $topbar['posUrl'] !== '' ? findtekst('5606|Kassesystem', $sprog_id) : findtekst('5607|Sagsstyring', $sprog_id);
     ?>
     <li>
       <a href="<?php print htmlspecialchars($shortcutUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_top">
@@ -427,10 +427,10 @@ function brightenColor($color, $amount = 0.2) {
     <li>
       <a href="#" onclick="document.getElementById('guideOverlay').classList.add('active'); return false;">
         <i class='bx bx-book-open'></i>
-        <span class="link_name"><?php print findtekst('5234|Guides', $sprog_id); ?></span>
+        <span class="link_name"><?php print findtekst('5504|Guides', $sprog_id); ?></span>
       </a>
       <ul class="sub-menu blank">
-        <li><a class="" href="#" onclick="document.getElementById('guideOverlay').classList.add('active'); return false;"><?php print findtekst('5234|Guides', $sprog_id); ?></a></li>
+        <li><a class="" href="#" onclick="document.getElementById('guideOverlay').classList.add('active'); return false;"><?php print findtekst('5504|Guides', $sprog_id); ?></a></li>
       </ul>
     </li>
   </ul>
@@ -442,10 +442,10 @@ function brightenColor($color, $amount = 0.2) {
 
 <div class="guide-overlay" id="guideOverlay" onclick="if (event.target === this) { this.classList.remove('active'); }">
   <div class="guide-modal">
-    <div class="guide-modal-head"><span><i class='bx bx-book-open'></i> <?php print findtekst('5234|Guides', $sprog_id); ?></span><button type="button" onclick="document.getElementById('guideOverlay').classList.remove('active')">&times;</button></div>
+    <div class="guide-modal-head"><span><i class='bx bx-book-open'></i> <?php print findtekst('5504|Guides', $sprog_id); ?></span><button type="button" onclick="document.getElementById('guideOverlay').classList.remove('active')">&times;</button></div>
     <div class="topbar-pop-body">
-      <a class="topbar-pop-item" href="../guides/pdf/finance_guide_da.pdf" target="_blank" rel="noopener"><i class='bx bx-coin-stack'></i><?php print findtekst('5235|Regnskabsguide', $sprog_id); ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
-      <a class="topbar-pop-item" href="../guides/pdf/scaffolding_guide_da.pdf" target="_blank" rel="noopener"><i class='bx bx-layer'></i><?php print findtekst('5236|Stilladsguide', $sprog_id); ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
+      <a class="topbar-pop-item" href="../guides/pdf/finance_guide_da.pdf" target="_blank" rel="noopener"><i class='bx bx-coin-stack'></i><?php print findtekst('5505|Regnskabsguide', $sprog_id); ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
+      <a class="topbar-pop-item" href="../guides/pdf/scaffolding_guide_da.pdf" target="_blank" rel="noopener"><i class='bx bx-layer'></i><?php print findtekst('5506|Stilladsguide', $sprog_id); ?><i class='bx bx-link-external topbar-pop-trail'></i></a>
     </div>
   </div>
 </div>

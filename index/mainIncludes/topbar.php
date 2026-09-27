@@ -324,14 +324,14 @@ function topbar_render(array $ctx, int $sprogId): void
     <button type="button" class="topbar-icbtn topbar-assist" id="topbar-assist-btn" title="SALDI Assist" onclick="topbarOpenAssist()"><?= topbar_assist_icon() ?></button>
 
     <?php if ($ctx['posUrl'] !== '') { ?>
-    <a class="topbar-icbtn topbar-desktop" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top" title="<?= $t('5336|Kassesystem') ?>"><i class='bx bx-store-alt'></i></a>
+    <a class="topbar-icbtn topbar-desktop" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top" title="<?= $t('5606|Kassesystem') ?>"><i class='bx bx-store-alt'></i></a>
     <?php } ?>
 
     <div class="topbar-item">
-      <button type="button" class="topbar-icbtn" id="topbar-bell-btn" title="<?= $t('5232|Notifikationer') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-bell-pop" onclick="topbarToggle(event, 'topbar-bell-pop')"><i class='bx bx-bell'></i><?php if ($ctx['unread'] > 0) { ?><span class="topbar-badge"><?= (int) $ctx['unread'] ?></span><?php } ?></button>
-      <div class="topbar-pop topbar-pop-bell" id="topbar-bell-pop" role="dialog" aria-label="<?= $t('5232|Notifikationer') ?>">
-        <div class="topbar-pop-title"><?= $t('5232|Notifikationer') ?></div>
-        <div class="topbar-empty"><i class='bx bx-bell-off'></i><span><?= $t('5233|Ingen notifikationer endnu') ?></span></div>
+      <button type="button" class="topbar-icbtn" id="topbar-bell-btn" title="<?= $t('5502|Notifikationer') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-bell-pop" onclick="topbarToggle(event, 'topbar-bell-pop')"><i class='bx bx-bell'></i><?php if ($ctx['unread'] > 0) { ?><span class="topbar-badge"><?= (int) $ctx['unread'] ?></span><?php } ?></button>
+      <div class="topbar-pop topbar-pop-bell" id="topbar-bell-pop" role="dialog" aria-label="<?= $t('5502|Notifikationer') ?>">
+        <div class="topbar-pop-title"><?= $t('5502|Notifikationer') ?></div>
+        <div class="topbar-empty"><i class='bx bx-bell-off'></i><span><?= $t('5503|Ingen notifikationer endnu') ?></span></div>
       </div>
     </div>
 
@@ -351,7 +351,7 @@ function topbar_render(array $ctx, int $sprogId): void
           </div>
         </div>
         <div class="topbar-pop-body">
-          <a class="topbar-pop-item" role="menuitem" href="#" onclick="topbarCloseAll(); update_iframe('/systemdata/personalSettings.php'); return false;"><i class='bx bx-cog'></i><?= $t('5230|Personlige indstillinger') ?></a>
+          <a class="topbar-pop-item" role="menuitem" href="#" onclick="topbarCloseAll(); update_iframe('/systemdata/personalSettings.php'); return false;"><i class='bx bx-cog'></i><?= $t('5500|Personlige indstillinger') ?></a>
 
           <?php if (count($ctx['fiscalYears']) > 0) { ?>
           <button type="button" class="topbar-pop-item" role="menuitem" aria-expanded="false" onclick="topbarToggleSub(event, 'topbar-years')"><i class='bx bx-calendar'></i><?= $t('778|Regnskabsår') ?><small><?= topbar_h($ctx['fiscalYear']) ?> <i class='bx bx-chevron-down'></i></small></button>
@@ -360,20 +360,20 @@ function topbar_render(array $ctx, int $sprogId): void
               <input type="hidden" name="action" value="fiscal_year">
               <input type="hidden" name="return_hash" value="">
               <?php foreach ($ctx['fiscalYears'] as $y) { ?>
-              <button type="submit" name="year" value="<?= topbar_h($y['kodenr']) ?>" class="topbar-year<?= $y['active'] ? ' active' : '' ?>"<?= $y['active'] ? ' disabled aria-current="true"' : '' ?>><i class='bx <?= $y['active'] ? 'bx-check-circle' : 'bx-calendar-event' ?>'></i><span><?= topbar_h($y['label']) ?></span><?php if ($y['active']) { ?><small><?= $t('5264|Aktivt') ?></small><?php } ?></button>
+              <button type="submit" name="year" value="<?= topbar_h($y['kodenr']) ?>" class="topbar-year<?= $y['active'] ? ' active' : '' ?>"<?= $y['active'] ? ' disabled aria-current="true"' : '' ?>><i class='bx <?= $y['active'] ? 'bx-check-circle' : 'bx-calendar-event' ?>'></i><span><?= topbar_h($y['label']) ?></span><?php if ($y['active']) { ?><small><?= $t('5534|Aktivt') ?></small><?php } ?></button>
               <?php } ?>
             </form>
           </div>
           <?php } ?>
 
           <div class="topbar-pop-section"><?= $t('2224|Oversigt') ?></div>
-          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" data-dash-hide="1" onclick="topbarDashHide()" disabled><i class='bx <?= $ctx['dashHidden'] ? 'bx-show' : 'bx-hide' ?>'></i><span class="topbar-dash-hide-label"><?= $ctx['dashHidden'] ? $t('5334|Vis oversigt') : $t('5333|Skjul oversigt') ?></span></button>
+          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" data-dash-hide="1" onclick="topbarDashHide()" disabled><i class='bx <?= $ctx['dashHidden'] ? 'bx-show' : 'bx-hide' ?>'></i><span class="topbar-dash-hide-label"><?= $ctx['dashHidden'] ? $t('5604|Vis oversigt') : $t('5603|Skjul oversigt') ?></span></button>
           <?php if (!$ctx['dashHidden']) { ?>
-          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" onclick="topbarDashEdit()" disabled><i class='bx bx-edit-alt'></i><?= $t('5335|Rediger oversigt') ?></button>
+          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" onclick="topbarDashEdit()" disabled><i class='bx bx-edit-alt'></i><?= $t('5605|Rediger oversigt') ?></button>
           <?php } ?>
 
           <?php if ($ctx['isAdmin']) { ?>
-          <button type="button" class="topbar-pop-item" role="menuitem" aria-expanded="false" onclick="topbarToggleSub(event, 'topbar-online')"><i class='bx bx-group'></i><?= $t('5231|Hvem er online') ?><small><?= count($ctx['onlineUsers']) ?> <i class='bx bx-chevron-down'></i></small></button>
+          <button type="button" class="topbar-pop-item" role="menuitem" aria-expanded="false" onclick="topbarToggleSub(event, 'topbar-online')"><i class='bx bx-group'></i><?= $t('5501|Hvem er online') ?><small><?= count($ctx['onlineUsers']) ?> <i class='bx bx-chevron-down'></i></small></button>
           <div class="topbar-pop-sub" id="topbar-online">
             <?php foreach ($ctx['onlineUsers'] as $u) { ?>
             <div class="topbar-online-user"><span class="topbar-dot"></span><?= topbar_h($u) ?></div>
@@ -381,7 +381,7 @@ function topbar_render(array $ctx, int $sprogId): void
           </div>
           <?php } ?>
 
-          <button type="button" class="topbar-pop-item" role="menuitem" onclick="topbarPrint()"><i class='bx bx-printer'></i><?= $t('5332|Print side') ?></button>
+          <button type="button" class="topbar-pop-item" role="menuitem" onclick="topbarPrint()"><i class='bx bx-printer'></i><?= $t('5602|Print side') ?></button>
 
           <div class="topbar-mobile">
             <div class="topbar-pop-sep"></div>
@@ -396,7 +396,7 @@ function topbar_render(array $ctx, int $sprogId): void
               </form>
             </div>
             <?php if ($ctx['posUrl'] !== '') { ?>
-            <a class="topbar-pop-item" role="menuitem" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top"><i class='bx bx-store-alt'></i><?= $t('5336|Kassesystem') ?></a>
+            <a class="topbar-pop-item" role="menuitem" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top"><i class='bx bx-store-alt'></i><?= $t('5606|Kassesystem') ?></a>
             <?php } ?>
           </div>
 

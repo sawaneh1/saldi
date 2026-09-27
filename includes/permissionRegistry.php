@@ -64,13 +64,13 @@ function permission_registry(): array
 		'system.indstillinger'   => array('group' => 'system',   'label' => '122|Indstillinger',       'legacy' => array(1),  'dangerous' => false),
 		'system.backup'          => array('group' => 'system',   'label' => '521|Sikkerhedskopi',      'legacy' => array(11), 'dangerous' => false),
 
-		'settings.users.manage'  => array('group' => 'settings', 'label' => '5266|Brugere & roller',   'legacy' => array(),   'dangerous' => true),
-		'settings.integrations'  => array('group' => 'settings', 'label' => '5267|Integrationer',      'legacy' => array(),   'dangerous' => true),
-		'settings.api'           => array('group' => 'settings', 'label' => '5270|API-nøgler',         'legacy' => array(),   'dangerous' => true),
-		'settings.smtp'          => array('group' => 'settings', 'label' => '5271|E-mail/SMTP',        'legacy' => array(),   'dangerous' => true),
-		'settings.importexport'  => array('group' => 'settings', 'label' => '5269|Import & eksport',   'legacy' => array(),   'dangerous' => true),
-		'settings.sql'           => array('group' => 'settings', 'label' => '5268|SQL-værktøj',        'legacy' => array(),   'dangerous' => true),
-		'system.backup.restore'  => array('group' => 'settings', 'label' => '5272|Gendan sikkerhedskopi', 'legacy' => array(), 'dangerous' => true),
+		'settings.users.manage'  => array('group' => 'settings', 'label' => '5536|Brugere & roller',   'legacy' => array(),   'dangerous' => true),
+		'settings.integrations'  => array('group' => 'settings', 'label' => '5537|Integrationer',      'legacy' => array(),   'dangerous' => true),
+		'settings.api'           => array('group' => 'settings', 'label' => '5540|API-nøgler',         'legacy' => array(),   'dangerous' => true),
+		'settings.smtp'          => array('group' => 'settings', 'label' => '5541|E-mail/SMTP',        'legacy' => array(),   'dangerous' => true),
+		'settings.importexport'  => array('group' => 'settings', 'label' => '5539|Import & eksport',   'legacy' => array(),   'dangerous' => true),
+		'settings.sql'           => array('group' => 'settings', 'label' => '5538|SQL-værktøj',        'legacy' => array(),   'dangerous' => true),
+		'system.backup.restore'  => array('group' => 'settings', 'label' => '5542|Gendan sikkerhedskopi', 'legacy' => array(), 'dangerous' => true),
 	);
 	return $registry;
 }
@@ -115,7 +115,7 @@ function permission_default_roles(): array
 			'levels'      => $allWrite,
 		),
 		'bogholder' => array(
-			'label'       => '5273|Bogholder',
+			'label'       => '5543|Bogholder',
 			'beskrivelse' => 'Finans, kassekladde, rapporter, moms og betalinger. Ingen brugeradministration.',
 			'levels'      => array(
 				'finans.kassekladde' => 'write', 'finans.regnskab' => 'write', 'finans.rapporter' => 'write',
@@ -126,7 +126,7 @@ function permission_default_roles(): array
 			),
 		),
 		'salg' => array(
-			'label'       => '5274|Salg',
+			'label'       => '5544|Salg',
 			'beskrivelse' => 'Debitorordrer, kunder og fakturering. Ingen finans eller indstillinger.',
 			'levels'      => array(
 				'debitor.ordre' => 'write', 'debitor.konti' => 'write', 'debitor.rapporter' => 'write',
@@ -134,7 +134,7 @@ function permission_default_roles(): array
 			),
 		),
 		'indkoeb' => array(
-			'label'       => '5275|Indkøb',
+			'label'       => '5545|Indkøb',
 			'beskrivelse' => 'Kreditorordrer, leverandører og varemodtagelse.',
 			'levels'      => array(
 				'kreditor.ordre' => 'write', 'kreditor.konti' => 'write', 'kreditor.rapporter' => 'write',

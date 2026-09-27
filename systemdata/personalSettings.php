@@ -293,19 +293,19 @@ function personal_settings_flash(array $get, int $sprogId): array
 	$flash = array();
 	$pw = isset($get['pw']) ? (string) $get['pw'] : '';
 	if ($pw === 'changed') {
-		$flash[] = array('type' => 'ok', 'text' => findtekst('5248|Adgangskoden er ændret', $sprogId));
+		$flash[] = array('type' => 'ok', 'text' => findtekst('5518|Adgangskoden er ændret', $sprogId));
 	} elseif ($pw === 'wrong') {
-		$flash[] = array('type' => 'err', 'text' => findtekst('5249|Den nuværende adgangskode er forkert', $sprogId));
+		$flash[] = array('type' => 'err', 'text' => findtekst('5519|Den nuværende adgangskode er forkert', $sprogId));
 	} elseif ($pw === 'mismatch') {
-		$flash[] = array('type' => 'err', 'text' => findtekst('5250|De to nye adgangskoder er ikke ens', $sprogId));
+		$flash[] = array('type' => 'err', 'text' => findtekst('5520|De to nye adgangskoder er ikke ens', $sprogId));
 	} elseif ($pw === 'demo') {
-		$flash[] = array('type' => 'warn', 'text' => findtekst('5258|Adgangskoden kan ikke ændres i demoversionen', $sprogId));
+		$flash[] = array('type' => 'warn', 'text' => findtekst('5528|Adgangskoden kan ikke ændres i demoversionen', $sprogId));
 	}
 	if (isset($get['tfa']) && $get['tfa'] === 'missing') {
-		$flash[] = array('type' => 'warn', 'text' => findtekst('5246|Tofaktor-login kræver et telefonnummer eller en e-mail', $sprogId));
+		$flash[] = array('type' => 'warn', 'text' => findtekst('5516|Tofaktor-login kræver et telefonnummer eller en e-mail', $sprogId));
 	}
 	if (!empty($get['saved'])) {
-		$flash[] = array('type' => 'ok', 'text' => findtekst('5247|Dine indstillinger er gemt', $sprogId));
+		$flash[] = array('type' => 'ok', 'text' => findtekst('5517|Dine indstillinger er gemt', $sprogId));
 	}
 	return $flash;
 }
@@ -332,12 +332,12 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
 	$flashIcons = array('ok' => 'bx-check-circle', 'warn' => 'bx-error', 'err' => 'bx-x-circle');
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-<script>document.title = <?= json_encode(mb_convert_encoding(findtekst('5230|Personlige indstillinger', $sprogId), 'UTF-8', $charset)) ?>;</script>
+<script>document.title = <?= json_encode(mb_convert_encoding(findtekst('5500|Personlige indstillinger', $sprogId), 'UTF-8', $charset)) ?>;</script>
 <div class="ps-page">
   <header class="ps-head">
     <div>
-      <h1><i class='bx bx-cog'></i><?= $t('5230|Personlige indstillinger') ?></h1>
-      <p class="ps-sub"><?= $t('5252|Gælder kun for dig, ikke for andre brugere i regnskabet') ?></p>
+      <h1><i class='bx bx-cog'></i><?= $t('5500|Personlige indstillinger') ?></h1>
+      <p class="ps-sub"><?= $t('5522|Gælder kun for dig, ikke for andre brugere i regnskabet') ?></p>
     </div>
     <a class="ps-btn ps-btn-ghost" href="<?= $h($backUrl) ?>"><i class='bx bx-x'></i><?= $t('2172|Luk') ?></a>
   </header>
@@ -347,7 +347,7 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
   <?php } ?>
 
   <?php if ($d === null) { ?>
-  <div class="ps-notice"><i class='bx bx-info-circle'></i> <?= $t('5263|Personlige indstillinger findes kun for regnskabets egne brugere. Du er logget ind som revisor/administrator udefra.') ?></div>
+  <div class="ps-notice"><i class='bx bx-info-circle'></i> <?= $t('5533|Personlige indstillinger findes kun for regnskabets egne brugere. Du er logget ind som revisor/administrator udefra.') ?></div>
 </div>
 	<?php return; } ?>
 
@@ -355,30 +355,30 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
     <?php if (strpos($selfUrl, 'popup=1') !== false) { ?><input type="hidden" name="popup_window" value="1"><?php } ?>
 
     <section class="ps-card">
-      <h2><i class='bx bx-user'></i><?= $t('5251|Konto') ?></h2>
+      <h2><i class='bx bx-user'></i><?= $t('5521|Konto') ?></h2>
       <div class="ps-grid">
         <div class="ps-field">
-          <label><?= $t('5261|Navn') ?></label>
+          <label><?= $t('5531|Navn') ?></label>
           <input class="ps-input" type="text" value="<?= $h($d['name']) ?>" readonly>
         </div>
         <div class="ps-field">
-          <label><?= $t('5260|Brugernavn') ?></label>
+          <label><?= $t('5530|Brugernavn') ?></label>
           <input class="ps-input" type="text" value="<?= $h($d['username']) ?>" readonly>
         </div>
         <?php if (!$d['revisor']) { ?>
         <div class="ps-field">
           <label for="ps-email"><?= $t('52|E-mail') ?></label>
           <input class="ps-input" type="email" id="ps-email" name="email" value="<?= $h($d['email']) ?>">
-          <span class="ps-help"><?= $t('5253|Bruges til tofaktor-koder') ?></span>
+          <span class="ps-help"><?= $t('5523|Bruges til tofaktor-koder') ?></span>
         </div>
         <div class="ps-field">
           <label for="ps-tlf"><?= $t('37|Telefon') ?></label>
           <input class="ps-input" type="tel" id="ps-tlf" name="tlf" value="<?= $h($d['tlf']) ?>">
-          <span class="ps-help"><?= $t('5253|Bruges til tofaktor-koder') ?></span>
+          <span class="ps-help"><?= $t('5523|Bruges til tofaktor-koder') ?></span>
         </div>
         <?php } else { ?>
         <div class="ps-field ps-field-full">
-          <span class="ps-help"><?= $t('5265|Kontaktoplysninger, tofaktor-login og adgangskode hører til regnskabets egne brugere og kan ikke ændres her, da du er logget ind som revisor/administrator udefra.') ?></span>
+          <span class="ps-help"><?= $t('5535|Kontaktoplysninger, tofaktor-login og adgangskode hører til regnskabets egne brugere og kan ikke ændres her, da du er logget ind som revisor/administrator udefra.') ?></span>
         </div>
         <?php } ?>
         <div class="ps-field">
@@ -393,13 +393,13 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
     </section>
 
     <section class="ps-card">
-      <h2><i class='bx bx-palette'></i><?= $t('5238|Udseende') ?></h2>
-      <p class="ps-card-help"><?= $t('5256|Farverne bruges i menuen og på knapper') ?></p>
+      <h2><i class='bx bx-palette'></i><?= $t('5508|Udseende') ?></h2>
+      <p class="ps-card-help"><?= $t('5526|Farverne bruges i menuen og på knapper') ?></p>
       <div class="ps-grid">
         <?php
         $colorFields = array(
-        	array('name' => 'buttonColor',    'label' => '5239|Knapfarve',            'help' => ''),
-        	array('name' => 'buttonTxtColor', 'label' => '5240|Tekstfarve på knapper', 'help' => ''),
+        	array('name' => 'buttonColor',    'label' => '5509|Knapfarve',            'help' => ''),
+        	array('name' => 'buttonTxtColor', 'label' => '5510|Tekstfarve på knapper', 'help' => ''),
         	array('name' => 'bgcolor',        'label' => '317|Baggrundsfarve',        'help' => ''),
         	array('name' => 'fgcolor',        'label' => '415|Fremhævning',           'help' => '416|Fremhæver eksempelvis ordrer med den angivne farvenuance'),
         );
@@ -418,7 +418,7 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
         <?php } ?>
         <div class="ps-field ps-field-full">
           <div class="ps-preview">
-            <span class="ps-preview-label"><?= $t('5257|Eksempel') ?></span>
+            <span class="ps-preview-label"><?= $t('5527|Eksempel') ?></span>
             <span class="ps-preview-menu" id="ps-preview-menu"><i class='bx bx-coin-stack'></i><?= $t('600|Finans') ?></span>
             <button type="button" class="ps-preview-btn" id="ps-preview-btn"><?= $t('3|Gem') ?></button>
           </div>
@@ -427,7 +427,7 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
     </section>
 
     <section class="ps-card">
-      <h2><i class='bx bx-window-alt'></i><?= $t('5254|Vinduer og advarsler') ?></h2>
+      <h2><i class='bx bx-window-alt'></i><?= $t('5524|Vinduer og advarsler') ?></h2>
       <div class="ps-grid">
         <div class="ps-field ps-field-full">
           <label class="ps-check">
@@ -444,28 +444,28 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
 
     <?php if (!$d['revisor']) { ?>
     <section class="ps-card">
-      <h2><i class='bx bx-shield-quarter'></i><?= $t('5241|Sikkerhed') ?></h2>
+      <h2><i class='bx bx-shield-quarter'></i><?= $t('5511|Sikkerhed') ?></h2>
       <div class="ps-grid">
         <div class="ps-field ps-field-full">
           <label class="ps-check">
             <input type="checkbox" name="twofactor" value="on" id="ps-twofactor"<?= $d['twofactor'] ? ' checked' : '' ?>>
-            <span class="ps-check-txt"><b><?= $t('5245|Tofaktor-login (kode via SMS eller e-mail)') ?></b><span><?= $t('5246|Tofaktor-login kræver et telefonnummer eller en e-mail') ?></span></span>
+            <span class="ps-check-txt"><b><?= $t('5515|Tofaktor-login (kode via SMS eller e-mail)') ?></b><span><?= $t('5516|Tofaktor-login kræver et telefonnummer eller en e-mail') ?></span></span>
           </label>
         </div>
         <div class="ps-field ps-field-full">
-          <span class="ps-help"><?= $t('5255|Lad felterne stå tomme for at beholde din adgangskode') ?></span>
+          <span class="ps-help"><?= $t('5525|Lad felterne stå tomme for at beholde din adgangskode') ?></span>
         </div>
         <div class="ps-field">
-          <label for="ps-glkode"><?= $t('5242|Nuværende adgangskode') ?></label>
+          <label for="ps-glkode"><?= $t('5512|Nuværende adgangskode') ?></label>
           <input class="ps-input" type="password" id="ps-glkode" name="glkode" autocomplete="current-password">
         </div>
         <div class="ps-field"></div>
         <div class="ps-field">
-          <label for="ps-nykode1"><?= $t('5243|Ny adgangskode') ?></label>
+          <label for="ps-nykode1"><?= $t('5513|Ny adgangskode') ?></label>
           <input class="ps-input" type="password" id="ps-nykode1" name="nykode1" autocomplete="new-password">
         </div>
         <div class="ps-field">
-          <label for="ps-nykode2"><?= $t('5244|Bekræft ny adgangskode') ?></label>
+          <label for="ps-nykode2"><?= $t('5514|Bekræft ny adgangskode') ?></label>
           <input class="ps-input" type="password" id="ps-nykode2" name="nykode2" autocomplete="new-password">
         </div>
       </div>
@@ -473,7 +473,7 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
     <?php } ?>
 
     <footer class="ps-save">
-      <span class="ps-dirty" id="ps-dirty"><i class='bx bx-edit-alt'></i> <?= $t('5262|Du har ændringer, der ikke er gemt') ?></span>
+      <span class="ps-dirty" id="ps-dirty"><i class='bx bx-edit-alt'></i> <?= $t('5532|Du har ændringer, der ikke er gemt') ?></span>
       <a class="ps-btn ps-btn-ghost" href="<?= $h($backUrl) ?>"><?= $t('2172|Luk') ?></a>
       <button class="ps-btn ps-btn-primary" type="submit" id="ps-submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button>
     </footer>

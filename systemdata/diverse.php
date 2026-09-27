@@ -2207,7 +2207,7 @@ if ($menu != 'T') {
 
 		print "<tr><td align=left><a href=personalSettings.php>
 			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('5230|Personlige indstillinger', $sprog_id)."</button></a></td></tr>\n";
+			   .findtekst('5500|Personlige indstillinger', $sprog_id)."</button></a></td></tr>\n";
 
 		print "<tr><td align=left><a href=diverse.php?sektion=ordre_valg>
 			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
