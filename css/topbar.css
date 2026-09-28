@@ -324,3 +324,117 @@
     .topbar-chip { padding: 3px; }
     .topbar-pop-bell, .topbar-pop-user { width: min(360px, calc(100vw - 24px)); }
 }
+
+/* ---- move button + sidebar placement (spec 2.3) ---- */
+.topbar-cluster { display: flex; align-items: center; gap: 2px; }
+.topbar-move {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    margin-left: 8px;
+    padding: 0 9px;
+    border: 1px dashed #c3cbd8;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--topbar-mut);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.topbar-move i { font-size: 15px; }
+.topbar-move:hover { border-color: var(--topbar-accent); color: var(--topbar-accent); background: var(--topbar-accent-soft); }
+
+html.cluster-sidebar .topbar { display: none; }
+html.cluster-sidebar .sidebar { overflow: visible !important; }
+#cluster-sidebar-mount { padding: 8px 12px 6px; }
+#cluster-sidebar-mount .topbar-cluster {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.10);
+}
+#cluster-sidebar-mount .topbar-icbtn,
+#cluster-sidebar-mount .topbar-lang,
+#cluster-sidebar-mount .topbar-menu-btn { color: #dbe4f5; }
+#cluster-sidebar-mount .topbar-icbtn:hover,
+#cluster-sidebar-mount .topbar-lang:hover,
+#cluster-sidebar-mount .topbar-icbtn[aria-expanded="true"],
+#cluster-sidebar-mount .topbar-lang[aria-expanded="true"] { background: rgba(255, 255, 255, 0.16); color: #fff; }
+#cluster-sidebar-mount .topbar-assist { color: #fff; }
+#cluster-sidebar-mount .topbar-item:last-of-type { width: 100%; }
+#cluster-sidebar-mount .topbar-chip { width: 100%; max-width: none; margin: 4px 0 0; color: #fff; }
+#cluster-sidebar-mount .topbar-chip:hover,
+#cluster-sidebar-mount .topbar-chip[aria-expanded="true"] { background: rgba(255, 255, 255, 0.16); }
+#cluster-sidebar-mount .topbar-company { color: #b9c8e6; }
+#cluster-sidebar-mount .topbar-chev { color: #b9c8e6; }
+#cluster-sidebar-mount .topbar-move { width: 100%; justify-content: center; margin: 6px 0 0; border-color: rgba(255, 255, 255, 0.35); color: #dbe4f5; }
+#cluster-sidebar-mount .topbar-move:hover { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: #fff; }
+#cluster-sidebar-mount .topbar-pop { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
+#cluster-sidebar-mount .topbar-pop-body { max-height: calc(100vh - 160px); }
+
+/* collapsed sidebar: vertical icon column, language via the chip dropdown */
+.sidebar.closed #cluster-sidebar-mount { padding: 8px 6px; }
+.sidebar.closed #cluster-sidebar-mount .topbar-cluster { flex-direction: column; align-items: center; padding: 6px 4px; }
+.sidebar.closed #cluster-sidebar-mount .topbar-desktop:not(.topbar-icbtn),
+.sidebar.closed #cluster-sidebar-mount .topbar-lang,
+.sidebar.closed #cluster-sidebar-mount .topbar-who,
+.sidebar.closed #cluster-sidebar-mount .topbar-chev,
+.sidebar.closed #cluster-sidebar-mount .topbar-move span { display: none; }
+.sidebar.closed #cluster-sidebar-mount .topbar-mobile { display: block; }
+.sidebar.closed #cluster-sidebar-mount .topbar-item:last-of-type { width: auto; }
+.sidebar.closed #cluster-sidebar-mount .topbar-chip { width: auto; padding: 3px; }
+.sidebar.closed #cluster-sidebar-mount .topbar-move { width: auto; padding: 0 6px; }
+.sidebar.closed #desc-line { display: none; }
+
+/* Sidebar mode: the sidebar paints every link/icon in the theme text colour (!important
+   in index/main.php); panels are white cards and must keep their own colours. */
+#cluster-sidebar-mount .topbar-pop a,
+#cluster-sidebar-mount .topbar-pop button,
+#cluster-sidebar-mount .topbar-pop p,
+#cluster-sidebar-mount .topbar-pop .bx { color: var(--topbar-txt) !important; }
+#cluster-sidebar-mount .topbar-pop .topbar-pop-item i,
+#cluster-sidebar-mount .topbar-pop .topbar-pop-item small,
+#cluster-sidebar-mount .topbar-pop .topbar-pop-mail,
+#cluster-sidebar-mount .topbar-pop .topbar-pop-sub,
+#cluster-sidebar-mount .topbar-pop .topbar-year i,
+#cluster-sidebar-mount .topbar-pop .topbar-empty,
+#cluster-sidebar-mount .topbar-pop .topbar-empty .bx,
+#cluster-sidebar-mount .topbar-pop .topbar-lang-code { color: var(--topbar-mut) !important; }
+#cluster-sidebar-mount .topbar-pop .topbar-pop-out,
+#cluster-sidebar-mount .topbar-pop .topbar-pop-out .bx { color: var(--topbar-red) !important; }
+#cluster-sidebar-mount .topbar-pop .topbar-role,
+#cluster-sidebar-mount .topbar-pop .topbar-pop-trail,
+#cluster-sidebar-mount .topbar-pop .topbar-year.active,
+#cluster-sidebar-mount .topbar-pop .topbar-year.active i,
+#cluster-sidebar-mount .topbar-pop .topbar-year small,
+#cluster-sidebar-mount .topbar-pop .topbar-pop-item.active { color: var(--topbar-accent) !important; }
+#cluster-sidebar-mount .topbar-pop .topbar-pop-item[disabled],
+#cluster-sidebar-mount .topbar-pop .topbar-pop-item[disabled] i { opacity: 0.45; }
+
+/* ---- notification panel (spec §3.1) ---- */
+.topbar-notif-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--topbar-line); }
+.topbar-notif-head b { font-size: 14.5px; }
+.topbar-notif-head button { border: none; background: none; color: var(--topbar-accent) !important; font-size: 12.5px; cursor: pointer; font-weight: 600; font-family: inherit; padding: 0; }
+.topbar-notif-list { max-height: min(60vh, 460px); overflow-y: auto; }
+.topbar-notif { display: flex; gap: 12px; padding: 13px 16px; border-bottom: 1px solid #eef1f6; cursor: pointer; }
+.topbar-notif:last-child { border-bottom: none; }
+.topbar-notif:hover { background: #f7f9fc; }
+.topbar-notif.unread { background: #f0f6ff; }
+.topbar-notif.unread:hover { background: #e7f0fd; }
+.topbar-notif-ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.topbar-notif-ic i { font-size: 18px; }
+.topbar-notif-suggestion { background: #e8f0fe; color: var(--topbar-accent); }
+.topbar-notif-warning { background: #fdf1d8; color: #e8a013; }
+.topbar-notif-system { background: #fde5e0; color: var(--topbar-red); }
+.topbar-notif-news { background: #e2f5ea; color: var(--topbar-green); }
+.topbar-notif-t { font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--topbar-txt); }
+.topbar-notif-b { font-size: 12.5px; color: var(--topbar-mut); line-height: 1.4; margin-top: 2px; }
+.topbar-notif-time { font-size: 11px; color: #98a1b5; margin-top: 4px; }
+#cluster-sidebar-mount .topbar-pop .topbar-notif-ic i { color: inherit !important; }
+#cluster-sidebar-mount .topbar-pop .topbar-notif-t { color: var(--topbar-txt) !important; }
+
+/* The Assist widget's own sidebar entry is replaced by the cluster button (spec 6). */
+.sidebar li.topbar-assist-hidden { height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; visibility: hidden; }

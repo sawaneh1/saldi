@@ -26,6 +26,8 @@
 //                  compatibility with the legacy rettigheder string (a role is rendered
 //                  into brugere.rettigheder so old checks keep working), require_permission(),
 //                  nearest-role suggestion for migration, and the audit log.
+// 20260928 Sawaneh Derived keys (pos.kasse from Debitorordre) and one-time seeding of new keys into roles.
+// 20260928 Sawaneh Phase 4: settings pages resolve to their group key; derived keys open their source position.
 
 include_once(__DIR__ . '/permissionRegistry.php');
 
@@ -94,7 +96,12 @@ function perm_levels_from_legacy(string $rettigheder): array
 	$settingsLevel = ($settingsBit === '1') ? 'write' : (($settingsBit === '2') ? 'read' : 'none');
 	foreach (permission_registry() as $key => $def) {
 		if (!$def['legacy']) {
-			$levels[$key] = $settingsLevel;
+			if (isset($def['derive'])) {
+				$c = substr($rettigheder, (int) $def['derive'], 1);
+				$levels[$key] = ($c === '1') ? 'write' : (($c === '2') ? 'read' : 'none');
+			} else {
+				$levels[$key] = $settingsLevel;
+			}
 			continue;
 		}
 		$best = 'none';
@@ -124,6 +131,13 @@ function perm_legacy_string(array $levels): string
 			if ($c === '1' || ($c === '2' && $positions[$pos] === '0')) {
 				$positions[$pos] = $c;
 			}
+		}
+	}
+	// A derived key (pos.kasse, settings.finance, ...) needs its source position open so the
+	// legacy page gate lets the user in; read is enough, the key itself decides the rest.
+	foreach (permission_registry() as $key => $def) {
+		if (isset($def['derive']) && isset($levels[$key]) && $levels[$key] !== 'none' && $positions[(int) $def['derive']] === '0') {
+			$positions[(int) $def['derive']] = '2';
 		}
 	}
 	return implode('', $positions);
@@ -233,6 +247,9 @@ function perm_enforce_request(?string $declaredKey, string $declaredLevel, bool 
 	if ($key === null && $modulnr !== null && $modulnr >= 0 && $modulnr < 16) {
 		$key = perm_key_for_modulnr($modulnr);
 	}
+	if ($key === 'system.indstillinger') {
+		$key = perm_settings_key_for_request($page, $_GET);
+	}
 	if ($key === null || $key === '') {
 		if ($mode === 'deny') {
 			perm_refuse('unguarded', $page);
@@ -254,6 +271,32 @@ function perm_enforce_request(?string $declaredKey, string $declaredLevel, bool 
 		perm_refuse($key . ' (' . $need . ')', $page);
 	}
 	perm_log_once('would-deny', $key . ' (' . $need . ') ' . $page);
+}
+
+/**
+ * A settings page is guarded by the key of its group on the settings front page
+ * (systemdata/settingsRegistry.php). A page listed in two groups (e.g. debtor/creditor
+ * groups) is open to whoever holds either; unlisted pages keep system.indstillinger.
+ */
+function perm_settings_key_for_request(string $page, array $get): string
+{
+	$registryFile = __DIR__ . '/../systemdata/settingsRegistry.php';
+	if (strpos($page, '/systemdata/') === false || !file_exists($registryFile)) {
+		return 'system.indstillinger';
+	}
+	include_once($registryFile);
+	if (!function_exists('settings_entries_for_request')) {
+		return 'system.indstillinger';
+	}
+	$best = '';
+	$rank = perm_level_rank();
+	foreach (settings_entries_for_request(basename($page), $get) as $entry) {
+		$key = settings_group_permission($entry['group']);
+		if ($key !== '' && ($best === '' || $rank[perm_level($key)] > $rank[perm_level($best)])) {
+			$best = $key;
+		}
+	}
+	return $best !== '' ? $best : 'system.indstillinger';
 }
 
 /**
@@ -492,9 +535,67 @@ function perm_ensure_default_roles(): void
 			$existing[$key] = $roleId;
 		}
 	}
+	perm_seed_new_keys($existing);
 	if (isset($existing['administrator'])) {
 		$adminId = (int) $existing['administrator'];
 		db_modify("update brugere set role_id = $adminId where (role_id is null or role_id = 0) and rettigheder = '1111111111111111'", __FILE__ . " linje " . __LINE__);
+	}
+}
+
+/**
+ * Keys added to the registry after roles were created get a level once: built-in roles
+ * their default, custom roles the level of the key they derive from (e.g. pos.kasse from
+ * Debitorordre), so nobody loses what they could do before. Remembered in settings so a
+ * level an admin later removes is not re-added.
+ *
+ * @param array<string, int> $existing role_key => id of the built-in roles
+ */
+function perm_seed_new_keys(array $existing): void
+{
+	$r = db_fetch_array(db_select("select id, var_value from settings where var_grp = 'permissions' and var_name = 'known_keys'", __FILE__ . " linje " . __LINE__));
+	$known = $r ? array_filter(explode(',', (string) $r['var_value'])) : array();
+	$registry = permission_registry();
+	if (!$r) {
+		// First run with this mechanism: every key without a 'since' marker was seeded with the roles.
+		foreach ($registry as $key => $def) {
+			if (!isset($def['since'])) {
+				$known[] = $key;
+			}
+		}
+	}
+	$new = array_diff(array_keys($registry), $known);
+	if ($new) {
+		$defaults = permission_default_roles();
+		$builtIn = array_flip($existing);
+		$legacyKeyOf = array();
+		foreach ($registry as $key => $def) {
+			foreach ($def['legacy'] as $pos) {
+				if (!isset($legacyKeyOf[$pos])) {
+					$legacyKeyOf[$pos] = $key;
+				}
+			}
+		}
+		foreach (perm_roles() as $role) {
+			$levels = perm_levels_from_role($role['id']);
+			foreach ($new as $key) {
+				$level = 'none';
+				if (isset($builtIn[$role['id']]) && isset($defaults[$builtIn[$role['id']]]['levels'][$key])) {
+					$level = $defaults[$builtIn[$role['id']]]['levels'][$key];
+				} elseif (!isset($builtIn[$role['id']]) && isset($registry[$key]['derive']) && isset($legacyKeyOf[$registry[$key]['derive']])) {
+					$level = $levels[$legacyKeyOf[$registry[$key]['derive']]];
+				}
+				if ($level !== 'none') {
+					db_modify("delete from role_permissions where role_id = " . (int) $role['id'] . " and permission_key = '" . db_escape_string($key) . "'", __FILE__ . " linje " . __LINE__);
+					db_modify("insert into role_permissions (role_id, permission_key, level) values (" . (int) $role['id'] . ", '" . db_escape_string($key) . "', '" . perm_level_valid($level) . "')", __FILE__ . " linje " . __LINE__);
+				}
+			}
+		}
+	}
+	$value = db_escape_string(implode(',', array_keys($registry)));
+	if ($r) {
+		db_modify("update settings set var_value = '$value' where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+	} else {
+		db_modify("insert into settings (var_grp, var_name, var_value, var_description) values ('permissions', 'known_keys', '$value', 'Permission keys already seeded into roles')", __FILE__ . " linje " . __LINE__);
 	}
 }
 

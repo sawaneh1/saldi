@@ -100,6 +100,7 @@
 //             Verified against all 6 acceptance criteria in the spec. Confirmed working on the
 //             production server (no blank page) after the performance fixes above.
 // 20260901 CL/SZ MB-31: added a standardised per-column search row directly under the sticky
+// 20260927 Sawaneh Udløbsrapport button added to the report list (the dashboard banner was its only link).
 //             column-title row (matching lager/lister/vareliste.php's create_datagrid() search
 //             row), reusing the existing Varenr./Varenavn fields that already fed the query further
 //             down (previously only on the front page) - no change to that query/caching logic
@@ -196,6 +197,7 @@ if ($submit == 'ok') varegruppe ($date_from, $date_to, $varenr, $varenavn, $vare
 elseif (strtolower($submit) == strtolower(findtekst('992|Lagerstatus', $sprog_id))) print "<meta http-equiv=\"refresh\" content=\"0;URL=lagerstatus.php?varegruppe=$varegruppe\">";
 elseif (strtolower($submit) == strtolower(findtekst('2082|Prisliste', $sprog_id))) print "<meta http-equiv=\"refresh\" content=\"0;URL=pricelist.php?varegruppe=$varegruppe\">";
 elseif (strtolower($submit) == strtolower(findtekst('3360|Salg pr. postnummer', $sprog_id))) print "<meta http-equiv=\"refresh\" content=\"0;URL=salg_rapport.php?varegruppe=$varegruppe&afd=$afd&ref=$ref&lev=$lev&date_from=$date_from&date_to=$date_to&varenr=$varenr&varenavn=$varenavn&detaljer=$detaljer&kun_salg=$kun_salg&lagertal=$lagertal\">";
+elseif (strtolower($submit) == strtolower(findtekst('5014|Udløbsrapport', $sprog_id))) print "<meta http-equiv=\"refresh\" content=\"0;URL=udlobsrapport.php\">";
 elseif ($inventoryCount) print "<meta http-equiv=\"refresh\" content=\"0;URL=optalling.php?varegruppe=$varegruppe\">";
 else 	forside ($date_from,$date_to,$varenr,$varenavn,$varegruppe,$detaljer,$kun_salg,$lagertal,$vk_kost,$afd,$lev,$ref);
 
@@ -464,6 +466,11 @@ function forside($date_from,$date_to,$varenr,$varenavn,$varegruppe,$detaljer,$ku
 	print "<tr><td><hr></td></tr>\n";
 	$txt = "<tr><td ALIGN=center title='Se salg på postnumre'>";
 	$txt.= "<input class='button blue medium' style='width:350px;' type='submit' value=\"".findtekst('3360|Salg pr. postnummer', $sprog_id)."\" name='submit'>";
+	$txt.= "</td></tr>\n";
+	print $txt;
+	print "<tr><td><hr></td></tr>\n";
+	$txt = "<tr><td ALIGN=center title='".findtekst('5026|Klik for at se udløbsrapporten', $sprog_id)."'>";
+	$txt.= "<input class='button blue medium' style='width:350px;' type='submit' value=\"".findtekst('5014|Udløbsrapport', $sprog_id)."\" name='submit'>";
 	$txt.= "</td></tr>\n";
 	print $txt;
 	print "</form>";

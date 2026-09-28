@@ -25,6 +25,8 @@
 // 20260916 Sawaneh Central registry of permission keys (spec R1), their mapping to the legacy
 //                  16-position rettigheder string, and the built-in default roles (R3).
 //                  Same pattern as systemdata/settingsRegistry.php: one place to maintain.
+// 20260928 Sawaneh pos.kasse key (own group) so point-of-sale access is granted per role.
+// 20260928 Sawaneh Settings-area keys (phase 4, spec S3), one per group of the settings front page.
 
 /**
  * Every permission key the system knows. A key is granted at level none / read / write.
@@ -64,6 +66,20 @@ function permission_registry(): array
 		'system.indstillinger'   => array('group' => 'system',   'label' => '122|Indstillinger',       'legacy' => array(1),  'dangerous' => false),
 		'system.backup'          => array('group' => 'system',   'label' => '521|Sikkerhedskopi',      'legacy' => array(11), 'dangerous' => false),
 
+		// No legacy position of its own: users without a role inherit it from Debitorordre (5),
+		// which is what opens the cash register today ('derive').
+		'pos.kasse'              => array('group' => 'pos',      'label' => '5606|Kassesystem',        'legacy' => array(),   'dangerous' => false, 'derive' => 5, 'since' => '20260928'),
+
+		// Settings areas (parent spec S3): one key per group of the settings front page.
+		// Users without a role inherit them from the Indstillinger bit (1), as today.
+		'settings.company'       => array('group' => 'settingsarea', 'label' => '5649|Firma',             'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.finance'       => array('group' => 'settingsarea', 'label' => '600|Finans',             'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.sales'         => array('group' => 'settingsarea', 'label' => '5544|Salg',              'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.purchasing'    => array('group' => 'settingsarea', 'label' => '5545|Indkøb',            'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.products'      => array('group' => 'settingsarea', 'label' => '5650|Varer & lager',     'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.employees'     => array('group' => 'settingsarea', 'label' => '5651|Ansatte',           'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.pos'           => array('group' => 'settingsarea', 'label' => '5606|Kassesystem',       'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+
 		'settings.users.manage'  => array('group' => 'settings', 'label' => '5536|Brugere & roller',   'legacy' => array(),   'dangerous' => true),
 		'settings.integrations'  => array('group' => 'settings', 'label' => '5537|Integrationer',      'legacy' => array(),   'dangerous' => true),
 		'settings.api'           => array('group' => 'settings', 'label' => '5540|API-nøgler',         'legacy' => array(),   'dangerous' => true),
@@ -88,6 +104,8 @@ function permission_groups(): array
 		'kreditor' => '607|Kreditorer',
 		'lager'    => '608|Lager',
 		'system'   => '2377|System',
+		'pos'      => '5606|Kassesystem',
+		'settingsarea' => '5648|Indstillingsområder',
 		'settings' => '122|Indstillinger',
 	);
 }
@@ -120,6 +138,7 @@ function permission_default_roles(): array
 			'levels'      => array(
 				'finans.kassekladde' => 'write', 'finans.regnskab' => 'write', 'finans.rapporter' => 'write',
 				'system.kontoplan' => 'write', 'system.indstillinger' => 'read',
+				'settings.finance' => 'write', 'settings.company' => 'read',
 				'debitor.konti' => 'write', 'debitor.rapporter' => 'write',
 				'kreditor.konti' => 'write', 'kreditor.rapporter' => 'write',
 				'debitor.ordre' => 'read', 'kreditor.ordre' => 'read',
@@ -130,7 +149,7 @@ function permission_default_roles(): array
 			'beskrivelse' => 'Debitorordrer, kunder og fakturering. Ingen finans eller indstillinger.',
 			'levels'      => array(
 				'debitor.ordre' => 'write', 'debitor.konti' => 'write', 'debitor.rapporter' => 'write',
-				'lager.varer' => 'read',
+				'lager.varer' => 'read', 'pos.kasse' => 'write',
 			),
 		),
 		'indkoeb' => array(

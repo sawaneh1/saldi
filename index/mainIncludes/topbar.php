@@ -27,6 +27,10 @@
 // 20260922 Sawaneh Global cluster per the 2026-09-17 topbar spec (step 1a): language selector,
 //                  SALDI Assist button, PoS shortcut, dashboard hide/edit + Print page in the chip,
 //                  no hamburger/breadcrumb on desktop, mobile fallbacks in the dropdown.
+// 20260927 Sawaneh Step 1b: cluster wrapper + move button (top/sidebar placement, spec 2.3);
+//                  Who is online counts every session in the company, current user marked.
+// 20260928 Sawaneh PoS shortcut shown only with the pos.kasse permission.
+//                  Who is online shown to users who may manage users (settings.users.manage).
 
 /**
  * Sessions in the master `online` table that belong to the caller's company and
@@ -44,7 +48,7 @@ function topbar_online_rows(string $sessionId): array
 	}
 	$db = db_escape_string($r['db']);
 	$since = (int) date('U') - 3600;
-	$qtxt = "select brugernavn, max(logtime) as logtime from online where db = '$db' and logtime > '$since' and revisor is not true group by brugernavn order by brugernavn";
+	$qtxt = "select brugernavn, max(logtime) as logtime from online where db = '$db' and logtime > '$since' group by brugernavn order by brugernavn";
 	$q = db_select($qtxt, __FILE__ . " linje " . __LINE__);
 	$rows = array();
 	while ($r = db_fetch_array($q)) {
@@ -221,24 +225,29 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 		}
 	}
 
-	$isAdmin = !$revisor && substr($rettigheder, 1, 1) === '1';
+	$isAdmin = !$revisor && (function_exists('perm_can') ? perm_can('settings.users.manage', 'read') : substr($rettigheder, 1, 1) === '1');
 	$onlineUsers = array();
 	if ($isAdmin || $revisor) {
 		foreach ($onlineRows as $row) {
 			if ($row['brugernavn'] !== '') {
-				$onlineUsers[] = topbar_utf8($resolveName($row['brugernavn']));
+				$label = topbar_utf8($resolveName($row['brugernavn']));
+				if ($row['brugernavn'] === $brugernavn) {
+					$label .= ' (' . topbar_utf8(findtekst('5612|dig', $sprogId)) . ')';
+				}
+				$onlineUsers[] = $label;
 			}
 		}
 		$onlineUsers = array_values(array_unique($onlineUsers));
 	}
 
-	// PoS shortcut: the company runs a cash register this fiscal year and the user may
-	// work with debtor orders (the same gate the PoS pages use today).
+	// PoS shortcut (cluster icon + sidebar entry): the company runs a cash register this
+	// fiscal year and the user's role grants Kassesystem.
 	$posUrl = '';
 	$sagerUrl = '';
 	$regnaarSql = db_escape_string((string) $regnaar);
 	if (db_fetch_array(db_select("select id from grupper where art = 'POS' and box1 >= '1' and fiscal_year = '$regnaarSql'", __FILE__ . " linje " . __LINE__))) {
-		if (substr($rettigheder, 5, 1) >= '1') {
+		$posAllowed = function_exists('perm_can') ? perm_can('pos.kasse', 'read') : (substr($rettigheder, 5, 1) >= '1');
+		if ($posAllowed) {
 			$posUrl = '../debitor/pos_ordre.php';
 		}
 	} elseif (db_fetch_array(db_select("select id from settings where var_name = 'orderXpress' and var_value = 'on'", __FILE__ . " linje " . __LINE__))) {
@@ -252,6 +261,10 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 
 	$languages = topbar_languages();
 	$langId = isset($languages[$sprogId]) ? $sprogId : 1;
+	$placement = 'top';
+	if (function_exists('get_settings_value') && (string) get_settings_value('cluster_placement', 'globals', 'top', $brugerId) === 'sidebar') {
+		$placement = 'sidebar';
+	}
 
 	return array(
 		'name'        => topbar_utf8($name),
@@ -270,6 +283,7 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 		'posUrl'      => $posUrl,
 		'sagerUrl'    => $sagerUrl,
 		'dashHidden'  => $dashHidden,
+		'placement'   => $placement,
 		'unread'      => 0,
 	);
 }
@@ -304,9 +318,10 @@ function topbar_render(array $ctx, int $sprogId): void
 	$avatarStyle = 'background:' . topbar_h($ctx['avatar']['bg']) . ';color:' . topbar_h($ctx['avatar']['fg']);
 	$lang = $ctx['languages'][$ctx['langId']];
 	?>
-  <header class="topbar" id="topbar">
+  <header class="topbar" id="topbar" data-placement="<?= topbar_h($ctx['placement']) ?>">
     <button type="button" class="topbar-menu-btn" aria-label="Menu" title="Menu" onclick="topbarMenu()"><i class='bx bx-menu'></i></button>
     <span class="topbar-spacer"></span>
+    <div class="topbar-cluster" id="topbar-cluster">
 
     <div class="topbar-item topbar-desktop">
       <button type="button" class="topbar-lang" id="topbar-lang-btn" title="<?= $t('801|Sprog') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-lang-pop" onclick="topbarToggle(event, 'topbar-lang-pop')"><i class='bx bx-globe'></i><span><?= topbar_h($lang['code']) ?></span><i class='bx bx-chevron-down topbar-chev'></i></button>
@@ -329,9 +344,9 @@ function topbar_render(array $ctx, int $sprogId): void
 
     <div class="topbar-item">
       <button type="button" class="topbar-icbtn" id="topbar-bell-btn" title="<?= $t('5502|Notifikationer') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-bell-pop" onclick="topbarToggle(event, 'topbar-bell-pop')"><i class='bx bx-bell'></i><?php if ($ctx['unread'] > 0) { ?><span class="topbar-badge"><?= (int) $ctx['unread'] ?></span><?php } ?></button>
-      <div class="topbar-pop topbar-pop-bell" id="topbar-bell-pop" role="dialog" aria-label="<?= $t('5502|Notifikationer') ?>">
-        <div class="topbar-pop-title"><?= $t('5502|Notifikationer') ?></div>
-        <div class="topbar-empty"><i class='bx bx-bell-off'></i><span><?= $t('5503|Ingen notifikationer endnu') ?></span></div>
+      <div class="topbar-pop topbar-pop-bell" id="topbar-bell-pop" role="dialog" aria-label="<?= $t('5502|Notifikationer') ?>" data-empty="<?= $t('5503|Ingen notifikationer endnu') ?>">
+        <div class="topbar-notif-head"><b><?= $t('5502|Notifikationer') ?></b><button type="button" id="topbar-notif-all" onclick="topbarNotifRead('all', '')"><?= $t('5634|Markér alle som læst') ?></button></div>
+        <div class="topbar-notif-list" id="topbar-notif-list"><div class="topbar-empty"><i class='bx bx-bell-off'></i><span><?= $t('5503|Ingen notifikationer endnu') ?></span></div></div>
       </div>
     </div>
 
@@ -404,6 +419,9 @@ function topbar_render(array $ctx, int $sprogId): void
           <a class="topbar-pop-item topbar-pop-out" role="menuitem" href="#" onclick="redirect_uri('/index/logud.php'); return false;"><i class='bx bx-log-out'></i><?= $t('93|Log ud') ?></a>
         </div>
       </div>
+    </div>
+
+    <button type="button" class="topbar-move" id="topbar-move" onclick="topbarMovePlacement()" data-to-sidebar="<?= $t('5608|Flyt til sidebar') ?>" data-to-top="<?= $t('5609|Flyt til toppen') ?>" title="<?= $t('5608|Flyt til sidebar') ?>"><i class='bx bx-transfer-alt'></i><span><?= $t('5608|Flyt til sidebar') ?></span></button>
     </div>
   </header>
 	<?php

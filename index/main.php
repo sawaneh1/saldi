@@ -47,6 +47,8 @@
 // 20260922 Sawaneh Topbar spec 2026-09-17 step 1a: global cluster (language, Assist, PoS, chip with
 //                  dashboard hide/edit + print), no breadcrumb, sidebar Kontakt/Print removed,
 //                  Guides and Kassesystem entries added, widget's Assist entry hidden.
+// 20260927 Sawaneh Step 1b: cluster placement top/sidebar (mount point + topbarApplyPlacement).
+// 20260928 Sawaneh Phase 4: System → Settings opens systemdata/settings.php, shown per settings-group access.
 @session_start();
 $s_id = session_id();
 
@@ -77,6 +79,8 @@ include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/stdFunc/dkDecimal.php");
 $topbar = topbar_context($topbarOnlineRows, (string) $brugernavn, (int) $bruger_id, (string) $rettigheder, $revisor, $regnaar, (int) $sprog_id, (string) $regnskab);
+include_once(__DIR__ . "/../systemdata/settingsRegistry.php");
+$settingsGroups = settings_accessible_groups();
 
 function check_permissions($permarr)
 {
@@ -182,8 +186,8 @@ function brightenColor($color, $amount = 0.2) {
 <title>Sidebar</title>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
-<link href='../css/sidebar_style.css?v=23' rel='stylesheet'>
-<link href='../css/topbar.css?v=6' rel='stylesheet'>
+<link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
+<link href='../css/topbar.css?v=10' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -370,7 +374,7 @@ function brightenColor($color, $amount = 0.2) {
       <?php } ?>
 
       <!-- System -->
-      <li style="display: <?php if (check_permissions(array(0, 1, 11))) {
+      <li style="display: <?php if (check_permissions(array(0, 11)) || $settingsGroups) {
                             echo 'block';
                           } else {
                             echo 'none';
@@ -388,9 +392,11 @@ function brightenColor($color, $amount = 0.2) {
           if (check_permissions(array(0))) {
             echo '<li><a href="#" onclick=\'update_iframe("/systemdata/kontoplan.php")\'>' . findtekst('612|Kontoplan', $sprog_id) . '</a></li>';
           }
-          if (check_permissions(array(1))) {
-            echo '<li><a href="#" onclick=\'update_iframe("/systemdata/syssetup.php")\'>' . findtekst('122|Indstillinger', $sprog_id) . '</a></li>';
-
+          // 20260928 Phase 4: Settings opens the front page and shows for anyone with a settings group.
+          if ($settingsGroups) {
+            echo '<li><a href="#" onclick=\'update_iframe("/systemdata/settings.php")\'>' . findtekst('122|Indstillinger', $sprog_id) . '</a></li>';
+          }
+          if (isset($settingsGroups['pos'])) {
             # Kassesystem eller ej
             $qtxt = "SELECT id FROM grupper WHERE art='POS' AND box1>='1' AND fiscal_year='$regnaar'";
             $state = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
@@ -435,6 +441,7 @@ function brightenColor($color, $amount = 0.2) {
     </li>
   </ul>
 
+  <div id="cluster-sidebar-mount"></div>
   <div id="desc-line">
     <p title="DB nummer <?php print $db; ?>">Saldi version <?php print $version; ?></p>
   </div>
@@ -547,25 +554,116 @@ function brightenColor($color, $amount = 0.2) {
     window.frames['iframe_a'].print();
   }
 
-  // SALDI Assist: the widget script injects its own launcher; open it directly.
+  // Global cluster placement (spec 2.3): the same DOM node is mounted either in the
+  // top bar or at the bottom of the sidebar; no page reload, the iframe is untouched.
+  function topbarApplyPlacement(placement) {
+    const cluster = document.getElementById('topbar-cluster');
+    const header = document.getElementById('topbar');
+    const mount = document.getElementById('cluster-sidebar-mount');
+    const move = document.getElementById('topbar-move');
+    topbarCloseAll();
+    if (placement === 'sidebar') {
+      mount.appendChild(cluster);
+      document.documentElement.classList.add('cluster-sidebar');
+      move.querySelector('span').textContent = move.dataset.toTop;
+      move.title = move.dataset.toTop;
+    } else {
+      header.appendChild(cluster);
+      document.documentElement.classList.remove('cluster-sidebar');
+      move.querySelector('span').textContent = move.dataset.toSidebar;
+      move.title = move.dataset.toSidebar;
+    }
+    header.dataset.placement = placement;
+  }
+  function topbarMovePlacement() {
+    const next = document.getElementById('topbar').dataset.placement === 'sidebar' ? 'top' : 'sidebar';
+    topbarApplyPlacement(next);
+    const body = new URLSearchParams({ action: 'placement', placement: next });
+    fetch('topbarAction.php', { method: 'POST', body: body, credentials: 'same-origin' }).catch(() => {});
+  }
+  if (document.getElementById('topbar').dataset.placement === 'sidebar') {
+    topbarApplyPlacement('sidebar');
+  }
+
+  // Notification center (spec §3): polled from the shell every 60 s, rendered client-side.
+  const topbarNotifIcons = { news: 'bx-news', warning: 'bx-error', suggestion: 'bx-bulb', system: 'bx-plug' };
+  function topbarNotifLoad() {
+    fetch('notifications.php', { credentials: 'same-origin' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) { topbarNotifRender(data); } })
+      .catch(() => {});
+  }
+  function topbarNotifRender(data) {
+    const list = document.getElementById('topbar-notif-list');
+    const btn = document.getElementById('topbar-bell-btn');
+    const pop = document.getElementById('topbar-bell-pop');
+    if (!list || !btn) { return; }
+    let badge = btn.querySelector('.topbar-badge');
+    if (data.unread > 0) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'topbar-badge'; btn.appendChild(badge); }
+      badge.textContent = data.unread > 99 ? '99+' : String(data.unread);
+    } else if (badge) {
+      badge.remove();
+    }
+    document.getElementById('topbar-notif-all').hidden = data.unread === 0;
+    list.textContent = '';
+    if (!data.items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'topbar-empty';
+      empty.innerHTML = "<i class='bx bx-bell-off'></i>";
+      const span = document.createElement('span'); span.textContent = pop.dataset.empty; empty.appendChild(span);
+      list.appendChild(empty);
+      return;
+    }
+    data.items.forEach((n) => {
+      const item = document.createElement('div');
+      item.className = 'topbar-notif' + (n.unread ? ' unread' : '');
+      item.addEventListener('click', () => topbarNotifRead(n.id, n.link));
+      const ic = document.createElement('div');
+      ic.className = 'topbar-notif-ic topbar-notif-' + n.type;
+      ic.innerHTML = "<i class='bx " + (topbarNotifIcons[n.type] || 'bx-bell') + "'></i>";
+      const txt = document.createElement('div');
+      const t = document.createElement('div'); t.className = 'topbar-notif-t'; t.textContent = n.title;
+      const b = document.createElement('div'); b.className = 'topbar-notif-b'; b.textContent = n.body;
+      const a = document.createElement('div'); a.className = 'topbar-notif-time'; a.textContent = n.ago;
+      txt.appendChild(t); if (n.body) { txt.appendChild(b); } txt.appendChild(a);
+      item.appendChild(ic); item.appendChild(txt);
+      list.appendChild(item);
+    });
+  }
+  function topbarNotifRead(id, link) {
+    const body = new URLSearchParams({ action: 'read', id: String(id) });
+    fetch('notifications.php', { method: 'POST', body: body, credentials: 'same-origin' })
+      .then(() => topbarNotifLoad())
+      .catch(() => {});
+    if (link) {
+      topbarCloseAll();
+      update_iframe(link);
+    }
+  }
+  topbarNotifLoad();
+  setInterval(topbarNotifLoad, 60000);
+
+  // SALDI Assist: the widget (chaty-v2) exposes window.SALDI_CHAT and mounts its own
+  // launcher as a <li> in the lower sidebar menu. The cluster button opens the chat
+  // directly (spec 2.1); the injected entry is collapsed, not removed, so the widget's
+  // layout observer keeps working.
   function topbarOpenAssist() {
     topbarCloseAll();
-    const api = window.SaldiAssistWidget || window.Chaty || window.chaty;
-    if (api && typeof api.open === 'function') { api.open(); return; }
-    if (api && typeof api.toggle === 'function') { api.toggle(); return; }
-    const injected = topbarAssistInjectedEntry();
-    if (injected) { injected.click(); return; }
-    const launcher = document.querySelector('[id*="chaty"] button, [class*="chaty"] button, [id*="chaty-launcher"], [class*="assist-launcher"]');
+    if (window.SALDI_CHAT && typeof window.SALDI_CHAT.open === 'function') {
+      window.SALDI_CHAT.open();
+      return;
+    }
+    const launcher = document.getElementById('saldi-chat-launcher');
     if (launcher) { launcher.click(); }
   }
-  function topbarAssistInjectedEntry() {
-    return Array.from(document.querySelectorAll('.sidebar a, .sidebar button, .sidebar li')).find((el) => /SALDI Assist/i.test(el.textContent || '')) || null;
+  function topbarHideAssistEntry() {
+    const launcher = document.getElementById('saldi-chat-launcher');
+    const li = launcher ? launcher.closest('li') : null;
+    if (li && !li.classList.contains('topbar-assist-hidden')) { li.classList.add('topbar-assist-hidden'); }
   }
-  // The widget's own sidebar entry is replaced by the cluster button (spec 6): hide it once injected.
-  new MutationObserver(() => {
-    const el = topbarAssistInjectedEntry();
-    if (el) { (el.closest('li') || el).style.display = 'none'; }
-  }).observe(document.querySelector('.sidebar'), { childList: true, subtree: true });
+  topbarHideAssistEntry();
+  new MutationObserver(topbarHideAssistEntry).observe(document.querySelector('.sidebar'), { childList: true, subtree: true });
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.topbar-pop, .topbar-item')) {

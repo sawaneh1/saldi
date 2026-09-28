@@ -20,6 +20,7 @@
 // 20260709 SZ Created: JSON lookup endpoint backing the Settings search box
 // 20260710 SZ Added 3-tier label/keyword/word-fallback matching + Norwegian label support
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20260928 Sawaneh Results limited to settings groups the user may open (phase 4).
 // JSON lookup endpoint backing the Settings search box (see settingsRegistry.php).
 
 ob_start();
@@ -57,6 +58,10 @@ function settingsEntryIsVisible($entry) {
 		switch ($entry['visibilityRule']) {
 			case 'posModule':
 				if (!file_exists("../debitor/pos_ordre.php")) return false;
+				break;
+			case 'masterDb':
+				global $db, $sqdb;
+				if (!isset($db) || !isset($sqdb) || $db !== $sqdb) return false;
 				break;
 			case 'docubizz':
 				$q = db_select("select id from grupper where art = 'DIV' and kodenr = '2' and box6='on'", __FILE__ . " linje " . __LINE__);
@@ -146,7 +151,13 @@ function settingsEntryMatch($entry, $label, $search) {
 $label_matches = array();
 $keyword_matches = array();
 
+$accessibleGroups = function_exists('settings_accessible_groups') ? settings_accessible_groups() : null;
 foreach (getSettingsRegistry() as $entry) {
+	// Phase 4 (spec S3): only pages of groups the user may open; personal settings always.
+	$entryGroup = isset($entry['group']) ? $entry['group'] : '';
+	if ($accessibleGroups !== null && $entryGroup !== 'personal' && !isset($accessibleGroups[$entryGroup])) {
+		continue;
+	}
 	if (!settingsEntryIsVisible($entry)) {
 		continue;
 	}

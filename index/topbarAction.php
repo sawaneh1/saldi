@@ -25,6 +25,7 @@
 // 20260916 Sawaneh Controller for topbar actions (fiscal-year switch from the user chip).
 //                  POST only, redirects back to the shell (Post/Redirect/Get).
 // 20260922 Sawaneh Language switch action; auditor sessions keep their year in the master revisor table.
+// 20260927 Sawaneh Placement action (cluster_placement setting, spec 2.3).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -82,6 +83,17 @@ if ($action === 'language') {
 		include(__DIR__ . "/../includes/connect.php");
 		db_modify("update online set language_id = '$languageId' where session_id = '" . db_escape_string($s_id) . "'", __FILE__ . " linje " . __LINE__);
 	}
+}
+
+// Cluster placement (spec 2.3): personal setting, saved from the shell via fetch.
+if ($action === 'placement' && (int) $bruger_id !== 0) {
+	include_once(__DIR__ . "/../includes/std_func.php");
+	$placement = (isset($request['placement']) && $request['placement'] === 'sidebar') ? 'sidebar' : 'top';
+	update_settings_value('cluster_placement', 'globals', $placement, 'Global bar placement: top or sidebar', (int) $bruger_id);
+	ob_end_clean();
+	header('Content-Type: application/json');
+	print json_encode(array('ok' => true, 'placement' => $placement));
+	exit;
 }
 
 ob_end_clean();

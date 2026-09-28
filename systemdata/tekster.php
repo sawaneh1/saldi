@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------
 // 20210818 LOE Updated some line here
 // 20210819 Added some blocks of codes and added an option to download edited text as csv file
+// 20260928 Sawaneh Phase 4: top-menu branch removed; top.php is the only frame.
 
 @session_start();
 $s_id=session_id();
@@ -33,19 +34,7 @@ include("../includes/std_func.php");
 
 if (!isset ($sprog)) $sprog = null;
 global $db; 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">\n";
-	print "<div class=\"headerbtnLft\"></div>\n";
-#	print "<span class=\"headerTxt\">Systemsetup</span>\n";     
-#	print "<div class=\"headerbtnRght\"><!--<a href=\"index.php?page=../debitor/debitorkort.php;title=debitor\" class=\"button green small right\">Ny debitor</a>--></div>";       
-	print "</div><!-- end of header -->";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_div_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontentLargeHolder\">\n";
-} else include("top.php");
+include("top.php");
 
 
 // if($mod = if_isset($_GET['mod'])){ #20210819

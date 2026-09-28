@@ -29,6 +29,7 @@
 //20250805 LOE added close button to settings popup. and also added weekly graph snippet
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20260922 Sawaneh Dashboard cleanup (topbar spec 5): heading, year/language selectors and buttons removed.
+// 20260927 Sawaneh News and batch-expiry banners removed (now notifications in the bell).
 @session_start();
 $s_id = session_id();
 
@@ -117,33 +118,6 @@ global $regnaar;
 	if (is_null($regnaar)) {
 		print "<p>".findtekst('2575|Der er i øjeblikket intet aktivt regnskabsår. Aktivér et regnskabsår gennem System » Indstillinger » Regnskabsår', $sprog_id)."</p>";
 	}
-	// Expiry warning for users without finance access but with inventory access
-	if (check_permissions(array(12))) {
-		$_expiry_warn_days = get_due_date_warning_days($bruger_id);
-		$_expiry_qtxt = "SELECT COUNT(DISTINCT bk.vare_id) AS item_count, 
-                            COUNT(*) AS batch_count
-		                 FROM batch_kob bk
-		                 WHERE bk.due_date IS NOT NULL AND bk.rest > 0
-		                 AND bk.due_date <= CURRENT_DATE + interval '$_expiry_warn_days days'";
-		$_expiry_r = db_fetch_array(db_select($_expiry_qtxt, __FILE__ . " linje " . __LINE__));
-		if ($_expiry_r && intval($_expiry_r['batch_count']) > 0) {
-			$_exp_items = intval($_expiry_r['item_count']);
-			$_exp_batches = intval($_expiry_r['batch_count']);
-			$_expired_qtxt = "SELECT COUNT(*) FROM batch_kob WHERE due_date IS NOT NULL AND rest > 0 AND due_date < CURRENT_DATE";
-			$_expired_r = db_fetch_array(db_select($_expired_qtxt, __FILE__ . " linje " . __LINE__));
-			$_exp_expired = intval($_expired_r[0]);
-			$_exp_bg = $_exp_expired > 0 ? '#ffcccc' : '#ffffcc';
-			$_exp_border = $_exp_expired > 0 ? '#e00' : '#cc0';
-			$_exp_msg = findtekst('5021|Advarsel', $sprog_id) . ': ';
-			if ($_exp_expired > 0) {
-				$_exp_msg .= $_exp_expired . ' ' . findtekst('5022|batch(er) er udl&oslash;bet', $sprog_id) . '. ';
-			}
-			$_exp_msg .= $_exp_batches . ' ' . findtekst('5023|batch(er) p&aring;', $sprog_id) . ' ' . $_exp_items . ' ' . findtekst('5024|vare(r) udl&oslash;ber inden for', $sprog_id) . ' ' . $_expiry_warn_days . ' ' . findtekst('5025|dage', $sprog_id) . '.';
-			print "<div style='background-color:$_exp_bg; border-left:4px solid $_exp_border; padding:0.8em 1.2em; margin-top:1em; border-radius:4px; cursor:pointer;' onclick=\"parent.location.hash='/lager/udlobsrapport.php'\">";
-			print "<b>$_exp_msg</b> " . findtekst('5026|Klik for at se udl&oslash;bsrapporten', $sprog_id) . ".";
-			print "</div>";
-		}
-	}
 
 //	print "<p title='For at få adgang skal du aktivere finansmodulet for brugeren'>Du har ikke adgang til at se virksomhedsoversigten</p>";
 	print "<img src='../img/Saldi_Main_Logo.png' style='position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40%'></img>";
@@ -179,9 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['cookieLanguageId']))
    update_settings_value("varegrp_doughnut", "dashboard_toggles", if_isset($_POST['varegrpdoughnut'],  "off"),   "Show the sales of varegrupper in the year in a doughnut");
 }
 
-if (isset($_GET['close_snippet']) && $_GET['close_snippet'] == '1') {
-   update_settings_value("closed_news_snippet", "dashboard", $newssnippet, "The newssnippet that was closed by the user");
-}
 if (isset($_GET['hidden']) && $_GET['hidden'] == '1') {
    update_settings_value("hide_dash", "dashboard", 1, "Weather or not the newssnippet is showen to the user", $user=$bruger_id);
 }
@@ -263,40 +234,7 @@ $name = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))[0];
 
 print "<div style='display: flex; flex-direction: column; padding: 2em 1em; gap: 2em;' class='content'>";
 
-# Newsbar
-if ((isset($closed_newssnippet) && $closed_newssnippet) != isset($newssnippet) && $newssnippet != '') {
-	print "<div id='newsbar'><span><b>Nyt i saldi:</b> $newssnippet</span><span id='closebtn' onClick=\"document.location.href = 'dashboard.php?close_snippet=1'\">x</span></div>";
-}
-
-# Expiry warning banner — show if user has inventory access (module 12)
-if (check_permissions(array(12))) {
-	$_expiry_warn_days = get_due_date_warning_days($bruger_id);
-	$_expiry_qtxt = "SELECT COUNT(DISTINCT bk.vare_id) AS item_count, COUNT(*) AS batch_count
-	                 FROM batch_kob bk
-	                 WHERE bk.due_date IS NOT NULL AND bk.rest > 0
-	                 AND bk.due_date <= CURRENT_DATE + interval '$_expiry_warn_days days'";
-	$_expiry_r = db_fetch_array(db_select($_expiry_qtxt, __FILE__ . " linje " . __LINE__));
-	if ($_expiry_r && intval($_expiry_r['batch_count']) > 0) {
-		$_exp_items = intval($_expiry_r['item_count']);
-		$_exp_batches = intval($_expiry_r['batch_count']);
-		// Count already expired
-		$_expired_qtxt = "SELECT COUNT(*) FROM batch_kob WHERE due_date IS NOT NULL AND rest > 0 AND due_date < CURRENT_DATE";
-		$_expired_r = db_fetch_array(db_select($_expired_qtxt, __FILE__ . " linje " . __LINE__));
-		$_exp_expired = intval($_expired_r[0]);
-
-		$_exp_bg = $_exp_expired > 0 ? '#ffcccc' : '#ffffcc';
-		$_exp_border = $_exp_expired > 0 ? '#e00' : '#cc0';
-		$_exp_msg = findtekst('5021|Advarsel', $sprog_id) . ': ';
-		if ($_exp_expired > 0) {
-			$_exp_msg .= $_exp_expired . ' ' . findtekst('5022|batch(er) er udl&oslash;bet', $sprog_id) . '. ';
-		}
-		$_exp_msg .= $_exp_batches . ' ' . findtekst('5023|batch(er) p&aring;', $sprog_id) . ' ' . $_exp_items . ' ' . findtekst('5024|vare(r) udl&oslash;ber inden for', $sprog_id) . ' ' . $_expiry_warn_days . ' ' . findtekst('5025|dage', $sprog_id) . '.';
-		print "<div style='background-color:$_exp_bg; border-left:4px solid $_exp_border; padding:0.8em 1.2em; border-radius:4px; cursor:pointer;' onclick=\"parent.location.hash='/lager/udlobsrapport.php'\">";
-		print "<b>$_exp_msg</b> " . findtekst('5026|Klik for at se udl&oslash;bsrapporten', $sprog_id) . ".";
-		print "</div>";
-	}
-}
-
+// 20260927 Sawaneh News banner and batch-expiry banner replaced by the notification bell (topbar spec 3.3 / 6).
 // 20260922 Sawaneh Topbar spec 5: heading, fiscal-year/language selectors and the hide/edit/PoS
 // buttons moved to the shell (user chip, global cluster, sidebar). The hidden= handling and the
 // #settingpopup editor below stay; the chip drives them.

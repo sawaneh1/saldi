@@ -408,3 +408,8 @@ body {
         width: calc(100% - 72px);
     }  */
   }
+
+/* 20260927 Sawaneh cluster in sidebar mode: no global bar, the page starts at the top */
+html.cluster-sidebar .home-section .home-content {
+    height: 100% !important;
+}

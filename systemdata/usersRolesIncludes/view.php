@@ -23,6 +23,7 @@
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
 // 20260916 Sawaneh View functions for systemdata/usersRoles.php (users, roles matrix, audit log).
+// 20260928 Sawaneh Back button top-left in the theme colour, as elsewhere in the system (was Close top-right).
 
 /**
  * @param array<string, mixed> $vm From ur_view_model().
@@ -48,12 +49,12 @@ function ur_view(array $vm): void
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(findtekst('5536|Brugere & roller', $sprog), 'UTF-8', $charset)) ?>;</script>
 <div class="ur-page">
+  <a class="ur-back" style="<?= $h(ur_back_style()) ?>" href="<?= $h(function_exists('nav_back_url') ? nav_back_url('syssetup.php') : 'syssetup.php') ?>"><i class='bx bx-arrow-back'></i><?= $t('5647|Tilbage') ?></a>
   <header class="ur-head">
     <div>
       <h1><i class='bx bx-group'></i><?= $t('5536|Brugere & roller') ?></h1>
       <p class="ur-sub"><?= $t('5591|Brugere uden rolle beholder deres nuværende rettigheder, indtil en rolle tildeles.') ?></p>
     </div>
-    <a class="ur-btn ur-btn-ghost" href="<?= $h(function_exists('nav_back_url') ? nav_back_url('syssetup.php') : 'syssetup.php') ?>"><i class='bx bx-x'></i><?= $t('2172|Luk') ?></a>
   </header>
 
   <?php if ($flash) { ?>
@@ -116,6 +117,17 @@ function ur_view(array $vm): void
 })();
 </script>
 	<?php
+}
+
+/**
+ * Back button in the user's theme colour, as on the other system pages.
+ */
+function ur_back_style(): string
+{
+	global $buttonColor, $buttonTxtColor;
+	$bg = !empty($buttonColor) ? $buttonColor : '#114691';
+	$fg = !empty($buttonTxtColor) ? $buttonTxtColor : '#ffffff';
+	return 'background:' . $bg . ';color:' . $fg;
 }
 
 /**

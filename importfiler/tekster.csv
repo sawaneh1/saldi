@@ -5210,3 +5210,59 @@
 5609	Flyt til toppen	Move to top	Flytt til toppen
 5610	Placering af den globale bjælke	Global bar placement	Plassering av den globale linjen
 5611	Topbjælke	Top bar	Topplinje
+5612	dig	you	deg
+5613	Profil	Profile	Profil
+5614	Min adgang	My access	Min tilgang
+5615	Aktive sessioner	Active sessions	Aktive økter
+5616	Log andre enheder ud	Log out other devices	Logg ut andre enheter
+5617	Denne enhed	This device	Denne enheten
+5618	Indtast din nuværende adgangskode for at ændre e-mail, telefon, tofaktor eller adgangskode	Enter your current password to change email, phone, two-factor or password	Skriv inn nåværende passord for å endre e-post, telefon, tofaktor eller passord
+5619	Bekræft med din nuværende adgangskode	Confirm with your current password	Bekreft med nåværende passord
+5620	Regnskabets administratorer	The company's administrators	Regnskapets administratorer
+5621	Kontakt en administrator for at få ændret din adgang	Contact an administrator to change your access	Kontakt en administrator for å endre tilgangen din
+5622	Sidebar	Sidebar	Sidepanel
+5623	Andre enheder er logget ud	Other devices were logged out	Andre enheter er logget ut
+5624	Tofaktor-metode: SMS når et telefonnummer er angivet, ellers e-mail	Two-factor method: SMS when a phone number is set, otherwise email	Tofaktormetode: SMS når et telefonnummer er angitt, ellers e-post
+5625	Den nuværende adgangskode mangler eller er forkert – ændringer af e-mail, telefon, tofaktor og adgangskode blev ikke gemt	The current password is missing or wrong – changes to email, phone, two-factor and password were not saved	Nåværende passord mangler eller er feil – endringer av e-post, telefon, tofaktor og passord ble ikke lagret
+5626	Nyt i Saldi	News from Saldi	Nytt i Saldi
+5627	Intet aktivt regnskabsår	No active fiscal year	Intet aktivt regnskapsår
+5628	Opret det næste regnskabsår, før det nuværende slutter den %s	Create the next fiscal year before the current one ends on %s	Opprett neste regnskapsår før det nåværende slutter %s
+5629	Regnskabsåret slutter snart	The fiscal year ends soon	Regnskapsåret slutter snart
+5630	Varer med udløb	Expiring batches	Varer med utløp
+5631	%s batch(er) udløber inden for %s dage – %s er allerede udløbet	%s batch(es) expire within %s days – %s already expired	%s batch(er) utløper innen %s dager – %s er allerede utløpt
+5632	Bankintegration: forbindelsen er udløbet	Bank integration: the connection has expired	Bankintegrasjon: tilkoblingen er utløpt
+5633	Forny forbindelsen til banken, før nye posteringer kan hentes	Renew the bank connection before new entries can be fetched	Forny banktilkoblingen før nye posteringer kan hentes
+5634	Markér alle som læst	Mark all as read	Merk alle som lest
+5635	for %s min. siden	%s min ago	for %s min siden
+5636	for %s timer siden	%s hours ago	for %s timer siden
+5637	i går	yesterday	i går
+5638	for %s dage siden	%s days ago	for %s dager siden
+5639	Notifikationer	Notifications	Varsler
+5640	Nyheder	News	Nyheter
+5641	Advarsler	Warnings	Advarsler
+5642	Forslag	Suggestions	Forslag
+5643	System	System	System
+5644	Vælg hvilke notifikationer du vil se i klokken	Choose which notifications to show in the bell	Velg hvilke varsler du vil se i bjellen
+5645	lige nu	just now	akkurat nå
+5646	Aktivér et regnskabsår under System » Indstillinger » Regnskabsår	Activate a fiscal year under System » Settings » Fiscal year	Aktiver et regnskapsår under System » Innstillinger » Regnskapsår
+5647	Tilbage	Back	Tilbake
+5648	Indstillingsområder	Settings areas	Innstillingsområder
+5649	Firma	Company	Firma
+5650	Varer & lager	Products & inventory	Varer og lager
+5651	Ansatte	Employees	Ansatte
+5653	Stamdata, regnskabsår, kontoindstillinger og sprog	Master data, fiscal years, account settings and language	Stamdata, regnskapsår, kontoinnstillinger og språk
+5654	Kontoplan, moms, valuta, øredifferencer og bilag	Chart of accounts, VAT, currency, rounding and vouchers	Kontoplan, mva, valuta, øreforskjeller og bilag
+5655	Debitorgrupper, rykkere, prislister, formularer og ordrer	Customer groups, reminders, price lists, forms and orders	Kundegrupper, purringer, prislister, skjemaer og ordrer
+5656	Kreditorgrupper	Supplier groups	Leverandørgrupper
+5657	Varegrupper, enheder, varianter, lagre og mærkater	Product groups, units, variants, warehouses and labels	Varegrupper, enheter, varianter, lagre og etiketter
+5658	Ansatte, afdelinger, projekter og provision	Employees, departments, projects and commission	Ansatte, avdelinger, prosjekter og provisjon
+5659	Brugere, roller, rettigheder og log	Users, roles, permissions and log	Brukere, roller, rettigheter og logg
+5660	Bank, API, Stripe, Docubizz og webshop	Bank, API, Stripe, Docubizz and webshop	Bank, API, Stripe, Docubizz og nettbutikk
+5661	Kassevalg og kassemenuer	Register options and register menus	Kassevalg og kassemenyer
+5662	Ind- og udlæsning af kontoplan, kunder, varer og formularer	Import and export of accounts, customers, products and forms	Inn- og utlesing av kontoplan, kunder, varer og skjemaer
+5663	Søg i indstillinger…	Search settings…	Søk i innstillinger…
+5664	Ingen indstillinger matcher søgningen	No settings match the search	Ingen innstillinger samsvarer med søket
+5665	Du har ikke adgang til nogen indstillinger. Kontakt en administrator.	You have no access to any settings. Contact an administrator.	Du har ikke tilgang til noen innstillinger. Kontakt en administrator.
+5666	Alle indstillinger	All settings	Alle innstillinger
+5667	Du har ændringer, der ikke er gemt. Vil du forlade siden?	You have unsaved changes. Leave the page?	Du har endringer som ikke er lagret. Vil du forlate siden?
+5668	Systemværktøjer	System tools	Systemverktøy

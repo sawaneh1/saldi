@@ -48,6 +48,7 @@
 // 20260723 MJ  Varer/ydelser-type (box5) til VG-varegrupper for Momsrubrikker A/B/C-afledning.
 // 20260723 MJ  Fjernet Rubrik-kolonne (box5) fra SM/KM/YM/EM-momskoder: bruges ikke laengere.
 // 20260724 MJ  EU-zone-dropdown (box10) paa KG-kreditorgrupper til Momsrubrikker Rubrik A.
+// 20260928 Sawaneh Phase 4: only the side-menu frame (top.php) remains; top-menu and old-menu branches removed.
 
 @session_start();
 $s_id=session_id();
@@ -69,30 +70,9 @@ include("../includes/genberegn.php");
 if (!isset ($fejl)) $fejl = NULL;
 $dd=date("Y-m-d");
 
-if ($menu=='T') {
-	#	print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">";
-	$_SESSION['UserName'] = if_isset($_SESSION,$brugernavn,'UserName');
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontentLargeHolder\">\n";
-	print "<center><table border=\"0\" cellspacing=\"0\" id=\"dataTable\" class=\"dataTableSys\" width='100%' height='350px'><tbody>";
-} elseif ($menu=='S') {
-	$_SESSION['UserName'] = if_isset($_SESSION,$brugernavn,'UserName');
-	include("top.php");
-	print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"1\"><tbody>";
-} else {
-	include("oldTop.php");
-	print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"1\"><tbody>";
-}
+$_SESSION['UserName'] = if_isset($_SESSION,$brugernavn,'UserName');
+include("top.php");
+print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"1\"><tbody>";
 $valg=if_isset($_GET, null,'valg');
 
 if ($valg!='afdelinger') {
@@ -530,10 +510,6 @@ print "
 ";
 
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 ?>

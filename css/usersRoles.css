@@ -167,3 +167,8 @@ html, body {
     .ur-grid, .ur-matrix { grid-template-columns: 1fr; }
     .ur-page { padding: 16px 14px 60px; }
 }
+
+/* Back button as on the other system pages (theme colour, top-left) */
+.ur-back { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px 0 10px; margin-bottom: 14px; border-radius: 6px; font-size: 13.5px; font-weight: 600; text-decoration: none; }
+.ur-back i { font-size: 18px; }
+.ur-back:hover { filter: brightness(1.1); }

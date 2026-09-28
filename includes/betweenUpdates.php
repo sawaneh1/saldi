@@ -664,4 +664,30 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 include_once(__DIR__ . "/permissions.php");
 perm_ensure_default_roles();
 
+// 20260927 Sawaneh Notification center (topbar spec §3.2): notifications + per-user read state.
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='notifications'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "CREATE TABLE notifications (
+		id SERIAL PRIMARY KEY NOT NULL,
+		user_id integer,
+		type varchar(30) NOT NULL,
+		title text,
+		body text,
+		link text,
+		created timestamp DEFAULT now(),
+		expires date,
+		source_key varchar(80))";
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+	db_modify("CREATE INDEX notifications_user_idx ON notifications (user_id, created)", __FILE__ . " linje " . __LINE__);
+}
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='notification_read'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "CREATE TABLE notification_read (
+		notification_id integer NOT NULL,
+		user_id integer NOT NULL,
+		read_at timestamp DEFAULT now(),
+		PRIMARY KEY (notification_id, user_id))";
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+}
+
 ?>

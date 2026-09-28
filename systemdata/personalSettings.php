@@ -26,6 +26,10 @@
 //                  choices, contact details, 2FA, password). Replaces the "Personlige valg"
 //                  section in diverse.php and the self-service page brugerdata.php.
 //                  Controller (POST -> save -> redirect) above, view below.
+// 20260927 Sawaneh Topbar spec 2026-09-17 step 1b: three tabs (Profil / Sikkerhed / Min adgang),
+//                  cluster placement, active sessions with "log out other devices", current
+//                  password required for email/phone/2FA/password changes (spec 4.5), audit log.
+// 20260928 Sawaneh Back button top-left in the theme colour, as elsewhere in the system (was Close top-right).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -35,8 +39,8 @@
  * @var string $db_encode
  * @var int    $sprog_id
  * @var mixed  $revisor
+ * @var string $rettigheder
  * @var string $regnskab
- * @var mixed  $header
  */
 
 @session_start();
@@ -48,25 +52,34 @@ $css = "../css/personalSettings.css";
 $permission_key = 'any';
 
 include(__DIR__ . "/../includes/connect.php");
+// The `online` table lives in the master database: read this user's sessions now.
+$sessionRows = personal_settings_sessions($s_id);
 include(__DIR__ . "/../includes/online.php");
 include(__DIR__ . "/../includes/std_func.php");
+include_once(__DIR__ . "/../includes/notifications.php");
 
 $contextQuery = personal_settings_context_query($_GET, $_POST);
 $selfUrl = 'personalSettings.php' . ($contextQuery !== '' ? '?' . $contextQuery : '');
+$tab = isset($_GET['tab']) && in_array($_GET['tab'], array('profile', 'security', 'access', 'notifications'), true) ? $_GET['tab'] : 'profile';
 
-// An auditor / master-admin session has bruger_id -1 and no row in brugere, but its
-// colours, popup choice and language are still stored per session user (grupper USET
-// kodenr -1, settings user_id -1) - exactly as the old "Personlige valg" did.
 $isRevisor = (bool) $revisor;
 $canEdit = ((int) $bruger_id !== 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
-	$result = personal_settings_save($_POST, (int) $bruger_id, (string) $brugernavn, (string) $db, $isRevisor);
-	if (!empty($result['language'])) {
-		// The session row lives in the master database: back to it for the last write.
+	$action = isset($_POST['action']) ? (string) $_POST['action'] : 'save';
+	$result = array();
+	if ($action === 'logout_others') {
 		include(__DIR__ . "/../includes/connect.php");
-		db_modify("update online set language_id = '" . (int) $result['language'] . "' where session_id = '" . db_escape_string($s_id) . "'", __FILE__ . " linje " . __LINE__);
-		unset($result['language']);
+		db_modify("delete from online where brugernavn = '" . db_escape_string((string) $brugernavn) . "' and db = '" . db_escape_string((string) $db) . "' and session_id != '" . db_escape_string($s_id) . "'", __FILE__ . " linje " . __LINE__);
+		$result = array('tab' => 'security', 'sessions' => 'out');
+	} else {
+		$result = personal_settings_save($_POST, (int) $bruger_id, (string) $brugernavn, (string) $db, $isRevisor);
+		if (!empty($result['language'])) {
+			// The session row lives in the master database: back to it for the last write.
+			include(__DIR__ . "/../includes/connect.php");
+			db_modify("update online set language_id = '" . (int) $result['language'] . "' where session_id = '" . db_escape_string($s_id) . "'", __FILE__ . " linje " . __LINE__);
+			unset($result['language']);
+		}
 	}
 	ob_end_clean();
 	header('Location: ' . $selfUrl . ($contextQuery !== '' ? '&' : '?') . http_build_query($result));
@@ -74,10 +87,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
 }
 
 $flash = personal_settings_flash($_GET, (int) $sprog_id);
-$data = $canEdit ? personal_settings_load((int) $bruger_id, $isRevisor, (string) $brugernavn) : null;
-personal_settings_view($data, $flash, $selfUrl, (int) $sprog_id, (string) $db_encode);
+$data = $canEdit ? personal_settings_load((int) $bruger_id, $isRevisor, (string) $brugernavn, (string) $rettigheder, $sessionRows, $s_id, (int) $sprog_id) : null;
+personal_settings_view($data, $flash, $selfUrl, $tab, (int) $sprog_id, (string) $db_encode);
 
 // ---------------------------------------------------------------- controller helpers
+
+/**
+ * This user's sessions in the master `online` table (same login name, same company).
+ * Must run before includes/online.php switches the connection.
+ *
+ * @return array<int, array{session_id: string, logtime: int}>
+ */
+function personal_settings_sessions(string $sessionId): array
+{
+	$sessionId = db_escape_string($sessionId);
+	$me = db_fetch_array(db_select("select brugernavn, db from online where session_id = '$sessionId' order by logtime desc limit 1", __FILE__ . " linje " . __LINE__));
+	if (!$me) {
+		return array();
+	}
+	$rows = array();
+	$q = db_select("select session_id, logtime from online where brugernavn = '" . db_escape_string((string) $me['brugernavn']) . "' and db = '" . db_escape_string((string) $me['db']) . "' order by logtime desc", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$rows[] = array('session_id' => (string) $r['session_id'], 'logtime' => (int) $r['logtime']);
+	}
+	return $rows;
+}
 
 /**
  * Carry the shell/popup context flags across the redirect so the page keeps
@@ -105,66 +139,106 @@ function personal_settings_hex($value, string $default): string
 }
 
 /**
+ * True when $password is the user's current password (md5 legacy or saldikrypt).
+ */
+function personal_settings_password_ok(int $brugerId, string $password): bool
+{
+	if ($password === '') {
+		return false;
+	}
+	$r = db_fetch_array(db_select("select kode from brugere where id = $brugerId", __FILE__ . " linje " . __LINE__));
+	$stored = isset($r['kode']) ? (string) $r['kode'] : '';
+	return $stored !== '' && ($stored === md5($password) || $stored === saldikrypt($brugerId, $password));
+}
+
+/**
  * Persist everything the form posted. Writes go to the same places the old pages
- * wrote (grupper USET, settings colors/lager, brugere), so nothing else changes.
+ * wrote (grupper USET, settings colors/lager/globals, brugere), so nothing else changes.
  *
- * @return array{saved: int, language?: int, pw?: string, tfa?: string} Query parameters for the redirect.
+ * @return array<string, mixed> Query parameters for the redirect.
  */
 function personal_settings_save(array $post, int $brugerId, string $brugernavn, string $db, bool $isRevisor): array
 {
-	$out = array('saved' => 1);
+	$tab = isset($post['tab']) && in_array($post['tab'], array('profile', 'security', 'notifications'), true) ? $post['tab'] : 'profile';
+	$out = array('tab' => $tab, 'saved' => 1);
 	$reloadShell = false;
-	$current = personal_settings_load($brugerId, $isRevisor, $brugernavn);
+	$current = personal_settings_load($brugerId, $isRevisor, $brugernavn, '', array(), '', 1);
 
-	// Language: on the user (next login) and, by the caller, on the session row.
-	$lang = isset($post['language_id']) ? (int) $post['language_id'] : 0;
-	if ($lang >= 1 && $lang <= 3 && $lang !== $current['language']) {
-		if (!$isRevisor) {
-			db_modify("update brugere set language_id = $lang where id = $brugerId", __FILE__ . " linje " . __LINE__);
+	if ($tab === 'profile') {
+		$lang = isset($post['language_id']) ? (int) $post['language_id'] : 0;
+		if ($lang >= 1 && $lang <= 3 && $lang !== $current['language']) {
+			if (!$isRevisor) {
+				db_modify("update brugere set language_id = $lang where id = $brugerId", __FILE__ . " linje " . __LINE__);
+			}
+			setcookie('languageId', (string) $lang, time() + (10 * 365 * 24 * 60 * 60), '/');
+			$out['language'] = $lang;
+			$reloadShell = true;
 		}
-		setcookie('languageId', (string) $lang, time() + (10 * 365 * 24 * 60 * 60), '/');
-		$out['language'] = $lang;
-		$reloadShell = true;
+
+		$placement = (isset($post['placement']) && $post['placement'] === 'sidebar') ? 'sidebar' : 'top';
+		if ($placement !== $current['placement']) {
+			update_settings_value('cluster_placement', 'globals', $placement, 'Global bar placement: top or sidebar', $brugerId);
+			$reloadShell = true;
+		}
+
+		$colors = array(
+			'bgcolor'        => personal_settings_hex(isset($post['bgcolor']) ? $post['bgcolor'] : '', 'eeeef0'),
+			'fgcolor'        => personal_settings_hex(isset($post['fgcolor']) ? $post['fgcolor'] : '', 'eeeef0'),
+			'buttonColor'    => personal_settings_hex(isset($post['buttonColor']) ? $post['buttonColor'] : '', '114691'),
+			'buttonTxtColor' => personal_settings_hex(isset($post['buttonTxtColor']) ? $post['buttonTxtColor'] : '', 'ffffff'),
+		);
+		$popup = !empty($post['popup']) ? 'on' : '';
+		if ($colors !== $current['colors'] || ($popup !== '') !== $current['popup']) {
+			$reloadShell = true;
+		}
+		$descriptions = array(
+			'bgcolor'        => 'Background color for user settings',
+			'fgcolor'        => 'Nuance color for user settings',
+			'buttonColor'    => 'Background color for user settings',
+			'buttonTxtColor' => 'Button color for user settings',
+		);
+		foreach ($colors as $name => $value) {
+			update_settings_value($name, 'colors', $value, $descriptions[$name], $brugerId);
+		}
+		$r = db_fetch_array(db_select("select id from grupper where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__));
+		if ($r && $r['id']) {
+			$qtxt = "update grupper set box2 = '$popup', box4 = '#$colors[bgcolor]', box5 = '#$colors[fgcolor]' where id = " . (int) $r['id'];
+		} else {
+			$jsvars = "statusbar=0,menubar=0,titlebar=0,toolbar=0,scrollbars=1,resizable=1,dependent=1";
+			$qtxt = "insert into grupper (beskrivelse, kodenr, art, box1, box2, box3, box4, box5) values ";
+			$qtxt .= "('Personlige valg', '$brugerId', 'USET', '$jsvars', '$popup', 'S', '#$colors[bgcolor]', '#$colors[fgcolor]')";
+		}
+		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+
+		if (isset($post['due_date_warning_days']) && $post['due_date_warning_days'] !== '') {
+			update_settings_value('due_date_warning_days', 'lager', max(1, intval($post['due_date_warning_days'])), 'Days before expiry to warn', $brugerId);
+		}
+
+		// Contact details are the 2FA / password-reset channel: current password required (spec 4.5).
+		if (!$isRevisor) {
+			$email = trim(isset($post['email']) ? (string) $post['email'] : '');
+			$tlf = trim(isset($post['tlf']) ? (string) $post['tlf'] : '');
+			if ($email !== $current['email'] || $tlf !== $current['tlf']) {
+				if (personal_settings_password_ok($brugerId, isset($post['confirm_kode']) ? (string) $post['confirm_kode'] : '')) {
+					db_modify("update brugere set email = '" . db_escape_string($email) . "', tlf = '" . db_escape_string(mb_substr($tlf, 0, 16)) . "' where id = $brugerId", __FILE__ . " linje " . __LINE__);
+					audit_log('user.contact', $brugernavn . ': e-mail/telefon ændret');
+				} else {
+					$out['confirm'] = 'missing';
+				}
+			}
+		}
+		audit_log('user.settings', $brugernavn . ': personlige indstillinger gemt');
 	}
 
-	// Colours + popup preference.
-	$colors = array(
-		'bgcolor'        => personal_settings_hex(isset($post['bgcolor']) ? $post['bgcolor'] : '', 'eeeef0'),
-		'fgcolor'        => personal_settings_hex(isset($post['fgcolor']) ? $post['fgcolor'] : '', 'eeeef0'),
-		'buttonColor'    => personal_settings_hex(isset($post['buttonColor']) ? $post['buttonColor'] : '', '114691'),
-		'buttonTxtColor' => personal_settings_hex(isset($post['buttonTxtColor']) ? $post['buttonTxtColor'] : '', 'ffffff'),
-	);
-	$popup = !empty($post['popup']) ? 'on' : '';
-	if ($colors !== $current['colors'] || ($popup !== '') !== $current['popup']) {
-		$reloadShell = true;
-	}
-	$descriptions = array(
-		'bgcolor'        => 'Background color for user settings',
-		'fgcolor'        => 'Nuance color for user settings',
-		'buttonColor'    => 'Background color for user settings',
-		'buttonTxtColor' => 'Button color for user settings',
-	);
-	foreach ($colors as $name => $value) {
-		update_settings_value($name, 'colors', $value, $descriptions[$name], $brugerId);
-	}
-	$r = db_fetch_array(db_select("select id from grupper where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__));
-	if ($r && $r['id']) {
-		$qtxt = "update grupper set box2 = '$popup', box4 = '#$colors[bgcolor]', box5 = '#$colors[fgcolor]' where id = " . (int) $r['id'];
-	} else {
-		$jsvars = "statusbar=0,menubar=0,titlebar=0,toolbar=0,scrollbars=1,resizable=1,dependent=1";
-		$qtxt = "insert into grupper (beskrivelse, kodenr, art, box1, box2, box3, box4, box5) values ";
-		$qtxt .= "('Personlige valg', '$brugerId', 'USET', '$jsvars', '$popup', 'S', '#$colors[bgcolor]', '#$colors[fgcolor]')";
-	}
-	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-
-	// Expiry warning (per user, lager group) - carried over from brugerdata.php.
-	if (isset($post['due_date_warning_days']) && $post['due_date_warning_days'] !== '') {
-		update_settings_value('due_date_warning_days', 'lager', max(1, intval($post['due_date_warning_days'])), 'Days before expiry to warn', $brugerId);
+	if ($tab === 'security' && !$isRevisor) {
+		personal_settings_save_security($post, $brugerId, $brugernavn, $db, $current, $out);
 	}
 
-	// Account row (contact details, 2FA, password) exists only for the company's own users.
-	if (!$isRevisor) {
-		personal_settings_save_account($post, $brugerId, $brugernavn, $db, $out);
+	if ($tab === 'notifications' && !$isRevisor && function_exists('notif_types')) {
+		$on = isset($post['types']) && is_array($post['types']) ? $post['types'] : array();
+		foreach (notif_types() as $type => $label) {
+			update_settings_value('type_' . $type, 'notifications', in_array($type, $on, true) ? '1' : '0', 'Notification type on/off', $brugerId);
+		}
 	}
 
 	if ($reloadShell) {
@@ -175,42 +249,42 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 }
 
 /**
- * Contact details, two-factor login (needs a phone number or an email to send the
- * code to) and password change - the parts that live on the user's brugere row.
+ * Two-factor and password: only with the current password (spec 4.5), every change audited.
  *
- * @param array<string, mixed> $out Redirect parameters; 'tfa' / 'pw' are added here.
+ * @param array<string, mixed> $current From personal_settings_load().
+ * @param array<string, mixed> $out     Redirect parameters; 'tfa' / 'pw' / 'confirm' are added here.
  */
-function personal_settings_save_account(array $post, int $brugerId, string $brugernavn, string $db, array &$out): void
+function personal_settings_save_security(array $post, int $brugerId, string $brugernavn, string $db, array $current, array &$out): void
 {
-	$email = db_escape_string(trim(isset($post['email']) ? (string) $post['email'] : ''));
-	$tlf = db_escape_string(trim(isset($post['tlf']) ? (string) $post['tlf'] : ''));
 	$twofactor = !empty($post['twofactor']);
-	if ($twofactor && $email === '' && $tlf === '') {
-		$twofactor = false;
-		$out['tfa'] = 'missing';
-	}
-	db_modify("update brugere set email = '$email', tlf = '$tlf', twofactor = '" . ($twofactor ? 't' : 'f') . "' where id = $brugerId", __FILE__ . " linje " . __LINE__);
-
-	// Password: only when the user typed something in the password fields.
-	$old = isset($post['glkode']) ? (string) $post['glkode'] : '';
 	$new1 = isset($post['nykode1']) ? (string) $post['nykode1'] : '';
 	$new2 = isset($post['nykode2']) ? (string) $post['nykode2'] : '';
-	if ($old === '' && $new1 === '' && $new2 === '') {
+	$wantsPassword = ($new1 !== '' || $new2 !== '');
+	if ($twofactor === $current['twofactor'] && !$wantsPassword) {
 		return;
 	}
-	if ($brugernavn === 'test' && $db === 'test') {
-		$out['pw'] = 'demo';
-	} elseif ($new1 === '' || $new1 !== $new2) {
-		$out['pw'] = 'mismatch';
-	} else {
-		$r = db_fetch_array(db_select("select kode from brugere where id = $brugerId", __FILE__ . " linje " . __LINE__));
-		$stored = isset($r['kode']) ? (string) $r['kode'] : '';
-		if ($stored !== '' && ($stored === md5($old) || $stored === saldikrypt($brugerId, $old))) {
+	if (!personal_settings_password_ok($brugerId, isset($post['glkode']) ? (string) $post['glkode'] : '')) {
+		$out['confirm'] = 'missing';
+		return;
+	}
+	if ($twofactor !== $current['twofactor']) {
+		if ($twofactor && $current['email'] === '' && $current['tlf'] === '') {
+			$out['tfa'] = 'missing';
+		} else {
+			db_modify("update brugere set twofactor = '" . ($twofactor ? 't' : 'f') . "' where id = $brugerId", __FILE__ . " linje " . __LINE__);
+			audit_log('user.twofactor', $brugernavn . ': ' . ($twofactor ? 'slået til' : 'slået fra'));
+		}
+	}
+	if ($wantsPassword) {
+		if ($brugernavn === 'test' && $db === 'test') {
+			$out['pw'] = 'demo';
+		} elseif ($new1 === '' || $new1 !== $new2) {
+			$out['pw'] = 'mismatch';
+		} else {
 			$hash = db_escape_string(saldikrypt($brugerId, $new1));
 			db_modify("update brugere set kode = '$hash' where id = $brugerId", __FILE__ . " linje " . __LINE__);
+			audit_log('user.password', $brugernavn . ': adgangskode ændret');
 			$out['pw'] = 'changed';
-		} else {
-			$out['pw'] = 'wrong';
 		}
 	}
 }
@@ -218,13 +292,10 @@ function personal_settings_save_account(array $post, int $brugerId, string $brug
 /**
  * Current values for the form.
  *
- * @return array{
- *   name: string, username: string, email: string, tlf: string, twofactor: bool, language: int,
- *   languages: array<int, string>, colors: array{bgcolor: string, fgcolor: string, buttonColor: string, buttonTxtColor: string},
- *   popup: bool, warnDays: int
- * }
+ * @param array<int, array{session_id: string, logtime: int}> $sessionRows
+ * @return array<string, mixed>
  */
-function personal_settings_load(int $brugerId, bool $isRevisor, string $brugernavn): array
+function personal_settings_load(int $brugerId, bool $isRevisor, string $brugernavn, string $rettigheder, array $sessionRows, string $sessionId, int $sprogId): array
 {
 	global $sprog_id;
 
@@ -233,7 +304,7 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		// select * : keep working on company databases that predate the email/tlf/twofactor columns.
 		$u = db_fetch_array(db_select("select * from brugere where id = $brugerId", __FILE__ . " linje " . __LINE__));
 	}
-	$u = ($u ?: array()) + array('brugernavn' => $brugernavn, 'email' => '', 'tlf' => '', 'twofactor' => 'f', 'language_id' => 1, 'ansat_id' => 0);
+	$u = ($u ?: array()) + array('brugernavn' => $brugernavn, 'email' => '', 'tlf' => '', 'twofactor' => 'f', 'language_id' => 1, 'ansat_id' => 0, 'role_id' => 0);
 	$name = trim((string) $u['brugernavn']);
 	$email = trim((string) $u['email']);
 	if ((int) $u['ansat_id'] > 0) {
@@ -245,7 +316,7 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 			$email = trim((string) $a['email']);
 		}
 	}
-	$twofactor = ($u['twofactor'] === 't' || $u['twofactor'] === true || $u['twofactor'] === '1' || $u['twofactor'] === 1);
+	$twofactor = in_array($u['twofactor'], array('t', true, '1', 1), true);
 
 	$uset = db_fetch_array(db_select("select box2, box4, box5 from grupper where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__));
 	$colors = array(
@@ -268,6 +339,32 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		$languages = array(1 => 'Dansk', 2 => 'English', 3 => 'Norsk');
 	}
 
+	// My access (spec 4.3): the role when one is assigned, else the legacy string.
+	$roleName = '';
+	$levels = array();
+	$admins = array();
+	if (function_exists('perm_user_levels')) {
+		$levels = perm_user_levels($brugerId, $rettigheder);
+		if (!$isRevisor && (int) $u['role_id'] > 0) {
+			foreach (perm_roles() as $role) {
+				if ($role['id'] === (int) $u['role_id']) {
+					$roleName = perm_role_name($role, $sprogId);
+				}
+			}
+		}
+		if ($roleName === '') {
+			$roleName = $isRevisor ? findtekst('2562|Revisor', $sprogId) : ((substr($rettigheder, 1, 1) === '1') ? findtekst('330|Administrator', $sprogId) : findtekst('990|Bruger', $sprogId));
+		}
+		$adminRole = function_exists('perm_role_id_by_key') ? perm_role_id_by_key('administrator') : 0;
+		$q = db_select("select b.brugernavn, b.role_id, b.rettigheder, a.navn from brugere b left join ansatte a on a.id = b.ansat_id order by b.brugernavn", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$isAdmin = ($adminRole > 0 && (int) $r['role_id'] === $adminRole) || ((int) $r['role_id'] <= 0 && substr((string) $r['rettigheder'], 1, 1) === '1');
+			if ($isAdmin) {
+				$admins[] = trim((string) $r['navn']) !== '' ? trim((string) $r['navn']) : (string) $r['brugernavn'];
+			}
+		}
+	}
+
 	return array(
 		'name'      => $name,
 		'username'  => trim((string) $u['brugernavn']),
@@ -276,10 +373,17 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		'twofactor' => $twofactor,
 		'language'  => max(1, (int) $sprog_id ?: (int) $u['language_id']),
 		'languages' => $languages,
+		'placement' => ((string) get_settings_value('cluster_placement', 'globals', 'top', $brugerId) === 'sidebar') ? 'sidebar' : 'top',
 		'revisor'   => $isRevisor,
 		'colors'    => $colors,
 		'popup'     => ($uset && trim((string) $uset['box2']) !== ''),
 		'warnDays'  => get_due_date_warning_days($brugerId),
+		'sessions'  => $sessionRows,
+		'sessionId' => $sessionId,
+		'roleName'  => $roleName,
+		'levels'    => $levels,
+		'admins'    => $admins,
+		'notifOff'  => function_exists('notif_disabled_types') ? notif_disabled_types($brugerId) : array(),
 	);
 }
 
@@ -294,15 +398,19 @@ function personal_settings_flash(array $get, int $sprogId): array
 	$pw = isset($get['pw']) ? (string) $get['pw'] : '';
 	if ($pw === 'changed') {
 		$flash[] = array('type' => 'ok', 'text' => findtekst('5518|Adgangskoden er ændret', $sprogId));
-	} elseif ($pw === 'wrong') {
-		$flash[] = array('type' => 'err', 'text' => findtekst('5519|Den nuværende adgangskode er forkert', $sprogId));
 	} elseif ($pw === 'mismatch') {
 		$flash[] = array('type' => 'err', 'text' => findtekst('5520|De to nye adgangskoder er ikke ens', $sprogId));
 	} elseif ($pw === 'demo') {
 		$flash[] = array('type' => 'warn', 'text' => findtekst('5528|Adgangskoden kan ikke ændres i demoversionen', $sprogId));
 	}
+	if (isset($get['confirm']) && $get['confirm'] === 'missing') {
+		$flash[] = array('type' => 'err', 'text' => findtekst('5625|Den nuværende adgangskode mangler eller er forkert', $sprogId));
+	}
 	if (isset($get['tfa']) && $get['tfa'] === 'missing') {
 		$flash[] = array('type' => 'warn', 'text' => findtekst('5516|Tofaktor-login kræver et telefonnummer eller en e-mail', $sprogId));
+	}
+	if (isset($get['sessions']) && $get['sessions'] === 'out') {
+		$flash[] = array('type' => 'ok', 'text' => findtekst('5623|Andre enheder er logget ud', $sprogId));
 	}
 	if (!empty($get['saved'])) {
 		$flash[] = array('type' => 'ok', 'text' => findtekst('5517|Dine indstillinger er gemt', $sprogId));
@@ -312,7 +420,7 @@ function personal_settings_flash(array $get, int $sprogId): array
 
 // ---------------------------------------------------------------- view
 
-function personal_settings_view(?array $d, array $flash, string $selfUrl, int $sprogId, string $dbEncode): void
+function personal_settings_view(?array $d, array $flash, string $selfUrl, string $tab, int $sprogId, string $dbEncode): void
 {
 	$charset = ($dbEncode === 'UTF8') ? 'UTF-8' : 'ISO-8859-1';
 	$h = function ($s) use ($charset): string {
@@ -321,25 +429,27 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
 	$t = function (string $text) use ($sprogId, $h): string {
 		return $h(findtekst($text, $sprogId));
 	};
-	// Inside the shell the page is reached from the user chip, not from a workflow, and
-	// the nav stack may hold the dashboard's last AJAX request (weekly_graph_data.php),
-	// so Close goes to the dashboard there. Popup/legacy contexts keep the back helper.
+	$tabUrl = function (string $name) use ($selfUrl, $h): string {
+		return $h($selfUrl . (strpos($selfUrl, '?') === false ? '?' : '&') . 'tab=' . $name);
+	};
 	if (strpos($selfUrl, 'inframe=1') !== false) {
 		$backUrl = '../index/dashboard.php';
 	} else {
 		$backUrl = function_exists('nav_back_url') ? nav_back_url() : '../index/dashboard.php';
 	}
+	global $buttonColor, $buttonTxtColor;
+	$backStyle = 'background:' . (!empty($buttonColor) ? $buttonColor : '#114691') . ';color:' . (!empty($buttonTxtColor) ? $buttonTxtColor : '#ffffff');
 	$flashIcons = array('ok' => 'bx-check-circle', 'warn' => 'bx-error', 'err' => 'bx-x-circle');
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(findtekst('5500|Personlige indstillinger', $sprogId), 'UTF-8', $charset)) ?>;</script>
 <div class="ps-page">
+  <a class="ps-back" style="<?= $h($backStyle) ?>" href="<?= $h($backUrl) ?>"><i class='bx bx-arrow-back'></i><?= $t('5647|Tilbage') ?></a>
   <header class="ps-head">
     <div>
       <h1><i class='bx bx-cog'></i><?= $t('5500|Personlige indstillinger') ?></h1>
       <p class="ps-sub"><?= $t('5522|Gælder kun for dig, ikke for andre brugere i regnskabet') ?></p>
     </div>
-    <a class="ps-btn ps-btn-ghost" href="<?= $h($backUrl) ?>"><i class='bx bx-x'></i><?= $t('2172|Luk') ?></a>
   </header>
 
   <?php foreach ($flash as $f) { ?>
@@ -351,7 +461,93 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
 </div>
 	<?php return; } ?>
 
+  <nav class="ps-tabs">
+    <a class="<?= $tab === 'profile' ? 'on' : '' ?>" href="<?= $tabUrl('profile') ?>"><i class='bx bx-user'></i><?= $t('5613|Profil') ?></a>
+    <?php if (!$d['revisor']) { ?><a class="<?= $tab === 'security' ? 'on' : '' ?>" href="<?= $tabUrl('security') ?>"><i class='bx bx-shield-quarter'></i><?= $t('5511|Sikkerhed') ?></a><?php } ?>
+    <a class="<?= $tab === 'access' ? 'on' : '' ?>" href="<?= $tabUrl('access') ?>"><i class='bx bx-key'></i><?= $t('5614|Min adgang') ?></a>
+    <?php if (!$d['revisor']) { ?><a class="<?= $tab === 'notifications' ? 'on' : '' ?>" href="<?= $tabUrl('notifications') ?>"><i class='bx bx-bell'></i><?= $t('5639|Notifikationer') ?></a><?php } ?>
+  </nav>
+
+  <?php
+	if ($tab === 'security' && !$d['revisor']) {
+		personal_settings_view_security($d, $h, $t, $selfUrl);
+	} elseif ($tab === 'access') {
+		personal_settings_view_access($d, $h, $t, $sprogId);
+	} elseif ($tab === 'notifications' && !$d['revisor']) {
+		personal_settings_view_notifications($d, $h, $t, $selfUrl);
+	} else {
+		personal_settings_view_profile($d, $h, $t, $selfUrl);
+	}
+	?>
+</div>
+<script>
+(function () {
+	var form = document.getElementById('ps-form');
+	if (!form) { return; }
+	var dirty = document.getElementById('ps-dirty');
+
+	function hex(id) {
+		var el = document.getElementById(id);
+		var v = el ? (el.value || '').replace('#', '').toLowerCase() : '';
+		return /^[0-9a-f]{6}$/.test(v) ? '#' + v : null;
+	}
+	function preview() {
+		var btn = document.getElementById('ps-preview-btn');
+		var menu = document.getElementById('ps-preview-menu');
+		if (!btn || !menu) { return; }
+		var bc = hex('ps-buttonColor-text') || '#114691';
+		var tc = hex('ps-buttonTxtColor-text') || '#ffffff';
+		btn.style.background = bc; btn.style.color = tc;
+		menu.style.background = bc; menu.style.color = tc;
+		var bg = hex('ps-bgcolor-text');
+		document.querySelector('.ps-preview').style.background = bg || 'transparent';
+	}
+	var initial = snapshot();
+	function snapshot() {
+		return Array.prototype.map.call(form.elements, function (el) {
+			if (!el.name) { return ''; }
+			return el.name + '=' + (el.type === 'checkbox' || el.type === 'radio' ? (el.checked ? '1' : '0') : el.value);
+		}).join('&');
+	}
+	function markDirty() {
+		var changed = snapshot() !== initial;
+		window.docChange = changed;
+		if (dirty) { dirty.classList.toggle('on', changed); }
+	}
+
+	Array.prototype.forEach.call(document.querySelectorAll('input[type="color"][data-target]'), function (picker) {
+		picker.addEventListener('input', function () {
+			document.getElementById(picker.dataset.target).value = picker.value.substring(1);
+			markDirty(); preview();
+		});
+	});
+	Array.prototype.forEach.call(document.querySelectorAll('input[data-color]'), function (text) {
+		text.addEventListener('input', function () {
+			var v = text.value.replace('#', '');
+			if (/^[0-9a-fA-F]{6}$/.test(v)) { document.getElementById(text.dataset.color).value = '#' + v.toLowerCase(); }
+			preview();
+		});
+		text.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); } });
+	});
+	form.addEventListener('input', markDirty);
+	form.addEventListener('change', markDirty);
+	form.addEventListener('submit', function () {
+		window.docChange = false;
+		var b = document.getElementById('ps-submit');
+		if (b) { b.disabled = true; }
+	});
+	preview();
+})();
+</script>
+	<?php
+}
+
+function personal_settings_view_profile(array $d, callable $h, callable $t, string $selfUrl): void
+{
+	?>
   <form method="post" action="<?= $h($selfUrl) ?>" id="ps-form" autocomplete="off">
+    <input type="hidden" name="action" value="save">
+    <input type="hidden" name="tab" value="profile">
     <?php if (strpos($selfUrl, 'popup=1') !== false) { ?><input type="hidden" name="popup_window" value="1"><?php } ?>
 
     <section class="ps-card">
@@ -376,6 +572,11 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
           <input class="ps-input" type="tel" id="ps-tlf" name="tlf" value="<?= $h($d['tlf']) ?>">
           <span class="ps-help"><?= $t('5523|Bruges til tofaktor-koder') ?></span>
         </div>
+        <div class="ps-field ps-field-full">
+          <label for="ps-confirm"><?= $t('5619|Bekræft med din nuværende adgangskode') ?></label>
+          <input class="ps-input ps-input-half" type="password" id="ps-confirm" name="confirm_kode" autocomplete="current-password">
+          <span class="ps-help"><?= $t('5618|Indtast din nuværende adgangskode for at ændre e-mail, telefon, tofaktor eller adgangskode') ?></span>
+        </div>
         <?php } else { ?>
         <div class="ps-field ps-field-full">
           <span class="ps-help"><?= $t('5535|Kontaktoplysninger, tofaktor-login og adgangskode hører til regnskabets egne brugere og kan ikke ændres her, da du er logget ind som revisor/administrator udefra.') ?></span>
@@ -388,6 +589,13 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
             <option value="<?= (int) $id ?>"<?= ($id === $d['language']) ? ' selected' : '' ?>><?= $h($label) ?></option>
             <?php } ?>
           </select>
+        </div>
+        <div class="ps-field">
+          <label><?= $t('5610|Placering af den globale bjælke') ?></label>
+          <div class="ps-seg">
+            <label class="ps-seg-opt"><input type="radio" name="placement" value="top"<?= $d['placement'] === 'top' ? ' checked' : '' ?>><span><i class='bx bx-dock-top'></i><?= $t('5611|Topbjælke') ?></span></label>
+            <label class="ps-seg-opt"><input type="radio" name="placement" value="sidebar"<?= $d['placement'] === 'sidebar' ? ' checked' : '' ?>><span><i class='bx bx-dock-left'></i><?= $t('5622|Sidebar') ?></span></label>
+          </div>
         </div>
       </div>
     </section>
@@ -442,27 +650,41 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
       </div>
     </section>
 
-    <?php if (!$d['revisor']) { ?>
+    <footer class="ps-save">
+      <span class="ps-dirty" id="ps-dirty"><i class='bx bx-edit-alt'></i> <?= $t('5532|Du har ændringer, der ikke er gemt') ?></span>
+      <button class="ps-btn ps-btn-primary" type="submit" id="ps-submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button>
+    </footer>
+  </form>
+	<?php
+}
+
+function personal_settings_view_security(array $d, callable $h, callable $t, string $selfUrl): void
+{
+	?>
+  <form method="post" action="<?= $h($selfUrl) ?>" id="ps-form" autocomplete="off">
+    <input type="hidden" name="action" value="save">
+    <input type="hidden" name="tab" value="security">
+
     <section class="ps-card">
       <h2><i class='bx bx-shield-quarter'></i><?= $t('5511|Sikkerhed') ?></h2>
+      <p class="ps-card-help"><?= $t('5618|Indtast din nuværende adgangskode for at ændre e-mail, telefon, tofaktor eller adgangskode') ?></p>
       <div class="ps-grid">
         <div class="ps-field ps-field-full">
           <label class="ps-check">
             <input type="checkbox" name="twofactor" value="on" id="ps-twofactor"<?= $d['twofactor'] ? ' checked' : '' ?>>
-            <span class="ps-check-txt"><b><?= $t('5515|Tofaktor-login (kode via SMS eller e-mail)') ?></b><span><?= $t('5516|Tofaktor-login kræver et telefonnummer eller en e-mail') ?></span></span>
+            <span class="ps-check-txt"><b><?= $t('5515|Tofaktor-login (kode via SMS eller e-mail)') ?></b><span><?= $t('5516|Tofaktor-login kræver et telefonnummer eller en e-mail') ?> · <?= $t('5624|Tofaktor-metode: SMS når et telefonnummer er angivet, ellers e-mail') ?></span></span>
           </label>
-        </div>
-        <div class="ps-field ps-field-full">
-          <span class="ps-help"><?= $t('5525|Lad felterne stå tomme for at beholde din adgangskode') ?></span>
         </div>
         <div class="ps-field">
           <label for="ps-glkode"><?= $t('5512|Nuværende adgangskode') ?></label>
           <input class="ps-input" type="password" id="ps-glkode" name="glkode" autocomplete="current-password">
+          <span class="ps-help"><?= $t('5619|Bekræft med din nuværende adgangskode') ?></span>
         </div>
         <div class="ps-field"></div>
         <div class="ps-field">
           <label for="ps-nykode1"><?= $t('5513|Ny adgangskode') ?></label>
           <input class="ps-input" type="password" id="ps-nykode1" name="nykode1" autocomplete="new-password">
+          <span class="ps-help"><?= $t('5525|Lad felterne stå tomme for at beholde din adgangskode') ?></span>
         </div>
         <div class="ps-field">
           <label for="ps-nykode2"><?= $t('5514|Bekræft ny adgangskode') ?></label>
@@ -470,72 +692,96 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, int $s
         </div>
       </div>
     </section>
-    <?php } ?>
 
     <footer class="ps-save">
       <span class="ps-dirty" id="ps-dirty"><i class='bx bx-edit-alt'></i> <?= $t('5532|Du har ændringer, der ikke er gemt') ?></span>
-      <a class="ps-btn ps-btn-ghost" href="<?= $h($backUrl) ?>"><?= $t('2172|Luk') ?></a>
       <button class="ps-btn ps-btn-primary" type="submit" id="ps-submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button>
     </footer>
   </form>
-</div>
-<script>
-(function () {
-	var form = document.getElementById('ps-form');
-	var dirty = document.getElementById('ps-dirty');
 
-	function hex(id) {
-		var v = (document.getElementById(id).value || '').replace('#', '').toLowerCase();
-		return /^[0-9a-f]{6}$/.test(v) ? '#' + v : null;
-	}
-	function preview() {
-		var btn = document.getElementById('ps-preview-btn');
-		var menu = document.getElementById('ps-preview-menu');
-		var bc = hex('ps-buttonColor-text') || '#114691';
-		var tc = hex('ps-buttonTxtColor-text') || '#ffffff';
-		btn.style.background = bc; btn.style.color = tc;
-		menu.style.background = bc; menu.style.color = tc;
-		var bg = hex('ps-bgcolor-text');
-		document.querySelector('.ps-preview').style.background = bg || 'transparent';
-	}
-	// Dirty = the form differs from what was loaded, so browser autofill or a
-	// restored field cannot flag unsaved changes that the user never made.
-	var initial = snapshot();
-	function snapshot() {
-		return Array.prototype.map.call(form.elements, function (el) {
-			if (!el.name) { return ''; }
-			return el.name + '=' + (el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value);
-		}).join('&');
-	}
-	function markDirty() {
-		var changed = snapshot() !== initial;
-		window.docChange = changed;
-		dirty.classList.toggle('on', changed);
-	}
+  <section class="ps-card">
+    <h2><i class='bx bx-devices'></i><?= $t('5615|Aktive sessioner') ?></h2>
+    <table class="ps-table">
+      <thead><tr><th><?= $t('5556|Sidst aktiv') ?></th><th></th></tr></thead>
+      <tbody>
+        <?php foreach ($d['sessions'] as $s) { ?>
+        <tr>
+          <td><?= $h(date('Y-m-d H:i', $s['logtime'])) ?></td>
+          <td><?php if ($s['session_id'] === $d['sessionId']) { ?><span class="ps-tag"><?= $t('5617|Denne enhed') ?></span><?php } ?></td>
+        </tr>
+        <?php } ?>
+      </tbody>
+    </table>
+    <?php if (count($d['sessions']) > 1) { ?>
+    <form method="post" action="<?= $h($selfUrl) ?>" class="ps-inline-form">
+      <input type="hidden" name="action" value="logout_others">
+      <button class="ps-btn ps-btn-ghost" type="submit"><i class='bx bx-log-out-circle'></i><?= $t('5616|Log andre enheder ud') ?></button>
+    </form>
+    <?php } ?>
+  </section>
+	<?php
+}
 
-	Array.prototype.forEach.call(document.querySelectorAll('input[type="color"][data-target]'), function (picker) {
-		picker.addEventListener('input', function () {
-			document.getElementById(picker.dataset.target).value = picker.value.substring(1);
-			markDirty(); preview();
-		});
-	});
-	Array.prototype.forEach.call(document.querySelectorAll('input[data-color]'), function (text) {
-		text.addEventListener('input', function () {
-			var v = text.value.replace('#', '');
-			if (/^[0-9a-fA-F]{6}$/.test(v)) { document.getElementById(text.dataset.color).value = '#' + v.toLowerCase(); }
-			preview();
-		});
-		text.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); } });
-	});
-	form.addEventListener('input', markDirty);
-	form.addEventListener('change', markDirty);
-	form.addEventListener('submit', function () {
-		window.docChange = false;
-		var b = document.getElementById('ps-submit');
-		b.disabled = true;
-	});
-	preview();
-})();
-</script>
+function personal_settings_view_access(array $d, callable $h, callable $t, int $sprogId): void
+{
+	$registry = function_exists('permission_registry') ? permission_registry() : array();
+	$groups = function_exists('permission_groups') ? permission_groups() : array();
+	?>
+  <section class="ps-card">
+    <h2><i class='bx bx-key'></i><?= $t('5614|Min adgang') ?></h2>
+    <div class="ps-grid">
+      <div class="ps-field">
+        <label><?= $t('5553|Rolle') ?></label>
+        <span class="ps-role"><?= $h($d['roleName']) ?></span>
+      </div>
+      <div class="ps-field">
+        <label><?= $t('5620|Regnskabets administratorer') ?></label>
+        <span><?= $d['admins'] ? $h(implode(', ', $d['admins'])) : '–' ?></span>
+        <span class="ps-help"><?= $t('5621|Kontakt en administrator for at få ændret din adgang') ?></span>
+      </div>
+    </div>
+    <div class="ps-access">
+      <?php foreach ($groups as $group => $groupLabel) { ?>
+      <div class="ps-access-group">
+        <h4><?= $t($groupLabel) ?></h4>
+        <?php foreach ($registry as $key => $def) {
+        	if ($def['group'] !== $group) {
+        		continue;
+        	}
+        	$level = isset($d['levels'][$key]) ? $d['levels'][$key] : 'none';
+        ?>
+        <div class="ps-access-row"><span><?= $t($def['label']) ?></span><span class="ps-level ps-level-<?= $h($level) ?>"><?= $h(perm_level_label($level, $sprogId)) ?></span></div>
+        <?php } ?>
+      </div>
+      <?php } ?>
+    </div>
+  </section>
+	<?php
+}
+
+function personal_settings_view_notifications(array $d, callable $h, callable $t, string $selfUrl): void
+{
+	$types = function_exists('notif_types') ? notif_types() : array();
+	?>
+  <form method="post" action="<?= $h($selfUrl) ?>" id="ps-form" autocomplete="off">
+    <input type="hidden" name="action" value="save">
+    <input type="hidden" name="tab" value="notifications">
+    <section class="ps-card">
+      <h2><i class='bx bx-bell'></i><?= $t('5639|Notifikationstyper') ?></h2>
+      <p class="ps-card-help"><?= $t('5644|Vælg hvilke notifikationer du vil se i klokken') ?></p>
+      <div class="ps-checks">
+        <?php foreach ($types as $type => $label) { ?>
+        <label class="ps-check">
+          <input type="checkbox" name="types[]" value="<?= $h($type) ?>"<?= in_array($type, $d['notifOff'], true) ? '' : ' checked' ?>>
+          <span class="ps-check-txt"><b><?= $t($label) ?></b></span>
+        </label>
+        <?php } ?>
+      </div>
+    </section>
+    <footer class="ps-save">
+      <span class="ps-dirty" id="ps-dirty"><i class='bx bx-edit-alt'></i> <?= $t('5532|Du har ændringer, der ikke er gemt') ?></span>
+      <button class="ps-btn ps-btn-primary" type="submit" id="ps-submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button>
+    </footer>
+  </form>
 	<?php
 }

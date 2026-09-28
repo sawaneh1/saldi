@@ -227,3 +227,40 @@ html, body {
     .ps-grid { grid-template-columns: 1fr; }
     .ps-page { padding: 16px 14px 96px; }
 }
+
+/* 20260927 Sawaneh step 1b: tabs, placement toggle, sessions table, my-access matrix */
+.ps-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--ps-line); margin-bottom: 16px; }
+.ps-tabs a { display: flex; align-items: center; gap: 7px; padding: 10px 14px; color: var(--ps-mut); text-decoration: none; font-weight: 600; font-size: 13.5px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.ps-tabs a i { font-size: 18px; }
+.ps-tabs a:hover { color: var(--ps-txt); }
+.ps-tabs a.on { color: var(--ps-accent); border-bottom-color: var(--ps-accent); }
+.ps-input-half { max-width: 320px; }
+.ps-seg { display: inline-flex; border: 1px solid #cfd6e2; border-radius: 7px; overflow: hidden; }
+.ps-seg-opt { position: relative; }
+.ps-seg-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.ps-seg-opt span { display: flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--ps-mut); background: #fff; cursor: pointer; border-left: 1px solid #e6eaf1; }
+.ps-seg-opt span i { font-size: 17px; }
+.ps-seg-opt:first-child span { border-left: none; }
+.ps-seg-opt input:checked + span { background: var(--ps-accent); color: #fff; }
+.ps-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 12px; }
+.ps-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ps-mut); padding: 8px 10px; border-bottom: 1px solid var(--ps-line); }
+.ps-table td { padding: 8px 10px; border-bottom: 1px solid #eef1f6; }
+.ps-tag { display: inline-block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ps-accent); background: var(--ps-accent-soft); border-radius: 4px; padding: 2px 7px; }
+.ps-inline-form { display: flex; justify-content: flex-end; }
+.ps-role { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--ps-accent); background: var(--ps-accent-soft); border-radius: 20px; padding: 4px 12px; width: fit-content; }
+.ps-access { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px; margin-top: 18px; }
+.ps-access-group { border: 1px solid var(--ps-line); border-radius: 8px; padding: 12px 14px; }
+.ps-access-group h4 { margin: 0 0 8px; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ps-accent); }
+.ps-access-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid #f0f2f7; font-size: 13.5px; }
+.ps-access-row:first-of-type { border-top: none; }
+.ps-level { font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; background: #eef1f6; color: var(--ps-mut); }
+.ps-level-read { background: #fdf1d8; color: #6b4a00; }
+.ps-level-write { background: #e2f5ea; color: #145c35; }
+@media screen and (max-width: 640px) { .ps-access { grid-template-columns: 1fr; } }
+
+.ps-checks { display: flex; flex-direction: column; gap: 8px; }
+
+/* Back button as on the other system pages (theme colour, top-left) */
+.ps-back { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px 0 10px; margin-bottom: 14px; border-radius: 6px; font-size: 13.5px; font-weight: 600; text-decoration: none; }
+.ps-back i { font-size: 18px; }
+.ps-back:hover { filter: brightness(1.1); }

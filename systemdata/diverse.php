@@ -135,39 +135,7 @@ if (!isset($_SESSION['UserName']) && isset($brugernavn)) {
 	$_SESSION['UserName'] = $brugernavn;
 }
 
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">\n";
-	print "<div class=\"headerbtnLft\"></div>\n";
-#	print "<span class=\"headerTxt\">Systemsetup</span>\n";
-#	print "<div class=\"headerbtnRght\"><!--<a href=\"index.php?page=../debitor/debitorkort.php;title=debitor\" class=\"button green small right\">Ny debitor</a>--></div>";
-	print "</div><!-- end of header -->";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_div_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontentLargeHolder\">\n";
-} elseif ($menu == 'S') {
-	/*print "<script>
-	if(window.self == window.top) {
-	//run this code if in an iframe
-	// alert('in frame');
-	parent.location.href = \"../index/main.php\";
-	} 
-	</script>";*/
-#	print "<script>try {parent.location.href = '../index/main.php'} catch {window.location.href =	 '../index/main.php'}</script>";
-#	die();
-	include("top.php");
-} else {
-	print "<script>
-	if(window.self !== window.top) {
-	//run this code if in an iframe
-	// alert('in frame');
-	parent.location.href = \"../index/menu.php\";
-	} 
-	</script>";
-	include("oldTop.php");
-}
+include("top.php");
 
 if (!isset($exec_path)) $exec_path = "/usr/bin";
 $sektion    = if_isset($_GET, null, 'sektion');
@@ -177,7 +145,14 @@ if ($sektion == 'userSettings' && $_SERVER['REQUEST_METHOD'] != 'POST') {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=personalSettings.php\">";
 	exit;
 }
+// The old "Diverse" landing list is replaced by the settings front page (phase 4).
+if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
+	print "<meta http-equiv=\"refresh\" content=\"0;URL=settings.php\">";
+	exit;
+}
 // 20260916 Phase 3 (spec R6): dangerous sections are gated by their own permission key.
+// 20260928 Sawaneh Phase 4: frame switch reduced to top.php, the Diverse sub-menu column and landing list
+//                  replaced by the registry-driven frame/front page, dead userSettings/personlige_valg code removed.
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
 // them; a role only gets them when an administrator grants them explicitly.
 $dangerousSections = array(
@@ -213,84 +188,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 			db_modify("insert into grupper (beskrivelse, kodenr, art, box1, box2, box3, box4) values ('Provisionsrapport', '1', 'DIV', '$box1', '$box2', '$box3', '$box4')", __FILE__ . " linje " . __LINE__);
 		} elseif ($id > 0) db_modify("update grupper set  box1 = '$box1', box2 = '$box2', box3 = '$box3' , box4 = '$box4' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
 		#######################################################################################
-	} elseif ($sektion == 'userSettings') {
-		$refresh_opener = NULL;
-		$id             = $_POST['id'];
-		$jsvars         = $_POST['jsvars'];
-		$popup          = if_isset($_POST['popup']);
-		if ($popup && $_POST['popup'] == '') $refresh_opener = "on";
-		$menu           = $_POST['menu'];
-		$bgcolor        = $_POST['bgcolor'];
-		$nuance         = $_POST['fgcolor'];
-		$buttonColor    = $_POST["buttonColor"];
-		$buttonTxtColor = $_POST["buttonTxtColor"];
-		// make sure $buttonColor and $buttonTxtColor are valid hex colors and are 6 characters long
-		if (strlen($buttonColor) != 6 || !ctype_xdigit($buttonColor)) {
-			$buttonColor = '114691'; // default color
-		}
-		if (strlen($buttonTxtColor) != 6 || !ctype_xdigit($buttonTxtColor)) {
-			$buttonTxtColor = 'ffffff'; // default text color
-		}
-
-		$qtxt = "select id from grupper WHERE art = 'USET' and kodenr='$bruger_id'";
-		if (($id == 0) && ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__)))) {
-			$id = $r['id'];
-		} elseif ($id == 0) {
-			$qtxt = "insert into grupper (beskrivelse,kodenr,art,box1,box2,box3,box4,box5) values ";
-			$qtxt.= "('Personlige valg','$bruger_id','USET','$jsvars','$popup','$menu','$bgcolor','$nuance')";
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		} elseif ($id > 0) {
-			$qtxt = "update grupper set box1='$jsvars',box2='$popup',box3='$menu',box4='$bgcolor',box5='$nuance' WHERE id = '$id'";
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		}
-		$qtxt  = "select id from settings where var_name = 'bgcolor' and var_grp = 'colors' and user_id = '$bruger_id'";
-		$query = db_select($qtxt,__FILE__ . " linje " . __LINE__);
-		if (db_num_rows($query) > 0){
-			$r = db_fetch_array($query);
-			if ($r['id']) { // Add this check to ensure ID exists
-				$qtxt = "UPDATE settings SET var_value='$bgcolor' WHERE id='$r[id]'";
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-			}
-		} else {
-			$qtxt = "INSERT INTO settings (var_grp,var_name,var_value,var_description,user_id) VALUES ";
-			$qtxt.= "('colors','bgcolor','$bgcolor','Background color for user settings','$bruger_id')";
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		}
-		$qtxt  = "select id from settings where var_name = 'fgcolor' and var_grp = 'colors' and user_id = '$bruger_id'";
-		$query = db_select($qtxt,__FILE__ . " linje " . __LINE__);
-		if (db_num_rows($query) > 0){
-			$r = db_fetch_array($query);
-			if ($r['id']) { // Add this check
-				$qtxt = "UPDATE settings SET var_value='$nuance' WHERE id='$r[id]'";
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-			}
-		} else {
-			$qtxt = "INSERT INTO settings (var_grp,var_name,var_value,var_description,user_id) VALUES ";
-			$qtxt.= "('colors','fgcolor','$nuance','Nuance color for user settings','$bruger_id')";
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		}
-		$qtxt = "select id from settings where var_grp='colors' and user_id='$bruger_id' and var_name='buttonColor'";
-		if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-			$qtxt = "update settings set var_value='$buttonColor' where id='$r[id]'";
-		} else {
-			$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-			$qtxt.= "('colors','buttonColor','$buttonColor','Background color for user settings','$bruger_id')";
-		}
-		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		$qtxt = "select id from settings where var_grp='colors' and user_id='$bruger_id' and var_name='buttonTxtColor'";
-		if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-			$qtxt = "update settings set var_value='$buttonTxtColor' where id='$r[id]'";
-		} else {
-			$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-			$qtxt.= "('colors','buttonTxtColor','$buttonTxtColor','Button color for user settings','$bruger_id')";
-		}
-		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		$cookie_name  = "refresh_opener";
-		$cookie_value = "true";
-		setcookie($cookie_name, $cookie_value, time() + 30, "/"); // 30 seconds expiry
-
-
-	#######################################################################################
 	} elseif ($sektion == 'div_valg') {
 		// DEBUG: Log POST data for pickup addresses
 		$debug_log = "/tmp/saldi_debug_pickup.log";
@@ -2178,168 +2075,14 @@ if (db_fetch_array(db_select("select id from grupper WHERE art = 'DIV' and koden
 
 print "<table class='dataTable2' cellpadding=\"1\" cellspacing=\"1\" border=\"0\" width=\"100%\" height=\"100%\"><tbody>";
 
-if ($menu != 'T') {
-	print "<td width=\"170px\" valign=\"top\">";
-	print "<table cellpadding=\"2\" cellspacing=\"2\" border=\"0\" width=\"100%\"><tbody>";
-	if ($menu == 'S') {
-		$searchPlaceholder = ($sprog_id == 2) ? 'Search settings...' : (($sprog_id == 3) ? 'Søk i innstillinger...' : 'Søg i indstillinger...');
-		$noResultsText = ($sprog_id == 2) ? 'No results' : (($sprog_id == 3) ? 'Ingen resultater' : 'Ingen resultater');
-		$matchHintText = ($sprog_id == 2) ? 'Found via' : (($sprog_id == 3) ? 'Funnet via' : 'Fundet via');
-		print "<script>
-		if (typeof window.saldiTranslations === 'undefined') {
-			window.saldiLanguage = " . (int)$sprog_id . ";
-			window.saldiTranslations = { settingsNoResults: " . json_encode($noResultsText) . ", settingsMatchHint: " . json_encode($matchHintText) . " };
-		}
-		</script>";
-		print "<link rel=\"stylesheet\" href=\"../css/settingsSearch.css\">";
-		print "<script src=\"../javascript/settingsSearch.js\" defer></script>";
-		print "<tr><td valign='top' align=left><div class=\"settings-search-wrapper\" style=\"padding-top:0;\"><input type=\"text\" class=\"settings-search-input\" autocomplete=\"off\" placeholder=\"" . htmlspecialchars($searchPlaceholder) . "\"></div></td></tr>\n";
-
-		print "<tr><td align=left>&nbsp;<a href=syssetup.php><button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\"><b>&#9668; ".findtekst('30|Tilbage', $sprog_id)."</b></button></a></td></tr>\n"; // 200240428
-
-		print "<tr><td align=left><a href=diverse.php?sektion=kontoindstillinger>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('783|Kontoindstillinger', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=provision>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('784|Provisionsberegning', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=personalSettings.php>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('5500|Personlige indstillinger', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=ordre_valg>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('786|Ordrerelaterede valg', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=productOptions>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('787|Varerelaterede valg', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=variant_valg>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('788|Variantrelaterede valg', $sprog_id)."</button></a></td></tr>\n";
-
-		// print "<tr><td align=left><a href=diverse.php?sektion=shop_valg>
-		// 	   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-		// 	   .findtekst('789|Shoprelaterede valg', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=api_valg>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
-			   API</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=stripe_valg>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
-			   Stripe abonnement</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=labels>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('791|Mærkater', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=pricelists>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('792|Prislister', $sprog_id)."</button></a><!--tekst 427--></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=rykker_valg>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('793|Rykkerrelaterede valg', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=div_valg>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('794|Diverse valg', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=tjekliste>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('796|Tjeklister', $sprog_id)."</button></a></td></tr>\n";
-
-		if ($docubizz) {
-			print "<tr><td align=left><a href=diverse.php?sektion=docubizz>
-				   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-				   .findtekst('796|Tjeklister', $sprog_id)."</button></a></td></tr>\n";
-		}
-
-		print "<tr><td align=left><a href=diverse.php?sektion=bilag>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('797|Bilagshåndtering', $sprog_id)."</button></a></td></tr>\n";
-
-		if (bankIntegrationEnabled()) {
-			// TODO: findtekst. // TODO: Translation Tekst til bank integration
-			print "<tr><td align=left><a href=diverse.php?sektion=bank_integration>
-				   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-				   ."Bank Integration" ."</button></a></td></tr>\n";
-		}
-
-		print "<tr><td align=left><a href=diverse.php?sektion=orediff>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('170|Øredifferencer', $sprog_id)."</button></a><!--tekst 170--></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=massefakt>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('200|Massefakturering', $sprog_id)."</button></a><!--tekst 200--></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=barcodescan>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .'App Barcode'."</button></a><!--tekst 200--></td></tr>\n";
-
-		if (file_exists("../debitor/pos_ordre.php")) {
-			print "<tr><td align=left><a href=diverse.php?sektion=posOptions>
-			<button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			.findtekst('271|PoS-valg', $sprog_id)."</button></a></td></tr>\n";
-		}
-
-		print "<tr><td align=left><a href=diverse.php?sektion=sprog>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('801|Sprog', $sprog_id)."</button></a></td></tr>\n";
-
-		print "<tr><td align=left><a href=diverse.php?sektion=div_io>
-			   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
-			   .findtekst('802|Import & eksport', $sprog_id)."</button></a></td></tr>\n";
-
-		print "</tbody></table></td><td valign=\"top\" align=\"left\"><table align=\"left\" valign=\"top\" border=\"0\" width=\"90%\"><tbody>\n";
-		print "<script>document.getElementById('sidebar-base').style.display = 'none';</script>";
-
-	} else { //Gammel menu
-		print "<tr><td align=\"center\" valign=\"top\"><br></td></tr>";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=kontoindstillinger>".findtekst('783|Kontoindstillinger', $sprog_id)."</a></td></tr>\n"; // 20210513
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=provision>".findtekst('784|Provisionsberegning', $sprog_id)."</a>&nbsp;</td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=personlige_valg>".findtekst('785|Personlige valg', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=ordre_valg>".findtekst('786|Ordrerelaterede valg', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=productOptions>".findtekst('787|Varerelaterede valg', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=variant_valg>".findtekst('788|Variantrelaterede valg', $sprog_id)."</a></td></tr>\n";
-		// print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=shop_valg>".findtekst('789|Shoprelaterede valg', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=api_valg>API</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=stripe_valg>Stripe abonnement</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=labels>".findtekst('791|Mærkater', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=pricelists>".findtekst('792|Prislister', $sprog_id)."</a><!--tekst 427--></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=rykker_valg>".findtekst('793|Rykkerrelaterede valg', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=div_valg>".findtekst('794|Diverse valg', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=../systemdata\barcodescan.php>App Barcode</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=tjekliste>".findtekst('796|Tjeklister', $sprog_id)."</a></td></tr>\n";
-		if ($docubizz) print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=docubizz>".findtekst('796|Tjeklister', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=bilag>".findtekst('797|Bilagshåndtering', $sprog_id)."</a></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=orediff>".findtekst('170|Øredifferencer', $sprog_id)."</a><!--tekst 170--></td></tr>\n";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=massefakt>".findtekst('200|Massefakturering', $sprog_id)."</a><!--tekst 200--></td></tr>\n";
-		if (file_exists("../debitor/pos_ordre.php")) print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=posOptions>".findtekst('271|PoS-valg', $sprog_id)."</a><!--tekst 271--></td></tr>\n";
-		# print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=email>Mail indstillinger</a></td></tr>";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=sprog>".findtekst('801|Sprog', $sprog_id)."</a></td></tr>\n";
-		# print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=kontoplan_io>Indl&aelig;s  / udl&aelig;s kontoplan</a></td></tr>";
-		print "<tr><td align=left $top_bund>&nbsp;<a href=diverse.php?sektion=div_io>".findtekst('802|Import & eksport', $sprog_id)."</a></td></tr>\n";
-		print "</tbody></table></td><td valign=\"top\" align=\"left\"><table align=\"left\" valign=\"top\" border=\"0\" width=\"90%\"><tbody>\n";
-	}
-}
+// 20260928 Phase 4: no separate "Diverse" column; the frame (top.php) lists the group's pages.
+print "<td valign=\"top\" align=\"left\"><table align=\"left\" valign=\"top\" border=\"0\" width=\"90%\"><tbody>\n";
 if (!$sektion)
 	print "<td><br></td>";
 if ($sektion == "kontoindstillinger")
 	kontoindstillinger($regnskab, $skiftnavn);
 if ($sektion == "provision")
 	provision();
-if ($sektion == "personlige_valg")
-	personlige_valg();
-if ($sektion == 'userSettings') {
-	include_once('syssetupIncludes/userSettings.php');
-	userSettings();
-}
 if ($sektion == "ordre_valg")
 	ordre_valg();
 if ($sektion == "productOptions" || $sektion == "label") {
@@ -2391,8 +2134,6 @@ if (strpos($sektion, "_io")) {
 }
 
 print "</tbody></table></td></tr>";
-if ($menu == 'T')
-	print "</div>";
 #print "</form>";
 #print "</tbody></table></td></tr>";
 
