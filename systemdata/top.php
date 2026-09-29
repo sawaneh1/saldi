@@ -25,6 +25,7 @@
 // 20260710 SZ Added Settings search box to sidebar (settingsSearch.php/.js/.css)
 // 20260928 Sawaneh Phase 4: menu column generated from settingsRegistry.php (current group, access-filtered),
 //                  Back goes to settings.php, unsaved-changes guard for the settings pages.
+// 20260928 Sawaneh Unsaved-changes guard uses the native beforeunload dialog (settings redesign spec §8.1).
 
 $small=NULL;
 if (!isset($css)) $css=NULL;
@@ -103,20 +104,22 @@ if ($currentGroup !== '') {
 print "<tr><td><br></td></tr>";
 print "<tr><td><a href=\"settings.php\"><button style='$buttonStyle; width:100%; opacity:.85' onMouseOver=\"this.style.cursor='pointer'\">".findtekst('5666|Alle indstillinger', $sprog_id)."</button></a></td></tr>";
 
-// Unsaved changes (spec S4): warn before leaving a settings page with edited, unsubmitted forms.
-$unsavedText = json_encode(findtekst('5667|Du har ændringer, der ikke er gemt. Vil du forlade siden?', $sprog_id));
+// Unsaved changes (settings redesign spec §8.1): the browser's native beforeunload dialog when
+// leaving a settings page with edited, unsubmitted forms. window.docChange is the shared flag the
+// shell (index/main.php) also checks and clears after its own confirm.
 print "<script>
 (function () {
-	var dirty = false, submitting = false;
-	document.addEventListener('input', function (e) { if (e.target.form) { dirty = true; window.docChange = true; } }, true);
-	document.addEventListener('change', function (e) { if (e.target.form) { dirty = true; window.docChange = true; } }, true);
-	document.addEventListener('submit', function () { submitting = true; window.docChange = false; }, true);
-	document.addEventListener('click', function (e) {
-		var a = e.target.closest ? e.target.closest('a[href]') : null;
-		if (!a || !dirty || submitting || a.target === '_blank' || a.getAttribute('href').charAt(0) === '#') { return; }
-		if (!window.confirm($unsavedText)) { e.preventDefault(); e.stopPropagation(); }
-		else { dirty = false; window.docChange = false; }
-	}, true);
+	function mark(e) { if (e.target.form) { window.docChange = true; } }
+	document.addEventListener('input', mark, true);
+	document.addEventListener('change', mark, true);
+	document.addEventListener('submit', function () { window.docChange = false; }, true);
+	var nativeSubmit = HTMLFormElement.prototype.submit;
+	HTMLFormElement.prototype.submit = function () { window.docChange = false; return nativeSubmit.apply(this, arguments); };
+	window.addEventListener('beforeunload', function (e) {
+		if (!window.docChange) { return; }
+		e.preventDefault();
+		e.returnValue = '';
+	});
 })();
 </script>";
 print "</tbody></table>";# <-tabel 1.1.2

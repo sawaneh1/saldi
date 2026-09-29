@@ -132,12 +132,6 @@ include("../includes/datepkr.php");
 
 ##################
 
-// Check for paperflow setting
-$paperflow = NULL;
-$qtxt = "select var_value from settings where var_grp='creditor' and var_name='paperflow'";
-if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-    $paperflow = $r['var_value'];
-}
 
 // Check if project column should be visible
 $vis_projekt = 'off';

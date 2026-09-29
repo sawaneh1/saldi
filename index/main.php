@@ -49,6 +49,7 @@
 //                  Guides and Kassesystem entries added, widget's Assist entry hidden.
 // 20260927 Sawaneh Step 1b: cluster placement top/sidebar (mount point + topbarApplyPlacement).
 // 20260928 Sawaneh Phase 4: System → Settings opens systemdata/settings.php, shown per settings-group access.
+// 20260928 Sawaneh After the page-change confirm, clear the iframe's docChange so its beforeunload does not ask twice.
 @session_start();
 $s_id = session_id();
 
@@ -770,6 +771,8 @@ function brightenColor($color, $amount = 0.2) {
       if (!window.confirm("Er du sikker på du gerne vil ændre side? Dine ændringer vil ikke blive gemt")) {
         return;
       }
+      // Already confirmed: stop the page's own beforeunload dialog from asking again.
+      iframe.contentWindow.docChange = false;
     }
 
     iframe.src = parsedTargetUrl.href

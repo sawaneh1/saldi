@@ -616,11 +616,6 @@ if ($db_type=="mysql" or $db_type=="mysqli") {
 	$qtxt.= "vat $decimal_type(15,3), PRIMARY KEY (id))";
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 	
-	$qtxt = "CREATE TABLE paperflow ($id_column,scan_id int,upload_user_id int, upload_date varchar(10), ";
-	$qtxt.= "insertion_user_id int, insertion_date varchar(10), linecount int, ";
-	$qtxt.= "PRIMARY KEY (id))";
-	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-	
 	$qtxt = "CREATE TABLE documents ($id_column,global_id int,filename text, filepath text, source varchar(20), ";
 	$qtxt.= "source_id int, timestamp varchar(10), user_id int, PRIMARY KEY (id) )";
 	

@@ -36,6 +36,7 @@
 // 20260220 LOE Background terms now used instead of language terms for clarity, as this is more accurate for what the settings do. The term 'language(sprog)' is still used in the database and code for backwards compatibility, but the user interface now refers to 'backgrounds' instead of 'languages'.
 // 20260320 PHR cleanup (pdftk)
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20260928 Sawaneh Security 4.0 (A3/A8): file-name whitelist for upload and delete, $modulnr gate.
 session_start();
 $s_id=session_id();
 $css="../css/standard.css";
@@ -43,6 +44,7 @@ $title="SALDI - Logo Upload";
 
 include("../includes/connect.php");
 include("../includes/settings.php");
+$modulnr = 1; // 20260928 Sawaneh Security 4.0 (A8)
 $permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/db_query.php");
@@ -70,6 +72,12 @@ function bg_display_name($sprog_value) {
 global $bruger_id;
 
 $is_admin = 1;
+
+// 20260928 Sawaneh Security 4.0 (A3, R22): only the known background/attachment names, with an optional
+//                  language prefix, may be written or deleted under logolib/<db_id>/[<department>/].
+function logo_name_ok($name) {
+	return (bool) preg_match('/^(?:[a-z]+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/', (string) $name);
+}
 
 // Get user's assigned department from settings (for permission checking)
 $afd = get_settings_value('afd', 'brugerAfd', 1, $bruger_id);
@@ -216,6 +224,10 @@ if (!file_exists($dest_dir)) {
 }
 
 if (isset($_GET['slet_bilag'])) {
+    if (!logo_name_ok($_GET['slet_bilag'])) {
+        upload();
+        exit;
+    }
     $slet_bilag=$_GET['slet_bilag'].".pdf"; 
     
     // For delete operation, use the selected department and current background
@@ -291,6 +303,10 @@ if(isset($_POST['bgfil'])||($_POST['bilagfil'])) {
 	} else {
 		$valg = $bilag_valg;
 	}
+	if (!logo_name_ok($valg) || !preg_match('/^\p{L}+$/u', (string) $sprog_valg)) {
+		upload();
+		exit;
+	}
 	
 	// Handle background: if "All", no prefix; otherwise add language prefix for non-Danish
 	if ($sprog_valg !== 'All') {
@@ -305,7 +321,7 @@ if(isset($_POST['bgfil'])||($_POST['bilagfil'])) {
 	if ((strpos($filetype,'pdf'))||(strpos($fileName,'.PDF'))||(strpos($fileName,'pdf'))) {
 		if($fil_stoerrelse > 10485760) {
 			$tmp=ceil($fil_stoerrelse);
-			system ("rm $filename");
+			@unlink($fra);
 			$tmp/=1024;
 			$alert = findtekst('1747|Unfortunately - your PDF is too big. Only up to 10 MB is accepted, and it takes up', $sprog_id);
 			print "<BODY onLoad=\"javascript:alert('$alert $tmp MB')\">";

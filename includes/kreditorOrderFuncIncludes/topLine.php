@@ -90,18 +90,6 @@ if ($btkort) {
 			print "$invoice_icon".findtekst('643|Faktura', $sprog_id)."</button></td>";
 	}
 
-   if ($paperflow) {
-		print "</td><td width = 200px align=center ";
-		if ($valg == 'skanBilag') {
-			print "<td width = '200px' align=center>
-				   <button class='headerbtn navbtn-top' style='$butDownStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">" . findtekst('2182|Skan bilag', $sprog_id) . "</button></td>";
-		} else {
-			print "<td width = 200px align=center><a href='ordreliste.php?sort=$sort&valg=faktura$hreftext'>
-				   <button class='headerbtn navbtn-top' style='$butUpStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">"
-				. findtekst('2182|Skan bilag', $sprog_id) . "</button></a></td>";
-		}
-		print "</td>";
-	}
     print "</tbody></table></td>\n"; 
 	
 	print "<td id='tutorial-help' width=5% style='$buttonStyle'>";

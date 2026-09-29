@@ -30,10 +30,37 @@ $permission_key = 'system.indstillinger';
 include ("../../includes/online.php");
 include ("../../includes/std_func.php");
 
+// 20260928 Sawaneh Security 4.0 (A10): the Flatpay login is exchanged for the GUID here on the server,
+//                  so username/password never leave the browser for a third-party host and are never logged.
+if (function_exists('require_permission')) {
+	require_permission('settings.integrations.keys', 'write');
+}
 $post = json_decode(file_get_contents('php://input'));
-
-# Expect a posted ID
-$id = $post->{'id'};
+$username = isset($post->username) ? (string) $post->username : '';
+$password = isset($post->password) ? (string) $post->password : '';
+if ($username === '' || $password === '') {
+	http_response_code(400);
+	print "Missing login";
+	exit;
+}
+$ch = curl_init('https://socket.flatpay.dk/socket/guid');
+curl_setopt_array($ch, array(
+	CURLOPT_POST           => true,
+	CURLOPT_HTTPHEADER     => array('Content-Type: application/json'),
+	CURLOPT_POSTFIELDS     => json_encode(array('username' => $username, 'password' => $password)),
+	CURLOPT_RETURNTRANSFER => true,
+	CURLOPT_TIMEOUT        => 15,
+));
+$body = curl_exec($ch);
+$status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+$id = trim((string) $body);
+if ($status !== 200 || $id === '' || !preg_match('/^[A-Za-z0-9-]{8,64}$/', $id)) {
+	http_response_code(401);
+	print "Login failed";
+	exit;
+}
+$id = db_escape_string($id);
 $qtxt = "SELECT var_value FROM settings WHERE var_name='flatpay_auth'";
 $r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
 

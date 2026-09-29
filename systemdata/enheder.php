@@ -72,9 +72,9 @@
 	$mat_ret_id = $_GET['mat_id'];
 
 	if ($_POST['enheder']){
-		$enh_id          = $_POST['enh_id'];
-		$enh_betegnelse  = $_POST['enh_betegnelse'];
-		$enh_beskrivelse = $_POST['enh_beskrivelse'];
+		$enh_id          = (int) $_POST['enh_id'];
+		$enh_betegnelse  = array_map('db_escape_string', (array) $_POST['enh_betegnelse']);
+		$enh_beskrivelse = array_map('db_escape_string', (array) $_POST['enh_beskrivelse']);
 
 		
 		if (isset($enh_betegnelse[0]) && $enh_betegnelse[0]) {
@@ -98,8 +98,8 @@
 	}
 
 	if ($_POST['materialer']){
-		$mat_id=$_POST['mat_id'];
-		$mat_beskrivelse=$_POST['mat_beskrivelse'];
+		$mat_id=(int) $_POST['mat_id'];
+		$mat_beskrivelse=array_map('db_escape_string', (array) $_POST['mat_beskrivelse']);
 		$mat_densitet=$_POST['mat_densitet'];
 			
 		$mat_beskrivelse[0]=trim($mat_beskrivelse[0]);

@@ -111,13 +111,19 @@
 
 @session_start();
 $s_id = session_id();
-ob_start();
 
 // Generate CSRF token if not already created
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrf_token = $_SESSION['csrf_token'];
+// 20260928 Sawaneh Security 4.0 (A12): every posted form in the output gets the token, also on early exits.
+$diverseToken = "<input type='hidden' name='csrf_token' value='" . htmlspecialchars($csrf_token, ENT_QUOTES) . "'>";
+ob_start(function ($buffer) use ($diverseToken) {
+	return preg_replace_callback('/<form\b[^>]*>/i', function ($m) use ($diverseToken) {
+		return (stripos($m[0], 'method') !== false && stripos($m[0], 'post') !== false) ? $m[0] . $diverseToken : $m[0];
+	}, $buffer);
+});
 $title      = "Diverse Indstillinger";
 $modulnr    = 1;
 $css        = "../css/standard.css";
@@ -153,32 +159,39 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20260916 Phase 3 (spec R6): dangerous sections are gated by their own permission key.
 // 20260928 Sawaneh Phase 4: frame switch reduced to top.php, the Diverse sub-menu column and landing list
 //                  replaced by the registry-driven frame/front page, dead userSettings/personlige_valg code removed.
+// 20260928 Sawaneh Key names follow the settings redesign spec (settings.integrations.keys, settings.import_export).
+// 20260928 Sawaneh Security 4.0: CSRF check on POST (token injected into every posted form), pickup debug log removed,
+//                  SQL tool (Dataudtræk), DocuBizz and Paperflow removed, MobilePay/QuickPay secrets write-only.
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
 // them; a role only gets them when an administrator grants them explicitly.
 $dangerousSections = array(
-	'sqlquery_io' => 'settings.sql',
-	'api_valg' => 'settings.api',
+	'api_valg' => 'settings.integrations.keys',
 	'email' => 'settings.smtp',
 	'smtp' => 'settings.smtp',
 	'stripe_valg' => 'settings.integrations',
-	'docubizz' => 'settings.integrations',
-	'upload_dbz' => 'settings.integrations',
 	'shop_valg' => 'settings.integrations',
-	'adresser_io' => 'settings.importexport',
-	'formular_io' => 'settings.importexport',
-	'kontoplan_io' => 'settings.importexport',
-	'solar_io' => 'settings.importexport',
-	'varer_io' => 'settings.importexport',
-	'variant_valg_import_types' => 'settings.importexport',
-	'variant_valg_import_values' => 'settings.importexport',
+	'adresser_io' => 'settings.import_export',
+	'formular_io' => 'settings.import_export',
+	'kontoplan_io' => 'settings.import_export',
+	'solar_io' => 'settings.import_export',
+	'varer_io' => 'settings.import_export',
+	'variant_valg_import_types' => 'settings.import_export',
+	'variant_valg_import_values' => 'settings.import_export',
 );
 if (isset($dangerousSections[$sektion]) && function_exists('require_permission')) {
 	require_permission($dangerousSections[$sektion], ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'write' : 'read');
 }
 $skiftnavn  = if_isset($_GET['skiftnavn']);
+// 20260928 Sawaneh Security 4.0 (A12): every POST to this shared entry must carry the session's
+// CSRF token; the token is injected into every posted form by the output filter at the end of the file.
+if ($_SERVER['REQUEST_METHOD'] == "POST" && (!isset($_POST['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], (string) $_POST['csrf_token']))) {
+	audit_log('csrf', 'diverse.php?sektion=' . $sektion);
+	print "<meta http-equiv=\"refresh\" content=\"0;URL=diverse.php?sektion=" . urlencode((string) $sektion) . "\">";
+	exit;
+}
 if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 	if ($sektion == 'provision') {
-		$id   = $_POST['id'];
+		$id   = (int) $_POST['id'];
 		$box1 = $_POST['box1'];
 		$box2 = $_POST['box2'];
 		$box3 = $_POST['box3'];
@@ -189,20 +202,13 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		} elseif ($id > 0) db_modify("update grupper set  box1 = '$box1', box2 = '$box2', box3 = '$box3' , box4 = '$box4' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
 		#######################################################################################
 	} elseif ($sektion == 'div_valg') {
-		// DEBUG: Log POST data for pickup addresses
-		$debug_log = "/tmp/saldi_debug_pickup.log";
-		file_put_contents($debug_log, date('Y-m-d H:i:s')       . " POST data:\n", FILE_APPEND);
-		file_put_contents($debug_log, "dfm_pickup_group_id: "   . print_r(isset($_POST['dfm_pickup_group_id'])   ? $_POST['dfm_pickup_group_id']   : 'NOT SET', true) . "\n", FILE_APPEND);
-		file_put_contents($debug_log, "dfm_pickup_name1: "      . print_r(isset($_POST['dfm_pickup_name1'])      ? $_POST['dfm_pickup_name1']      : 'NOT SET', true) . "\n", FILE_APPEND);
-		file_put_contents($debug_log, "dfm_pickup_buttonname: " . print_r(isset($_POST['dfm_pickup_buttonname']) ? $_POST['dfm_pickup_buttonname'] : 'NOT SET', true) . "\n", FILE_APPEND);
-		file_put_contents($debug_log, "---\n", FILE_APPEND);
 		$id          = (int) $_POST['id'];
 		$box1        = $_POST['box1'];    #gruppevalg
 		$box2        = $_POST['box2'];    #kuansvalg
 		$box3        = $_POST['box3'];    #extra_ansat
 		$box4        = $_POST['box4'];    #forskellige_datoer
 		$box5        = $_POST['box5'];    #debtor2orderphone
-		$box6        = $_POST['box6'];    #docubizz
+		$box6        = '';                #was DocuBizz - integration removed 20260928, column kept until the 4f cleanup
 		$box7        = $_POST['box7'];    #jobkort
 //		$box8        = $_POST['box8'];    #ebconnect
 		$box8        = $_POST['box8'];    #paymentdays
@@ -251,9 +257,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		
 		$mySale             = if_isset($_POST['mySale']);
 		$mySaleLabel        = if_isset($_POST['mySaleLabel']);
-		$paperflow          = if_isset($_POST['paperflow']);
-		$paperflowId        = if_isset($_POST['paperflowId']);
-		$paperflowBearer    = if_isset($_POST['paperflowBearer']);
 		$qp_agreement_id    = if_isset($_POST['qp_agreement_id']);
 		$qp_merchant        = if_isset($_POST['qp_merchant']);
 		$qp_md5secret       = if_isset($_POST['qp_md5secret']);
@@ -279,11 +282,15 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 		update_settings_value("labelsize", "mysale", $labelsize, "The maxlength of the labels in mysale");
 
-		#mobilePay
+		#mobilePay - secret and subscription key are write-only (A10): an empty field leaves the stored value.
 		if ($mobilepay_client_id) {
 			update_settings_value("client_id",       "mobilepay", $mobilepay_client_id,     "The client id provided for the mobile pay integration");
-			update_settings_value("client_secret",   "mobilepay", $mobilepay_client_secret, "The client secret provided for the mobile pay integration");
-			update_settings_value("subscriptionKey", "mobilepay", $mobilepay_subscription,  "The Ocp-Apim-Subscription-Key provided for the mobile pay integration");
+			if ($mobilepay_client_secret !== '') {
+				update_settings_value("client_secret",   "mobilepay", $mobilepay_client_secret, "The client secret provided for the mobile pay integration");
+			}
+			if ($mobilepay_subscription !== '') {
+				update_settings_value("subscriptionKey", "mobilepay", $mobilepay_subscription,  "The Ocp-Apim-Subscription-Key provided for the mobile pay integration");
+			}
 			update_settings_value("MSN",             "mobilepay", $mobilepay_msn,           "The Merchant-Serial-Number provided for the mobilepay intergreation");
 		}
 
@@ -487,6 +494,10 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		$var_value = array($qp_agreement_id, $qp_merchant, $qp_md5secret, $qp_itemGrp);
 		$var_description = array('Agreement id from', 'Merchant no from', 'md5secret from', 'Item Group in Saldi for items paid using');
 		for ($x = 0; $x < count($var_name); $x++) {
+			if ($var_name[$x] === 'qp_md5secret' && (string) $var_value[$x] === '') {
+				continue; // write-only secret (A10): empty means unchanged
+			}
+			$var_value[$x] = db_escape_string((string) $var_value[$x]);
 			$var_description[$x] .= ', Quickpay';
 			$qtxt = "select id from settings where var_grp='quickpay' and var_name='$var_name[$x]'";
 			if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
@@ -521,37 +532,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		if ($qtxt)
 			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 
-		$qtxt = "select id from settings where var_grp='creditor' and var_name='paperflow'";
-		if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-			$qtxt = "update settings set var_value='$paperflow' where id='$r[id]'";
-		} elseif ($paperflow) {
-			$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-			$qtxt.= "('creditor','paperflow','$paperflow','Use Paperflow to read text from scanned invoices','0')";
-		} else
-			$qtxt = NULL;
-		if ($qtxt)
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-
-		$qtxt = "select id from settings where var_grp='creditor' and var_name='paperflowId'";
-		if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-			$qtxt = "update settings set var_value='$paperflowId' where id='$r[id]'";
-		} elseif ($paperflowId) {
-			$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-			$qtxt.= "('creditor','paperflowId','$paperflowId','Id given by Paperflow','0')";
-		} else
-			$qtxt = NULL;
-		if ($qtxt)
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		$qtxt = "select id from settings where var_grp='creditor' and var_name='paperflowBearer'";
-		if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-			$qtxt = "update settings set var_value='$paperflowBearer' where id='$r[id]'";
-		} elseif ($paperflowBearer) {
-			$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-			$qtxt.= "('creditor','paperflowBearer','$paperflowBearer','Bearer given by Paperflow','0')";
-		} else
-			$qtxt = NULL;
-		if ($qtxt)
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 		#######################################################################################
 	} elseif ($sektion == 'ordre_valg') {
 		$vatPrivateCustomers  = if_isset($_POST['vatPrivateCustomers']);
@@ -1678,31 +1658,8 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 
 		#######################################################################################
-	} elseif ($sektion == 'docubizz') {
-		$id   = $_POST['id'];
-		$box1 = $_POST['box1'];
-		$box2 = $_POST['box2'];
-		$box3 = $_POST['box3'];
-		$box4 = $_POST['box4'];
-		$box5 = $_POST['box5'];
-
-		if ((!$id) && ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'DocBiz'", __FILE__ . " linje " . __LINE__))))
-			$id = $r['id'];
-		elseif (!$id) {
-			db_modify("insert into grupper (beskrivelse,kodenr,art,box1,box2,box3,box4,box5) values ('DocuBizz','1','DocBiz','$box1','$box2','$box3','$box4','$box5')", __FILE__ . " linje " . __LINE__);
-		} elseif ($id > 0) {
-			db_modify("update grupper set  box1='$box1',box2='$box2',box3='$box3',box4='$box4',box5='$box5' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
-		}
-	} elseif ($sektion == 'upload_dbz') {
-		include("docubizzexport.php");
-		$r = db_fetch_array(db_select("select * from grupper WHERE art = 'DocBiz'", __FILE__ . " linje " . __LINE__));
-		$kommando = "cd ../temp/$db\n$exec_path/ncftp ftp://" . $r['box2'] . ":" . $r['box3'] . "@" . $r['box1'] . "/" . $r['box5'] . " < ftpscript > NULL ";
-		system($kommando);
-		$alert = findtekst('1741|Data sendt til DocuBizz', $sprog_id);
-		print "<BODY onLoad=\"JavaScript:alert('$alert')\">";
-		#######################################################################################
 	} elseif ($sektion == 'bilag') {
-		$id   = if_isset($_POST['id']);
+		$id   = (int) if_isset($_POST['id']);
 		$box1 = if_isset($_POST['box1']);
 		$box2 = if_isset($_POST['box2']);
 		$box3 = if_isset($_POST['box3']);
@@ -1852,8 +1809,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		} elseif (strstr($_POST['submit']) == "Import") {
 			print "<BODY onLoad=\"javascript:importer_formular=window.open('importer_formular.php','importer_formular','scrollbars=yes,resizable=yes,dependent=yes');importer_formular.focus();\">";
 		}
-	} elseif ($sektion == 'sqlquery_io') {
-		$sqlstreng = if_isset($_POST['sqlstreng']);
 	} elseif ($sektion == 'kontoindstillinger') {
 
 		if (isset($_POST['update_max_users'])) {
@@ -2069,9 +2024,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
 }
-$docubizz = NULL;
-if (db_fetch_array(db_select("select id from grupper WHERE art = 'DIV' and kodenr = '2' and box6='on'", __FILE__ . " linje " . __LINE__)))
-	$docubizz = 'on';
 
 print "<table class='dataTable2' cellpadding=\"1\" cellspacing=\"1\" border=\"0\" width=\"100%\" height=\"100%\"><tbody>";
 
@@ -2103,7 +2055,6 @@ if ($sektion == "pricelists") {
 }
 if ($sektion == "rykker_valg") rykker_valg();
 if ($sektion == "div_valg") div_valg(); # Kalder sys_div_valg.php
-if ($sektion == "docubizz") docubizz();
 if ($sektion == "bilag") bilag();
 if ($sektion == "bank_integration") include('diverseIncludes/bank_integration.php');
 //if ($sektion=="barcodescan") barcodescan();
@@ -2130,7 +2081,6 @@ if (strpos($sektion, "_io")) {
 	adresser_io();
 	varer_io();
 	variantvarer_io();
-	sqlquery_io($sqlstreng);
 }
 
 print "</tbody></table></td></tr>";

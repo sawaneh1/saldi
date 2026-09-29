@@ -28,6 +28,7 @@
 //                  nearest-role suggestion for migration, and the audit log.
 // 20260928 Sawaneh Derived keys (pos.kasse from Debitorordre) and one-time seeding of new keys into roles.
 // 20260928 Sawaneh Phase 4: settings pages resolve to their group key; derived keys open their source position.
+// 20260928 Sawaneh Registry keys may carry 'renamed_from'; role rows move to the new name once.
 
 include_once(__DIR__ . '/permissionRegistry.php');
 
@@ -559,6 +560,16 @@ function perm_seed_new_keys(array $existing): void
 		// First run with this mechanism: every key without a 'since' marker was seeded with the roles.
 		foreach ($registry as $key => $def) {
 			if (!isset($def['since'])) {
+				$known[] = $key;
+			}
+		}
+	}
+	// A renamed key keeps what roles had under its old name. Without a known_keys row the old
+	// name may still be in role_permissions, so the (harmless) update runs in that case too.
+	foreach ($registry as $key => $def) {
+		if (!empty($def['renamed_from']) && (!$r || (in_array($def['renamed_from'], $known, true) && !in_array($key, $known, true)))) {
+			db_modify("update role_permissions set permission_key = '" . db_escape_string($key) . "' where permission_key = '" . db_escape_string($def['renamed_from']) . "'", __FILE__ . " linje " . __LINE__);
+			if (!in_array($key, $known, true)) {
 				$known[] = $key;
 			}
 		}

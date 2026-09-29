@@ -70,6 +70,7 @@ $title = "Formulareditor";
 $css   = "../css/standard.css";
 
 include("../includes/connect.php");
+$modulnr = 1; // 20260928 Sawaneh Security 4.0 (A8)
 $permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");

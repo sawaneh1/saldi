@@ -1517,9 +1517,6 @@ if ($_POST) {
 			if ($submit == 'offset') {
 				print "<meta http-equiv='refresh' content='0;URL=../finans/autoudlign.php?kladde_id=$kladde_id'>";
 			}
-			if (strstr($submit, "DocuB")) {
-				print "<meta http-equiv='refresh' content='0;URL=../finans/docubizzimport.php?kladde_id=$kladde_id'>";
-			}
 		}
 	}
 } else { # endif ($_POST)
@@ -3630,11 +3627,6 @@ if (($bogfort && $bogfort != '-') || $udskriv) {
 						print "<td align='center'><span title='" . findtekst('1548|Henter afsluttede ordrer fra ordreliste', $sprog_id) . "'><input type='submit' style='width:120px;float:left' accesskey='h' value='" . findtekst('1078|Hent', $sprog_id) . "' name='upload' onclick='javascript:docChange = false;'></span></td>";
 					}
 				}
-				$qtxt = "select * from grupper where art = 'DIV' and kodenr = '2' and box6='on'";
-				if (db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-					$confirm1 = findtekst('1576|Importer data fra DocuBizz?', $sprog_id);
-					print "<td align='center'><input type='submit' style='width:120px;float:left' accesskey='d' value='DocuBizz' name='submit' onclick='javascript:docChange = false;' onclick=\"return confirm('$confirm1')\"></td>"; #20210720
-				}
 				print "<td align='center'><span title='" . findtekst('1549|Importerer bankposteringer eller andre data fra .csv-fil (kommasepareret fil)', $sprog_id) . "'><input type='submit' class='button gray medium' style='width:120px;' accesskey='i' value='" . findtekst('1356|Importér', $sprog_id) . "' name='import' onclick='javascript:docChange = false;'></span></td>";
 				print "<td align='center'><span title='" . findtekst('1550|Finder åbne poster, som modsvarer beløb og fakturanummer', $sprog_id) . "'><input type='submit' class='button gray medium' style='width:120px;' accesskey='u' value='" . findtekst('1066|Udlign', $sprog_id) . "' name='offset' onclick='javascript:docChange = false;'></span></td>";
 				/*
@@ -4492,7 +4484,6 @@ document.addEventListener('DOMContentLoaded', function() {
         { rowId: '', buttonId: 'simulate-button', name: 'simulate' },
         { rowId: '', buttonId: 'doPost-button', name: 'doPost' },
         { rowId: '', buttonId: 'upload-button', name: 'upload' },
-        { rowId: '', buttonId: 'submitDocuBizz-button', name: 'submit' },
         { rowId: '', buttonId: 'import-button', name: 'import' },
         { rowId: '', buttonId: 'offset-button', name: 'offset' }
     ];

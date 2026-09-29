@@ -5266,3 +5266,13 @@
 5666	Alle indstillinger	All settings	Alle innstillinger
 5667	Du har ændringer, der ikke er gemt. Vil du forlade siden?	You have unsaved changes. Leave the page?	Du har endringer som ikke er lagret. Vil du forlate siden?
 5668	Systemværktøjer	System tools	Systemverktøy
+5669	Virksomhed	Company	Virksomhet
+5670	Organisation	Organisation	Organisasjon
+5671	Dokumenter & e-mail	Documents & e-mail	Dokumenter og e-post
+5672	Kontoplan, moms, valuta, bilag og bank	Chart of accounts, VAT, currencies, vouchers and bank	Kontoplan, mva, valuta, bilag og bank
+5673	Debitorgrupper, ordrer, rykkere og rabatter	Debtor groups, orders, reminders and discounts	Debitorgrupper, ordrer, purringer og rabatter
+5674	Kreditorgrupper og leverandørprislister	Creditor groups and supplier price lists	Kreditorgrupper og leverandørprislister
+5675	Formularer, e-mail og afsendere	Forms, e-mail and senders	Skjemaer, e-post og avsendere
+5676	API, webshop, Stripe og app	API, webshop, Stripe and app	API, nettbutikk, Stripe og app
+5677	Adgangskoden er gemt og vises ikke	The password is stored and not shown	Passordet er lagret og vises ikke
+5678	Sat - skriv kun for at ændre	Set - type only to change	Satt - skriv kun for å endre

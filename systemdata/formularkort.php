@@ -68,6 +68,7 @@ $title="Formulareditor";
 $css="../css/standard.css";
 
 include("../includes/connect.php");
+$modulnr = 1; // 20260928 Sawaneh Security 4.0 (A8)
 $permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");
@@ -101,7 +102,7 @@ if (isset($_POST) && $_POST) {
 
        ######
 		if (isset($_POST['slet_sprog']) && $_POST['slet_sprog']) {
-			$slet_sprog = if_isset($_POST['slet_sprog']);
+			$slet_sprog = db_escape_string((string) if_isset($_POST['slet_sprog']));
 			
 			// Don't allow deleting "Dansk"
 			if ($slet_sprog != 'Dansk') {

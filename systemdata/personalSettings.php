@@ -30,6 +30,7 @@
 //                  cluster placement, active sessions with "log out other devices", current
 //                  password required for email/phone/2FA/password changes (spec 4.5), audit log.
 // 20260928 Sawaneh Back button top-left in the theme colour, as elsewhere in the system (was Close top-right).
+// 20260928 Sawaneh Popup windows, background colour and highlight removed (settings redesign spec, Personal settings).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -182,33 +183,26 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 		}
 
 		$colors = array(
-			'bgcolor'        => personal_settings_hex(isset($post['bgcolor']) ? $post['bgcolor'] : '', 'eeeef0'),
-			'fgcolor'        => personal_settings_hex(isset($post['fgcolor']) ? $post['fgcolor'] : '', 'eeeef0'),
 			'buttonColor'    => personal_settings_hex(isset($post['buttonColor']) ? $post['buttonColor'] : '', '114691'),
 			'buttonTxtColor' => personal_settings_hex(isset($post['buttonTxtColor']) ? $post['buttonTxtColor'] : '', 'ffffff'),
 		);
-		$popup = !empty($post['popup']) ? 'on' : '';
-		if ($colors !== $current['colors'] || ($popup !== '') !== $current['popup']) {
+		if ($colors !== $current['colors']) {
 			$reloadShell = true;
 		}
 		$descriptions = array(
-			'bgcolor'        => 'Background color for user settings',
-			'fgcolor'        => 'Nuance color for user settings',
 			'buttonColor'    => 'Background color for user settings',
 			'buttonTxtColor' => 'Button color for user settings',
 		);
 		foreach ($colors as $name => $value) {
 			update_settings_value($name, 'colors', $value, $descriptions[$name], $brugerId);
 		}
-		$r = db_fetch_array(db_select("select id from grupper where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__));
-		if ($r && $r['id']) {
-			$qtxt = "update grupper set box2 = '$popup', box4 = '#$colors[bgcolor]', box5 = '#$colors[fgcolor]' where id = " . (int) $r['id'];
-		} else {
-			$jsvars = "statusbar=0,menubar=0,titlebar=0,toolbar=0,scrollbars=1,resizable=1,dependent=1";
-			$qtxt = "insert into grupper (beskrivelse, kodenr, art, box1, box2, box3, box4, box5) values ";
-			$qtxt .= "('Personlige valg', '$brugerId', 'USET', '$jsvars', '$popup', 'S', '#$colors[bgcolor]', '#$colors[fgcolor]')";
+		// Popup windows are removed (settings redesign spec, Personal settings): saving switches
+		// them off, as the old Personlige valg page did. Background colour/highlight are no
+		// longer edited here; their stored values are left as they are.
+		if ($current['popup']) {
+			db_modify("update grupper set box2 = '' where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__);
+			$reloadShell = true;
 		}
-		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 
 		if (isset($post['due_date_warning_days']) && $post['due_date_warning_days'] !== '') {
 			update_settings_value('due_date_warning_days', 'lager', max(1, intval($post['due_date_warning_days'])), 'Days before expiry to warn', $brugerId);
@@ -318,10 +312,8 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 	}
 	$twofactor = in_array($u['twofactor'], array('t', true, '1', 1), true);
 
-	$uset = db_fetch_array(db_select("select box2, box4, box5 from grupper where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__));
+	$uset = db_fetch_array(db_select("select box2 from grupper where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__));
 	$colors = array(
-		'bgcolor'        => personal_settings_hex(get_settings_value('bgcolor', 'colors', $uset ? $uset['box4'] : '', $brugerId), 'eeeef0'),
-		'fgcolor'        => personal_settings_hex(get_settings_value('fgcolor', 'colors', $uset ? $uset['box5'] : '', $brugerId), 'eeeef0'),
 		'buttonColor'    => personal_settings_hex(get_settings_value('buttonColor', 'colors', '', $brugerId), '114691'),
 		'buttonTxtColor' => personal_settings_hex(get_settings_value('buttonTxtColor', 'colors', '', $brugerId), 'ffffff'),
 	);
@@ -499,8 +491,6 @@ function personal_settings_view(?array $d, array $flash, string $selfUrl, string
 		var tc = hex('ps-buttonTxtColor-text') || '#ffffff';
 		btn.style.background = bc; btn.style.color = tc;
 		menu.style.background = bc; menu.style.color = tc;
-		var bg = hex('ps-bgcolor-text');
-		document.querySelector('.ps-preview').style.background = bg || 'transparent';
 	}
 	var initial = snapshot();
 	function snapshot() {
@@ -608,8 +598,6 @@ function personal_settings_view_profile(array $d, callable $h, callable $t, stri
         $colorFields = array(
         	array('name' => 'buttonColor',    'label' => '5509|Knapfarve',            'help' => ''),
         	array('name' => 'buttonTxtColor', 'label' => '5510|Tekstfarve på knapper', 'help' => ''),
-        	array('name' => 'bgcolor',        'label' => '317|Baggrundsfarve',        'help' => ''),
-        	array('name' => 'fgcolor',        'label' => '415|Fremhævning',           'help' => '416|Fremhæver eksempelvis ordrer med den angivne farvenuance'),
         );
         foreach ($colorFields as $cf) {
         	$val = $d['colors'][$cf['name']];
@@ -635,14 +623,8 @@ function personal_settings_view_profile(array $d, callable $h, callable $t, stri
     </section>
 
     <section class="ps-card">
-      <h2><i class='bx bx-window-alt'></i><?= $t('5524|Vinduer og advarsler') ?></h2>
+      <h2><i class='bx bx-error-circle'></i><?= $t('5641|Advarsler') ?></h2>
       <div class="ps-grid">
-        <div class="ps-field ps-field-full">
-          <label class="ps-check">
-            <input type="checkbox" name="popup" value="on"<?= $d['popup'] ? ' checked' : '' ?>>
-            <span class="ps-check-txt"><b><?= $t('208|Anvend popup-vinduer') ?></b><span><?= $t('207|Hvis du afmærker dette felt vil SALDI virke i pop op-vinduer') ?></span></span>
-          </label>
-        </div>
         <div class="ps-field">
           <label for="ps-warn"><?= $t('5006|Advar om udløb (dage før)') ?></label>
           <input class="ps-input ps-input-short" type="number" min="1" id="ps-warn" name="due_date_warning_days" value="<?= (int) $d['warnDays'] ?>">

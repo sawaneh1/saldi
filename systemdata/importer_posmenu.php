@@ -27,7 +27,7 @@ $saldifileformat="saldi_posmenus";
 $title="Importer POS menuer";
 $css="../css/standard.css";
 include("../includes/connect.php");
-$permission_key = 'settings.importexport';
+$permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/db_query.php");
 include("../includes/posmenu_import.php");

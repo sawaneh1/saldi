@@ -25,7 +25,7 @@ $title="Eksporter debitorer";
 $css="../css/standard.css";
 
 include("../includes/connect.php");
-$permission_key = 'settings.importexport';
+$permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/std_func.php");
 

@@ -29,7 +29,7 @@ $title="Importer_formularer";
 $css="../css/standard.css";
 $returside="diverse.php?sektion=div_io";
 include("../includes/connect.php");
-$permission_key = 'settings.importexport';
+$permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/db_query.php");
 include("../includes/formularimport.php");

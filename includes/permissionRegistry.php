@@ -27,6 +27,7 @@
 //                  Same pattern as systemdata/settingsRegistry.php: one place to maintain.
 // 20260928 Sawaneh pos.kasse key (own group) so point-of-sale access is granted per role.
 // 20260928 Sawaneh Settings-area keys (phase 4, spec S3), one per group of the settings front page.
+// 20260928 Sawaneh Keys and groups aligned with Requirements_settings_redesign_EN.md §4 (11 groups).
 
 /**
  * Every permission key the system knows. A key is granted at level none / read / write.
@@ -70,22 +71,23 @@ function permission_registry(): array
 		// which is what opens the cash register today ('derive').
 		'pos.kasse'              => array('group' => 'pos',      'label' => '5606|Kassesystem',        'legacy' => array(),   'dangerous' => false, 'derive' => 5, 'since' => '20260928'),
 
-		// Settings areas (parent spec S3): one key per group of the settings front page.
+		// Settings areas (settings redesign spec §4): one key per group of the settings front page.
 		// Users without a role inherit them from the Indstillinger bit (1), as today.
-		'settings.company'       => array('group' => 'settingsarea', 'label' => '5649|Firma',             'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		// 'renamed_from' moves an earlier key's role rows to the new name once (perm_seed_new_keys).
+		'settings.company'       => array('group' => 'settingsarea', 'label' => '5669|Virksomhed',        'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
 		'settings.finance'       => array('group' => 'settingsarea', 'label' => '600|Finans',             'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
 		'settings.sales'         => array('group' => 'settingsarea', 'label' => '5544|Salg',              'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
-		'settings.purchasing'    => array('group' => 'settingsarea', 'label' => '5545|Indkøb',            'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
-		'settings.products'      => array('group' => 'settingsarea', 'label' => '5650|Varer & lager',     'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
-		'settings.employees'     => array('group' => 'settingsarea', 'label' => '5651|Ansatte',           'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
-		'settings.pos'           => array('group' => 'settingsarea', 'label' => '5606|Kassesystem',       'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.purchase'      => array('group' => 'settingsarea', 'label' => '1012|Køb',               'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928', 'renamed_from' => 'settings.purchasing'),
+		'settings.items'         => array('group' => 'settingsarea', 'label' => '5650|Varer & lager',     'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928', 'renamed_from' => 'settings.products'),
+		'settings.documents'     => array('group' => 'settingsarea', 'label' => '5671|Dokumenter & e-mail', 'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
+		'settings.organisation'  => array('group' => 'settingsarea', 'label' => '5670|Organisation',      'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928', 'renamed_from' => 'settings.employees'),
+		'settings.pos'           => array('group' => 'settingsarea', 'label' => '2226|Kasse',             'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
 
 		'settings.users.manage'  => array('group' => 'settings', 'label' => '5536|Brugere & roller',   'legacy' => array(),   'dangerous' => true),
 		'settings.integrations'  => array('group' => 'settings', 'label' => '5537|Integrationer',      'legacy' => array(),   'dangerous' => true),
-		'settings.api'           => array('group' => 'settings', 'label' => '5540|API-nøgler',         'legacy' => array(),   'dangerous' => true),
+		'settings.integrations.keys' => array('group' => 'settings', 'label' => '5540|API-nøgler',     'legacy' => array(),   'dangerous' => true, 'renamed_from' => 'settings.api'),
 		'settings.smtp'          => array('group' => 'settings', 'label' => '5541|E-mail/SMTP',        'legacy' => array(),   'dangerous' => true),
-		'settings.importexport'  => array('group' => 'settings', 'label' => '5539|Import & eksport',   'legacy' => array(),   'dangerous' => true),
-		'settings.sql'           => array('group' => 'settings', 'label' => '5538|SQL-værktøj',        'legacy' => array(),   'dangerous' => true),
+		'settings.import_export' => array('group' => 'settings', 'label' => '5539|Import & eksport',   'legacy' => array(),   'dangerous' => true, 'renamed_from' => 'settings.importexport'),
 		'system.backup.restore'  => array('group' => 'settings', 'label' => '5542|Gendan sikkerhedskopi', 'legacy' => array(), 'dangerous' => true),
 	);
 	return $registry;
@@ -166,6 +168,7 @@ function permission_default_roles(): array
 			'levels'      => array(
 				'lager.varer' => 'write', 'lager.varemodtagelse' => 'write', 'lager.produktion' => 'write', 'lager.rapporter' => 'write',
 				'debitor.ordre' => 'read', 'kreditor.ordre' => 'read',
+				'settings.items' => 'write', 'settings.organisation' => 'read',
 			),
 		),
 		'kunvisning' => array(

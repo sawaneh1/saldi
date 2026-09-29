@@ -36,7 +36,7 @@ $css="../css/standard.css";
 $title="Import&eacute;r varelokationer";
 
 include("../includes/connect.php");
-$permission_key = 'settings.importexport';
+$permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

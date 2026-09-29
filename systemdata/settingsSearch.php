@@ -63,10 +63,6 @@ function settingsEntryIsVisible($entry) {
 				global $db, $sqdb;
 				if (!isset($db) || !isset($sqdb) || $db !== $sqdb) return false;
 				break;
-			case 'docubizz':
-				$q = db_select("select id from grupper where art = 'DIV' and kodenr = '2' and box6='on'", __FILE__ . " linje " . __LINE__);
-				if (!db_fetch_array($q)) return false;
-				break;
 		}
 	}
 

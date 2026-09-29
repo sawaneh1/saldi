@@ -29,6 +29,7 @@ $title = "Email Settings";
 $css="../css/standard.css";
 
 include("../includes/connect.php");
+$modulnr = 1; // 20260928 Sawaneh Security 4.0 (A8)
 $permission_key = 'settings.smtp';
 include("../includes/online.php");
 include("../includes/std_func.php");
@@ -39,6 +40,7 @@ include("../includes/db_query.php");
 if (isset($_POST['submit']) && $_POST["submit"]) {
 	# Process sender emails
 	foreach ($_POST['sender_email'] as $lang_id => $email) {
+		$lang_id = (int) $lang_id; // 20260928 Sawaneh Security 4.0 (A12)
 		$email = trim($email);
 		
 		# Check if setting exists
@@ -66,6 +68,7 @@ if (isset($_POST['submit']) && $_POST["submit"]) {
 	
 	# Process sender names
 	foreach ($_POST['sender_name'] as $lang_id => $name) {
+		$lang_id = (int) $lang_id;
 		$name = trim($name);
 		
 		# Check if setting exists

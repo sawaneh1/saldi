@@ -690,4 +690,27 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 }
 
+// 20260928 Sawaneh Settings redesign spec, phase 4.0 (decisions 1 and 15): the saved SQL queries of the removed
+// data-extract tool are exported once to temp/<db>/saved_queries.csv (the table stays), and the three Paperflow
+// settings rows (incl. the bearer token) are deleted. Runs once per company, tracked in settings.
+$qtxt = "select id from settings where var_grp = 'system' and var_name = 'security_40'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='queries'";
+	if (db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+		$dir = __DIR__ . "/../temp/$db";
+		if (!is_dir($dir)) @mkdir($dir, 0775, true);
+		$fp = @fopen("$dir/saved_queries.csv", "w");
+		if ($fp) {
+			fputcsv($fp, array('id', 'query', 'description', 'user_id'), ';');
+			$q = db_select("select id, query, query_descrpition, user_id from queries order by id", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				fputcsv($fp, array($r['id'], $r['query'], $r['query_descrpition'], $r['user_id']), ';');
+			}
+			fclose($fp);
+		}
+	}
+	db_modify("delete from settings where var_grp = 'creditor' and var_name in ('paperflow', 'paperflowId', 'paperflowBearer')", __FILE__ . " linje " . __LINE__);
+	db_modify("insert into settings (var_grp, var_name, var_value, var_description) values ('system', 'security_40', '" . date('Ymd') . "', 'Settings security phase 4.0 migration done')", __FILE__ . " linje " . __LINE__);
+}
+
 ?>

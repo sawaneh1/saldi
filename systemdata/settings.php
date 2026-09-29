@@ -72,7 +72,7 @@ function settings_hub_view(array $groups, int $sprogId, string $dbEncode): void
     <h1><i class='bx bx-cog'></i><?= $t('122|Indstillinger') ?></h1>
     <div class="sh-search">
       <i class='bx bx-search'></i>
-      <input type="search" id="sh-search" placeholder="<?= $t('5663|Søg i indstillinger…') ?>" autocomplete="off" autofocus>
+      <input type="search" id="sh-search" placeholder="<?= $t('5663|Søg i indstillinger…') ?>" autocomplete="off">
     </div>
   </header>
 
@@ -106,6 +106,8 @@ function settings_hub_view(array $groups, int $sprogId, string $dbEncode): void
 <script>
 (function () {
 	var input = document.getElementById('sh-search');
+	// Focus without letting the browser scroll the surrounding shell (autofocus does).
+	if (input) { try { input.focus({ preventScroll: true }); } catch (e) {} }
 	if (!input) { return; }
 	input.addEventListener('input', function () {
 		var q = input.value.trim().toLowerCase();

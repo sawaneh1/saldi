@@ -85,6 +85,8 @@
 // 20211022 LOE Fixed some bugs
 // 20211123 PHR added paperflow
 // 20211123 PHR added paperflowId & paperflowBearer
+// 20260928 Sawaneh Security 4.0: SQL tool, DocuBizz and Paperflow removed; Vibrant password never shown; MobilePay/QuickPay
+//                  secrets write-only; Flatpay login handled server-side; FTP test via PHP ftp_*; variant delete id cast.
 // 20220413 PHR Renamed pos_valg til posOptions and moved function to diverse/posOptions.php
 // 20231228 PBLM Added mobilePay (diverse valg)
 // 20240130 PBLM Added Nemhandel (diverse valg)
@@ -509,120 +511,6 @@ function adresser_io() {
 
 } # endfunc adresser_io
 
-function sqlquery_io($sqlstreng) {
-	global $bgcolor, $bgcolor5, $popup, $sprog_id;
-
-	$sqlQueryId  = if_isset($_POST['sqlQueryId']);
-	$deleteQuery = if_isset($_POST['deleteQuery']);
-	if ($sqlQueryId) {
-		if ($deleteQuery) {
-			db_modify("delete from queries where id = '$sqlQueryId'", __FILE__ . " linje " . __LINE__);
-		} else {
-			$qtxt      = "select query from queries where id = '$sqlQueryId'";
-			$r         = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-			$sqlstreng = $r['query'];
-		}
-	}
-	$titletxt = "".findtekst('1725|Skriv en SQL forespørgsel uden select. F.eks: * from varer eller: varenr,salgspris from varer where lukket', $sprog_id)." != 'on'";
-	print "<form name=exportselect action=diverse.php?sektion=sqlquery_io method=post>";
-	print "<tr><td colspan='6'><hr></td></tr>";
-	print "<tr bgcolor='$bgcolor5'><td colspan='6'><b><u>".findtekst('1358|Dataudtræk', $sprog_id)."</u></b></td></tr>";
-	print "<tr><td colspan='6'><br></td></tr>";
-	#print "<input type=hidden name=id value='$id'>";
-	print "<tr><td valign='top' title='$titletxt'>SELECT</td><td colspan='2'><textarea name='sqlstreng' rows='5' cols='80'>$sqlstreng</textarea></td>";
-	print "<td align = center><input class='button blue medium' style='width: 8em' type=submit accesskey='s' value='Send' name='send'><br>";
-	print "<br><input class='button green medium' style='width: 8em' type=submit accesskey='g' value='Gem' name='gem'></td>";
-	print "</form>";
-	$gem = $sqlstreng = NULL;
-	if (isset($_POST['sqlstreng'])) {
-		$sqlstreng = trim($_POST['sqlstreng']);
-		$gem = $_POST['gem'];
-	}
-	if ($sqlstreng = trim($sqlstreng)) {
-		global $db, $bruger_id, $sprog_id;
-		$linje   = NULL;
-		$filnavn = "../temp/$db/$bruger_id.csv";
-		$fp      = fopen($filnavn, "w");
-		#	$sqlstreng=strtolower($sqlstreng);
-		list($del1, $del2) = explode("where", $sqlstreng, 2);
-		$fy_ord = array('brugere', 'grupper');
-		for ($x = 0; $x < count($fy_ord); $x++) {
-			if (strpos($del1, $fy_ord[$x])) {
-				$alert = findtekst('1732|Illegal værdi i søgestreng', $sprog_id);
-				print "<BODY onLoad=\"JavaScript:alert('$alert')\">";
-				exit;
-			}
-		}
-
-		for ($x = 0; $x < strlen($del2); $x++) {
-			$t = substr($del2, $x, 1);
-			if (!$tilde) {
-				if ($t == "'") {
-					$tilde = 1;
-					$var = '';
-				} else $streng .= $t;
-			} else {
-				if ($t == "'") {
-					$tilde = 0;
-					$streng .= "'" . db_escape_string($var) . "'";
-				}
-			}
-		}
-		$qtxt = "select " . db_escape_string($del1);
-		$qtxt = "select " . $sqlstreng;
-
-		$r = 0;
-		$q = db_select("$qtxt", __FILE__ . " linje " . __LINE__ . " funktion sqlquery_io");
-		while ($r < db_num_fields($q)) {
-			$fieldName[$r] = db_field_name($q, $r);
-			$fieldType[$r] = db_field_type($q, $r);
-			($linje) ? $linje .= '";"' . $fieldName[$r] . "(" . $fieldType[$r] . ")" : $linje = '"' . $fieldName[$r] . "(" . $fieldType[$r] . ")";
-			$r++;
-		}
-		($linje) ? $linje .= '"' : $linje = NULL;
-		if ($fp) {
-			fwrite($fp, "$linje\n");
-		}
-		$q = db_select("$qtxt", __FILE__ . " linje " . __LINE__ . " funktion sqlquery_io");
-		while ($r = db_fetch_array($q)) {
-			$linje = NULL;
-			$arraysize = count($r);
-			for ($x = 0; $x < $arraysize; $x++) {
-				if (isset($fieldType[$x]) && $fieldType[$x] == 'numeric') $r[$x] = dkdecimal($r[$x]);
-				elseif (isset($r[$x])) $r[$x] = mb_convert_encoding($r[$x], 'ISO-8859-1', 'UTF-8');
-				if (!isset($r[$x])) $r[$x] = '';
-				($linje) ? $linje .= '";"' . $r[$x] : $linje = '"' . $r[$x];
-			}
-			($linje) ? $linje .= '"' : $linje = NULL;
-			if ($fp) {
-				fwrite($fp, "$linje\n");
-			}
-		}
-		fclose($fp);
-		print "<tr><td></td><td align='left' colspan='3'> H&oslash;jreklik her: <a href='$filnavn'>Datafil</a> og v&aelig;lg 'gem destination som'</td></tr>";
-		if ($gem) {
-			$qtxt = NULL;
-			if ($sql_id) $qtxt = "update queries set query = '" . db_escape_string($sqlstreng) . "' where id = '$sql_id'";
-			else {
-				$qtxt = "select id from queries where query = '" . db_escape_string($sqlstreng) . "'";
-				if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) $qxtx = NULL;
-				else $qtxt = "insert into queries (query,query_descrpition,user_id) values ('" . db_escape_string($sqlstreng) . "','','0')";
-			}
-			if ($qtxt) db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		}
-	}
-	print "<form name='query' action='diverse.php?sektion=div_io' method='post'>";
-	print "<tr><td></td><td colspan='4'><select name='sqlQueryId' style='width:600px;'>";
-	$qtxt = "select * from queries order by query";
-	$q    = db_select($qtxt, __FILE__ . " linje " . __LINE__);
-	while ($r = db_fetch_array($q)) {
-		print "<option value='$r[id]'>$r[query]</option>";
-	}
-	$slet = findtekst('1099|Slet', $sprog_id);
-	print "</select>&nbsp;<input type='submit' name='query' value='" . findtekst('1078|Hent', $sprog_id) . "'>&nbsp;";
-	print "<input type='submit' name='deleteQuery' value='$slet' onclick=\"return confirm('Slet denne søgning?')\"></td></tr>";
-	print "</form>";
-} # endfunc sqlquery_io
 
 
 #require("englishfile.php");
@@ -671,11 +559,10 @@ function jobkort () {
 
 function div_valg() {
 	global $bgcolor, $bgcolor5;
-	global $docubizz;
 	global $regnaar;
 	global $sprog_id;
 
-	$batch = $ebconnect = $extra_ansat = $forskellige_datoer = $paperflow = NULL;
+	$batch = $ebconnect = $extra_ansat = $forskellige_datoer = NULL;
 	$gls_id = $gls_pass = $gls_user = $gls_ctId = NULL; #20211019 $gls_ctId added
 	$dfm_id = $dfm_pass = $dfm_user = $dfm_agree = $dfm_hub = $dfm_ship = $dfm_good = $dfm_pay = $dfm_url = $dfm_gooddes = $dfm_sercode = NULL;
 	$dfm_pickup_addr = $dfm_pickup_name1 = $dfm_pickup_name2 = $dfm_pickup_street1 = $dfm_pickup_street2 = $dfm_pickup_town = $dfm_pickup_zipcode = NULL;
@@ -704,7 +591,6 @@ function div_valg() {
 	if ($box3 == 'on') $extra_ansat = "checked";
 	if ($box4 == 'on') $forskellige_datoer = "checked";
 	if ($box5 == 'on') $debtor2orderphone = "checked";
-	if ($box6 == 'on') $docubizz = "checked";
 	if ($box7 == 'on') $jobkort = "checked";
 	// if ($box8) $ebconnect = "checked";
 	if ($box8 == 'on') $payment_days = "checked";
@@ -807,17 +693,6 @@ function div_valg() {
 	$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
 	($r['var_value']) ? $mySaleLabel = "checked='checked'" : $mySaleLabel = NULL;
 
-	$qtxt = "select var_value from settings where var_grp='creditor' and var_name='paperflow'";
-	$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-	($r['var_value']) ? $paperflow = "checked='checked'" : $paperflow = NULL;
-	if ($paperflow) {
-		$qtxt            = "select var_value from settings where var_grp='creditor' and var_name='paperflowId'";
-		$r               = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-		$paperflowId     = $r['var_value'];
-		$qtxt            = "select var_value from settings where var_grp='creditor' and var_name='paperflowBearer'";
-		$r               = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-		$paperflowBearer = $r['var_value'];
-	}
 	$qtxt = "select * from settings where var_grp = 'quickpay'";
 	$q    = db_select($qtxt, __FILE__ . " linje " . __LINE__);
 	while ($r = db_fetch_array($q)) {
@@ -877,11 +752,6 @@ function div_valg() {
 	print "<!-- 922  : Benyt debitors kontonummer som telefonnumer på ordre -->";
 	print "<input name='box5' class='inputbox' type='checkbox' $debtor2orderphone>\n";
 	print "</td></tr>\n";
-	print "<tr bgcolor='$bgcolor5'>\n<td title='".findtekst('193|Docubizz er en aplikation til håndtering af indscannede dokumenter. Se mere om denne funktion på www.docubizz.dk', $sprog_id)."'>".findtekst('167|Integration med DocuBizz', $sprog_id)."</td>\n";
-	print "<td title='".findtekst('193|Docubizz er en aplikation til håndtering af indscannede dokumenter. Se mere om denne funktion på www.docubizz.dk', $sprog_id)."'>\n";
-	print "<!-- 167 : Integration med DocuBizz -->";
-	print "<input name='box6' class='inputbox' type='checkbox' $docubizz>\n";
-	print "</td></tr>\n";
 	if (strpos(findtekst('768|Aktivér Mit salg', $sprog_id), "'")) {
 		$qtxt = "delete from tekster where tekst_id = '767' or tekst_id = '768'";
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
@@ -928,18 +798,6 @@ function div_valg() {
 		db_modify("delete from tekster where (tekst_id='841' or tekst_id='642') and sprog_id='$sprog_id'");
 	}
 	// print "</td></tr>\n";
-	// print "<!-- 795 : Brug 'PaperFlow' -->";
-	// print "<tr bgcolor='$bgcolor5'>\n<td title='".findtekst('1931|Anvend Paperflow til aflæsning af bilag, Se priser på saldi.dk/paperflow', $sprog_id)."'>".findtekst('795|Brug Paperflow', $sprog_id)."</td>\n";
-	// print "<td title='".findtekst('1931|Anvend Paperflow til aflæsning af bilag, Se priser på saldi.dk/paperflow', $sprog_id)."'>\n";
-	// print "<input name='paperflow' class='inputbox' type='checkbox' $paperflow></td></tr>\n";
-	// if ($paperflow) {
-	// 	print "<tr bgcolor='$bgcolor'>\n<td title='".findtekst('1957|Paperflow ID', $sprog_id)."'>".findtekst('1957|Paperflow ID', $sprog_id)."</td>\n";
-	// 	print "<td title='".findtekst('1957|Paperflow ID', $sprog_id)."'>\n";
-	// 	print "<input name='paperflowId' class='inputbox' type='text' value = '$paperflowId'></td></tr>\n";
-	// 	print "<tr bgcolor='$bgcolor5'>\n<td title='".findtekst('1958|Paperflow Bearer', $sprog_id)."'>".findtekst('1958|Paperflow Bearer', $sprog_id)."</td>\n";
-	// 	print "<td title='".findtekst('1958|Paperflow Bearer', $sprog_id)."'>\n";
-	// 	print "<input name='paperflowBearer' class='inputbox' type='text' value = '$paperflowBearer'></td></tr>\n";
-	// }
 	#	print "<tr>\n<td title='".findtekst(642, $sprog_id)."'>".findtekst('841|Kreditor kontonummer til inkassoselskab', $sprog_id)."</td>\n";
 	#	print "<td title='".findtekst(642, $sprog_id)."'>\n";
 	#	print "    <input name='box5' class='inputbox' type='text' style='width:150px;' placeholder='' value=\"$box5\">\n";
@@ -1099,7 +957,7 @@ function div_valg() {
 				print "<tr><td colspan='2' style='padding-top:10px;'><em>Specifikke DFM API-oplysninger for denne adresse (efterlad tom kasse for at bruge globale):</em></td></tr>\n";
 				print "<tr><td>DFM ClientID</td><td><input name='dfm_pickup_id[$pickup_idx]' class='inputbox' style='width:200px;' type='text' value='" . htmlspecialchars($addr['dfm_id'] ?? '') . "'></td></tr>\n";
 				print "<tr><td>DFM API-brugernavn</td><td><input name='dfm_pickup_user[$pickup_idx]' class='inputbox' style='width:200px;' type='text' value='" . htmlspecialchars($addr['dfm_user'] ?? '') . "'></td></tr>\n";
-				print "<tr><td>DFM API-password</td><td><input name='dfm_pickup_pass[$pickup_idx]' class='inputbox' style='width:200px;' type='text' value='" . htmlspecialchars($addr['dfm_pass'] ?? '') . "'></td></tr>\n";
+				print "<tr><td>DFM API-password</td><td><input name='dfm_pickup_pass[$pickup_idx]' class='inputbox' style='width:200px;' type='password' autocomplete='new-password' value='" . htmlspecialchars($addr['dfm_pass'] ?? '') . "'></td></tr>\n";
 				print "<tr><td>DFM Aftalenummer</td><td><input name='dfm_pickup_agree[$pickup_idx]' class='inputbox' style='width:200px;' type='text' value='" . htmlspecialchars($addr['dfm_agree'] ?? '') . "'></td></tr>\n";
 				print "<tr><td>DFM API URL</td><td><input name='dfm_pickup_url[$pickup_idx]' class='inputbox' style='width:200px;' type='text' value='" . htmlspecialchars($addr['dfm_url'] ?? '') . "'></td></tr>\n";
 				print "<tr><td>DFM Hub</td><td><input name='dfm_pickup_hub[$pickup_idx]' class='inputbox' style='width:200px;' type='text' value='" . htmlspecialchars($addr['dfm_hub'] ?? '') . "'></td></tr>\n";
@@ -1172,7 +1030,7 @@ function addDfmPickup() {
 	html += '<tr><td colspan=\"2\" style=\"padding-top:10px;\"><em>Specifikke DFM API-oplysninger for denne adresse (efterlad tom kasse for at bruge globale):</em></td></tr>';
 	html += '<tr><td>DFM ClientID</td><td><input form=\"diverse\" name=\"dfm_pickup_id[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"text\" value=\"\"></td></tr>';
 	html += '<tr><td>DFM API-brugernavn</td><td><input form=\"diverse\" name=\"dfm_pickup_user[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"text\" value=\"\"></td></tr>';
-	html += '<tr><td>DFM API-password</td><td><input form=\"diverse\" name=\"dfm_pickup_pass[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"text\" value=\"\"></td></tr>';
+	html += '<tr><td>DFM API-password</td><td><input form=\"diverse\" name=\"dfm_pickup_pass[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"password\" autocomplete=\"new-password\" value=\"\"></td></tr>';
 	html += '<tr><td>DFM Aftalenummer</td><td><input form=\"diverse\" name=\"dfm_pickup_agree[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"text\" value=\"\"></td></tr>';
 	html += '<tr><td>DFM API URL</td><td><input form=\"diverse\" name=\"dfm_pickup_url[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"text\" value=\"\"></td></tr>';
 	html += '<tr><td>DFM Hub</td><td><input form=\"diverse\" name=\"dfm_pickup_hub[' + idx + ']\" class=\"inputbox\" style=\"width:200px;\" type=\"text\" value=\"\"></td></tr>';
@@ -1234,7 +1092,7 @@ function removeDfmPickup(idx) {
 		$title = 'Krypteringsnøgle fra Quickpay';
 		print "<!-- xxxx Krypteringsnøgle fra Quickpay -->";
 		print "<tr bgcolor='$bgcolor5'><td title='$title'>$txt</td><td title='$title'>";
-		print "<input name='qp_md5secret' class='inputbox' style='width:150px;' type='text' value='$qp_md5secret'>";
+		print "<input name='qp_md5secret' class='inputbox' type='password' style='width:150px;' value='' autocomplete='new-password' placeholder='" . ($qp_md5secret ? findtekst('5678|Sat - skriv kun for at ændre', $sprog_id) : '') . "'>";
 		$txt   =   'Quickpay varegruppe';
 		$title = 'Varegruppe for varer til betaling med Quickpay';
 		print "<!-- xxxx Quickpay varegruppe -->";
@@ -1294,7 +1152,7 @@ function removeDfmPickup(idx) {
 		$ntxt = findtekst('2325|Vis login', $sprog_id); # Show account
 
 		print "<td title='$mtitle'>
-      <button type='button' onclick='alert(\"Dit login til din vibrant terminalen: \\n\\n$r[var_name] \\n$r[var_value]\")'>$ntxt</button>
+      <span title='$mtitle'>" . htmlspecialchars((string) $r['var_name']) . " &middot; " . findtekst('5677|Adgangskoden er gemt og vises ikke', $sprog_id) . "</span>
     </td>\n</tr>\n";
 	} else { # No vibrant account in the system
 		$ytxt = findtekst('2324|Opret login', $sprog_id); # Create account
@@ -1412,12 +1270,12 @@ function removeDfmPickup(idx) {
 
 	print "<tr>\n<td title='MobilePay'>Mobilepay Client Secret</td>\n";
 	print "<td title='MobilePay'>\n";
-	print "<input name='mobilepay_client_secret' class='inputbox' type='text' style='width:150px;' value='$client_secret'>\n";
+	print "<input name='mobilepay_client_secret' class='inputbox' type='password' style='width:150px;' value='' autocomplete='new-password' placeholder='" . ($client_secret ? findtekst('5678|Sat - skriv kun for at ændre', $sprog_id) : '') . "'>\n";
 	print "</td></tr>\n";
 
 	print "<tr>\n<td title='MobilePay'>Mobilepay subscription key</td>\n";
 	print "<td title='MobilePay'>\n";
-	print "<input name='mobilepay_subscription' class='inputbox' type='text' style='width:150px;' value='$subscription'>\n";
+	print "<input name='mobilepay_subscription' class='inputbox' type='password' style='width:150px;' value='' autocomplete='new-password' placeholder='" . ($subscription ? findtekst('5678|Sat - skriv kun for at ændre', $sprog_id) : '') . "'>\n";
 	print "</td></tr>\n";
 
 	print "<tr>\n<td title='MobilePay'>Mobilepay merchant serial number</td>\n";
@@ -1664,7 +1522,7 @@ function removeDfmPickup(idx) {
 
       async function get_guid(){
         var res = await fetch(
-          'https://socket.flatpay.dk/socket/guid',
+          'diverseIncludes/save_flatpay_id.php',
           {
             method: 'post',
             headers: {
@@ -1676,20 +1534,14 @@ function removeDfmPickup(idx) {
             }),
           }
         )
-        console.log({
-              'username': document.getElementById('flatpay-username').value,
-              'password': document.getElementById('flatpay-password').value
-            })
+        document.getElementById('flatpay-password').value = '';
         if (res.status == 200) {
-          const text = await res.text();
           close_popup();
-          alert(`Dit Flatpay ID er \${text}, du vil kun blive vist dit ID denne gang, den vil automatisk blive indsat i systemet.`);
-          save_id(text);
+          alert('Dit Flatpay ID er gemt.');
+          location.reload();
         } else {
           alert('Forkert brugernavn eller adgangskode.');
         }
-      
-      
       }
     </script>
 
@@ -1877,7 +1729,7 @@ function variant_valg() {
 	if ($delete_var_type = if_isset($_GET['delete_var_type'])) {
 		db_modify("delete from variant_typer where id = '$delete_var_type'", __FILE__ . " linje " . __LINE__);
 	}
-	if ($delete_variant = if_isset($_GET['delete_variant'])) {
+	if ($delete_variant = (int) if_isset($_GET['delete_variant'])) {
 		db_modify("delete from variant_typer where variant_id = '$delete_variant'", __FILE__ . " linje " . __LINE__);
 		db_modify("delete from varianter where id = '$delete_variant'", __FILE__ . " linje " . __LINE__);
 	}
@@ -3359,62 +3211,6 @@ function tjekliste() {
 	print "</form>\n";
 } # endfunc tjeklister
 
-function docubizz() {
-	global $bgcolor, $bgcolor5, $popup, $sprog_id;
-
-?>
-	<script Language="JavaScript">
-		<!--
-		function Form1_Validator(docubizz) {
-			if (docubizz.box3.value != docubizz.pw2.value) {
-				alert("".findtekst('1345|Begge adgangskoder skal være ens', $sprog_id).
-					".");
-				docubizz.box3.focus();
-				return (false);
-			}
-		}
-		//
-		-->
-	</script>
-
-<?php
-	$q              = db_select("select * from grupper where art = 'DocBiz'", __FILE__ . " linje " . __LINE__);
-	$r              = db_fetch_array($q);
-	$id             = $r['id'];
-	$ftpsted        = $r['box1'];
-	$ftplogin       = $r['box2'];
-	$ftpkode        = $r['box3'];
-	$ftp_dnld_mappe = $r['box4'];
-	$ftp_upld_mappe = $r['box5'];
-
-	print "<tr bgcolor='$bgcolor5'><td colspan='6'><b>DocuBizz</b></td></tr>\n";
-	print "<tr><td colspan='6'><br></td></tr>\n";
-
-	print "<form name='docubizz' action=diverse.php?sektion=docubizz method='post' onsubmit=\"return Form1_Validator(this)\">\n";
-	print "<input type='hidden' name='id' value='$id'>\n";
-	print "<tr><td>Navn eller IP-nummer p&aring; ftp-server</td>";
-	print "<td colspan='2'><input class='inputbox' type='text' name='box1' size='25' value='$ftpsted'></td></tr>\n";
-	print "<tr><td>Mappe til download p&aring; ftp-server</td>";
-	print "<td colspan='2'><input class='inputbox' type='text' name='box4' size='25' value='$ftp_dnld_mappe'></td></tr>\n";
-	print "<tr><td>Mappe til upload p&aring; ftp-server</td>";
-	print "<td colspan='2'><input class='inputbox' type='text' name='box5' size='25' value='$ftp_upld_mappe'></td></tr>\n";
-	print "<tr><td>Brugernavn p&aring; ftp-server</td>";
-	print "<td colspan='2'><input class='inputbox' type='text' name='box2' size='25' value='$ftplogin'></td></tr>\n";
-	print "<tr><td>Adgangskode til ftp-server</td>";
-	print "<td colspan='2'><input class='inputbox' type='password' name='box3' size='25' value='$ftpkode'></td></tr>\n";
-	print "<tr><td>Gentag adgangskode</td>";
-	print "<td colspan='2'><input class='inputbox' type='password' name='pw2' size='25' value='$ftpkode'></td></tr>\n";
-	print "<tr><td>&nbsp;</td></tr>\n";
-	print "<tr><td>&nbsp;</td><td><br></td><td>&nbsp;</td>";
-	print "<td align='center'><input class='button green medium' style='width:8em' type='submit' accesskey='g' value='".findtekst('471|Gem/opdatér', $sprog_id)."' name='submit'></td><tr>\n";
-	print "</form>\n\n";
-	print "<form name='upload_dbz' action='diverse.php?sektion=upload_dbz' method='post'>\n";
-	print "<tr><td>&nbsp;</td></tr>\n";
-	print "<tr><td colspan='3'>Opdater Docubizz server</td>";
-	print "<td align='center'><input style='width:8em' type='submit' accesskey='g' value='Send data' name='submit'></td><tr>\n";
-	print "</form>\n\n";
-} # endfunc docubizz
-
 function bilag()
 {
 	global $bgcolor, $bgcolor5, $db, $s_id, $sprog_id;
@@ -3547,7 +3343,6 @@ function orediff($diffkto)
 
 function massefakt() {
 	global $sprog_id;
-	global $docubizz;
 	global $bgcolor;
 	global $bgcolor5;
 
@@ -3579,47 +3374,43 @@ function massefakt() {
 #####################################################
 function testftp($box1, $box2, $box3, $box4, $box5, $box6)
 {
-	global $db, $exec_path, $sprog_id;
-	if (!$exec_path) $exec_path = "\usr\bin";
-
-	if ($box6) {
-		$fp = fopen("../temp/$db/ftpscript1", "w");
-		if ($fp) {
-			fwrite($fp, "set confirm-close no\nmkdir " . $_SERVER['SERVER_NAME'] . "\ncd " . $_SERVER['SERVER_NAME'] . "\nmkdir $db\nbye\n");
+	// 20260928 Sawaneh Security 4.0 (A2): PHP ftp_* instead of a shell script for ncftp built from the posted values.
+	global $db, $sprog_id;
+	$ok = false;
+	$tmp = $box6 ? str_replace(array($_SERVER['SERVER_NAME'] . "/", $db . "/"), '', $box1) : $box1;
+	$parts = parse_url((strpos($tmp, '://') === false ? 'ftp://' : '') . rtrim($tmp, '/'));
+	$host = isset($parts['host']) ? $parts['host'] : '';
+	$port = isset($parts['port']) ? (int) $parts['port'] : 21;
+	$path = isset($parts['path']) ? trim($parts['path'], '/') : '';
+	$conn = ($host !== '' && function_exists('ftp_connect')) ? @ftp_connect($host, $port, 10) : false;
+	if ($conn && @ftp_login($conn, $box2, $box3)) {
+		@ftp_pasv($conn, true);
+		if ($box6) {
+			@ftp_mkdir($conn, $_SERVER['SERVER_NAME']);
+			@ftp_chdir($conn, $_SERVER['SERVER_NAME']);
+			@ftp_mkdir($conn, $db);
+			@ftp_chdir($conn, $db);
+		} elseif ($path !== '') {
+			@ftp_chdir($conn, $path);
 		}
-		fclose($fp);
-
-		$tmp      = $_SERVER['SERVER_NAME'] . "/";
-		$tmp      = str_replace($tmp, '', $box1);
-		$tmp1     = $db . "/";
-		$tmp      = str_replace($tmp1, '', $tmp);
-		$kommando = "cd ../temp/$db\n$exec_path/ncftp ftp://" . $box2 . ":" . $box3 . "@" . $tmp . " < ftpscript1 > ftplog1\nrm testfil.txt\n";
-		system($kommando);
+		@ftp_mkdir($conn, $box4);
+		@ftp_mkdir($conn, $box5);
+		if (@ftp_chdir($conn, $box4)) {
+			$local = "../temp/$db/testfil.txt";
+			file_put_contents($local, "testfil fra saldi\n");
+			if (@ftp_put($conn, 'testfil.txt', $local, FTP_ASCII)) {
+				@unlink($local);
+				$ok = @ftp_get($conn, $local, 'testfil.txt', FTP_ASCII);
+				@ftp_delete($conn, 'testfil.txt');
+			}
+			@unlink($local);
+		}
 	}
-	$fp = fopen("../temp/$db/testfil.txt", "w");
-	if ($fp) {
-		fwrite($fp, "testfil fra saldi\n");
-	}
-	fclose($fp);
-	$fp = fopen("../temp/$db/ftpscript2", "w");
-	if ($fp) {
-		fwrite($fp, "mkdir $box4\nmkdir $box5\ncd $box4\nput testfil.txt\nbye\n");
-	}
-	fclose($fp);
-	$kommando = "cd ../temp/$db\n$exec_path/ncftp ftp://" . $box2 . ":'" . $box3 . "'@" . $box1 . " < ftpscript2 > ftplog2\nrm testfil.txt\n"; #rm testfil.txt\n
-	system($kommando);
-	$fp = fopen("../temp/$db/ftpscript3", "w");
-	if ($fp) {
-		fwrite($fp, "get testfil.txt\ndel testfil.txt\nbye\n");
-	}
-	fclose($fp);
-	$kommando = "cd ../temp/$db\n$exec_path/ncftp ftp://" . $box2 . ":'" . $box3 . "'@" . $box1 . "/" . $box4 . " < ftpscript3 > ftplog3\n"; #rm ftpscript\nrm ftplog\n";
-	system($kommando);
+	if ($conn) ftp_close($conn);
 	($box6) ? $tmp = "Dokumentserver" : $tmp = "FTP";
 	$alert  = findtekst('1733|tilgængelig', $sprog_id);
 	$alert1 = findtekst('1734|ikke', $sprog_id);
-
-	if (file_exists("../temp/$db/testfil.txt")) print "<BODY onLoad=\"JavaScript:alert('$tmp $alert')\">";
+	if ($ok) print "<BODY onLoad=\"JavaScript:alert('$tmp $alert')\">";
 	else print "<BODY onLoad=\"JavaScript:alert('$tmp $alert1 $alert')\">";
 }
 

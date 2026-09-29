@@ -30,6 +30,7 @@ session_start();
 $s_id=session_id();
 
 include("../includes/connect.php");
+$modulnr = 1; // 20260928 Sawaneh Security 4.0 (A8)
 $permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php"); 
@@ -46,9 +47,16 @@ $dataurl = isset($_SERVER['HTTPS']) ? 'https' : 'http';
 $baggrund=if_isset($_GET['vis']);
 
 function find_background_file($db_id, $baggrund, $current_sprog, $department = null) {
-    // First check if it's a full path (from formularprint)
-    if (file_exists($baggrund)) {
+    // A full path (from formularprint) is only accepted inside logolib (20260928 Sawaneh Security 4.0, A3).
+    $real = realpath($baggrund);
+    $lib = realpath(__DIR__ . '/../logolib');
+    if ($real !== false && $lib !== false && strpos($real, $lib . DIRECTORY_SEPARATOR) === 0 && is_file($real)) {
         return $baggrund;
+    }
+    // Otherwise it is one of the known background/attachment names (no path parts).
+    if (!preg_match('/^(?:[a-z]+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/', (string) $baggrund)
+        || !preg_match('/^\p{L}+$/u', (string) $current_sprog) || ($department !== null && $department !== '' && !ctype_digit((string) $department))) {
+        return false;
     }
     
     // Normalize language
