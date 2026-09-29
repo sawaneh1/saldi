@@ -1,0 +1,285 @@
+// javascript/settingsSection.js
+// 20260929 Sawaneh Settings redesign phase 4a (spec §8.1, §8.3, §8.11, §8.12, §8.14): behaviour of a
+//                  generated settings section - toggles, dependencies, save bar, deep links,
+//                  lookups, confirmation dialog and keyboard shortcuts.
+(function () {
+	'use strict';
+	var cfg = window.SALDI_SETTINGS || {};
+	var form = document.getElementById('st-form');
+	if (!form) { return; }
+
+	var status = document.getElementById('st-status');
+	var bar = document.getElementById('st-savebar');
+	var undo = document.getElementById('st-undo');
+	var dot = document.getElementById('st-dot');
+	var snack = document.getElementById('st-snack');
+	var fields = Array.prototype.slice.call(form.querySelectorAll('.st-field'));
+	var actions = Array.prototype.slice.call(form.querySelectorAll('.st-action'));
+	var byKey = {};
+	fields.forEach(function (f) { byKey[f.dataset.key] = f; });
+
+	function control(field) { return field.querySelector('[data-control]'); }
+	function valueOf(field) { var c = control(field); return c ? String(c.value).trim() : ''; }
+
+	// The stored value, not what the field holds now: after a refused save the fields still
+	// hold what the user typed, and that must count as unsaved.
+	var initial = {};
+	fields.forEach(function (f) {
+		var o = f.querySelector('input[name^="o["]');
+		initial[f.dataset.key] = o ? String(o.value).trim() : valueOf(f);
+	});
+
+	function setValue(field, value) {
+		var c = control(field);
+		if (!c) { return; }
+		c.value = value;
+		var sw = field.querySelector('.st-switch');
+		if (sw) { sw.setAttribute('aria-checked', value === '1' ? 'true' : 'false'); }
+		var resolved = field.querySelector('.st-resolved');
+		if (resolved && value === '') { resolved.textContent = ''; }
+	}
+
+	// ------------------------------------------------------------ dependencies (P7)
+	function ruleHolds(rule) {
+		var parent = byKey[rule[1]];
+		if (!parent) { return true; }
+		var v = valueOf(parent);
+		if (rule[0] === 'setting') { return (v === '1') === !!rule[2]; }
+		if (rule[0] === 'setting_in') { return rule[2].indexOf(v) !== -1; }
+		return true;
+	}
+	function applyRules() {
+		fields.concat(actions).forEach(function (el) {
+			if (!el.dataset.visibleIf) { return; }
+			var rule;
+			try { rule = JSON.parse(el.dataset.visibleIf); } catch (e) { return; }
+			el.hidden = !ruleHolds(rule);
+		});
+	}
+
+	// ------------------------------------------------------------ save bar
+	function isDirty() {
+		return fields.some(function (f) { return valueOf(f) !== initial[f.dataset.key]; });
+	}
+	function refresh() {
+		var dirty = isDirty();
+		window.docChange = dirty;
+		if (undo) { undo.disabled = !dirty; }
+		if (dot) { dot.hidden = !dirty; }
+		if (dirty) {
+			bar.classList.remove('st-saved');
+			bar.classList.add('st-dirty');
+			status.textContent = cfg.unsaved;
+		} else {
+			bar.classList.remove('st-dirty');
+			if (!bar.classList.contains('st-saved')) { status.textContent = cfg.noChanges; }
+		}
+		fields.forEach(function (f) {
+			var reset = f.querySelector('[data-reset]');
+			if (reset) { reset.hidden = (valueOf(f) === f.dataset.default); }
+		});
+		applyRules();
+	}
+
+	form.addEventListener('click', function (e) {
+		var sw = e.target.closest('.st-switch');
+		if (sw && !sw.disabled) {
+			setValue(sw.closest('.st-field'), sw.getAttribute('aria-checked') === 'true' ? '0' : '1');
+			refresh();
+			return;
+		}
+		var reset = e.target.closest('[data-reset]');
+		if (reset) {
+			var field = reset.closest('.st-field');
+			setValue(field, field.dataset.default);
+			refresh();
+			return;
+		}
+		var copy = e.target.closest('[data-copy]');
+		if (copy) {
+			var url = window.location.href.split('#')[0].replace(/[?&](saved|moved|reverted|err)=[^&]*/g, '') + '#' + copy.closest('.st-field').dataset.key;
+			if (navigator.clipboard) { navigator.clipboard.writeText(url).then(function () { say(cfg.copied); }); }
+			return;
+		}
+		var run = e.target.closest('[data-run]');
+		if (run) {
+			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, true);
+		}
+	});
+	// Enter on a focused toggle does nothing; Space toggles (button default).
+	form.addEventListener('keydown', function (e) {
+		if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('st-switch')) { e.preventDefault(); }
+	});
+	form.addEventListener('input', refresh);
+	form.addEventListener('change', refresh);
+	form.addEventListener('submit', function () {
+		window.docChange = false;
+		var b = document.getElementById('st-save');
+		if (b) { b.disabled = true; }
+	});
+	if (undo) {
+		undo.addEventListener('click', function () {
+			fields.forEach(function (f) { setValue(f, initial[f.dataset.key]); });
+			refresh();
+		});
+	}
+	window.addEventListener('beforeunload', function (e) {
+		if (!window.docChange) { return; }
+		e.preventDefault();
+		e.returnValue = '';
+	});
+
+	// ------------------------------------------------------------ history: restore
+	document.addEventListener('click', function (e) {
+		var restore = e.target.closest('[data-restore]');
+		if (restore) {
+			openDialog(cfg.restoreTitle, cfg.restoreBody + ' ' + restore.dataset.value, cfg.restoreVerb, { action: 'revert', entry: restore.dataset.restore }, false);
+		}
+		var dismiss = e.target.closest('[data-dismiss]');
+		if (dismiss) { dismiss.parentNode.hidden = true; }
+	});
+
+	// ------------------------------------------------------------ dialog (§8.3)
+	var dialog = document.getElementById('st-dialog');
+	var backdrop = document.getElementById('st-backdrop');
+	var dform = document.getElementById('st-dialog-form');
+	var returnFocus = null;
+	function openDialog(title, body, verb, values, newTab) {
+		returnFocus = document.activeElement;
+		document.getElementById('st-dialog-title').textContent = title;
+		document.getElementById('st-dialog-body').textContent = body;
+		document.getElementById('st-dialog-ok').textContent = verb;
+		dform.elements.action.value = values.action || '';
+		dform.elements.key.value = values.key || '';
+		dform.elements.entry.value = values.entry || '';
+		dform.target = newTab ? '_blank' : '';
+		dialog.hidden = false;
+		backdrop.hidden = false;
+		document.getElementById('st-dialog-cancel').focus();
+	}
+	function closeDialog() {
+		dialog.hidden = true;
+		backdrop.hidden = true;
+		if (returnFocus && returnFocus.focus) { returnFocus.focus(); }
+	}
+	document.getElementById('st-dialog-cancel').addEventListener('click', closeDialog);
+	backdrop.addEventListener('click', closeDialog);
+	dform.addEventListener('submit', function () {
+		window.docChange = false;
+		if (dform.target === '_blank') { window.setTimeout(closeDialog, 50); }
+	});
+	dialog.addEventListener('keydown', function (e) {
+		if (e.key !== 'Tab') { return; }
+		var f = dialog.querySelectorAll('button');
+		var first = f[0], last = f[f.length - 1];
+		if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+		else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+	});
+
+	// ------------------------------------------------------------ shortcuts (§8.14)
+	document.addEventListener('keydown', function (e) {
+		if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+			e.preventDefault();
+			var b = document.getElementById('st-save');
+			if (b && !b.disabled) { form.requestSubmit ? form.requestSubmit() : form.submit(); }
+		}
+		if (e.key === 'Escape' && !dialog.hidden) { closeDialog(); }
+	});
+
+	// ------------------------------------------------------------ lookups (§8.1)
+	Array.prototype.forEach.call(form.querySelectorAll('.st-lookup'), function (box) {
+		var input = box.querySelector('input');
+		var list = box.querySelector('.st-lookup-list');
+		var resolved = box.querySelector('.st-resolved');
+		var timer = null, active = -1, items = [];
+		if (input.readOnly) { return; }
+		function close() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; }
+		function pick(i) {
+			if (!items[i]) { return; }
+			input.value = items[i].value;
+			resolved.textContent = '· ' + items[i].name;
+			close();
+			refresh();
+		}
+		function show(rows) {
+			items = rows;
+			list.innerHTML = '';
+			if (!rows.length) {
+				var li = document.createElement('li');
+				li.className = 'st-lookup-none';
+				li.textContent = cfg.notFound;
+				list.appendChild(li);
+			}
+			rows.forEach(function (row, i) {
+				var li = document.createElement('li');
+				li.setAttribute('role', 'option');
+				li.textContent = row.value + ' · ' + row.name;
+				li.addEventListener('mousedown', function (ev) { ev.preventDefault(); pick(i); });
+				list.appendChild(li);
+			});
+			list.hidden = false;
+			input.setAttribute('aria-expanded', 'true');
+		}
+		input.addEventListener('input', function () {
+			resolved.textContent = '';
+			window.clearTimeout(timer);
+			var q = input.value.trim();
+			if (q === '') { close(); return; }
+			timer = window.setTimeout(function () {
+				fetch(cfg.lookupUrl + '?type=' + encodeURIComponent(box.dataset.lookup) + '&q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+					.then(function (r) { return r.json(); })
+					.then(function (data) { if (input.value.trim() === q) { show(data.results || []); } })
+					.catch(close);
+			}, 180);
+		});
+		input.addEventListener('keydown', function (e) {
+			if (list.hidden) { return; }
+			var lis = list.querySelectorAll('[role="option"]');
+			if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+				e.preventDefault();
+				active = (active + (e.key === 'ArrowDown' ? 1 : -1) + lis.length) % Math.max(lis.length, 1);
+				Array.prototype.forEach.call(lis, function (li, i) { li.classList.toggle('on', i === active); });
+			} else if (e.key === 'Enter' && active >= 0) {
+				e.preventDefault();
+				pick(active);
+			} else if (e.key === 'Escape') {
+				e.stopPropagation();
+				close();
+			}
+		});
+		input.addEventListener('blur', function () { window.setTimeout(close, 120); });
+	});
+
+	// ------------------------------------------------------------ deep links (§8.11)
+	function say(text) {
+		snack.textContent = text;
+		snack.hidden = false;
+		window.setTimeout(function () { snack.hidden = true; }, 2200);
+	}
+	function highlight() {
+		var id = decodeURIComponent((window.location.hash || '').replace('#', ''));
+		if (!id) { return; }
+		var el = document.getElementById(id);
+		if (!el) { return; }
+		if (el.hidden) { el.hidden = false; }
+		el.classList.add('st-highlight');
+		el.scrollIntoView({ block: 'center' });
+		var c = el.querySelector('.st-switch, [data-control]:not([type="hidden"])');
+		if (c) { try { c.focus({ preventScroll: true }); } catch (e) {} }
+		window.setTimeout(function () { el.classList.remove('st-highlight'); }, 3000);
+	}
+	// One-off notices (saved, restored, moved) and the field anchor are dropped from the address
+	// once shown, so a reload does not repeat them.
+	function cleanUrl() {
+		if (!window.history || !window.history.replaceState) { return; }
+		var url = window.location.pathname + window.location.search.replace(/([?&])(saved|moved|reverted|err)=[^&]*/g, '$1').replace(/[?&]+$/, '').replace(/([?&])&+/g, '$1');
+		window.history.replaceState(null, '', url);
+	}
+	window.addEventListener('hashchange', highlight);
+
+	refresh();
+	highlight();
+	var firstError = form.querySelector('.st-invalid');
+	if (firstError && !window.location.hash) { firstError.scrollIntoView({ block: 'center' }); }
+	cleanUrl();
+})();

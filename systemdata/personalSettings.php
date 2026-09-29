@@ -31,6 +31,7 @@
 //                  password required for email/phone/2FA/password changes (spec 4.5), audit log.
 // 20260928 Sawaneh Back button top-left in the theme colour, as elsewhere in the system (was Close top-right).
 // 20260928 Sawaneh Popup windows, background colour and highlight removed (settings redesign spec, Personal settings).
+// 20260929 Sawaneh Order autocomplete moved here from Ordrerelaterede valg, saved through SettingsService.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -58,6 +59,7 @@ $sessionRows = personal_settings_sessions($s_id);
 include(__DIR__ . "/../includes/online.php");
 include(__DIR__ . "/../includes/std_func.php");
 include_once(__DIR__ . "/../includes/notifications.php");
+include_once(__DIR__ . "/../includes/settings/SettingsService.php");
 
 $contextQuery = personal_settings_context_query($_GET, $_POST);
 $selfUrl = 'personalSettings.php' . ($contextQuery !== '' ? '?' . $contextQuery : '');
@@ -203,6 +205,9 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 			db_modify("update grupper set box2 = '' where art = 'USET' and kodenr = '$brugerId'", __FILE__ . " linje " . __LINE__);
 			$reloadShell = true;
 		}
+
+		// Moved here from Ordrerelaterede valg: it was always a per-user choice (settings redesign spec §4).
+		SettingsService::save('personal.orders.autocomplete', !empty($post['order_autocomplete']), $brugerId);
 
 		if (isset($post['due_date_warning_days']) && $post['due_date_warning_days'] !== '') {
 			update_settings_value('due_date_warning_days', 'lager', max(1, intval($post['due_date_warning_days'])), 'Days before expiry to warn', $brugerId);
@@ -370,6 +375,7 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		'colors'    => $colors,
 		'popup'     => ($uset && trim((string) $uset['box2']) !== ''),
 		'warnDays'  => get_due_date_warning_days($brugerId),
+		'autocomplete' => (bool) SettingsService::get('personal.orders.autocomplete', $brugerId),
 		'sessions'  => $sessionRows,
 		'sessionId' => $sessionId,
 		'roleName'  => $roleName,
@@ -625,6 +631,12 @@ function personal_settings_view_profile(array $d, callable $h, callable $t, stri
     <section class="ps-card">
       <h2><i class='bx bx-error-circle'></i><?= $t('5641|Advarsler') ?></h2>
       <div class="ps-grid">
+        <div class="ps-field ps-field-full" id="personal.orders.autocomplete">
+          <label class="ps-check">
+            <input type="checkbox" name="order_autocomplete" value="on"<?= $d['autocomplete'] ? ' checked' : '' ?>>
+            <span class="ps-check-txt"><b><?= $t('5704|Anvend autosøgning på ordrer') ?></b><span><?= $t('5705|Slår autosøgning til på ordresider. Gælder kun for dig.') ?></span></span>
+          </label>
+        </div>
         <div class="ps-field">
           <label for="ps-warn"><?= $t('5006|Advar om udløb (dage før)') ?></label>
           <input class="ps-input ps-input-short" type="number" min="1" id="ps-warn" name="due_date_warning_days" value="<?= (int) $d['warnDays'] ?>">

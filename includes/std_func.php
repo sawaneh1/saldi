@@ -2881,6 +2881,9 @@ if(!function_exists('get_settings_value')){
 		 * @return mixed - The value of the setting if found, otherwise the default value.
 		 */
 
+		// 20260929 Sawaneh Settings redesign §7.2: keys that are read but not yet in the registry are noted.
+		if (function_exists('settings_registry_note')) settings_registry_note($var_grp, $var_name);
+
 		$qtxt = "SELECT var_value FROM settings WHERE var_name='$var_name' AND var_grp = '$var_grp'";
 
 		if ($user !== NULL) $qtxt = $qtxt." AND user_id=$user";

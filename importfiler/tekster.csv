@@ -5276,3 +5276,80 @@
 5676	API, webshop, Stripe og app	API, webshop, Stripe and app	API, nettbutikk, Stripe og app
 5677	Adgangskoden er gemt og vises ikke	The password is stored and not shown	Passordet er lagret og vises ikke
 5678	Sat - skriv kun for at ændre	Set - type only to change	Satt - skriv kun for å endre
+5679	Ordrer & fakturering	Orders & invoicing	Ordrer og fakturering
+5680	Lagerstyring & kostpris	Stock control & cost price	Lagerstyring og kostpris
+5681	Debitorkort	Debtor card	Debitorkort
+5682	Købsordrer	Purchase orders	Innkjøpsordrer
+5683	Priser & moms	Prices & VAT	Priser og mva
+5684	Fakturering	Invoicing	Fakturering
+5685	Varenumre & konti	Item numbers & accounts	Varenumre og kontoer
+5686	Ordrevindue	Order window	Ordrevindu
+5687	Følgeseddel & plukliste	Packing slip & pick list	Følgeseddel og plukkliste
+5688	Lagerstyring	Stock control	Lagerstyring
+5689	Kostpris	Cost price	Kostpris
+5690	Lagerstatus-mail	Stock status e-mail	Lagerstatus-e-post
+5691	Varekort	Item card	Varekort
+5692	Bogføring	Posting	Bokføring
+5693	Vis priser inkl. moms på kundeordrer (private kunder)	Show prices incl. VAT on customer orders (private customers)	Vis priser inkl. mva på kundeordrer (privatkunder)
+5694	Vis priser inkl. moms på kundeordrer (erhvervskunder)	Show prices incl. VAT on customer orders (business customers)	Vis priser inkl. mva på kundeordrer (bedriftskunder)
+5695	Priserne på salgsordrer vises inkl. moms for denne kundetype	Prices on sales orders are shown incl. VAT for this customer type	Prisene på salgsordrer vises inkl. mva for denne kundetypen
+5696	Varenr. for porto	Item no. for postage	Varenr. for porto
+5697	Varen indsættes automatisk på nye ordrer	The item is added automatically to new orders	Varen settes automatisk inn på nye ordrer
+5698	Skjul dækningsbidrag	Hide contribution margin	Skjul dekningsbidrag
+5699	Dækningsbidraget vises ikke på ordresiden	The contribution margin is not shown on the order page	Dekningsbidraget vises ikke på ordresiden
+5700	Skjul dækningsgrad	Hide contribution ratio	Skjul dekningsgrad
+5701	Dækningsgraden vises ikke på ordresiden	The contribution ratio is not shown on the order page	Dekningsgraden vises ikke på ordresiden
+5702	Plukliste e-mail	Pick list e-mail	Plukkliste e-post
+5703	Pluklister sendes til denne adresse	Pick lists are sent to this address	Plukklister sendes til denne adressen
+5704	Anvend autosøgning på ordrer	Use autocomplete on orders	Bruk autosøk på ordrer
+5705	Slår autosøgning til på ordresider. Gælder kun for dig.	Turns on autocomplete on order pages. Applies only to you.	Slår på autosøk på ordresider. Gjelder kun for deg.
+5706	Gælder for alle i	Applies to everyone in	Gjelder for alle i
+5707	Ingen ændringer	No changes	Ingen endringer
+5708	Du har ugemte ændringer	You have unsaved changes	Du har ulagrede endringer
+5709	Gemt kl.	Saved at	Lagret kl.
+5710	Seneste ændringer	Recent changes	Siste endringer
+5711	Gendan	Restore	Gjenopprett
+5712	Ingen ændringer endnu	No changes yet	Ingen endringer ennå
+5713	ændret	changed	endret
+5714	Standard:	Default:	Standard:
+5715	til	on	på
+5716	fra	off	av
+5717	Nulstil til standard	Reset to default	Tilbakestill til standard
+5718	Link kopieret	Link copied	Lenke kopiert
+5719	Findes ikke	Not found	Finnes ikke
+5720	Dette lå før under	This used to be under	Dette lå før under
+5721	Det ligger nu her.	It is now here.	Det ligger nå her.
+5722	Vis mig hvor alt er flyttet hen	Show me where everything has moved	Vis meg hvor alt er flyttet
+5723	Tidligere:	Previously:	Tidligere:
+5724	Indstillingerne har fået ny struktur — det hele er her stadig. Søg, eller se hvor tingene er flyttet hen.	The settings have a new structure — everything is still here. Search, or see where things have moved.	Innstillingene har fått ny struktur — alt er her fortsatt. Søk, eller se hvor ting er flyttet.
+5725	Hvor er…?	Where is…?	Hvor er…?
+5726	Før	Before	Før
+5727	Nu	Now	Nå
+5728	gemte ændringer kl.	saved changes at	lagret endringer kl.
+5729	Genindlæs for at se dem — dine ændringer bevares i felterne.	Reload to see them — your changes are kept in the fields.	Last inn på nytt for å se dem — endringene dine beholdes i feltene.
+5730	Genindlæs	Reload	Last inn på nytt
+5731	Ret fejlene nedenfor. Intet er gemt.	Correct the errors below. Nothing was saved.	Rett feilene nedenfor. Ingenting er lagret.
+5732	Skal være et tal	Must be a number	Må være et tall
+5733	Ugyldig e-mailadresse	Invalid e-mail address	Ugyldig e-postadresse
+5734	Kontoen findes ikke i kontoplanen	The account does not exist in the chart of accounts	Kontoen finnes ikke i kontoplanen
+5735	Varenummeret findes ikke	The item number does not exist	Varenummeret finnes ikke
+5736	Kan ikke ændres, fordi en varegruppe bruger batchkontrol	Cannot be changed because an item group uses batch control	Kan ikke endres fordi en varegruppe bruker batchkontroll
+5737	Opdater kostpriser nu?	Update cost prices now?	Oppdatere kostpriser nå?
+5738	Kostprisen på alle lagervarer opdateres efter den valgte metode. Det kan ikke fortrydes.	The cost price of all stock items is updated using the chosen method. This cannot be undone.	Kostprisen på alle lagervarer oppdateres etter valgt metode. Dette kan ikke angres.
+5739	Genveje	Shortcuts	Snarveier
+5740	Kræver kasselicens — kontakt Saldi	Requires a POS licence — contact Saldi	Krever kasselisens — kontakt Saldi
+5741	Kopiér link	Copy link	Kopier lenke
+5742	Personlig	Personal	Personlig
+5743	Vis alle	Show all	Vis alle
+5744	Andres ændringer er indlæst. Dine egne rettelser er bevaret og markeret. Gem igen for at gennemføre dem.	The other changes have been loaded. Your own edits are kept and marked. Save again to apply them.	Andres endringer er lastet inn. Dine egne rettelser er beholdt og markert. Lagre igjen for å gjennomføre dem.
+5745	timer	hours	timer
+5746	Skjul	Dismiss	Skjul
+5747	Gendan værdien?	Restore the value?	Gjenopprette verdien?
+5748	Værdien sættes tilbage til:	The value is set back to:	Verdien settes tilbake til:
+5749	Ikke i registret	Not in the registry	Ikke i registeret
+5750	Ikke flyttet endnu	Not moved yet	Ikke flyttet ennå
+5751	Spring til formularen	Skip to the form	Hopp til skjemaet
+5752	Værdien er gendannet	The value has been restored	Verdien er gjenopprettet
+5753	Handlingen er startet	The action has started	Handlingen er startet
+5754	Sikkerhedstjekket fejlede. Prøv igen.	The security check failed. Please try again.	Sikkerhetssjekken feilet. Prøv igjen.
+5755	Du har kun læseadgang til disse indstillinger	You have read-only access to these settings	Du har kun lesetilgang til disse innstillingene

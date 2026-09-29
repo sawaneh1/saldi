@@ -151,6 +151,16 @@ if ($sektion == 'userSettings' && $_SERVER['REQUEST_METHOD'] != 'POST') {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=personalSettings.php\">";
 	exit;
 }
+// 20260929 Sawaneh Phase 4a (R6): sections that have landed in the generated settings redirect there;
+// the toast on the new page says where the old page went (spec §8.10).
+$landedSections = array(
+	'ordre_valg' => 'settingsSection.php?s=sales.orders&moved=ordre_valg',
+	'massefakt'  => 'settingsSection.php?s=sales.orders&moved=massefakt#sub-mass',
+);
+if (isset($landedSections[$sektion])) {
+	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
+	exit;
+}
 // The old "Diverse" landing list is replaced by the settings front page (phase 4).
 if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=settings.php\">";

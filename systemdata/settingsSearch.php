@@ -57,7 +57,7 @@ function settingsEntryIsVisible($entry) {
 	if (!empty($entry['visibilityRule'])) {
 		switch ($entry['visibilityRule']) {
 			case 'posModule':
-				if (!file_exists("../debitor/pos_ordre.php")) return false;
+				if (!settings_has_module('pos')) return false;
 				break;
 			case 'masterDb':
 				global $db, $sqdb;
@@ -159,6 +159,20 @@ foreach (getSettingsRegistry() as $entry) {
 	}
 
 	$label = settingsEntryLabel($entry, $sprog_id);
+	if (isset($entry['textId'])) {
+		$entry['keywords'][] = settings_text_all_languages($entry['textId']);
+	}
+	foreach (array('labelDa', 'labelEn', 'labelNo') as $other) {
+		if (!empty($entry[$other])) {
+			$entry['keywords'][] = $entry[$other];
+		}
+	}
+	if (isset($entry['section'])) {
+		$allSections = getSettingsSections();
+		foreach ($allSections[$entry['section']]['legacy'] as $path) {
+			$entry['keywords'][] = trim(settings_legacy_all_languages($path));
+		}
+	}
 	$match = settingsEntryMatch($entry, $label, $search);
 	if ($match === null) {
 		continue;
@@ -182,6 +196,85 @@ foreach (getSettingsRegistry() as $entry) {
 
 $results = array_slice(array_merge($label_matches, $keyword_matches), 0, 20);
 
-echo json_encode(array('results' => $results, 'query' => $search));
+// 20260929 Sawaneh Phase 4a (spec §8.5, §8.10): single settings from registry v2, ranked
+// exact label > label prefix > label > keyword > old menu name > help text, filtered by the
+// user's permission keys. A hit on an old menu name carries the "Tidligere: ..." tag.
+$fields = array();
+if ($search !== '' && function_exists('getSettingDefinitions')) {
+	$needle = mb_strtolower($search);
+	$sections = getSettingsSections();
+	$groups = getSettingsGroups();
+	foreach (getSettingDefinitions() as $key => $def) {
+		$personal = ($def['group'] === 'personal');
+		if (!$personal && function_exists('perm_can') && !perm_can($def['permission'], 'read')) {
+			continue;
+		}
+		if ($def['visible_if'] && $def['visible_if'][0] === 'module' && !settings_has_module((string) $def['visible_if'][1])) {
+			continue;
+		}
+		$sectionId = $def['group'] . '.' . $def['section'];
+		$label = findtekst((string) $def['label'], $sprog_id);
+		$labelLc = mb_strtolower($label);
+		// Every part matches in every language Saldi ships: people search for the name they remember.
+		$legacy = !empty($def['legacy']) ? settings_legacy_text($def['legacy'], $sprog_id) : '';
+		$legacyAll = !empty($def['legacy']) ? settings_legacy_all_languages($def['legacy']) : '';
+		$labelAll = settings_text_all_languages($def['label']);
+		$helpAll = isset($def['help']) ? settings_text_all_languages($def['help']) : '';
+		$sectionAll = isset($sections[$sectionId]) ? settings_text_all_languages($sections[$sectionId]['label']) : '';
+		$rank = null;
+		$tag = '';
+		if ($labelLc === $needle) {
+			$rank = 0;
+		} elseif (mb_strpos($labelLc, $needle) === 0) {
+			$rank = 1;
+		} elseif (mb_strpos($labelLc, $needle) !== false) {
+			$rank = 2;
+		} else {
+			foreach ($def['keywords'] as $keyword) {
+				if (mb_strpos(mb_strtolower($keyword), $needle) !== false) {
+					$rank = 3;
+					break;
+				}
+			}
+			if ($rank === null && mb_strpos($labelAll, $needle) !== false) {
+				$rank = 2;
+			}
+			if ($rank === null && mb_strpos($sectionAll, $needle) !== false) {
+				$rank = 3;
+			}
+			if ($rank === null && $legacyAll !== '' && mb_strpos($legacyAll, $needle) !== false) {
+				$rank = 4;
+				$tag = $legacy;
+			}
+			if ($rank === null && $helpAll !== '' && mb_strpos($helpAll, $needle) !== false) {
+				$rank = 5;
+			}
+		}
+		if ($rank === null) {
+			continue;
+		}
+		$fields[] = array(
+			'key'      => $key,
+			'label'    => $label,
+			'url'      => $personal ? 'personalSettings.php' : settings_section_url($sectionId, $key),
+			'group'    => $personal ? findtekst('5500|Personlige indstillinger', $sprog_id) : findtekst($groups[$def['group']]['label'], $sprog_id),
+			'section'  => isset($sections[$sectionId]) ? findtekst((string) $sections[$sectionId]['label'], $sprog_id) : '',
+			'legacy'   => $tag,
+			'personal' => $personal,
+			'rank'     => $rank,
+		);
+	}
+	usort($fields, function ($a, $b) {
+		return ($a['rank'] - $b['rank']) ?: strcmp($a['group'] . $a['label'], $b['group'] . $b['label']);
+	});
+}
+
+echo json_encode(array(
+	'results'     => $results,
+	'fields'      => $fields,
+	'query'       => $search,
+	'legacyLabel' => findtekst('5723|Tidligere:', $sprog_id),
+	'personalLabel' => findtekst('5742|Personlig', $sprog_id),
+));
 exit;
 ?>

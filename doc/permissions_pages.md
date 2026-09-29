@@ -233,6 +233,9 @@ Pages that included `includes/online.php` without setting `$modulnr` were given 
 | systemdata/pos_ryk_knap.php | `system.indstillinger` | auto (directory/filename rule) |
 | systemdata/save_form_data.php | `system.indstillinger` | auto (directory/filename rule) |
 | systemdata/settingsSearch.php | `system.indstillinger` | auto (directory/filename rule) |
+| systemdata/settingsSection.php | `system.indstillinger` → settings group key of the section (`?s=`) | declared; write checked on POST |
+| systemdata/settingsLookup.php | `system.indstillinger` | declared (read-only JSON) |
+| systemdata/settingsMoved.php | `any` | declared |
 | systemdata/solarvvs.php | `system.indstillinger` | auto (directory/filename rule) |
 | systemdata/stdktoplan.php | `system.kontoplan` | auto (directory/filename rule) |
 | systemdata/sys_div_func.php | `system.indstillinger` | auto (directory/filename rule) |

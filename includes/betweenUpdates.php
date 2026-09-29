@@ -713,4 +713,20 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify("insert into settings (var_grp, var_name, var_value, var_description) values ('system', 'security_40', '" . date('Ymd') . "', 'Settings security phase 4.0 migration done')", __FILE__ . " linje " . __LINE__);
 }
 
+// 20260929 Sawaneh Settings redesign phase 4a: the change history of a settings section (spec §8.12)
+// reads setting_key / section / old_value / new_value from audit_log, and the PoS licence becomes a
+// real flag (decision 9): set to 'on' where the installation has the PoS module today.
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='audit_log' and column_name='setting_key'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	db_modify("ALTER TABLE audit_log ADD COLUMN setting_key varchar(120)", __FILE__ . " linje " . __LINE__);
+	db_modify("ALTER TABLE audit_log ADD COLUMN section varchar(80)", __FILE__ . " linje " . __LINE__);
+	db_modify("ALTER TABLE audit_log ADD COLUMN old_value text", __FILE__ . " linje " . __LINE__);
+	db_modify("ALTER TABLE audit_log ADD COLUMN new_value text", __FILE__ . " linje " . __LINE__);
+	db_modify("CREATE INDEX audit_log_section_idx ON audit_log (section, id)", __FILE__ . " linje " . __LINE__);
+}
+$qtxt = "select id from settings where var_grp = 'system' and var_name = 'pos_licence'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__)) && file_exists(__DIR__ . "/../debitor/pos_ordre.php")) {
+	db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('system', 'pos_licence', 'on', 'PoS licence flag, set by the operator', 0)", __FILE__ . " linje " . __LINE__);
+}
+
 ?>

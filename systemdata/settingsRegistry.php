@@ -48,6 +48,8 @@
 // 20260928 Sawaneh Phase 4: every entry has a 'group' of the settings front page; groups, access and
 //                  request-to-entry matching live here, so front page, menu, search and gate share them.
 // 20260928 Sawaneh Groups, keys and placement aligned with Requirements_settings_redesign_EN.md §4 and Appendix A.
+// 20260929 Sawaneh Phase 4a: registry v2 (settingsDefinitions.php) included; generated sections G3.2, G3.3, G4.2
+//                  and G5.5 replace the ordre_valg and massefakt pages; PoS visibility from the licence flag.
 
 if (!function_exists('getSettingsRegistry')) {
 	function getSettingsRegistry() {
@@ -95,9 +97,9 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'userSettings',          'group' => 'personal', 'url' => 'personalSettings.php',                     'category' => 'personal', 'textId' => 5500,
 				'keywords' => array('personal settings','my settings','profile settings','appearance settings','theme color','button color','text color','button text color','ui color customization','user interface preferences','personlige valg','knapfarve',
 					'expiry warning days','udløbsadvarsel','language','sprog','password','adgangskode','two factor','2fa','notifications','notifikationer','active sessions','global bar placement')),
-			array('key' => 'ordre_valg',             'group' => 'sales', 'url' => 'diverse.php?sektion=ordre_valg',           'category' => 'diverse', 'textId' => 786,
+			array('key' => 'ordre_valg',             'group' => 'sales', 'url' => 'settingsSection.php?s=sales.orders', 'section' => 'sales.orders', 'category' => 'invoicing', 'textId' => 5679,
 				'keywords' => array('order settings','order options','vat on orders','show vat private customers','show vat business customers','negative stock','allow negative stock','low stock warning','out of stock warning','fifo costing','cost method','quick invoicing','immediate posting','same day posting','discount item number','delivery note text','packing slip text','shipping item number','freight item number','postage item','pick list email','send pick list by mail','gs1 barcode scanning','barcode parsing','order autocomplete','search autocomplete orders','lock invoice until paid','ipad system','ordrerelaterede valg','hurtigfaktura','negativt lager','rabatvarenummer','bestillingsrelaterte valg','bestilling',
-					'automatic cost price adjustment','average cost price','replacement cost price','update cost prices button','packing slip comments','quantity only on packing slip','total price bundle discount','percentage invoicing','rental percentage invoicing','percentage surcharge','item number for surcharge','cash sale account number','credit card sale account number','internal order note','debtor ipad self email','discount decimals on orders','immediate posting purchase orders','immediate posting sales orders','item number for set bundle')),
+					'automatic cost price adjustment','average cost price','replacement cost price','update cost prices button','packing slip comments','quantity only on packing slip','total price bundle discount','percentage invoicing','rental percentage invoicing','percentage surcharge','item number for surcharge','cash sale account number','credit card sale account number','internal order note','debtor ipad self email','discount decimals on orders','immediate posting purchase orders','immediate posting sales orders','item number for set bundle','mass invoicing','batch invoicing','consolidated invoicing','partial delivery','delivery deadline days','massefakturering','dellevering')),
 			array('key' => 'productOptions',        'group' => 'items', 'url' => 'diverse.php?sektion=productOptions',       'category' => 'products', 'textId' => 787,
 				'keywords' => array('product options','vat on product card','show prices with vat','confirm description change','confirm stock change','consignment sales','commission sales','used goods commission','commission percentage','commission account','minimum stock level','reorder level','low stock threshold','stock status email','stock status report','email frequency stock','varerelaterede valg','kommissionsvarer','minimumsbeholdning','lagerstatus mail','lagerstatus rapport','varerelaterte valg','kommisjonsvarer','provisjonssalg','minimumsbeholdning av varer','lagerstatusrapporter','mva på varekort')),
 			array('key' => 'variant_valg',           'group' => 'items', 'url' => 'diverse.php?sektion=variant_valg',         'category' => 'products', 'textId' => 788,
@@ -129,8 +131,6 @@ if (!function_exists('getSettingsRegistry')) {
 					'scanned receipts storage','store documents per gb per month','receipt email inbox address','own ftp server for documents','google docs viewer','ftp server name or ip','ftp username and password for documents','ftp folder for receipts','no storage option')),
 			array('key' => 'orediff',               'group' => 'finance', 'url' => 'diverse.php?sektion=orediff',              'category' => 'finance', 'textId' => 170,
 				'keywords' => array('rounding difference account','penny difference','cash rounding','rounding account','øredifferencer','øreforskjeller')),
-			array('key' => 'massefakt',             'group' => 'sales', 'url' => 'diverse.php?sektion=massefakt',            'category' => 'invoicing', 'textId' => 200,
-				'keywords' => array('mass invoicing','batch invoicing','consolidated invoicing','partial delivery','delivery deadline days','massefakturering','dellevering')),
 			array('key' => 'posOptions',            'group' => 'pos', 'url' => 'diverse.php?sektion=posOptions',           'category' => 'pos', 'textId' => 271, 'visibilityRule' => 'posModule',
 				'keywords' => array('pos settings','cash register settings','point of sale options','number of cash registers','number of card terminals','card payment accounts','cash accounts','department per register','vat group cash customers','discount item cash sale','receipt printing','print receipt automatically','disable receipt printing','bon print','cash drawer','opening float','starting cash amount','cash count assistance','coins and banknotes','interim account','cash difference account','table selection','restaurant table','number of tables','table name','font size pos','gift card numbers','gift card text','voucher numbers','active gift card','post each trade immediately','post immediately to finance','printer ip','receipt printer ip','card terminal ip','card terminal type','flatpay','move3500','lane3000','vibrant terminal','ip baseret terminal','payment terminal type','other payment cards','kitchen printer ip','mobile pos','screen width','zoom level','flip menu','reverse primary secondary menu','cash on amount button','account lookup button','deposit button','forced user selection','clerk selection before checkout','customer display','bundle price','set price','jump to price field','show stock in pos','show inventory in pos','larger order total','print timeout','kasseantal','kortkonti','kassekonti','kortterminal','køkkenprinter','kasseprimo',
 					'kassaapparat','avdeling','mva-gruppe','kredittkort','skriverens ip','kjøkken ip','terminaltype','kontantsaldo','kundedisplay','tvunget brukervalg','tabellvalg','antall bord')),
@@ -146,6 +146,12 @@ if (!function_exists('getSettingsRegistry')) {
 			// -- 20260928: pages that belong to a settings group but had no entry --
 			array('key' => 'kontoplan',         'group' => 'finance',    'url' => 'kontoplan.php',             'category' => 'finance',  'textId' => 612,
 				'keywords' => array('chart of accounts','account list','ledger accounts','kontoplan','konti','kontooversikt')),
+			array('key' => 'debtor_card',       'group' => 'sales',    'url' => 'settingsSection.php?s=sales.debtor_card', 'section' => 'sales.debtor_card', 'category' => 'groups', 'textId' => 5681,
+				'keywords' => array('debtor card','customer card','mandatory debtor group','mandatory customer responsible','job cards','debtor ipad','debitorkort','kundekort','jobkort','debitoripad')),
+			array('key' => 'purchase_orders',   'group' => 'purchase', 'url' => 'settingsSection.php?s=purchase.orders', 'section' => 'purchase.orders', 'category' => 'invoicing', 'textId' => 5682,
+				'keywords' => array('purchase orders','immediate posting purchase orders','købsordrer','indkøbsordrer','omgående bogføring af købsordrer')),
+			array('key' => 'stock_control',     'group' => 'items',    'url' => 'settingsSection.php?s=items.stock', 'section' => 'items.stock', 'category' => 'stock', 'textId' => 5680,
+				'keywords' => array('stock control','cost price','fifo','negative stock','low stock warning','minimum stock','stock status email','lagerstyring','kostpris','negativt lager','minimumsbeholdning','lagerstatus mail')),
 			array('key' => 'kreditorgrupper',   'group' => 'purchase', 'url' => 'syssetup.php?valg=debitor', 'category' => 'groups',   'textId' => 2458,
 				'keywords' => array('creditor groups','supplier groups','vendor groups','kreditorgrupper','leverandørgrupper')),
 			array('key' => 'posmenuer',         'group' => 'pos',        'url' => 'posmenuer.php',             'category' => 'pos',      'textId' => 1940, 'visibilityRule' => 'posModule',
@@ -161,6 +167,21 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'rental_settings',   'group' => 'sales', 'url' => '../rental/settings.php',            'category' => 'rental', 'labelDa' => 'Udlejningsindstillinger', 'labelEn' => 'Rental settings', 'labelNo' => 'Utleieinnstillinger',
 				'keywords' => array('rental booking settings','booking format','date or timeslot booking','customer search fields','move in day','move out day','delete confirmation popup','combine consecutive bookings','automatic order creation','rental invoice date','password protect settings','week helper date picker')),
 		);
+	}
+}
+
+include_once(__DIR__ . '/settingsDefinitions.php');
+
+if (!function_exists('settings_has_module')) {
+	/**
+	 * Licence flag of an optional module (decision 9), via the settings service when it is loaded.
+	 */
+	function settings_has_module(string $module): bool
+	{
+		if (!class_exists('SettingsService')) {
+			include_once(__DIR__ . '/../includes/settings/SettingsService.php');
+		}
+		return SettingsService::hasModule($module);
 	}
 }
 
@@ -250,7 +271,7 @@ if (!function_exists('getSettingsGroups')) {
 		if (!empty($entry['visibilityRule'])) {
 			switch ($entry['visibilityRule']) {
 				case 'posModule':
-					if (!file_exists(__DIR__ . "/../debitor/pos_ordre.php")) {
+					if (!settings_has_module('pos')) {
 						return false;
 					}
 					break;
