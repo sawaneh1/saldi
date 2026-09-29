@@ -54,7 +54,7 @@ function find_background_file($db_id, $baggrund, $current_sprog, $department = n
         return $baggrund;
     }
     // Otherwise it is one of the known background/attachment names (no path parts).
-    if (!preg_match('/^(?:[a-z]+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/', (string) $baggrund)
+    if (!preg_match('/^(?:\p{L}+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/u', (string) $baggrund)
         || !preg_match('/^\p{L}+$/u', (string) $current_sprog) || ($department !== null && $department !== '' && !ctype_digit((string) $department))) {
         return false;
     }

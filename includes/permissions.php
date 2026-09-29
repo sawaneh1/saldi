@@ -29,6 +29,7 @@
 // 20260928 Sawaneh Derived keys (pos.kasse from Debitorordre) and one-time seeding of new keys into roles.
 // 20260928 Sawaneh Phase 4: settings pages resolve to their group key; derived keys open their source position.
 // 20260928 Sawaneh Registry keys may carry 'renamed_from'; role rows move to the new name once.
+// 20260929 Sawaneh Roles stage 2: audit_log() records object and source; event names follow the spec (§7.1).
 
 include_once(__DIR__ . '/permissionRegistry.php');
 
@@ -271,7 +272,7 @@ function perm_enforce_request(?string $declaredKey, string $declaredLevel, bool 
 	if ($mode === 'deny' || $dangerous) {
 		perm_refuse($key . ' (' . $need . ')', $page);
 	}
-	perm_log_once('would-deny', $key . ' (' . $need . ') ' . $page);
+	perm_log_once('permission.would_deny', $key . ' (' . $need . ') ' . $page);
 }
 
 /**
@@ -615,16 +616,26 @@ function perm_seed_new_keys(array $existing): void
 /**
  * Record who did what (spec R7). Never throws: an install without the table just skips.
  */
-function audit_log(string $handling, string $detaljer = ''): void
+function audit_log(string $handling, string $detaljer = '', string $objektType = '', string $objektId = '', string $kilde = 'ui'): void
 {
 	global $bruger_id, $brugernavn;
+	static $extended = null;
 	if (!audit_ready()) {
 		return;
+	}
+	if ($extended === null) {
+		$extended = (bool) db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'audit_log' and column_name = 'objekt_type'", __FILE__ . " linje " . __LINE__));
 	}
 	$id = isset($bruger_id) ? (int) $bruger_id : 0;
 	$navn = db_escape_string(isset($brugernavn) ? (string) $brugernavn : '');
 	$ip = db_escape_string(isset($_SERVER['REMOTE_ADDR']) ? substr((string) $_SERVER['REMOTE_ADDR'], 0, 45) : '');
 	$handling = db_escape_string(substr($handling, 0, 40));
 	$detaljer = db_escape_string(substr($detaljer, 0, 2000));
-	db_modify("insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip) values ($id, '$navn', '$handling', '$detaljer', '$ip')", __FILE__ . " linje " . __LINE__);
+	if ($extended) {
+		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, objekt_type, objekt_id, kilde) values ($id, '$navn', '$handling', '$detaljer', '$ip', ";
+		$qtxt .= "'" . db_escape_string(substr($objektType, 0, 30)) . "', '" . db_escape_string(substr($objektId, 0, 60)) . "', '" . db_escape_string(substr($kilde, 0, 30)) . "')";
+	} else {
+		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip) values ($id, '$navn', '$handling', '$detaljer', '$ip')";
+	}
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 }

@@ -729,4 +729,19 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__)) && file_e
 	db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('system', 'pos_licence', 'on', 'PoS licence flag, set by the operator', 0)", __FILE__ . " linje " . __LINE__);
 }
 
+// 20260929 Sawaneh Roles stage 2 (Requirements_roles_stage2_EN.md §3): the audit log records what was
+// changed (objekt_type, objekt_id) and from where (kilde); brugere.status is taken into use (closed users).
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='audit_log' and column_name='objekt_type'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	db_modify("ALTER TABLE audit_log ADD COLUMN objekt_type varchar(30)", __FILE__ . " linje " . __LINE__);
+	db_modify("ALTER TABLE audit_log ADD COLUMN objekt_id varchar(60)", __FILE__ . " linje " . __LINE__);
+	db_modify("ALTER TABLE audit_log ADD COLUMN kilde varchar(30)", __FILE__ . " linje " . __LINE__);
+	db_modify("CREATE INDEX audit_log_bruger_idx ON audit_log (bruger_id)", __FILE__ . " linje " . __LINE__);
+	db_modify("CREATE INDEX audit_log_objekt_idx ON audit_log (objekt_type, objekt_id)", __FILE__ . " linje " . __LINE__);
+}
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='brugere' and column_name='status'";
+if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	db_modify("ALTER TABLE brugere ADD COLUMN status boolean", __FILE__ . " linje " . __LINE__);
+}
+
 ?>

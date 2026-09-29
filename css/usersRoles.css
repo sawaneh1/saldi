@@ -90,6 +90,8 @@ html, body {
 .ur-status { font-size: 12px; font-weight: 600; }
 .ur-status-ok { color: var(--ur-green); }
 .ur-status-closed { color: var(--ur-mut); }
+.ur-status-invited { color: #b47a00; }
+.ur-invite-link { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; padding: 10px 12px; border: 1px solid #f4dfb2; border-radius: 8px; background: #fff6e5; font-size: 13px; }
 
 .ur-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px; }
 .ur-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
@@ -172,3 +174,9 @@ html, body {
 .ur-back { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px 0 10px; margin-bottom: 14px; border-radius: 6px; font-size: 13.5px; font-weight: 600; text-decoration: none; }
 .ur-back i { font-size: 18px; }
 .ur-back:hover { filter: brightness(1.1); }
+
+/* 20260929 Roles stage 2: counter, status filter, close/reopen block */
+.ur-counter { margin: 0 0 10px; font-size: 13px; color: #68738a; }
+.ur-select-sm { max-width: 190px; }
+.ur-danger { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ur-danger .ur-help { flex-basis: 100%; margin: 0 0 4px; }

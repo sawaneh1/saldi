@@ -137,8 +137,8 @@ class AuthLoginEndpoint extends BaseEndpoint
         if ($user['kode'] != $pw1 && $user['kode'] != $pw2) {
             // Check for temporary password
             if (isset($user['tmp_kode'])) {
-                list($tidspkt, $tmp_kode) = explode("|", $user['tmp_kode']);
-                if (date("U") <= $tidspkt && $tmp_kode == $password) {
+                include_once(__DIR__ . '/../../../../includes/tmpCode.php');
+                if (tmp_code_check($user['tmp_kode'], 'reset', (string) $password) === 'ok') {
                     // Temporary password is valid
                 } else {
                     write_log("Login failed: Invalid password for user: $username in database: $tenant_db", $tenant_db, 'WARNING');

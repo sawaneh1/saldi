@@ -50,6 +50,7 @@ $permission_key = 'settings.users.manage';
 include(__DIR__ . "/../includes/connect.php");
 include(__DIR__ . "/../includes/online.php");
 include(__DIR__ . "/../includes/std_func.php");
+include_once(__DIR__ . "/../includes/userFunctions.php");
 include(__DIR__ . "/usersRolesIncludes/view.php");
 
 require_permission('settings.users.manage', 'read');
@@ -59,6 +60,14 @@ $contextQuery = (!empty($_GET['inframe']) ? 'inframe=1' : '');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	require_permission('settings.users.manage', 'write');
 	$redirect = ur_handle_post($_POST, (int) $bruger_id, (int) $regnaar);
+	if (!empty($GLOBALS['user_sessions_to_end'])) {
+		// Sessions live in the master database: back to it for this last write.
+		$endSessions = $GLOBALS['user_sessions_to_end'];
+		include(__DIR__ . "/../includes/connect.php");
+		foreach ($endSessions as $endName) {
+			db_modify("delete from online where brugernavn = '" . db_escape_string($endName) . "' and db = '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__);
+		}
+	}
 	ob_end_clean();
 	header('Location: usersRoles.php?' . ($contextQuery !== '' ? $contextQuery . '&' : '') . $redirect);
 	exit;
@@ -66,6 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $vm = ur_view_model($_GET, (int) $bruger_id, (int) $sprog_id, (string) $db_encode, $contextQuery);
 ur_view($vm);
+
+// 20260929 Sawaneh Roles stage 2: close/reopen instead of delete, last-administrator and own-role rules, bulk
+//                  close/reopen with one audit entry per user, reset of built-in roles; user operations
+//                  moved to includes/userFunctions.php.
+// 20260929 Sawaneh Roles stage 2 (§8.4): invite a user instead of choosing the password, resend, status Invited.
 
 // ================================================================== controller
 
@@ -79,9 +93,17 @@ function ur_handle_post(array $post, int $selfId, int $regnaar): string
 		case 'save_user':
 			return ur_save_user($post, $selfId, $regnaar);
 		case 'delete_user':
-			return ur_delete_user((int) ifset($post, 'id', 0), $selfId);
+			return ur_user_result(user_delete((int) ifset($post, 'id', 0), $selfId), (int) ifset($post, 'id', 0), 'userdeleted', false);
+		case 'close_user':
+			return ur_user_result(user_close((int) ifset($post, 'id', 0), $selfId), (int) ifset($post, 'id', 0), 'userclosed', true);
+		case 'reopen_user':
+			return ur_user_result(user_reopen((int) ifset($post, 'id', 0)), (int) ifset($post, 'id', 0), 'userreopened', true);
+		case 'resend_invite':
+			return ur_resend_invite((int) ifset($post, 'id', 0));
 		case 'bulk_role':
-			return ur_bulk_role($post);
+			return ur_bulk($post, $selfId);
+		case 'reset_role':
+			return ur_reset_role((int) ifset($post, 'id', 0));
 		case 'apply_suggestions':
 			return ur_apply_suggestions();
 		case 'save_role':
@@ -121,7 +143,8 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 	$email = trim((string) ifset($post, 'email', ''));
 	$twofactor = !empty($post['twofactor']) ? 't' : 'f';
 	$isRevisor = !empty($post['revisor']);
-	$back = 'tab=users&bruger=' . $id;
+	$invite = ($id === 0 && ifset($post, 'mode', 'invite') !== 'classic');
+	$back = 'tab=users&bruger=' . $id . ($id === 0 && !$invite ? '&mode=classic' : '');
 
 	if ($navn === '' || mb_strlen($navn) > 80) {
 		return $back . '&msg=name';
@@ -129,7 +152,12 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 	if ($kode !== '' && $kode !== $kode2) {
 		return $back . '&msg=pwmismatch';
 	}
-	if ($id === 0 && $kode === '') {
+	if ($invite) {
+		$kode = '';
+		if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return $back . '&msg=emailrequired';
+		}
+	} elseif ($id === 0 && $kode === '') {
 		return $back . '&msg=pwrequired';
 	}
 	$navnSql = db_escape_string($navn);
@@ -140,37 +168,46 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 
 	$current = ($id > 0) ? db_fetch_array(db_select("select role_id from brugere where id = $id", __FILE__ . " linje " . __LINE__)) : null;
 	$currentRole = $current ? (int) $current['role_id'] : 0;
-	if ($roleId !== $currentRole && !ur_role_assignable($roleId)) {
-		return $back . '&msg=escalation';
+	if ($roleId !== $currentRole) {
+		if (!ur_role_assignable($roleId)) {
+			return $back . '&msg=escalation';
+		}
+		if ($id > 0 && $id === $selfId) {
+			return $back . '&msg=ownrole';
+		}
+		if ($id > 0 && user_is_last_admin($id)) {
+			return $back . '&msg=lastadmin';
+		}
 	}
 
-	$ipSql = db_escape_string(mb_substr($ip, 0, 49));
+	$ipSql = db_escape_string(mb_substr($ip, 0, 45));
 	$tlfSql = db_escape_string(mb_substr($tlf, 0, 16));
 	$emailSql = db_escape_string($email);
-	$roleSql = $roleId > 0 ? (string) $roleId : 'null';
 	$ansatSql = $ansatId > 0 ? (string) $ansatId : '0';
 
+	$inviteToken = '';
 	if ($id === 0) {
-		if (!$regnaar) {
-			$regnaar = 1;
+		$data = array(
+			'brugernavn' => $navn, 'kode' => $kode, 'role_id' => $roleId, 'ansat_id' => $ansatId, 'ip_address' => $ip,
+			'tlf' => $tlf, 'email' => $email, 'twofactor' => ($twofactor === 't'), 'regnskabsaar' => $regnaar,
+		);
+		if ($invite) {
+			$invited = user_invite($data);
+			$id = $invited['id'];
+			$inviteToken = $invited['token'];
+		} else {
+			$id = user_create($data);
 		}
-		$qtxt = "insert into brugere (brugernavn, kode, rettigheder, regnskabsaar, ansat_id, ip_address, tlf, twofactor, email, role_id) ";
-		$qtxt .= "values ('$navnSql', '', '0000000000000000', '$regnaar', $ansatSql, '$ipSql', '$tlfSql', '$twofactor', '$emailSql', $roleSql)";
-		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		$r = db_fetch_array(db_select("select id from brugere where brugernavn = '$navnSql' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
-		$id = (int) $r['id'];
-		db_modify("update brugere set kode = '" . db_escape_string(saldikrypt($id, $kode)) . "' where id = $id", __FILE__ . " linje " . __LINE__);
-		audit_log('user.create', $navn . ' (id ' . $id . ', rolle ' . $roleId . ')');
 	} else {
-		$qtxt = "update brugere set brugernavn = '$navnSql', ansat_id = $ansatSql, ip_address = '$ipSql', tlf = '$tlfSql', twofactor = '$twofactor', email = '$emailSql', role_id = $roleSql";
+		$qtxt = "update brugere set brugernavn = '$navnSql', ansat_id = $ansatSql, ip_address = '$ipSql', tlf = '$tlfSql', twofactor = '$twofactor', email = '$emailSql'";
 		if ($kode !== '') {
 			$qtxt .= ", kode = '" . db_escape_string(saldikrypt($id, $kode)) . "'";
 		}
 		$qtxt .= " where id = $id";
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		audit_log('user.update', $navn . ' (id ' . $id . ', rolle ' . $roleId . ($kode !== '' ? ', ny adgangskode' : '') . ')');
+		audit_log('user.updated', $navn . ($kode !== '' ? ' (ny adgangskode)' : ''), 'bruger', (string) $id);
 		if ($roleId !== $currentRole) {
-			audit_log('role.assign', $navn . ': rolle ' . $currentRole . ' -> ' . $roleId);
+			user_set_role($id, $roleId, $selfId);
 		}
 	}
 	perm_sync_user($id);
@@ -182,7 +219,35 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 		}
 	}
 	ur_set_revisor_user($id, $isRevisor);
+	if ($inviteToken !== '') {
+		return 'tab=users&bruger=' . $id . '&msg=' . ur_send_invite($id, $inviteToken);
+	}
 	return 'tab=users&bruger=' . $id . '&msg=usersaved';
+}
+
+/**
+ * Mail the invitation. Where the server cannot send mail the link is handed to the
+ * administrator instead (spec §8.4), once, through the session.
+ *
+ * @return string the message key for the redirect
+ */
+function ur_send_invite(int $id, string $token): string
+{
+	global $sprog_id;
+	if (user_invite_mail($id, $token, (int) $sprog_id)) {
+		return 'invited';
+	}
+	$_SESSION['ur_invite_link'] = array('id' => $id, 'link' => user_invite_link($token));
+	return 'invitelink';
+}
+
+function ur_resend_invite(int $id): string
+{
+	$token = user_invite_resend($id);
+	if ($token === '') {
+		return 'tab=users&bruger=' . $id . '&msg=notinvited';
+	}
+	return 'tab=users&bruger=' . $id . '&msg=' . ur_send_invite($id, $token);
 }
 
 /**
@@ -205,45 +270,52 @@ function ur_set_revisor_user(int $id, bool $isRevisor): void
 	}
 }
 
-function ur_delete_user(int $id, int $selfId): string
+/**
+ * Redirect target after a user operation: the success message, or the reason it was refused.
+ */
+function ur_user_result(string $error, int $id, string $okMsg, bool $stay): string
 {
-	if ($id <= 0) {
+	if ($error === 'missing') {
 		return 'tab=users';
 	}
-	if ($id === $selfId) {
-		return 'tab=users&bruger=' . $id . '&msg=self';
+	if ($error !== '') {
+		return 'tab=users&bruger=' . $id . '&msg=' . $error;
 	}
-	$r = db_fetch_array(db_select("select brugernavn, ansat_id from brugere where id = $id", __FILE__ . " linje " . __LINE__));
-	if (!$r) {
-		return 'tab=users';
-	}
-	if ((int) $r['ansat_id'] > 0) {
-		db_modify("update ansatte set lukket = 'on', slutdate = '" . date('Y-m-d') . "' where id = " . (int) $r['ansat_id'], __FILE__ . " linje " . __LINE__);
-	}
-	db_modify("delete from brugere where id = $id", __FILE__ . " linje " . __LINE__);
-	audit_log('user.delete', $r['brugernavn'] . ' (id ' . $id . ')');
-	return 'tab=users&msg=userdeleted';
+	return 'tab=users' . ($stay ? '&bruger=' . $id : '') . '&msg=' . $okMsg;
 }
 
-function ur_bulk_role(array $post): string
+/**
+ * Bulk operations on the selected users (spec §8.1): assign role, close, reopen.
+ * Every user gets its own audit entry; users the rules protect are skipped and counted.
+ */
+function ur_bulk(array $post, int $selfId): string
 {
-	$roleId = (int) ifset($post, 'role_id', 0);
-	$ids = isset($post['ids']) && is_array($post['ids']) ? array_map('intval', $post['ids']) : array();
+	$ids = isset($post['ids']) && is_array($post['ids']) ? array_filter(array_map('intval', $post['ids'])) : array();
+	$what = isset($post['bulk']) ? (string) $post['bulk'] : 'role';
 	if (!$ids) {
 		return 'tab=users';
 	}
-	if (!ur_role_assignable($roleId)) {
-		return 'tab=users&msg=escalation';
+	$roleId = (int) ifset($post, 'role_id', 0);
+	if ($what === 'role' && ($roleId <= 0 || !ur_role_assignable($roleId))) {
+		return 'tab=users&msg=' . ($roleId <= 0 ? 'norole' : 'escalation');
 	}
+	$skipped = 0;
 	foreach ($ids as $id) {
-		if ($id <= 0) {
-			continue;
+		if ($what === 'close') {
+			$error = user_close($id, $selfId);
+		} elseif ($what === 'reopen') {
+			$error = user_reopen($id);
+		} elseif ($what === 'resend') {
+			$token = user_invite_resend($id);
+			$error = ($token !== '' && user_invite_mail($id, $token, (int) $GLOBALS['sprog_id'])) ? '' : 'notsent';
+		} else {
+			$error = user_set_role($id, $roleId, $selfId);
 		}
-		db_modify("update brugere set role_id = " . ($roleId > 0 ? $roleId : 'null') . " where id = $id", __FILE__ . " linje " . __LINE__);
-		perm_sync_user($id);
+		if ($error !== '') {
+			$skipped++;
+		}
 	}
-	audit_log('role.assign', 'rolle ' . $roleId . ' -> brugere ' . implode(',', $ids));
-	return 'tab=users&msg=assigned';
+	return 'tab=users&msg=' . ($what === 'role' ? 'assigned' : 'bulkdone') . ($skipped > 0 ? '&skipped=' . $skipped : '');
 }
 
 /**
@@ -261,9 +333,9 @@ function ur_apply_suggestions(): string
 		}
 		db_modify("update brugere set role_id = " . $suggestion['id'] . " where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
 		perm_sync_user((int) $r['id']);
-		$done[] = $r['id'] . ':' . $suggestion['key'];
+		audit_log('user.role_changed', '- -> ' . user_role_label((int) $suggestion['id']), 'bruger', (string) $r['id'], 'migrering');
+		$done[] = $r['id'];
 	}
-	audit_log('role.assign', 'forslag anvendt: ' . implode(',', $done));
 	return 'tab=users&msg=assigned';
 }
 
@@ -294,14 +366,21 @@ function ur_save_role(array $post): string
 	}
 	$navnSql = db_escape_string($navn);
 	$beskSql = db_escape_string(mb_substr($beskrivelse, 0, 500));
+	$existing = ($id > 0) ? db_fetch_array(db_select("select navn, beskrivelse, system from roles where id = $id", __FILE__ . " linje " . __LINE__)) : null;
+	if ($existing && in_array($existing['system'], array('t', true, '1', 1), true)) {
+		// Built-in roles keep their name and description; only the matrix can be edited (spec §3.2).
+		$navn = (string) $existing['navn'];
+		$navnSql = db_escape_string($navn);
+		$beskSql = db_escape_string((string) $existing['beskrivelse']);
+	}
 	if ($id === 0) {
 		db_modify("insert into roles (role_key, navn, beskrivelse, system) values (null, '$navnSql', '$beskSql', 'f')", __FILE__ . " linje " . __LINE__);
 		$r = db_fetch_array(db_select("select id from roles where navn = '$navnSql' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
 		$id = (int) $r['id'];
-		audit_log('role.create', $navn . ' (id ' . $id . ')');
+		audit_log('role.created', $navn, 'rolle', (string) $id);
 	} else {
 		db_modify("update roles set navn = '$navnSql', beskrivelse = '$beskSql' where id = $id", __FILE__ . " linje " . __LINE__);
-		audit_log('role.update', $navn . ' (id ' . $id . ')');
+		audit_log('role.updated', $navn, 'rolle', (string) $id);
 	}
 	perm_save_role_levels($id, $levels);
 	return 'tab=roles&rolle=' . $id . '&msg=rolesaved';
@@ -322,8 +401,32 @@ function ur_delete_role(int $id): string
 	}
 	db_modify("delete from role_permissions where role_id = $id", __FILE__ . " linje " . __LINE__);
 	db_modify("delete from roles where id = $id", __FILE__ . " linje " . __LINE__);
-	audit_log('role.delete', $r['navn'] . ' (id ' . $id . ')');
+	audit_log('role.deleted', (string) $r['navn'], 'rolle', (string) $id);
 	return 'tab=roles&msg=roledeleted';
+}
+
+/**
+ * "Nulstil til standard" (spec §3.2): a built-in role gets its built-in matrix back.
+ */
+function ur_reset_role(int $id): string
+{
+	$defaults = permission_default_roles();
+	foreach (perm_roles() as $role) {
+		if ($role['id'] !== $id || !$role['system'] || !isset($defaults[$role['key']])) {
+			continue;
+		}
+		$levels = array();
+		foreach (permission_registry() as $key => $def) {
+			$levels[$key] = isset($defaults[$role['key']]['levels'][$key]) ? $defaults[$role['key']]['levels'][$key] : 'none';
+		}
+		if (!perm_within_own($levels)) {
+			return 'tab=roles&rolle=' . $id . '&msg=escalation';
+		}
+		perm_save_role_levels($id, $levels);
+		audit_log('role.reset', $role['navn'], 'rolle', (string) $id);
+		return 'tab=roles&rolle=' . $id . '&msg=rolereset';
+	}
+	return 'tab=roles';
 }
 
 function ur_copy_role(int $id): string
@@ -345,7 +448,7 @@ function ur_copy_role(int $id): string
 	$r = db_fetch_array(db_select("select id from roles where navn = '$navnSql' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
 	$newId = (int) $r['id'];
 	perm_save_role_levels($newId, perm_levels_from_role($id));
-	audit_log('role.create', $navn . ' (id ' . $newId . ', kopi af ' . $id . ')');
+	audit_log('role.created', $navn . ' (kopi af ' . $id . ')', 'rolle', (string) $newId);
 	return 'tab=roles&rolle=' . $newId;
 }
 
@@ -375,7 +478,7 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 
 	$lastLogin = array();
 	if (audit_ready()) {
-		$q = db_select("select bruger_id, max(tidspunkt) as sidst from audit_log where handling = 'login' group by bruger_id", __FILE__ . " linje " . __LINE__);
+		$q = db_select("select bruger_id, max(tidspunkt) as sidst from audit_log where handling in ('login', 'login.success') group by bruger_id", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
 			$lastLogin[(int) $r['bruger_id']] = (string) $r['sidst'];
 		}
@@ -413,7 +516,9 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 			'suggestion' => $suggestion,
 			'rettigheder'=> (string) $r['rettigheder'],
 			'lastLogin'  => isset($lastLogin[(int) $r['id']]) ? $lastLogin[(int) $r['id']] : '',
-			'closed'     => ($r['ansat_lukket'] === 'on'),
+			'closed'     => !user_row_active($r),
+			'invited'    => user_row_invited($r),
+			'hasLoggedIn'=> isset($lastLogin[(int) $r['id']]),
 			'isRevisor'  => ((int) $r['id'] === $revisorUser),
 		);
 	}
@@ -435,8 +540,16 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		if ($wanted === 0) {
 			$editUser = array('id' => 0, 'brugernavn' => '', 'navn' => '', 'initialer' => '', 'email' => '', 'tlf' => '', 'ip' => '',
 				'twofactor' => false, 'ansat_id' => 0, 'role_id' => 0, 'role' => null, 'suggestion' => null, 'rettigheder' => '',
-				'lastLogin' => '', 'closed' => false, 'isRevisor' => false);
+				'lastLogin' => '', 'closed' => false, 'invited' => false, 'hasLoggedIn' => false, 'isRevisor' => false);
 		}
+	}
+
+	$inviteLink = '';
+	if (isset($_SESSION['ur_invite_link'])) {
+		if ($editUser && (int) $_SESSION['ur_invite_link']['id'] === $editUser['id']) {
+			$inviteLink = (string) $_SESSION['ur_invite_link']['link'];
+		}
+		unset($_SESSION['ur_invite_link']);
 	}
 
 	$editRole = null;
@@ -464,7 +577,7 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		while ($r = db_fetch_array($q)) {
 			$unguarded[] = $r;
 		}
-		$q = db_select("select detaljer, count(*) as antal, max(tidspunkt) as sidst from audit_log where handling = 'would-deny' group by detaljer order by antal desc limit 100", __FILE__ . " linje " . __LINE__);
+		$q = db_select("select detaljer, count(*) as antal, max(tidspunkt) as sidst from audit_log where handling in ('would-deny', 'permission.would_deny') group by detaljer order by antal desc limit 100", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
 			$wouldDeny[] = $r;
 		}
@@ -480,12 +593,16 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		'ownLevels'    => perm_user_levels($selfId, (string) $GLOBALS['rettigheder']),
 		'selfId'       => $selfId,
 		'msg'          => isset($get['msg']) ? (string) $get['msg'] : '',
+		'skipped'      => isset($get['skipped']) ? (int) $get['skipped'] : 0,
+		'adminRoleId'  => user_admin_role_id(),
 		'users'        => $users,
 		'withoutRole'  => $withoutRole,
 		'roles'        => $roles,
 		'roleCounts'   => $counts,
 		'employees'    => $employees,
 		'editUser'     => $editUser,
+		'newMode'      => (isset($get['mode']) && $get['mode'] === 'classic') ? 'classic' : 'invite',
+		'inviteLink'   => $inviteLink,
 		'editRole'     => $editRole,
 		'log'          => $log,
 		'unguarded'    => $unguarded,

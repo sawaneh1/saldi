@@ -76,7 +76,7 @@ $is_admin = 1;
 // 20260928 Sawaneh Security 4.0 (A3, R22): only the known background/attachment names, with an optional
 //                  language prefix, may be written or deleted under logolib/<db_id>/[<department>/].
 function logo_name_ok($name) {
-	return (bool) preg_match('/^(?:[a-z]+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/', (string) $name);
+	return (bool) preg_match('/^(?:\p{L}+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/u', (string) $name);
 }
 
 // Get user's assigned department from settings (for permission checking)

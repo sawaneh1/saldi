@@ -60,8 +60,14 @@
 //                  back to the page charset so a non-UTF8 database still matches. Length check now uses the
 //                  shared is_input_too_long() from std_func.php.
 // 20260916 Sawaneh Successful login written to audit_log (roles & permissions, spec R7).
+// 20260929 Sawaneh Roles stage 2 (§8.4, §8.6): tmp_kode read and written in the common format; ?invite= opens the invitation page.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
+if (isset($_GET['invite'])) {
+	$inviteToken = preg_match('/^\d{1,9}-[a-f0-9]{48}$/', (string) $_GET['invite']) ? (string) $_GET['invite'] : '';
+	header('Location: invite.php?t=' . $inviteToken);
+	exit;
+}
 ob_start(); //Starter output buffering 
 @session_start();
 session_unset();
@@ -474,15 +480,14 @@ if (isset ($brug_timestamp)) {
 		$qtxt = "select * from brugere where brugernavn='".db_escape_string($brugernavn)."'";
 		$r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
 		if (isset($r['tmp_kode'])) {
-			list($tidspkt,$tmp_kode)=explode("|",$r['tmp_kode']);
-			if (date("U")<=$tidspkt) {
-				if ($tmp_kode==$password) {
-					$userId=$r['id'];
-					$rettigheder=trim(if_isset($r['rettigheder'], '')); #20150209 + næste 2
-					$regnskabsaar=$r['regnskabsaar'];
-					$ansat_id=$r['ansat_id']*1;
-				} 
-			} elseif ($tmp_kode==$password) $fejltxt="Midlertidig adgangskode udløbet";
+			include_once("../includes/tmpCode.php");
+			$tmpState = tmp_code_check($r['tmp_kode'], 'reset', (string) $password);
+			if ($tmpState == 'ok') {
+				$userId=$r['id'];
+				$rettigheder=trim(if_isset($r['rettigheder'], '')); #20150209 + næste 2
+				$regnskabsaar=$r['regnskabsaar'];
+				$ansat_id=$r['ansat_id']*1;
+			} elseif ($tmpState == 'expired') $fejltxt="Midlertidig adgangskode udløbet";
 		}
 	}
 }
@@ -491,6 +496,15 @@ if (!$dbMail && $db != $sqdb) {
 	$r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
 	$mainMail = $r['email'];
 } else $mainMail = $dbMail;
+// 20260929 Sawaneh Roles stage 2 (§8.2): a closed user (brugere.status = false) cannot log in.
+if ($userId && $db != $sqdb) {
+	$statusRow = db_fetch_array(db_select("select * from brugere where id = '" . (int) $userId . "'", __FILE__ . " linje " . __LINE__));
+	if ($statusRow && array_key_exists('status', $statusRow) && in_array($statusRow['status'], array('f', false, '0', 0), true)) {
+		$fejltxt = "Din bruger er lukket. Kontakt din administrator. / Your user is closed. Contact your administrator.";
+		echo "<script type='text/javascript'>alert(" . json_encode($fejltxt) . "); window.location.href = 'index.php';</script>";
+		exit;
+	}
+}
 # Check whether the user exsists
 
 if ($userId) {
@@ -746,7 +760,7 @@ if ($userId) {
 	include("../includes/online.php"); #20111105
 	include_once("../includes/permissions.php");
 	if (function_exists('audit_log')) {
-		audit_log('login', $db);
+		audit_log('login.success', $db, 'session', (string) $db);
 	}
 
 	# ###################################################
@@ -780,10 +794,11 @@ if ($userId) {
 		$real_code = NULL;
 		$real_expire = 0;
 		if (!empty($r["tmp_kode"])) {
-			$tmp_kode_parts = explode("|", $r["tmp_kode"]);
-			if (count($tmp_kode_parts) >= 2) {
-				$real_code = $tmp_kode_parts[0];
-				$real_expire = $tmp_kode_parts[1];
+			include_once("../includes/tmpCode.php");
+			$tmpCode = tmp_code_parse($r["tmp_kode"], '2fa');
+			if ($tmpCode && $tmpCode['type'] == '2fa') {
+				$real_code = $tmpCode['code'];
+				$real_expire = $tmpCode['expire'];
 			}
 		}
 		$status = NULL;
@@ -819,7 +834,8 @@ if ($userId) {
 				$current_time = time();
 				$expire = $current_time + 180; // Expires in 3 minutes
 				
-				db_modify("UPDATE brugere SET tmp_kode='$random_integer|$expire' WHERE id=$bruger_id", __FILE__ . "linje" . __LINE__);
+				include_once("../includes/tmpCode.php");
+				db_modify("UPDATE brugere SET tmp_kode='" . tmp_code_make('2fa', $expire, (string) $random_integer) . "' WHERE id=$bruger_id", __FILE__ . "linje" . __LINE__);
 
 				include("tofaktor.php");
 			}
@@ -846,7 +862,8 @@ if ($userId) {
 			} else {
 				$current_time = time();
 				$expire = $current_time + 180; // Expires in 3 minutes
-				db_modify("UPDATE brugere SET tmp_kode='$random_integer|$expire' WHERE id=$bruger_id", __FILE__ . "linje" . __LINE__);
+				include_once("../includes/tmpCode.php");
+				db_modify("UPDATE brugere SET tmp_kode='" . tmp_code_make('2fa', $expire, (string) $random_integer) . "' WHERE id=$bruger_id", __FILE__ . "linje" . __LINE__);
 				include("tofaktor.php");
 			}
 			exit;

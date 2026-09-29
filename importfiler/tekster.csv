@@ -5353,3 +5353,43 @@
 5753	Handlingen er startet	The action has started	Handlingen er startet
 5754	Sikkerhedstjekket fejlede. Prøv igen.	The security check failed. Please try again.	Sikkerhetssjekken feilet. Prøv igjen.
 5755	Du har kun læseadgang til disse indstillinger	You have read-only access to these settings	Du har kun lesetilgang til disse innstillingene
+5756	Luk bruger	Close user	Lukk bruker
+5757	Genåbn bruger	Reopen user	Gjenåpne bruker
+5758	Brugeren er lukket	The user is closed	Brukeren er lukket
+5759	Brugeren er genåbnet	The user has been reopened	Brukeren er gjenåpnet
+5760	Regnskabet skal have mindst én administrator.	The company must have at least one administrator.	Regnskapet må ha minst én administrator.
+5761	Du kan ikke ændre din egen rolle	You cannot change your own role	Du kan ikke endre din egen rolle
+5762	Brugeren har været logget ind og kan derfor kun lukkes, ikke slettes	The user has logged in before and can therefore only be closed, not deleted	Brukeren har vært logget inn og kan derfor bare lukkes, ikke slettes
+5763	Rollen er nulstillet til standard	The role has been reset to default	Rollen er tilbakestilt til standard
+5764	Luk valgte	Close selected	Lukk valgte
+5765	Genåbn valgte	Reopen selected	Gjenåpne valgte
+5766	Luk bruger?	Close user?	Lukke bruker?
+5767	Nulstil rollen til standard?	Reset the role to default?	Tilbakestille rollen til standard?
+5768	administratorer	administrators	administratorer
+5769	Brugerne er opdateret	The users have been updated	Brukerne er oppdatert
+5770	Lukkede brugere kan ikke logge ind og kan genåbnes senere.	Closed users cannot log in and can be reopened later.	Lukkede brukere kan ikke logge inn og kan gjenåpnes senere.
+5771	Vælg en rolle først	Choose a role first	Velg en rolle først
+5772	%s brugere blev sprunget over	%s users were skipped	%s brukere ble hoppet over
+5773	Invitation til %s i Saldi	Invitation to %s in Saldi	Invitasjon til %s i Saldi
+5774	%s har inviteret dig til regnskabet %s i Saldi.	%s has invited you to the company %s in Saldi.	%s har invitert deg til regnskapet %s i Saldi.
+5775	Vælg din adgangskode	Choose your password	Velg passordet ditt
+5776	Linket gælder i 72 timer.	The link is valid for 72 hours.	Lenken gjelder i 72 timer.
+5777	Tofaktor-login er slået til: du får en kode på SMS eller e-mail, hver gang du logger ind.	Two-factor login is on: you get a code by SMS or email every time you log in.	Tofaktor-innlogging er slått på: du får en kode på SMS eller e-post hver gang du logger inn.
+5778	Inviteret	Invited	Invitert
+5779	Inviter bruger	Invite user	Inviter bruker
+5780	Opret bruger	Create user	Opprett bruker
+5781	Send invitation igen	Resend invitation	Send invitasjon på nytt
+5782	Invitationen er sendt	The invitation has been sent	Invitasjonen er sendt
+5783	E-mailen kunne ikke sendes. Send dette link til brugeren.	The email could not be sent. Send this link to the user.	E-posten kunne ikke sendes. Send denne lenken til brukeren.
+5784	Linket er ikke længere gyldigt. Bed din administrator sende invitationen igen.	The link is no longer valid. Ask your administrator to resend the invitation.	Lenken er ikke lenger gyldig. Be administratoren din sende invitasjonen på nytt.
+5785	Adgangskoden skal være på mindst 8 tegn	The password must be at least 8 characters	Passordet må være på minst 8 tegn
+5786	En gyldig e-mail er påkrævet for at invitere	A valid email is required to invite	En gyldig e-post kreves for å invitere
+5787	inviterede	invited	inviterte
+5788	Brugeren får en e-mail med et link og vælger selv sin adgangskode.	The user gets an email with a link and chooses their own password.	Brukeren får en e-post med en lenke og velger selv passordet sitt.
+5789	Fortsæt	Continue	Fortsett
+5790	Adgangskoden er gemt	The password has been saved	Passordet er lagret
+5791	Du bliver nu logget ind.	You are now being logged in.	Du blir nå logget inn.
+5792	Invitationen kan ikke bruges	The invitation cannot be used	Invitasjonen kan ikke brukes
+5793	Til login	To login	Til innlogging
+5794	Brugeren har allerede valgt en adgangskode	The user has already chosen a password	Brukeren har allerede valgt et passord
+5795	Send invitation	Send invitation	Send invitasjon

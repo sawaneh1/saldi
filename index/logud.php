@@ -43,7 +43,7 @@ if ($db && $db!=$sqdb) {
 // Company connection is still active here: record the logout before switching to master.
 include_once("../includes/permissions.php");
 if (function_exists('audit_log') && isset($db) && isset($sqdb) && $db != $sqdb) {
-	audit_log('logout', $db);
+	audit_log('logout', $db, 'session', (string) $db);
 }
 include("../includes/connect.php");
 $r=db_fetch_array(db_select("select * from online where session_id = '$s_id'",__FILE__ . " linje " . __LINE__));
