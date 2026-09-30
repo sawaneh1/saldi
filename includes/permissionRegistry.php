@@ -29,6 +29,7 @@
 // 20260928 Sawaneh Settings-area keys (phase 4, spec S3), one per group of the settings front page.
 // 20260928 Sawaneh Keys and groups aligned with Requirements_settings_redesign_EN.md §4 (11 groups).
 // 20260930 Sawaneh Roles stage 2 (§3.1): settings.roles.manage and settings.audit.read.
+// 20260930 Sawaneh Built-in role descriptions are text ids, so they follow the user's language.
 
 /**
  * Every permission key the system knows. A key is granted at level none / read / write.
@@ -134,12 +135,12 @@ function permission_default_roles(): array
 	return array(
 		'administrator' => array(
 			'label'       => '330|Administrator',
-			'beskrivelse' => 'Alt, inkl. brugere, roller, integrationer og sikkerhedskopi.',
+			'beskrivelse' => '5897|Alt, inkl. brugere, roller, integrationer og sikkerhedskopi.',
 			'levels'      => $allWrite,
 		),
 		'bogholder' => array(
 			'label'       => '5543|Bogholder',
-			'beskrivelse' => 'Finans, kassekladde, rapporter, moms og betalinger. Ingen brugeradministration.',
+			'beskrivelse' => '5898|Finans, kassekladde, rapporter, moms og betalinger. Ingen brugeradministration.',
 			'levels'      => array(
 				'finans.kassekladde' => 'write', 'finans.regnskab' => 'write', 'finans.rapporter' => 'write',
 				'system.kontoplan' => 'write', 'system.indstillinger' => 'read',
@@ -151,7 +152,7 @@ function permission_default_roles(): array
 		),
 		'salg' => array(
 			'label'       => '5544|Salg',
-			'beskrivelse' => 'Debitorordrer, kunder og fakturering. Ingen finans eller indstillinger.',
+			'beskrivelse' => '5899|Debitorordrer, kunder og fakturering. Ingen finans eller indstillinger.',
 			'levels'      => array(
 				'debitor.ordre' => 'write', 'debitor.konti' => 'write', 'debitor.rapporter' => 'write',
 				'lager.varer' => 'read', 'pos.kasse' => 'write',
@@ -159,7 +160,7 @@ function permission_default_roles(): array
 		),
 		'indkoeb' => array(
 			'label'       => '5545|Indkøb',
-			'beskrivelse' => 'Kreditorordrer, leverandører og varemodtagelse.',
+			'beskrivelse' => '5900|Kreditorordrer, leverandører og varemodtagelse.',
 			'levels'      => array(
 				'kreditor.ordre' => 'write', 'kreditor.konti' => 'write', 'kreditor.rapporter' => 'write',
 				'lager.varemodtagelse' => 'write', 'lager.varer' => 'read',
@@ -167,7 +168,7 @@ function permission_default_roles(): array
 		),
 		'lager' => array(
 			'label'       => '608|Lager',
-			'beskrivelse' => 'Varer, lager og produktion.',
+			'beskrivelse' => '5901|Varer, lager og produktion.',
 			'levels'      => array(
 				'lager.varer' => 'write', 'lager.varemodtagelse' => 'write', 'lager.produktion' => 'write', 'lager.rapporter' => 'write',
 				'debitor.ordre' => 'read', 'kreditor.ordre' => 'read',
@@ -176,12 +177,12 @@ function permission_default_roles(): array
 		),
 		'kunvisning' => array(
 			'label'       => '2475|Kun visning',
-			'beskrivelse' => 'Læseadgang til alle moduler.',
+			'beskrivelse' => '5902|Læseadgang til alle moduler.',
 			'levels'      => $legacyRead,
 		),
 		'revisor' => array(
 			'label'       => '2562|Revisor',
-			'beskrivelse' => 'Læseadgang til finans, kontoplan og rapporter.',
+			'beskrivelse' => '5903|Læseadgang til finans, kontoplan og rapporter.',
 			'levels'      => array(
 				'finans.kassekladde' => 'read', 'finans.regnskab' => 'read', 'finans.rapporter' => 'read',
 				'system.kontoplan' => 'read', 'debitor.rapporter' => 'read', 'kreditor.rapporter' => 'read',

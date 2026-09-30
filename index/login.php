@@ -62,6 +62,7 @@
 // 20260916 Sawaneh Successful login written to audit_log (roles & permissions, spec R7).
 // 20260929 Sawaneh Roles stage 2 (§8.4, §8.6): tmp_kode read and written in the common format; ?invite= opens the invitation page.
 // 20260930 Sawaneh Roles stage 2 (§7.1): login.failed, login.2fa_failed, login.ip_blocked and session.forced_logout in the audit log.
+// 20260930 Sawaneh Indexes on online.session_id and online.logtime (roles spec §4.7, without the primary key: see comment).
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 if (isset($_GET['invite'])) {
@@ -126,6 +127,19 @@ $qtxt="SELECT column_name, data_type, character_maximum_length FROM information_
 if ($r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__))) {
 	$qtxt = "ALTER TABLE online ALTER COLUMN session_id TYPE varchar(32)";
 	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
+}
+// The online table (master database) is read by session and by time on every request. Plain indexes:
+// a primary key on session_id would break mySale, which inserts one session per company it tries.
+if ($db_type == 'mysql' || $db_type == 'mysqli') {
+	foreach (array('online_session_idx' => 'session_id', 'online_logtime_idx' => 'logtime') as $idxName => $idxCol) {
+		$qtxt = "SELECT index_name FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'online' AND index_name = '$idxName'";
+		if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+			db_modify("CREATE INDEX $idxName ON online ($idxCol)", __FILE__ . " linje " . __LINE__);
+		}
+	}
+} else {
+	db_modify("CREATE INDEX IF NOT EXISTS online_session_idx ON online (session_id)", __FILE__ . " linje " . __LINE__);
+	db_modify("CREATE INDEX IF NOT EXISTS online_logtime_idx ON online (logtime)", __FILE__ . " linje " . __LINE__);
 }
 #$_COOKIE['timezone'] = $timezone;#20210929
 $qtxt = "SELECT table_name FROM information_schema.columns WHERE table_name = 'settings'";

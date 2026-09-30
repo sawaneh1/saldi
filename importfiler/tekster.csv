@@ -5494,3 +5494,11 @@
 5894	%s var allerede bekræftet.	%s were already confirmed.	%s var allerede bekreftet.
 5895	%s brugere har fået en rolle automatisk og venter på at blive bekræftet.	%s users were given a role automatically and are waiting to be confirmed.	%s brukere har fått en rolle automatisk og venter på å bli bekreftet.
 5896	Brugerens rolle er allerede bekræftet	The user's role is already confirmed	Brukerens rolle er allerede bekreftet
+5897	Alt, inkl. brugere, roller, integrationer og sikkerhedskopi.	Everything, incl. users, roles, integrations and backup.	Alt, inkl. brukere, roller, integrasjoner og sikkerhetskopi.
+5898	Finans, kassekladde, rapporter, moms og betalinger. Ingen brugeradministration.	Finance, cash journal, reports, VAT and payments. No user administration.	Finans, kassekladd, rapporter, mva og betalinger. Ingen brukeradministrasjon.
+5899	Debitorordrer, kunder og fakturering. Ingen finans eller indstillinger.	Sales orders, customers and invoicing. No finance or settings.	Salgsordrer, kunder og fakturering. Ingen finans eller innstillinger.
+5900	Kreditorordrer, leverandører og varemodtagelse.	Purchase orders, suppliers and goods receipt.	Innkjøpsordrer, leverandører og varemottak.
+5901	Varer, lager og produktion.	Items, stock and production.	Varer, lager og produksjon.
+5902	Læseadgang til alle moduler.	Read access to all modules.	Lesetilgang til alle moduler.
+5903	Læseadgang til finans, kontoplan og rapporter.	Read access to finance, chart of accounts and reports.	Lesetilgang til finans, kontoplan og rapporter.
+5904	Hver bruger har én rolle. Rollen bestemmer, hvad brugeren kan se og ændre.	Every user has one role. The role decides what the user can see and change.	Hver bruker har én rolle. Rollen bestemmer hva brukeren kan se og endre.

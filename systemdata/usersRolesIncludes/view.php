@@ -61,7 +61,7 @@ function ur_view(array $vm): void
   <header class="ur-head">
     <div>
       <h1><i class='bx bx-group'></i><?= $t('5536|Brugere & roller') ?></h1>
-      <p class="ur-sub"><?= $t('5591|Brugere uden rolle beholder deres nuværende rettigheder, indtil en rolle tildeles.') ?></p>
+      <p class="ur-sub"><?= $t('5904|Hver bruger har én rolle. Rollen bestemmer, hvad brugeren kan se og ændre.') ?></p>
     </div>
   </header>
 
@@ -608,7 +608,7 @@ function ur_view_roles(array $vm, callable $h, callable $t, callable $link, call
         <h3><i class='bx bx-shield-quarter'></i><?= $roleName($role) ?></h3>
         <?php if ($role['system']) { ?><span class="ur-tag"><?= $t('5564|Indbygget') ?></span><?php } ?>
       </div>
-      <p class="ur-mut"><?= $h($role['beskrivelse']) ?></p>
+      <p class="ur-mut"><?= $h(perm_role_description($role, $vm['sprogId'])) ?></p>
       <div class="ur-rolecard-foot">
         <span class="ur-mut"><i class='bx bx-user'></i> <?= (int) $count ?> <?= $t('5549|Brugere') ?></span>
         <span class="ur-spacer"></span>
@@ -650,7 +650,7 @@ function ur_view_role_editor(array $vm, callable $h, callable $t, callable $link
         </div>
         <div class="ur-field">
           <label><?= $t('5568|Beskrivelse') ?></label>
-          <input class="ur-input" type="text" name="beskrivelse" maxlength="500" value="<?= $h($role['beskrivelse']) ?>"<?= ($role['system'] ? ' readonly' : $ro) ?>>
+          <input class="ur-input" type="text" name="beskrivelse" maxlength="500" value="<?= $h($role['system'] ? perm_role_description($role, $vm['sprogId']) : $role['beskrivelse']) ?>"<?= ($role['system'] ? ' readonly' : $ro) ?>>
         </div>
       </div>
 

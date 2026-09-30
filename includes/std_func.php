@@ -84,6 +84,7 @@
 // 20260914 CL/NTR barcode(): no horizontal padding in the SVG so the bars span the full 285 px
 //                  (vertical padding kept at 2 px) as we want to control padding in the print.
 // 20260916 Sawaneh includes/permissions.php (roles, require_permission, audit_log) loaded here so every page has it.
+// 20260930 Sawaneh check_permissions() shared here (was three copies); read access ('2') counts (roles spec §4.4).
 
 include(__DIR__ . '/stdFunc/dkDecimal.php');
 include(__DIR__ . '/stdFunc/nrCast.php');
@@ -3107,6 +3108,23 @@ if (!function_exists('send_sms')) {
 		}
 
 		curl_close($ch);
+	}
+}
+
+if (!function_exists('check_permissions')) {
+	/**
+	 * True when the user can at least read one of the old rights positions ('1' write, '2' read).
+	 * One shared copy for the menu, the dashboard and the fiscal-year page (roles spec §4.4).
+	 */
+	function check_permissions($permarr)
+	{
+		global $rettigheder;
+		foreach ((array) $permarr as $pos) {
+			if (substr((string) $rettigheder, (int) $pos, 1) >= '1') {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

@@ -50,6 +50,7 @@
 // 20260927 Sawaneh Step 1b: cluster placement top/sidebar (mount point + topbarApplyPlacement).
 // 20260928 Sawaneh Phase 4: System → Settings opens systemdata/settings.php, shown per settings-group access.
 // 20260928 Sawaneh After the page-change confirm, clear the iframe's docChange so its beforeunload does not ask twice.
+// 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
 @session_start();
 $s_id = session_id();
 
@@ -83,14 +84,6 @@ $topbar = topbar_context($topbarOnlineRows, (string) $brugernavn, (int) $bruger_
 include_once(__DIR__ . "/../systemdata/settingsRegistry.php");
 $settingsGroups = settings_accessible_groups();
 
-function check_permissions($permarr)
-{
-  global $rettigheder;
-  $filtered = array_filter($permarr, function ($item) use ($rettigheder) {
-    return (substr($rettigheder, $item, 1) == "1");
-  });
-  return !empty($filtered);
-}
 
 if (substr($brugernavn, 0, 11) == "debitoripad") {
   header('Location: ../debitoripad/await.php');

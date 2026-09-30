@@ -420,6 +420,20 @@ function perm_role_name(array $role, int $sprogId): string
 }
 
 /**
+ * Description in the user's language for built-in roles; custom roles show what was typed.
+ */
+function perm_role_description(array $role, int $sprogId): string
+{
+	if ($role['key'] !== '') {
+		$defaults = permission_default_roles();
+		if (isset($defaults[$role['key']])) {
+			return findtekst($defaults[$role['key']]['beskrivelse'], $sprogId);
+		}
+	}
+	return $role['beskrivelse'];
+}
+
+/**
  * Replace a role's permissions and re-render the legacy string of every user holding it.
  *
  * @param array<string, string> $levels
@@ -528,7 +542,7 @@ function perm_ensure_default_roles(): void
 			continue;
 		}
 		$navn = db_escape_string(explode('|', $def['label'], 2)[1]);
-		$beskrivelse = db_escape_string($def['beskrivelse']);
+		$beskrivelse = db_escape_string(explode('|', $def['beskrivelse'], 2)[1]);
 		db_modify("insert into roles (role_key, navn, beskrivelse, system) values ('$key', '$navn', '$beskrivelse', 't')", __FILE__ . " linje " . __LINE__);
 		$r = db_fetch_array(db_select("select id from roles where role_key = '$key'", __FILE__ . " linje " . __LINE__));
 		if ($r) {

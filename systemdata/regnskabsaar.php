@@ -39,6 +39,7 @@
 // 20260801 MJ Sat begge knapper til samme bredde (200px)
 // 20260814 Sawaneh SST-705 Current fiscal year shows Lukket when bookkeeping is
 //                  not allowed (box5) and GET params are int-cast before SQL
+// 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
 
 @session_start();
 $s_id = session_id();
@@ -53,14 +54,6 @@ include("../includes/connect.php");
 include("../includes/online.php");
 include("../includes/std_func.php");
 
-function check_permissions($permarr)
-{
-  global $rettigheder;
-  $filtered = array_filter($permarr, function ($item) use ($rettigheder) {
-    return (substr($rettigheder, $item, 1) == "1");
-  });
-  return !empty($filtered);
-}
 
 $aktiver = (int)filter_input(INPUT_GET, 'aktiver', FILTER_VALIDATE_INT);
 $deleteYear = (int)filter_input(INPUT_GET, 'deleteYear', FILTER_VALIDATE_INT);

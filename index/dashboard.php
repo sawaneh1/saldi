@@ -31,6 +31,7 @@
 // 20260922 Sawaneh Dashboard cleanup (topbar spec 5): heading, year/language selectors and buttons removed.
 // 20260927 Sawaneh News and batch-expiry banners removed (now notifications in the bell).
 // 20260930 Sawaneh "Review roles" card for administrators after the migration to roles (roles spec §6.3).
+// 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
 @session_start();
 $s_id = session_id();
 
@@ -99,13 +100,6 @@ include ("dashboardIncludes/pos_row.php");
 
 
 
-function check_permissions($permarr) {
-	global $rettigheder;
-	$filtered = array_filter($permarr, function ($item) use ($rettigheder) {
-		return (substr($rettigheder, $item, 1) == "1");
-	});
-	return !empty($filtered);
-}
 
 global $regnaar;
 
