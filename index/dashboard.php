@@ -30,6 +30,7 @@
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20260922 Sawaneh Dashboard cleanup (topbar spec 5): heading, year/language selectors and buttons removed.
 // 20260927 Sawaneh News and batch-expiry banners removed (now notifications in the bell).
+// 20260930 Sawaneh "Review roles" card for administrators after the migration to roles (roles spec §6.3).
 @session_start();
 $s_id = session_id();
 
@@ -241,6 +242,9 @@ print "<div style='display: flex; flex-direction: column; padding: 2em 1em; gap:
 if ($hide_dash === "1" || is_null($regnaar)) {
 	exit;
 }
+
+include_once("dashboardIncludes/roleReview.php");
+role_review_card((int) $bruger_id, (int) $sprog_id);
 
 print "<div style='display: flex; gap: 2em; flex-wrap: wrap'>";
 

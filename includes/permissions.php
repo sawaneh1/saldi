@@ -30,6 +30,8 @@
 // 20260928 Sawaneh Phase 4: settings pages resolve to their group key; derived keys open their source position.
 // 20260928 Sawaneh Registry keys may carry 'renamed_from'; role rows move to the new name once.
 // 20260929 Sawaneh Roles stage 2: audit_log() records object and source; event names follow the spec (§7.1).
+// 20260930 Sawaneh Roles stage 2 (§6): migration of users without a role, custom roles per rights pattern,
+//                  covering-role suggestion and the review list.
 
 include_once(__DIR__ . '/permissionRegistry.php');
 
@@ -608,6 +610,218 @@ function perm_seed_new_keys(array $existing): void
 		db_modify("update settings set var_value = '$value' where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
 	} else {
 		db_modify("insert into settings (var_grp, var_name, var_value, var_description) values ('permissions', 'known_keys', '$value', 'Permission keys already seeded into roles')", __FILE__ . " linje " . __LINE__);
+	}
+}
+
+// ------------------------------------------------------------------ migration to roles (spec §6)
+
+/**
+ * The old rights string as 16 positions; '' stays '' (old databases without rights).
+ */
+function perm_normalize_legacy(string $rettigheder): string
+{
+	$rettigheder = trim($rettigheder);
+	if ($rettigheder === '') {
+		return '';
+	}
+	return substr(str_pad(preg_replace('/[^012]/', '0', $rettigheder), 16, '0'), 0, 16);
+}
+
+/**
+ * The standard role with the fewest extra rights that still covers everything the user had
+ * (spec §6.3). Administrator covers everything, so there is always an answer.
+ */
+function perm_covering_role(string $rettigheder): ?array
+{
+	$target = perm_levels_from_legacy(perm_normalize_legacy($rettigheder));
+	$rank = perm_level_rank();
+	$best = null;
+	foreach (perm_roles() as $role) {
+		if (!$role['system']) {
+			continue;
+		}
+		$levels = perm_levels_from_role($role['id']);
+		$extra = 0;
+		$covers = true;
+		foreach (permission_registry() as $key => $def) {
+			if (!$def['legacy']) {
+				continue;
+			}
+			$diff = $rank[$levels[$key]] - $rank[$target[$key]];
+			if ($diff < 0) {
+				$covers = false;
+				break;
+			}
+			$extra += $diff;
+		}
+		if ($covers && ($best === null || $extra < $best['extra'])) {
+			$best = array('id' => $role['id'], 'key' => $role['key'], 'extra' => $extra);
+		}
+	}
+	return $best;
+}
+
+/**
+ * Give every user without a role one (spec §6.2): all rights → Administrator, a string equal
+ * to a standard role → that role, anything else → one "Custom role <n>" per pattern with
+ * exactly the rights the user had. No rights at all → View only. Custom and empty cases are
+ * kept for review (§6.3). Idempotent: only users without a role are touched.
+ */
+function perm_migrate_users(): void
+{
+	global $sprog_id;
+	if (!perm_tables_ready()) {
+		return;
+	}
+	$q = db_select("select id, brugernavn, rettigheder from brugere where role_id is null or role_id = 0", __FILE__ . " linje " . __LINE__);
+	$pending = array();
+	while ($r = db_fetch_array($q)) {
+		$pending[] = $r;
+	}
+	if (!$pending) {
+		return;
+	}
+	$standard = array();
+	foreach (perm_roles() as $role) {
+		if ($role['system']) {
+			$standard[perm_legacy_string(perm_levels_from_role($role['id']))] = $role['id'];
+		}
+	}
+	$adminId = perm_role_id_by_key('administrator');
+	$viewId = perm_role_id_by_key('kunvisning');
+	$sprog = isset($sprog_id) ? (int) $sprog_id : 1;
+	$counts = perm_migration_summary();
+	foreach ($pending as $r) {
+		$id = (int) $r['id'];
+		$string = perm_normalize_legacy((string) $r['rettigheder']);
+		$review = false;
+		if ($string === '') {
+			$roleId = $viewId;
+			$review = true;
+		} elseif ($string === str_repeat('1', 16)) {
+			$roleId = $adminId;
+		} elseif (isset($standard[$string])) {
+			$roleId = $standard[$string];
+		} else {
+			$roleId = perm_custom_role_for($string, $sprog);
+			$review = true;
+		}
+		if ($roleId <= 0) {
+			continue;
+		}
+		db_modify("update brugere set role_id = $roleId, rettigheder = '" . perm_legacy_string(perm_levels_from_role($roleId)) . "' where id = $id", __FILE__ . " linje " . __LINE__);
+		if ($review) {
+			db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('permissions', 'review', '" . db_escape_string((string) $r['rettigheder']) . "', 'Role set by the migration, not confirmed yet', $id)", __FILE__ . " linje " . __LINE__);
+		}
+		audit_log('user.role_changed', (string) $r['brugernavn'] . ': - -> ' . perm_role_label_plain($roleId), 'bruger', (string) $id, 'migrering');
+		$counts['total']++;
+		if ($roleId === $adminId) {
+			$counts['admin']++;
+		} elseif ($review && $string !== '') {
+			$counts['custom']++;
+		}
+	}
+	perm_save_migration_summary($counts);
+}
+
+/**
+ * The custom role for one rights pattern, created the first time the pattern is seen.
+ */
+function perm_custom_role_for(string $string, int $sprog): int
+{
+	$key = 'migrated_' . $string;
+	$existing = perm_role_id_by_key($key);
+	if ($existing > 0) {
+		return $existing;
+	}
+	$n = 1;
+	$r = db_fetch_array(db_select("select count(*) as antal from roles where role_key like 'migrated_%'", __FILE__ . " linje " . __LINE__));
+	if ($r) {
+		$n = (int) $r['antal'] + 1;
+	}
+	$levels = perm_levels_from_legacy($string);
+	$grants = array();
+	foreach (permission_registry() as $permKey => $def) {
+		if ($def['legacy'] && $levels[$permKey] !== 'none') {
+			$grants[] = findtekst($def['label'], $sprog) . ($levels[$permKey] === 'read' ? ' (' . findtekst('5893|læs', $sprog) . ')' : '');
+		}
+	}
+	$navn = sprintf(findtekst('5877|Tilpasset rolle %s', $sprog), $n);
+	$beskrivelse = sprintf(findtekst('5878|Oprettet ved overgangen til roller ud fra de gamle rettigheder: %s', $sprog), implode(', ', $grants));
+	db_modify("insert into roles (role_key, navn, beskrivelse, system) values ('" . db_escape_string($key) . "', '" . db_escape_string($navn) . "', '" . db_escape_string(mb_substr($beskrivelse, 0, 1000)) . "', 'f')", __FILE__ . " linje " . __LINE__);
+	$roleId = perm_role_id_by_key($key);
+	if ($roleId > 0) {
+		perm_save_role_levels($roleId, $levels);
+		audit_log('role.created', $navn . ': ' . $string, 'rolle', (string) $roleId, 'migrering');
+	}
+	return $roleId;
+}
+
+function perm_role_label_plain(int $roleId): string
+{
+	foreach (perm_roles() as $role) {
+		if ($role['id'] === $roleId) {
+			return $role['navn'];
+		}
+	}
+	return (string) $roleId;
+}
+
+/**
+ * @return array{total: int, admin: int, custom: int}
+ */
+function perm_migration_summary(): array
+{
+	$r = db_fetch_array(db_select("select var_value from settings where var_grp = 'permissions' and var_name = 'migration_summary'", __FILE__ . " linje " . __LINE__));
+	$parts = $r ? array_map('intval', explode(';', (string) $r['var_value'])) : array();
+	return array('total' => isset($parts[0]) ? $parts[0] : 0, 'admin' => isset($parts[1]) ? $parts[1] : 0, 'custom' => isset($parts[2]) ? $parts[2] : 0);
+}
+
+function perm_save_migration_summary(array $c): void
+{
+	$value = (int) $c['total'] . ';' . (int) $c['admin'] . ';' . (int) $c['custom'];
+	$r = db_fetch_array(db_select("select id from settings where var_grp = 'permissions' and var_name = 'migration_summary'", __FILE__ . " linje " . __LINE__));
+	if ($r) {
+		db_modify("update settings set var_value = '$value' where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+	} else {
+		db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('permissions', 'migration_summary', '$value', 'Users moved to roles: total;administrators;custom', 0)", __FILE__ . " linje " . __LINE__);
+	}
+}
+
+/**
+ * Users whose migrated role is not confirmed yet: id => the rights string they had.
+ *
+ * @return array<int, string>
+ */
+function perm_review_pending(): array
+{
+	$out = array();
+	if (!perm_tables_ready()) {
+		return $out;
+	}
+	$q = db_select("select user_id, var_value from settings where var_grp = 'permissions' and var_name = 'review'", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$out[(int) $r['user_id']] = (string) $r['var_value'];
+	}
+	return $out;
+}
+
+/**
+ * The administrator has decided on this user's role. Custom roles from the migration that
+ * no one holds any more are removed (spec §6.3).
+ */
+function perm_review_done(int $brugerId): void
+{
+	db_modify("delete from settings where var_grp = 'permissions' and var_name = 'review' and user_id = $brugerId", __FILE__ . " linje " . __LINE__);
+	$q = db_select("select r.id, r.navn from roles r where r.role_key like 'migrated_%' and not exists (select 1 from brugere b where b.role_id = r.id)", __FILE__ . " linje " . __LINE__);
+	$empty = array();
+	while ($r = db_fetch_array($q)) {
+		$empty[] = $r;
+	}
+	foreach ($empty as $r) {
+		db_modify("delete from role_permissions where role_id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+		db_modify("delete from roles where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+		audit_log('role.deleted', (string) $r['navn'], 'rolle', (string) $r['id'], 'migrering');
 	}
 }
 

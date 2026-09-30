@@ -30,6 +30,8 @@
 //                  front page (the history fallback landed on the old VAT page);
 //                  password fields on the user card are not filled in by the browser; bulk results say how
 //                  many were done and why the rest were skipped; own card says why it cannot be closed.
+// 20260930 Sawaneh Roles stage 2 (§8.1, §8.2): reset password, role and 2FA filters, sorting, pages of 50.
+// 20260930 Sawaneh Roles stage 2 (§6.3): review of migrated roles in the list, on the card and in bulk.
 
 /**
  * @param array<string, mixed> $vm From ur_view_model().
@@ -97,26 +99,69 @@ function ur_view(array $vm): void
 (function () {
 	var search = document.getElementById('ur-search');
 	var statusFilter = document.getElementById('ur-status-filter');
-	function applyFilters() {
+	var roleFilter = document.getElementById('ur-role-filter');
+	var tfaFilter = document.getElementById('ur-2fa-filter');
+	var tbody = document.querySelector('#ur-users tbody');
+	var pager = document.getElementById('ur-pager');
+	var PAGE = 50, page = 0;
+	function rows() { return Array.prototype.slice.call(document.querySelectorAll('#ur-users tbody tr[data-search]')); }
+	// Filters first, then pages of 50 over what is left (spec 8.1).
+	function applyFilters(keepPage) {
+		if (!tbody) { return; }
+		if (keepPage !== true) { page = 0; }
 		var q = search ? search.value.toLowerCase() : '';
 		var st = statusFilter ? statusFilter.value : '';
-		var shown = 0;
-		document.querySelectorAll('#ur-users tbody tr[data-search]').forEach(function (tr) {
-			var hit = tr.dataset.search.indexOf(q) !== -1 && (st === '' || tr.dataset.status === st);
-			tr.hidden = !hit;
-			if (hit) { shown++; }
+		var rl = roleFilter ? roleFilter.value : '';
+		var tf = tfaFilter ? tfaFilter.value : '';
+		var hits = rows().filter(function (tr) {
+			tr.hidden = true;
+			return tr.dataset.search.indexOf(q) !== -1 && (st === '' || tr.dataset.status === st || (st === 'review' && tr.dataset.review === '1'))
+				&& (rl === '' || tr.dataset.role === rl) && (tf === '' || tr.dataset.tfa === tf);
 		});
+		var pages = Math.max(1, Math.ceil(hits.length / PAGE));
+		if (page >= pages) { page = pages - 1; }
+		hits.forEach(function (tr, i) { tr.hidden = i < page * PAGE || i >= (page + 1) * PAGE; });
 		var empty = document.getElementById('ur-empty');
-		if (empty) { empty.hidden = shown > 0; }
+		if (empty) { empty.hidden = hits.length > 0; }
+		if (pager) {
+			pager.hidden = hits.length <= PAGE;
+			var txt = document.getElementById('ur-pager-text');
+			txt.textContent = txt.dataset.format.replace('%s', page * PAGE + 1).replace('%s', Math.min(hits.length, (page + 1) * PAGE)).replace('%s', hits.length);
+			pager.querySelector('[data-page="-1"]').disabled = page === 0;
+			pager.querySelector('[data-page="1"]').disabled = page >= pages - 1;
+		}
 	}
-	if (search) { search.addEventListener('input', applyFilters); }
-	if (statusFilter) { statusFilter.addEventListener('change', applyFilters); }
+	if (pager) {
+		pager.addEventListener('click', function (e) {
+			var b = e.target.closest('[data-page]');
+			if (b) { page += parseInt(b.dataset.page, 10); applyFilters(true); }
+		});
+	}
+	if (statusFilter && statusFilter.dataset.initial) { statusFilter.value = statusFilter.dataset.initial; }
+	[search, statusFilter, roleFilter, tfaFilter].forEach(function (el) {
+		if (el) { el.addEventListener(el === search ? 'input' : 'change', applyFilters); }
+	});
+	// Sort on any column; a second click reverses.
+	document.querySelectorAll('#ur-users th[data-sort]').forEach(function (th) {
+		th.addEventListener('click', function () {
+			var dir = th.getAttribute('aria-sort') === 'ascending' ? 'descending' : 'ascending';
+			document.querySelectorAll('#ur-users th[data-sort]').forEach(function (o) { o.removeAttribute('aria-sort'); });
+			th.setAttribute('aria-sort', dir);
+			var col = th.cellIndex;
+			var val = function (tr) { var td = tr.cells[col]; return (td.dataset.v !== undefined ? td.dataset.v : td.textContent).trim().toLowerCase(); };
+			rows().sort(function (a, b) { return (dir === 'ascending' ? 1 : -1) * val(a).localeCompare(val(b), undefined, { numeric: true }); })
+				.forEach(function (tr) { tbody.appendChild(tr); });
+			applyFilters(true);
+		});
+	});
+	applyFilters();
 	// A bulk button is only active when it applies to at least one ticked user, and its
 	// confirmation counts only those users.
 	function applies(tr, rule) {
 		var st = tr.dataset.status, self = tr.dataset.self === '1';
 		if (rule === 'notself') { return !self; }
 		if (rule === 'open') { return !self && st !== 'closed'; }
+		if (rule === 'review') { return tr.dataset.review === '1' && !self; }
 		return st === rule;
 	}
 	function applicable(rule) {
@@ -186,10 +231,12 @@ function ur_bulk_flash(string $act, int $done, array $why, int $sprog): array
 		'reopen' => '5850|%s brugere er genåbnet.',
 		'resend' => '5851|%s invitationer er sendt igen.',
 		'role'   => '5852|%s brugere har fået ny rolle.',
+		'suggest'=> '5888|%s brugere er bekræftet.',
 	);
 	$reasonText = array(
 		'already'    => array('close' => '5854|%s var allerede lukket.', 'reopen' => '5855|%s var allerede aktive.'),
 		'unchanged'  => '5856|%s havde allerede rollen.',
+		'notreview'  => '5894|%s var allerede bekræftet.',
 		'notinvited' => '5857|%s er ikke inviteret og fik ingen invitation.',
 		'mailfailed' => '5858|%s invitationer kunne ikke sendes. Åbn brugeren for at få linket.',
 		'self'       => '5846|Du kan ikke lukke din egen bruger.',
@@ -241,6 +288,12 @@ function ur_flash(string $msg, int $sprog): ?array
 		'notinvited'  => array('err', '5794|Brugeren har allerede valgt en adgangskode'),
 		'noaccess'    => array('err', '5809|Du har ikke adgang til dette'),
 		'already'     => array('err', '5853|Ingen brugere blev ændret.'),
+		'confirmed'   => array('ok',  '5889|Rollen er bekræftet'),
+		'notreview'   => array('err', '5896|Brugerens rolle er allerede bekræftet'),
+		'resetsent'   => array('ok',  '5863|En midlertidig adgangskode er sendt til brugerens e-mail'),
+		'noemail'     => array('err', '5864|Brugeren har ingen gyldig e-mail'),
+		'mailfailed'  => array('err', '5865|E-mailen kunne ikke sendes. Tjek e-mailopsætningen under Indstillinger.'),
+		'closed'      => array('err', '5866|Brugeren er lukket. Genåbn brugeren først.'),
 	);
 	if (!isset($map[$msg])) {
 		return null;
@@ -258,6 +311,14 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
     <?php if ($vm['canWrite']) { ?>
     <form method="post" action="<?= $h($vm['selfUrl']) ?>"><input type="hidden" name="action" value="apply_suggestions"><button class="ur-btn ur-btn-primary ur-btn-sm" type="submit"><i class='bx bx-check-double'></i><?= $t('5562|Anvend foreslåede roller') ?></button></form>
     <?php } ?>
+  </div>
+  <?php } ?>
+
+  <?php if ($vm['reviewCount'] > 0) { ?>
+  <div class="ur-banner">
+    <i class='bx bx-info-circle'></i>
+    <span><?= $h(sprintf(findtekst('5895|%s brugere har fået en rolle automatisk og venter på at blive bekræftet.', $vm['sprogId']), $vm['reviewCount'])) ?></span>
+    <a class="ur-btn ur-btn-primary ur-btn-sm" href="<?= $link('tab=users&status=review') ?>"><i class='bx bx-list-check'></i><?= $t('5880|Gennemgå') ?></a>
   </div>
   <?php } ?>
 
@@ -282,11 +343,22 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
     <p class="ur-counter"><?= (int) $active ?> <?= $t('5549|Brugere') ?> · <?= (int) $admins ?> <?= $t('5768|administratorer') ?><?php if ($invitedCount > 0) { ?> · <?= (int) $invitedCount ?> <?= $t('5787|inviterede') ?><?php } ?><?php if (count($vm['users']) > $active) { ?> · <?= count($vm['users']) - $active ?> <?= $t('5559|Lukket') ?><?php } ?></p>
     <div class="ur-toolbar">
       <div class="ur-search"><i class='bx bx-search'></i><input type="search" id="ur-search" placeholder="<?= $t('5552|Søg bruger…') ?>" autocomplete="off"></div>
-      <select class="ur-select ur-select-sm" id="ur-status-filter" aria-label="<?= $t('5557|Status') ?>">
+      <select class="ur-select ur-select-sm" id="ur-status-filter" data-initial="<?= $h($vm['statusFilter']) ?>" aria-label="<?= $t('5557|Status') ?>">
         <option value=""><?= $t('5557|Status') ?>: <?= $t('2498|Alle') ?></option>
         <option value="active"><?= $t('5558|Aktiv') ?></option>
         <option value="invited"><?= $t('5778|Inviteret') ?></option>
         <option value="closed"><?= $t('5559|Lukket') ?></option>
+        <?php if ($vm['reviewCount'] > 0) { ?><option value="review"><?= $t('5882|Migreret, ikke bekræftet') ?></option><?php } ?>
+      </select>
+      <select class="ur-select ur-select-sm" id="ur-role-filter" aria-label="<?= $t('5553|Rolle') ?>">
+        <option value=""><?= $t('5875|Alle roller') ?></option>
+        <?php foreach ($vm['roles'] as $role) { ?><option value="<?= (int) $role['id'] ?>"><?= $roleName($role) ?></option><?php } ?>
+        <option value="0"><?= $t('5554|Ingen rolle') ?></option>
+      </select>
+      <select class="ur-select ur-select-sm" id="ur-2fa-filter" aria-label="2FA">
+        <option value="">2FA: <?= $t('2498|Alle') ?></option>
+        <option value="1"><?= $t('5873|Med 2FA') ?></option>
+        <option value="0"><?= $t('5874|Uden 2FA') ?></option>
       </select>
       <?php if ($vm['canWrite']) { ?>
       <div class="ur-bulk">
@@ -300,6 +372,7 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
         <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="close" data-applies="open" data-bulk-confirm="<?= $t('5764|Luk valgte') ?>"><i class='bx bx-lock-alt'></i><?= $t('5764|Luk valgte') ?></button>
         <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="reopen" data-applies="closed" data-bulk-confirm="<?= $t('5765|Genåbn valgte') ?>"><i class='bx bx-lock-open-alt'></i><?= $t('5765|Genåbn valgte') ?></button>
         <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="resend" data-applies="invited" data-bulk-confirm="<?= $t('5781|Send invitation igen') ?>"><i class='bx bx-envelope'></i><?= $t('5781|Send invitation igen') ?></button>
+        <?php if ($vm['reviewCount'] > 0) { ?><button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="suggest" data-applies="review" data-bulk-confirm="<?= $t('5887|Anvend forslag på valgte') ?>"><i class='bx bx-check-double'></i><?= $t('5887|Anvend forslag på valgte') ?></button><?php } ?>
       </div>
       <a class="ur-btn ur-btn-ghost" href="<?= $link('tab=users&bruger=0&mode=classic') ?>"><i class='bx bx-plus'></i><?= $t('5780|Opret bruger') ?></a>
       <a class="ur-btn ur-btn-primary" href="<?= $link('tab=users&bruger=0') ?>"><i class='bx bx-envelope'></i><?= $t('5779|Inviter bruger') ?></a>
@@ -311,20 +384,20 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
         <thead>
           <tr>
             <?php if ($vm['canWrite']) { ?><th class="ur-cb"><input type="checkbox" id="ur-check-all"></th><?php } ?>
-            <th><?= $t('5531|Navn') ?></th>
-            <th><?= $t('225|Brugernavn') ?></th>
-            <th><?= $t('52|E-mail') ?></th>
-            <th><?= $t('5553|Rolle') ?></th>
-            <th class="ur-center">2FA</th>
-            <th><?= $t('5556|Sidst aktiv') ?></th>
-            <th><?= $t('5557|Status') ?></th>
+            <th class="ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>"><?= $t('5531|Navn') ?></th>
+            <th class="ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>"><?= $t('225|Brugernavn') ?></th>
+            <th class="ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>"><?= $t('52|E-mail') ?></th>
+            <th class="ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>"><?= $t('5553|Rolle') ?></th>
+            <th class="ur-center ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>">2FA</th>
+            <th class="ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>"><?= $t('5556|Sidst aktiv') ?></th>
+            <th class="ur-sortable" data-sort title="<?= $t('5876|Klik for at sortere') ?>"><?= $t('5557|Status') ?></th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($vm['users'] as $u) {
           	$searchBlob = mb_strtolower($u['navn'] . ' ' . $u['brugernavn'] . ' ' . $u['email'] . ' ' . ($u['role'] ? perm_role_name($u['role'], $vm['sprogId']) : ''));
           ?>
-          <tr data-search="<?= $h($searchBlob) ?>" data-status="<?= $u['closed'] ? 'closed' : ($u['invited'] ? 'invited' : 'active') ?>"<?= $u['id'] === $vm['selfId'] ? ' data-self="1"' : '' ?><?= ($vm['editUser'] && $vm['editUser']['id'] === $u['id']) ? ' class="on"' : '' ?>>
+          <tr data-search="<?= $h($searchBlob) ?>" data-status="<?= $u['closed'] ? 'closed' : ($u['invited'] ? 'invited' : 'active') ?>"<?= $u['id'] === $vm['selfId'] ? ' data-self="1"' : '' ?> data-role="<?= (int) $u['role_id'] ?>" data-tfa="<?= $u['twofactor'] ? 1 : 0 ?>"<?= $u['review'] ? ' data-review="1"' : '' ?><?= ($vm['editUser'] && $vm['editUser']['id'] === $u['id']) ? ' class="on"' : '' ?>>
             <?php if ($vm['canWrite']) { ?><td class="ur-cb"><input type="checkbox" name="ids[]" value="<?= (int) $u['id'] ?>"></td><?php } ?>
             <td><a class="ur-userlink" href="<?= $link('tab=users&bruger=' . $u['id']) ?>"><span class="ur-avatar"><?= $h(mb_strtoupper(mb_substr($u['initialer'] !== '' ? $u['initialer'] : $u['navn'], 0, 2))) ?></span><?= $h($u['navn']) ?><?php if ($u['isRevisor']) { ?><span class="ur-tag"><?= $t('2562|Revisor') ?></span><?php } ?></a></td>
             <td class="ur-mut"><?= $h($u['brugernavn']) ?></td>
@@ -332,19 +405,25 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
             <td>
               <?php if ($u['role']) { ?>
               <span class="ur-role"><?= $roleName($u['role']) ?></span>
+              <?php if ($u['review'] && $u['suggestion'] && $u['suggestion']['id'] !== $u['role_id']) { ?><span class="ur-suggest"><?= $t('5555|Forslag') ?>: <?= $roleName($u['suggestion']) ?></span><?php } ?>
               <?php } else { ?>
               <span class="ur-role ur-role-none"><?= $t('5554|Ingen rolle') ?></span>
               <?php if ($u['suggestion']) { ?><span class="ur-suggest"><?= $t('5555|Forslag') ?>: <?= $roleName($u['suggestion']) ?></span><?php } ?>
               <?php } ?>
             </td>
-            <td class="ur-center"><?php if ($u['twofactor']) { ?><i class='bx bxs-check-shield ur-ok' title="2FA"></i><?php } else { ?><span class="ur-mut">–</span><?php } ?></td>
-            <td class="ur-mut"><?= $u['lastLogin'] !== '' ? $h(substr($u['lastLogin'], 0, 16)) : '–' ?></td>
-            <td><?php if ($u['closed']) { ?><span class="ur-status ur-status-closed"><?= $t('5559|Lukket') ?></span><?php } elseif ($u['invited']) { ?><span class="ur-status ur-status-invited"><?= $t('5778|Inviteret') ?></span><?php } else { ?><span class="ur-status ur-status-ok"><?= $t('5558|Aktiv') ?></span><?php } ?></td>
+            <td class="ur-center" data-v="<?= $u['twofactor'] ? 1 : 0 ?>"><?php if ($u['twofactor']) { ?><i class='bx bxs-check-shield ur-ok' title="2FA"></i><?php } else { ?><span class="ur-mut">–</span><?php } ?></td>
+            <td class="ur-mut" data-v="<?= $h($u['lastLogin']) ?>"><?= $u['lastLogin'] !== '' ? $h(substr($u['lastLogin'], 0, 16)) : '–' ?></td>
+            <td><?php if ($u['closed']) { ?><span class="ur-status ur-status-closed"><?= $t('5559|Lukket') ?></span><?php } elseif ($u['invited']) { ?><span class="ur-status ur-status-invited"><?= $t('5778|Inviteret') ?></span><?php } else { ?><span class="ur-status ur-status-ok"><?= $t('5558|Aktiv') ?></span><?php } ?><?php if ($u['review']) { ?> <span class="ur-tag ur-tag-review"><?= $t('5883|Ikke bekræftet') ?></span><?php } ?></td>
           </tr>
           <?php } ?>
         </tbody>
       </table>
       <div class="ur-empty" id="ur-empty" hidden><?= $t('5593|Ingen brugere fundet') ?></div>
+    </div>
+    <div class="ur-pager" id="ur-pager" hidden>
+      <button class="ur-btn ur-btn-ghost ur-btn-sm" type="button" data-page="-1"><i class='bx bx-chevron-left'></i><?= $t('5870|Forrige') ?></button>
+      <span class="ur-mut" id="ur-pager-text" data-format="<?= $t('5872|%s–%s af %s') ?>"></span>
+      <button class="ur-btn ur-btn-ghost ur-btn-sm" type="button" data-page="1"><?= $t('5871|Næste') ?><i class='bx bx-chevron-right'></i></button>
     </div>
   </form>
 	<?php
@@ -366,6 +445,17 @@ function ur_view_user_card(array $vm, callable $h, callable $t, callable $link, 
       <input type="hidden" name="action" value="save_user">
       <input type="hidden" name="id" value="<?= (int) $u['id'] ?>">
       <?php if ($isNew) { ?><input type="hidden" name="mode" value="<?= $inviteNew ? 'invite' : 'classic' ?>"><?php } ?>
+      <?php if ($u['review'] && $vm['canWrite']) { ?>
+      <div class="ur-review">
+        <span><?= $h(sprintf(findtekst('5884|Rollen er sat automatisk ud fra brugerens gamle rettigheder. Forslag: %s.', $vm['sprogId']), $u['suggestion'] ? perm_role_name($u['suggestion'], $vm['sprogId']) : '-')) ?></span>
+        <span class="ur-review-actions">
+          <?php if ($u['suggestion'] && $u['suggestion']['id'] !== $u['role_id'] && $u['id'] !== $vm['selfId']) { ?>
+          <button class="ur-btn ur-btn-primary ur-btn-sm" type="submit" form="ur-confirm-use"><i class='bx bx-check'></i><?= $t('5885|Brug forslaget') ?></button>
+          <?php } ?>
+          <button class="ur-btn ur-btn-ghost ur-btn-sm" type="submit" form="ur-confirm-keep"><?= $h(sprintf(findtekst('5886|Behold %s', $vm['sprogId']), $u['role'] ? perm_role_name($u['role'], $vm['sprogId']) : '-')) ?></button>
+        </span>
+      </div>
+      <?php } ?>
       <?php if ($inviteNew) { ?><p class="ur-help"><?= $t('5788|Brugeren får en e-mail med et link og vælger selv sin adgangskode.') ?></p><?php } ?>
       <?php if ($vm['inviteLink'] !== '') { ?>
       <div class="ur-invite-link">
@@ -389,7 +479,7 @@ function ur_view_user_card(array $vm, callable $h, callable $t, callable $link, 
           <?php $ownCard = (!$isNew && $u['id'] === $vm['selfId']); ?>
           <?php if ($ownCard) { ?><input type="hidden" name="role_id" value="<?= (int) $u['role_id'] ?>"><?php } ?>
           <select class="ur-select" name="role_id"<?= ($ownCard ? ' disabled' : $ro) ?>>
-            <option value="0"><?= $t('5554|Ingen rolle') ?><?= ($u['rettigheder'] !== '' && $u['role_id'] === 0) ? ' (' . $t('5588|Tilpasset') . ')' : '' ?></option>
+            <?php if ($u['role_id'] === 0) { ?><option value="0" disabled selected><?= $t('5891|Vælg en rolle') ?></option><?php } ?>
             <?php foreach ($vm['roles'] as $role) {
             	$assignable = perm_within_own(perm_levels_from_role($role['id']));
             ?>
@@ -445,6 +535,10 @@ function ur_view_user_card(array $vm, callable $h, callable $t, callable $link, 
       </div>
       <?php } ?>
     </form>
+    <?php if ($u['review'] && $vm['canWrite']) { ?>
+    <form method="post" action="<?= $h($vm['selfUrl']) ?>" id="ur-confirm-use"><input type="hidden" name="action" value="confirm_role"><input type="hidden" name="id" value="<?= (int) $u['id'] ?>"><input type="hidden" name="use" value="1"></form>
+    <form method="post" action="<?= $h($vm['selfUrl']) ?>" id="ur-confirm-keep"><input type="hidden" name="action" value="confirm_role"><input type="hidden" name="id" value="<?= (int) $u['id'] ?>"><input type="hidden" name="use" value="0"></form>
+    <?php } ?>
     <?php if ($inviteNew) { ?>
     <script>
     (function () {
@@ -454,6 +548,12 @@ function ur_view_user_card(array $vm, callable $h, callable $t, callable $link, 
     	mail.addEventListener('input', function () { if (!touched) { name.value = mail.value.split('@')[0].slice(0, 80); } });
     })();
     </script>
+    <?php } ?>
+    <?php if ($vm['canWrite'] && !$isNew && !$u['invited'] && !$u['closed'] && $u['id'] !== $vm['selfId']) { ?>
+    <form method="post" action="<?= $h($vm['selfUrl']) ?>" class="ur-actions" data-confirm="<?= $t('5867|Send en midlertidig adgangskode til brugerens e-mail?') ?>">
+      <input type="hidden" name="action" value="reset_password"><input type="hidden" name="id" value="<?= (int) $u['id'] ?>">
+      <button class="ur-btn ur-btn-ghost" type="submit"<?= $u['email'] === '' ? ' disabled title="' . $t('5864|Brugeren har ingen gyldig e-mail') . '"' : '' ?>><i class='bx bx-key'></i><?= $t('5868|Nulstil adgangskode') ?></button>
+    </form>
     <?php } ?>
     <?php if ($vm['canWrite'] && $u['invited']) { ?>
     <form method="post" action="<?= $h($vm['selfUrl']) ?>" class="ur-actions">
@@ -726,6 +826,8 @@ function ur_action_label(string $handling): string
 		'user.invite_resent'    => '5827|Invitation sendt igen',
 		'user.password_set'     => '5828|Adgangskode valgt',
 		'user.password'         => '5829|Adgangskode ændret',
+		'user.password_reset'   => '5869|Adgangskode nulstillet',
+		'user.role_confirmed'   => '5890|Rolle bekræftet',
 		'user.twofactor'        => '5830|Tofaktor-login ændret',
 		'user.2fa_changed'      => '5830|Tofaktor-login ændret',
 		'user.contact'          => '5831|Kontaktoplysninger ændret',

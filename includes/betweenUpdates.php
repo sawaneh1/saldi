@@ -744,4 +744,8 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify("ALTER TABLE brugere ADD COLUMN status boolean", __FILE__ . " linje " . __LINE__);
 }
 
+// 20260930 Sawaneh Roles stage 2 (§6.2): every user without a role gets one; other rights patterns become
+// custom roles, kept for review on the dashboard. Last in the file, after the audit_log columns exist.
+perm_migrate_users();
+
 ?>

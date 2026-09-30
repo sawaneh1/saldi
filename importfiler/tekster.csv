@@ -5456,3 +5456,41 @@
 5856	%s havde allerede rollen.	%s already had the role.	%s hadde allerede rollen.
 5857	%s er ikke inviteret og fik ingen invitation.	%s are not invited and got no invitation.	%s er ikke invitert og fikk ingen invitasjon.
 5858	%s invitationer kunne ikke sendes. Åbn brugeren for at få linket.	%s invitations could not be sent. Open the user to get the link.	%s invitasjoner kunne ikke sendes. Åpne brukeren for å få lenken.
+5859	Midlertidig adgangskode til %s i Saldi	Temporary password for %s in Saldi	Midlertidig passord til %s i Saldi
+5860	%s har bedt om en ny adgangskode til dig i regnskabet %s.	%s has requested a new password for you in the company %s.	%s har bedt om et nytt passord til deg i regnskapet %s.
+5861	Midlertidig adgangskode	Temporary password	Midlertidig passord
+5862	Den gælder til %s. Vælg derefter en ny adgangskode under Personlige indstillinger.	It is valid until %s. Then choose a new password under Personal settings.	Det gjelder til %s. Velg deretter et nytt passord under Personlige innstillinger.
+5863	En midlertidig adgangskode er sendt til brugerens e-mail	A temporary password has been sent to the user's email	Et midlertidig passord er sendt til brukerens e-post
+5864	Brugeren har ingen gyldig e-mail	The user has no valid email	Brukeren har ingen gyldig e-post
+5865	E-mailen kunne ikke sendes. Tjek e-mailopsætningen under Indstillinger.	The email could not be sent. Check the email setup under Settings.	E-posten kunne ikke sendes. Sjekk e-postoppsettet under Innstillinger.
+5866	Brugeren er lukket. Genåbn brugeren først.	The user is closed. Reopen the user first.	Brukeren er lukket. Gjenåpne brukeren først.
+5867	Send en midlertidig adgangskode til brugerens e-mail?	Send a temporary password to the user's email?	Sende et midlertidig passord til brukerens e-post?
+5868	Nulstil adgangskode	Reset password	Nullstill passord
+5869	Adgangskode nulstillet	Password reset	Passord nullstilt
+5870	Forrige	Previous	Forrige
+5871	Næste	Next	Neste
+5872	%s–%s af %s	%s–%s of %s	%s–%s av %s
+5873	Med 2FA	With 2FA	Med 2FA
+5874	Uden 2FA	Without 2FA	Uten 2FA
+5875	Alle roller	All roles	Alle roller
+5876	Klik for at sortere	Click to sort	Klikk for å sortere
+5877	Tilpasset rolle %s	Custom role %s	Tilpasset rolle %s
+5878	Oprettet ved overgangen til roller ud fra de gamle rettigheder: %s	Created when moving to roles, from the old rights: %s	Opprettet ved overgangen til roller ut fra de gamle rettighetene: %s
+5879	Saldi har oversat jeres %s brugere til roller. %s har fuld adgang som Administrator, %s fik en tilpasset rolle. Gennemgå fordelingen.	Saldi has translated your %s users to roles. %s have full access as Administrator, %s got a custom role. Review the distribution.	Saldi har oversatt deres %s brukere til roller. %s har full tilgang som Administrator, %s fikk en tilpasset rolle. Gå gjennom fordelingen.
+5880	Gennemgå	Review	Gå gjennom
+5881	Skjul	Hide	Skjul
+5882	Migreret, ikke bekræftet	Migrated, not confirmed	Migrert, ikke bekreftet
+5883	Ikke bekræftet	Not confirmed	Ikke bekreftet
+5884	Rollen er sat automatisk ud fra brugerens gamle rettigheder. Forslag: %s.	The role was set automatically from the user's old rights. Suggestion: %s.	Rollen er satt automatisk ut fra brukerens gamle rettigheter. Forslag: %s.
+5885	Brug forslaget	Use the suggestion	Bruk forslaget
+5886	Behold %s	Keep %s	Behold %s
+5887	Anvend forslag på valgte	Apply suggestion to selected	Bruk forslag på valgte
+5888	%s brugere er bekræftet.	%s users confirmed.	%s brukere er bekreftet.
+5889	Rollen er bekræftet	The role is confirmed	Rollen er bekreftet
+5890	Rolle bekræftet	Role confirmed	Rolle bekreftet
+5891	Vælg en rolle	Choose a role	Velg en rolle
+5892	Gennemgå roller	Review roles	Gå gjennom roller
+5893	læs	read	les
+5894	%s var allerede bekræftet.	%s were already confirmed.	%s var allerede bekreftet.
+5895	%s brugere har fået en rolle automatisk og venter på at blive bekræftet.	%s users were given a role automatically and are waiting to be confirmed.	%s brukere har fått en rolle automatisk og venter på å bli bekreftet.
+5896	Brugerens rolle er allerede bekræftet	The user's role is already confirmed	Brukerens rolle er allerede bekreftet

@@ -28,6 +28,8 @@
 //                  last-administrator rule.
 // 20260929 Sawaneh Invitation flow (§8.4): user_invite, resend, welcome mail, first password.
 // 20260930 Sawaneh Close, reopen and role change report 'already'/'unchanged' instead of success when nothing changes.
+// 20260930 Sawaneh Reset password by mail (§8.2), shared mail sender, last active from live sessions (§8.1).
+// 20260930 Sawaneh Confirming a migrated role (§6.3); any role change counts as the confirmation.
 
 include_once(__DIR__ . '/permissions.php');
 
@@ -230,7 +232,34 @@ function user_set_role(int $id, int $roleId, int $selfId, string $kilde = 'ui'):
 	}
 	db_modify("update brugere set role_id = " . ($roleId > 0 ? $roleId : 'null') . " where id = $id", __FILE__ . " linje " . __LINE__);
 	perm_sync_user($id);
+	perm_review_done($id);
 	audit_log('user.role_changed', (string) $r['brugernavn'] . ': ' . user_role_label($current) . ' -> ' . user_role_label($roleId), 'bruger', (string) $id, $kilde);
+	return '';
+}
+
+/**
+ * Confirm a role the migration set (spec §6.3): keep it, or take the suggested standard role.
+ *
+ * @return string '' on success, else 'notreview', 'missing' or an error from user_set_role()
+ */
+function user_confirm_role(int $id, bool $useSuggestion, int $selfId, string $kilde = 'ui'): string
+{
+	$pending = perm_review_pending();
+	if (!isset($pending[$id])) {
+		return 'notreview';
+	}
+	$r = db_fetch_array(db_select("select * from brugere where id = $id", __FILE__ . " linje " . __LINE__));
+	if (!$r) {
+		return 'missing';
+	}
+	if ($useSuggestion) {
+		$suggestion = perm_covering_role($pending[$id]);
+		if ($suggestion && $suggestion['id'] !== (int) $r['role_id']) {
+			return user_set_role($id, $suggestion['id'], $selfId, $kilde);
+		}
+	}
+	perm_review_done($id);
+	audit_log('user.role_confirmed', (string) $r['brugernavn'] . ': ' . user_role_label((int) $r['role_id']), 'bruger', (string) $id, $kilde);
 	return '';
 }
 
@@ -318,9 +347,91 @@ function user_invite_link(string $token): string
  */
 function user_invite_mail(int $id, string $token, int $sprogId): bool
 {
-	global $brugernavn, $charset;
+	global $brugernavn;
 	$r = db_fetch_array(db_select("select * from brugere where id = $id", __FILE__ . " linje " . __LINE__));
-	$to = $r ? trim((string) ifset($r, 'email', '')) : '';
+	if (!$r) {
+		return false;
+	}
+	$h = 'user_mail_h';
+	$firmName = user_company_name();
+	$link = user_invite_link($token);
+	$body = '<p>' . sprintf($h(findtekst('5774|%s har inviteret dig til regnskabet %s i Saldi.', $sprogId)), '<b>' . $h($brugernavn) . '</b>', '<b>' . $h($firmName) . '</b>') . '</p>';
+	$body .= '<p>' . $h(findtekst('225|Brugernavn', $sprogId)) . ': <b>' . $h($r['brugernavn']) . '</b><br>';
+	$body .= $h(findtekst('5553|Rolle', $sprogId)) . ': <b>' . $h(user_role_name((int) $r['role_id'])) . '</b></p>';
+	$body .= '<p><a href="' . $h($link) . '">' . $h(findtekst('5775|Vælg din adgangskode', $sprogId)) . '</a><br>' . $h($link) . '</p>';
+	$body .= '<p>' . $h(findtekst('5776|Linket gælder i 72 timer.', $sprogId)) . '</p>';
+	if (in_array($r['twofactor'], array('t', true, '1', 1), true)) {
+		$body .= '<p>' . $h(findtekst('5777|Tofaktor-login er slået til: du får en kode på SMS eller e-mail, hver gang du logger ind.', $sprogId)) . '</p>';
+	}
+	return user_send_mail((string) ifset($r, 'email', ''), sprintf(findtekst('5773|Invitation til %s i Saldi', $sprogId), $firmName), $body);
+}
+
+/**
+ * Send a temporary password to the user's own e-mail (spec §8.2 "Reset password", the same
+ * mail as forgotten password). Valid for one hour; the user then chooses a new password.
+ *
+ * @return string '' on success, else 'missing', 'closed', 'noemail', 'mailfailed'
+ */
+function user_reset_password(int $id, int $sprogId, string $kilde = 'ui'): string
+{
+	global $brugernavn;
+	include_once(__DIR__ . '/tmpCode.php');
+	$r = db_fetch_array(db_select("select * from brugere where id = $id", __FILE__ . " linje " . __LINE__));
+	if (!$r) {
+		return 'missing';
+	}
+	if (!user_row_active($r)) {
+		return 'closed';
+	}
+	$to = trim((string) ifset($r, 'email', ''));
+	if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+		return 'noemail';
+	}
+	$code = substr(str_replace(array('+', '/', '='), '', base64_encode(random_bytes(12))), 0, 10);
+	$expire = time() + 3600;
+	$h = 'user_mail_h';
+	$login = user_company_login_name();
+	$body = '<p>' . sprintf($h(findtekst('5860|%s har bedt om en ny adgangskode til dig i regnskabet %s.', $sprogId)), '<b>' . $h($brugernavn) . '</b>', '<b>' . $h(user_company_name()) . '</b>') . '</p>';
+	$body .= '<p>' . $h(findtekst('322|Regnskab', $sprogId)) . ': <b>' . $h($login) . '</b><br>';
+	$body .= $h(findtekst('225|Brugernavn', $sprogId)) . ': <b>' . $h($r['brugernavn']) . '</b><br>';
+	$body .= $h(findtekst('5861|Midlertidig adgangskode', $sprogId)) . ': <b>' . $h($code) . '</b></p>';
+	$body .= '<p>' . $h(sprintf(findtekst('5862|Den gælder til %s. Vælg derefter en ny adgangskode under Personlige indstillinger.', $sprogId), date('d-m-Y H:i', $expire))) . '</p>';
+	if (!user_send_mail($to, sprintf(findtekst('5859|Midlertidig adgangskode til %s i Saldi', $sprogId), user_company_name()), $body)) {
+		return 'mailfailed';
+	}
+	db_modify("update brugere set tmp_kode = '" . db_escape_string(tmp_code_make('reset', $expire, $code)) . "' where id = $id", __FILE__ . " linje " . __LINE__);
+	audit_log('user.password_reset', $to, 'bruger', (string) $id, $kilde);
+	return '';
+}
+
+function user_mail_h($s): string
+{
+	global $charset;
+	return htmlspecialchars((string) $s, ENT_QUOTES, (isset($charset) && $charset) ? (string) $charset : 'UTF-8');
+}
+
+function user_company_name(): string
+{
+	$r = db_fetch_array(db_select("select firmanavn from adresser where art = 'S'", __FILE__ . " linje " . __LINE__));
+	return ($r && trim((string) $r['firmanavn']) !== '') ? (string) $r['firmanavn'] : 'Saldi';
+}
+
+/**
+ * The name typed in the login's company field (regnskab.regnskab in the master database).
+ */
+function user_company_login_name(): string
+{
+	global $db;
+	$r = db_fetch_array(db_select("select regnskab from regnskab where db = '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__, true));
+	return $r ? (string) $r['regnskab'] : '';
+}
+
+/**
+ * Send an HTML mail through the company's mail setup (Indstillinger → SMTP).
+ */
+function user_send_mail(string $to, string $subject, string $body): bool
+{
+	global $charset;
 	if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
 		return false;
 	}
@@ -335,24 +446,10 @@ function user_invite_mail(int $id, string $token, int $sprogId): bool
 		return false;
 	}
 	require_once $autoload;
-
 	$firm = db_fetch_array(db_select("select * from adresser where art = 'S'", __FILE__ . " linje " . __LINE__));
-	$firmName = $firm ? (string) $firm['firmanavn'] : 'Saldi';
+	$firmName = user_company_name();
 	$firmMail = $firm ? trim((string) $firm['email']) : '';
 	$enc = (isset($charset) && $charset) ? (string) $charset : 'UTF-8';
-	$h = function ($s) use ($enc) {
-		return htmlspecialchars((string) $s, ENT_QUOTES, $enc);
-	};
-	$link = user_invite_link($token);
-	$body = '<p>' . sprintf($h(findtekst('5774|%s har inviteret dig til regnskabet %s i Saldi.', $sprogId)), '<b>' . $h($brugernavn) . '</b>', '<b>' . $h($firmName) . '</b>') . '</p>';
-	$body .= '<p>' . $h(findtekst('225|Brugernavn', $sprogId)) . ': <b>' . $h($r['brugernavn']) . '</b><br>';
-	$body .= $h(findtekst('5553|Rolle', $sprogId)) . ': <b>' . $h(user_role_name((int) $r['role_id'])) . '</b></p>';
-	$body .= '<p><a href="' . $h($link) . '">' . $h(findtekst('5775|Vælg din adgangskode', $sprogId)) . '</a><br>' . $h($link) . '</p>';
-	$body .= '<p>' . $h(findtekst('5776|Linket gælder i 72 timer.', $sprogId)) . '</p>';
-	if (in_array($r['twofactor'], array('t', true, '1', 1), true)) {
-		$body .= '<p>' . $h(findtekst('5777|Tofaktor-login er slået til: du får en kode på SMS eller e-mail, hver gang du logger ind.', $sprogId)) . '</p>';
-	}
-
 	try {
 		$mail = new PHPMailer\PHPMailer\PHPMailer();
 		$mail->SMTPOptions = array('ssl' => array('verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true));
@@ -377,13 +474,43 @@ function user_invite_mail(int $id, string $token, int $sprogId): bool
 		}
 		$mail->AddAddress($to);
 		$mail->IsHTML(true);
-		$mail->Subject = sprintf(findtekst('5773|Invitation til %s i Saldi', $sprogId), $firmName);
+		$mail->Subject = $subject;
 		$mail->Body = $body;
 		$mail->AltBody = html_entity_decode(strip_tags(str_replace(array('<br>', '</p>'), "\n", $body)), ENT_QUOTES, $enc);
 		return (bool) $mail->Send();
 	} catch (\Throwable $e) {
 		return false;
 	}
+}
+
+/**
+ * Latest activity per username: the live session (online.logtime, master database) or the
+ * latest login in the audit log, whichever is newer (spec §8.1 "last active").
+ *
+ * @return array<string, int> lower-case username => unix time
+ */
+function user_last_active(): array
+{
+	global $db;
+	$last = array();
+	if (audit_ready()) {
+		$q = db_select("select brugernavn, max(tidspunkt) as sidst from audit_log where handling in ('login', 'login.success') group by brugernavn", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$t = strtotime((string) $r['sidst']);
+			if ($t) {
+				$last[mb_strtolower((string) $r['brugernavn'])] = $t;
+			}
+		}
+	}
+	$q = db_select("select brugernavn, max(logtime) as sidst from online where db = '" . db_escape_string((string) $db) . "' group by brugernavn", __FILE__ . " linje " . __LINE__, true);
+	while ($r = db_fetch_array($q)) {
+		$key = mb_strtolower((string) $r['brugernavn']);
+		$t = (int) $r['sidst'];
+		if ($t > 0 && (!isset($last[$key]) || $t > $last[$key])) {
+			$last[$key] = $t;
+		}
+	}
+	return $last;
 }
 
 function user_role_name(int $roleId): string

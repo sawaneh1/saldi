@@ -193,3 +193,14 @@ html, body {
 @media (max-width: 780px) { .ur-logfilter > * { flex: 1 1 140px; } }
 .ur-table .ur-action { font-family: inherit; }
 .ur-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ur-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.ur-sortable::after { content: " ⇅"; font-size: 10px; opacity: 0.35; }
+.ur-sortable:hover { color: var(--ur-accent); }
+.ur-sortable:hover::after { opacity: 0.8; }
+.ur-sortable[aria-sort="ascending"]::after { content: " ▲"; font-size: 9px; opacity: 1; }
+.ur-sortable[aria-sort="descending"]::after { content: " ▼"; font-size: 9px; opacity: 1; }
+.ur-pager { align-items: center; }
+.ur-pager[hidden] { display: none; }
+.ur-tag-review { background: #fff6e5; color: #8a5a00; }
+.ur-review { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding: 10px 12px; border: 1px solid #f4dfb2; border-radius: 8px; background: #fff6e5; font-size: 13px; }
+.ur-review-actions { display: flex; gap: 8px; }

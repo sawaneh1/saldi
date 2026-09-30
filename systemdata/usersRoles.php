@@ -94,6 +94,8 @@ ur_view($vm);
 //                  close/reopen with one audit entry per user, reset of built-in roles; user operations
 //                  moved to includes/userFunctions.php.
 // 20260929 Sawaneh Roles stage 2 (§8.4): invite a user instead of choosing the password, resend, status Invited.
+// 20260930 Sawaneh Roles stage 2 (§8.1, §8.2): reset password by mail, last active from live sessions.
+// 20260930 Sawaneh Roles stage 2 (§6.3): review of migrated roles - confirm, use the suggestion, bulk; a role is required.
 // 20260930 Sawaneh Roles stage 2 (§7.2): audit log with filters, search, pages and CSV export; Roles tab behind
 //                  settings.roles.manage, Log tab behind settings.audit.read.
 
@@ -118,6 +120,14 @@ function ur_handle_post(array $post, int $selfId, int $regnaar): string
 			return ur_user_result(user_close((int) ifset($post, 'id', 0), $selfId), (int) ifset($post, 'id', 0), 'userclosed', true);
 		case 'reopen_user':
 			return ur_user_result(user_reopen((int) ifset($post, 'id', 0)), (int) ifset($post, 'id', 0), 'userreopened', true);
+		case 'confirm_role':
+			$id = (int) ifset($post, 'id', 0);
+			$error = user_confirm_role($id, !empty($post['use']), $selfId);
+			return 'tab=users&bruger=' . $id . '&msg=' . ($error === '' ? 'confirmed' : $error);
+		case 'reset_password':
+			$id = (int) ifset($post, 'id', 0);
+			$error = user_reset_password($id, (int) $GLOBALS['sprog_id']);
+			return 'tab=users&bruger=' . $id . '&msg=' . ($error === '' ? 'resetsent' : ($error === 'missing' ? 'usersaved' : $error));
 		case 'resend_invite':
 			return ur_resend_invite((int) ifset($post, 'id', 0));
 		case 'bulk_role':
@@ -168,6 +178,9 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 
 	if ($navn === '' || mb_strlen($navn) > 80) {
 		return $back . '&msg=name';
+	}
+	if ($roleId <= 0) {
+		return $back . '&msg=norole';
 	}
 	if ($kode !== '' && $kode !== $kode2) {
 		return $back . '&msg=pwmismatch';
@@ -312,7 +325,7 @@ function ur_bulk(array $post, int $selfId): string
 {
 	$ids = isset($post['ids']) && is_array($post['ids']) ? array_filter(array_map('intval', $post['ids'])) : array();
 	$what = isset($post['bulk']) ? (string) $post['bulk'] : 'role';
-	if (!in_array($what, array('role', 'close', 'reopen', 'resend'), true)) {
+	if (!in_array($what, array('role', 'close', 'reopen', 'resend', 'suggest'), true)) {
 		$what = 'role';
 	}
 	if (!$ids) {
@@ -330,6 +343,8 @@ function ur_bulk(array $post, int $selfId): string
 			$error = user_close($id, $selfId);
 		} elseif ($what === 'reopen') {
 			$error = user_reopen($id);
+		} elseif ($what === 'suggest') {
+			$error = user_confirm_role($id, true, $selfId);
 		} elseif ($what === 'resend') {
 			$token = user_invite_resend($id);
 			$error = ($token === '') ? 'notinvited' : (user_invite_mail($id, $token, (int) $GLOBALS['sprog_id']) ? '' : 'mailfailed');
@@ -525,6 +540,7 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		$counts[(int) $r['role_id']] = (int) $r['antal'];
 	}
 
+	$lastActive = user_last_active();
 	$lastLogin = array();
 	if (audit_ready()) {
 		$q = db_select("select bruger_id, max(tidspunkt) as sidst from audit_log where handling in ('login', 'login.success') group by bruger_id", __FILE__ . " linje " . __LINE__);
@@ -539,11 +555,17 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 
 	$users = array();
 	$withoutRole = 0;
+	$review = perm_review_pending();
 	$q = db_select("select b.*, a.navn as ansat_navn, a.initialer, a.lukket as ansat_lukket from brugere b left join ansatte a on a.id = b.ansat_id order by lower(b.brugernavn)", __FILE__ . " linje " . __LINE__);
 	while ($r = db_fetch_array($q)) {
 		$roleId = (int) $r['role_id'];
 		$suggestion = null;
-		if ($roleId <= 0) {
+		if (isset($review[(int) $r['id']])) {
+			$s = perm_covering_role($review[(int) $r['id']]);
+			if ($s && isset($rolesById[$s['id']])) {
+				$suggestion = $rolesById[$s['id']];
+			}
+		} elseif ($roleId <= 0) {
 			$withoutRole++;
 			$s = perm_suggest_role((string) $r['rettigheder']);
 			if ($s && isset($rolesById[$s['id']])) {
@@ -564,9 +586,10 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 			'role'       => isset($rolesById[$roleId]) ? $rolesById[$roleId] : null,
 			'suggestion' => $suggestion,
 			'rettigheder'=> (string) $r['rettigheder'],
-			'lastLogin'  => isset($lastLogin[(int) $r['id']]) ? $lastLogin[(int) $r['id']] : '',
+			'lastLogin'  => isset($lastActive[mb_strtolower((string) $r['brugernavn'])]) ? date('Y-m-d H:i', $lastActive[mb_strtolower((string) $r['brugernavn'])]) : '',
 			'closed'     => !user_row_active($r),
 			'invited'    => user_row_invited($r),
+			'review'     => isset($review[(int) $r['id']]),
 			'hasLoggedIn'=> isset($lastLogin[(int) $r['id']]),
 			'isRevisor'  => ((int) $r['id'] === $revisorUser),
 		);
@@ -589,7 +612,7 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		if ($wanted === 0) {
 			$editUser = array('id' => 0, 'brugernavn' => '', 'navn' => '', 'initialer' => '', 'email' => '', 'tlf' => '', 'ip' => '',
 				'twofactor' => false, 'ansat_id' => 0, 'role_id' => 0, 'role' => null, 'suggestion' => null, 'rettigheder' => '',
-				'lastLogin' => '', 'closed' => false, 'invited' => false, 'hasLoggedIn' => false, 'isRevisor' => false);
+				'lastLogin' => '', 'closed' => false, 'invited' => false, 'review' => false, 'hasLoggedIn' => false, 'isRevisor' => false);
 		}
 	}
 
@@ -667,6 +690,8 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		'adminRoleId'  => user_admin_role_id(),
 		'users'        => $users,
 		'withoutRole'  => $withoutRole,
+		'reviewCount'  => count($review),
+		'statusFilter' => (isset($get['status']) && in_array($get['status'], array('active', 'invited', 'closed', 'review'), true)) ? (string) $get['status'] : '',
 		'roles'        => $roles,
 		'roleCounts'   => $counts,
 		'employees'    => $employees,
