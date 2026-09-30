@@ -53,6 +53,10 @@ include(__DIR__ . "/../includes/std_func.php");
 include_once(__DIR__ . "/../includes/userFunctions.php");
 include(__DIR__ . "/usersRolesIncludes/view.php");
 
+// Rows per page of the audit log. Declared before any code that reads it: a const statement is
+// not hoisted like the functions further down.
+const UR_LOG_PAGE = 100;
+
 require_permission('settings.users.manage', 'read');
 
 $contextQuery = (!empty($_GET['inframe']) ? 'inframe=1' : '');
@@ -73,6 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	exit;
 }
 
+if (isset($_GET['tab'], $_GET['export']) && $_GET['tab'] === 'log' && $_GET['export'] === 'csv') {
+	if (!perm_can('settings.audit.read', 'read') || !perm_can('settings.import_export', 'read')) {
+		ob_end_clean();
+		header('Location: usersRoles.php?' . ($contextQuery !== '' ? $contextQuery . '&' : '') . 'tab=log&msg=noaccess');
+		exit;
+	}
+	ur_export_log($_GET, (string) $db_encode);
+	exit;
+}
+
 $vm = ur_view_model($_GET, (int) $bruger_id, (int) $sprog_id, (string) $db_encode, $contextQuery);
 ur_view($vm);
 
@@ -80,6 +94,8 @@ ur_view($vm);
 //                  close/reopen with one audit entry per user, reset of built-in roles; user operations
 //                  moved to includes/userFunctions.php.
 // 20260929 Sawaneh Roles stage 2 (§8.4): invite a user instead of choosing the password, resend, status Invited.
+// 20260930 Sawaneh Roles stage 2 (§7.2): audit log with filters, search, pages and CSV export; Roles tab behind
+//                  settings.roles.manage, Log tab behind settings.audit.read.
 
 // ================================================================== controller
 
@@ -89,6 +105,10 @@ ur_view($vm);
 function ur_handle_post(array $post, int $selfId, int $regnaar): string
 {
 	$action = isset($post['action']) ? (string) $post['action'] : '';
+	$roleActions = array('reset_role', 'save_role', 'delete_role', 'copy_role', 'set_enforce');
+	if (in_array($action, $roleActions, true) && !perm_can('settings.roles.manage', 'write')) {
+		return 'tab=users&msg=noaccess';
+	}
 	switch ($action) {
 		case 'save_user':
 			return ur_save_user($post, $selfId, $regnaar);
@@ -292,6 +312,9 @@ function ur_bulk(array $post, int $selfId): string
 {
 	$ids = isset($post['ids']) && is_array($post['ids']) ? array_filter(array_map('intval', $post['ids'])) : array();
 	$what = isset($post['bulk']) ? (string) $post['bulk'] : 'role';
+	if (!in_array($what, array('role', 'close', 'reopen', 'resend'), true)) {
+		$what = 'role';
+	}
 	if (!$ids) {
 		return 'tab=users';
 	}
@@ -299,7 +322,9 @@ function ur_bulk(array $post, int $selfId): string
 	if ($what === 'role' && ($roleId <= 0 || !ur_role_assignable($roleId))) {
 		return 'tab=users&msg=' . ($roleId <= 0 ? 'norole' : 'escalation');
 	}
-	$skipped = 0;
+	// Only real changes count as done; everything else is reported with its reason.
+	$done = 0;
+	$why = array();
 	foreach ($ids as $id) {
 		if ($what === 'close') {
 			$error = user_close($id, $selfId);
@@ -307,15 +332,37 @@ function ur_bulk(array $post, int $selfId): string
 			$error = user_reopen($id);
 		} elseif ($what === 'resend') {
 			$token = user_invite_resend($id);
-			$error = ($token !== '' && user_invite_mail($id, $token, (int) $GLOBALS['sprog_id'])) ? '' : 'notsent';
+			$error = ($token === '') ? 'notinvited' : (user_invite_mail($id, $token, (int) $GLOBALS['sprog_id']) ? '' : 'mailfailed');
 		} else {
 			$error = user_set_role($id, $roleId, $selfId);
 		}
-		if ($error !== '') {
-			$skipped++;
+		if ($error === '') {
+			$done++;
+		} elseif ($error !== 'missing') {
+			$why[$error] = isset($why[$error]) ? $why[$error] + 1 : 1;
 		}
 	}
-	return 'tab=users&msg=' . ($what === 'role' ? 'assigned' : 'bulkdone') . ($skipped > 0 ? '&skipped=' . $skipped : '');
+	$reasons = array();
+	foreach ($why as $reason => $count) {
+		$reasons[] = $reason . ':' . $count;
+	}
+	return 'tab=users&msg=bulk&act=' . $what . '&done=' . $done . ($reasons ? '&why=' . implode(',', $reasons) : '');
+}
+
+/**
+ * "reason:count,reason:count" from the redirect, validated.
+ *
+ * @return array<string, int>
+ */
+function ur_parse_why(string $raw): array
+{
+	$out = array();
+	foreach (explode(',', $raw) as $part) {
+		if (preg_match('/^([a-z]{1,20}):(\d{1,6})$/', $part, $m)) {
+			$out[$m[1]] = (int) $m[2];
+		}
+	}
+	return $out;
 }
 
 /**
@@ -461,8 +508,10 @@ function ur_copy_role(int $id): string
  */
 function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, string $contextQuery): array
 {
+	$canRoles = perm_can('settings.roles.manage', 'read');
+	$canAudit = perm_can('settings.audit.read', 'read');
 	$tab = isset($get['tab']) ? (string) $get['tab'] : 'users';
-	if (!in_array($tab, array('users', 'roles', 'log'), true)) {
+	if (!in_array($tab, array('users', 'roles', 'log'), true) || ($tab === 'roles' && !$canRoles) || ($tab === 'log' && !$canAudit)) {
 		$tab = 'users';
 	}
 	$roles = perm_roles();
@@ -564,12 +613,30 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 	}
 
 	$log = array();
+	$logMore = false;
+	$logFilter = ur_log_filter($get);
+	$logOptions = array('users' => array(), 'objects' => array());
 	$unguarded = array();
 	$wouldDeny = array();
 	if ($tab === 'log' && audit_ready()) {
-		$q = db_select("select tidspunkt, brugernavn, handling, detaljer, ip from audit_log order by id desc limit 200", __FILE__ . " linje " . __LINE__);
+		$cols = ur_audit_columns();
+		$q = db_select("select * from audit_log where " . ur_log_where($logFilter, $cols) . " order by id desc limit " . (UR_LOG_PAGE + 1) . " offset " . ($logFilter['side'] * UR_LOG_PAGE), __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
 			$log[] = $r;
+		}
+		if (count($log) > UR_LOG_PAGE) {
+			array_pop($log);
+			$logMore = true;
+		}
+		$q = db_select("select distinct brugernavn from audit_log where brugernavn != '' order by brugernavn limit 300", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$logOptions['users'][] = (string) $r['brugernavn'];
+		}
+		if (isset($cols['objekt_type'])) {
+			$q = db_select("select distinct objekt_type from audit_log where objekt_type is not null and objekt_type != '' order by objekt_type", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$logOptions['objects'][] = (string) $r['objekt_type'];
+			}
 		}
 		// Logging-period overview (spec 3.3 step 2): which pages still lack a key, and
 		// what would have been refused, grouped so the admin can judge before switching.
@@ -594,6 +661,9 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		'selfId'       => $selfId,
 		'msg'          => isset($get['msg']) ? (string) $get['msg'] : '',
 		'skipped'      => isset($get['skipped']) ? (int) $get['skipped'] : 0,
+		'done'         => isset($get['done']) ? (int) $get['done'] : 0,
+		'act'          => isset($get['act']) ? (string) $get['act'] : '',
+		'why'          => ur_parse_why(isset($get['why']) ? (string) $get['why'] : ''),
 		'adminRoleId'  => user_admin_role_id(),
 		'users'        => $users,
 		'withoutRole'  => $withoutRole,
@@ -605,9 +675,183 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		'inviteLink'   => $inviteLink,
 		'editRole'     => $editRole,
 		'log'          => $log,
+		'logMore'      => $logMore,
+		'logFilter'    => $logFilter,
+		'logOptions'   => $logOptions,
+		'canRoles'     => $canRoles,
+		'canRolesWrite'=> perm_can('settings.roles.manage', 'write'),
+		'canAudit'     => $canAudit,
+		'canExport'    => perm_can('settings.import_export', 'read'),
+		'userNames'    => array_column($users, 'brugernavn', 'id'),
 		'unguarded'    => $unguarded,
 		'wouldDeny'    => $wouldDeny,
 		'enforceMode'  => perm_enforcement_mode(),
 		'tablesReady'  => perm_tables_ready(),
 	);
+}
+
+// ================================================================== audit log (spec §7.2)
+
+
+/**
+ * Action types of the filter and the actions (handling, LIKE patterns) each covers.
+ *
+ * @return array<string, array<int, string>>
+ */
+function ur_log_types(): array
+{
+	return array(
+		'login'      => array('login%', 'logout'),
+		'session'    => array('session.%'),
+		'user'       => array('user.%', 'revisor.%'),
+		'role'       => array('role.%', 'permissions.mode'),
+		'permission' => array('permission.%', 'would-deny', 'unguarded', 'denied', 'csrf'),
+		'setting'    => array('setting.%', 'integration.%'),
+	);
+}
+
+/**
+ * The filter from the query string, validated.
+ *
+ * @return array{fra: string, til: string, bruger: string, type: string, objekt: string, q: string, wd: bool, side: int}
+ */
+function ur_log_filter(array $get): array
+{
+	$date = function ($v) {
+		$v = trim((string) $v);
+		return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && checkdate((int) substr($v, 5, 2), (int) substr($v, 8, 2), (int) substr($v, 0, 4)) ? $v : '';
+	};
+	$type = isset($get['type']) ? (string) $get['type'] : '';
+	return array(
+		'fra'    => $date(ifset($get, 'fra', '')),
+		'til'    => $date(ifset($get, 'til', '')),
+		'bruger' => mb_substr(trim((string) ifset($get, 'bruger', '')), 0, 80),
+		'type'   => isset(ur_log_types()[$type]) ? $type : '',
+		'objekt' => preg_match('/^[a-z_]{1,30}$/', (string) ifset($get, 'objekt', '')) ? (string) $get['objekt'] : '',
+		'q'      => mb_substr(trim((string) ifset($get, 'q', '')), 0, 80),
+		'wd'     => !empty($get['wd']),
+		'side'   => max(0, min(10000, (int) ifset($get, 'side', 0))),
+	);
+}
+
+/**
+ * The query string of a filter, for links that keep it.
+ */
+function ur_log_query(array $f, array $override = array()): string
+{
+	$f = array_merge($f, $override);
+	$parts = array('tab' => 'log');
+	foreach (array('fra', 'til', 'bruger', 'type', 'objekt', 'q') as $k) {
+		if ($f[$k] !== '') {
+			$parts[$k] = $f[$k];
+		}
+	}
+	if ($f['wd']) {
+		$parts['wd'] = 1;
+	}
+	if ($f['side'] > 0) {
+		$parts['side'] = $f['side'];
+	}
+	return http_build_query($parts);
+}
+
+/**
+ * Columns of audit_log that exist on this installation.
+ *
+ * @return array<string, bool>
+ */
+function ur_audit_columns(): array
+{
+	static $cols = null;
+	if ($cols === null) {
+		$cols = array();
+		$q = db_select("select column_name from information_schema.columns where table_name = 'audit_log'", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$cols[strtolower((string) $r['column_name'])] = true;
+		}
+	}
+	return $cols;
+}
+
+function ur_log_where(array $f, array $cols): string
+{
+	$w = array('1 = 1');
+	if ($f['fra'] !== '') {
+		$w[] = "tidspunkt >= '" . $f['fra'] . "'";
+	}
+	if ($f['til'] !== '') {
+		$w[] = "tidspunkt < '" . date('Y-m-d', strtotime($f['til'] . ' +1 day')) . "'";
+	}
+	if ($f['bruger'] !== '') {
+		$w[] = "brugernavn = '" . db_escape_string($f['bruger']) . "'";
+	}
+	if ($f['wd']) {
+		$w[] = "handling in ('permission.would_deny', 'would-deny')";
+	} elseif ($f['type'] !== '') {
+		$or = array();
+		foreach (ur_log_types()[$f['type']] as $pattern) {
+			$or[] = "handling like '" . db_escape_string($pattern) . "'";
+		}
+		$w[] = '(' . implode(' or ', $or) . ')';
+	}
+	if ($f['objekt'] !== '' && isset($cols['objekt_type'])) {
+		$w[] = "objekt_type = '" . db_escape_string($f['objekt']) . "'";
+	}
+	if ($f['q'] !== '') {
+		$like = "'%" . db_escape_string(mb_strtolower($f['q'])) . "%'";
+		$or = array("lower(brugernavn) like $like", "lower(detaljer) like $like");
+		if (isset($cols['objekt_id'])) {
+			$or[] = "lower(objekt_id) like $like";
+			// A user as object is stored by id: a search for the name finds it too.
+			$ids = array();
+			$q = db_select("select id from brugere where lower(brugernavn) like $like limit 50", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$ids[] = "'" . (int) $r['id'] . "'";
+			}
+			if ($ids) {
+				$or[] = "(objekt_type = 'bruger' and objekt_id in (" . implode(',', $ids) . "))";
+			}
+		}
+		if (isset($cols['setting_key'])) {
+			$or[] = "lower(setting_key) like $like";
+		}
+		$w[] = '(' . implode(' or ', $or) . ')';
+	}
+	return implode(' and ', $w);
+}
+
+/**
+ * The filtered log as CSV (semicolon, UTF-8). Cells that a spreadsheet would read as a
+ * formula are prefixed with an apostrophe.
+ */
+function ur_export_log(array $get, string $dbEncode): void
+{
+	$filter = ur_log_filter($get);
+	$filter['side'] = 0;
+	$cols = ur_audit_columns();
+	$cell = function ($v) use ($dbEncode) {
+		$v = (string) $v;
+		if ($dbEncode !== 'UTF8') {
+			$v = mb_convert_encoding($v, 'UTF-8', 'ISO-8859-1');
+		}
+		return ($v !== '' && strpbrk($v[0], "=+-@\t\r") !== false) ? "'" . $v : $v;
+	};
+	audit_log('audit.exported', ur_log_query($filter), 'audit_log', '');
+	while (ob_get_level() > 0) {
+		ob_end_clean();
+	}
+	header('Content-Type: text/csv; charset=UTF-8');
+	header('Content-Disposition: attachment; filename="audit-log-' . date('Ymd-Hi') . '.csv"');
+	header('Cache-Control: no-store');
+	$out = fopen('php://output', 'w');
+	fwrite($out, "\xEF\xBB\xBF");
+	fputcsv($out, array('tidspunkt', 'brugernavn', 'handling', 'objekt_type', 'objekt_id', 'detaljer', 'ip', 'kilde'), ';');
+	$q = db_select("select * from audit_log where " . ur_log_where($filter, $cols) . " order by id desc limit 100000", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		fputcsv($out, array_map($cell, array(
+			substr((string) $r['tidspunkt'], 0, 19), $r['brugernavn'], $r['handling'],
+			ifset($r, 'objekt_type', ''), ifset($r, 'objekt_id', ''), $r['detaljer'], $r['ip'], ifset($r, 'kilde', ''),
+		)), ';');
+	}
+	fclose($out);
 }

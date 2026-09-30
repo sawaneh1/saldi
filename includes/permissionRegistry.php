@@ -28,6 +28,7 @@
 // 20260928 Sawaneh pos.kasse key (own group) so point-of-sale access is granted per role.
 // 20260928 Sawaneh Settings-area keys (phase 4, spec S3), one per group of the settings front page.
 // 20260928 Sawaneh Keys and groups aligned with Requirements_settings_redesign_EN.md §4 (11 groups).
+// 20260930 Sawaneh Roles stage 2 (§3.1): settings.roles.manage and settings.audit.read.
 
 /**
  * Every permission key the system knows. A key is granted at level none / read / write.
@@ -84,6 +85,8 @@ function permission_registry(): array
 		'settings.pos'           => array('group' => 'settingsarea', 'label' => '2226|Kasse',             'legacy' => array(), 'dangerous' => false, 'derive' => 1, 'since' => '20260928'),
 
 		'settings.users.manage'  => array('group' => 'settings', 'label' => '5536|Brugere & roller',   'legacy' => array(),   'dangerous' => true),
+		'settings.roles.manage'  => array('group' => 'settings', 'label' => '5550|Roller',             'legacy' => array(),   'dangerous' => true, 'since' => '20260930'),
+		'settings.audit.read'    => array('group' => 'settings', 'label' => '5796|Audit-log',          'legacy' => array(),   'dangerous' => false, 'since' => '20260930'),
 		'settings.integrations'  => array('group' => 'settings', 'label' => '5537|Integrationer',      'legacy' => array(),   'dangerous' => true),
 		'settings.integrations.keys' => array('group' => 'settings', 'label' => '5540|API-nøgler',     'legacy' => array(),   'dangerous' => true, 'renamed_from' => 'settings.api'),
 		'settings.smtp'          => array('group' => 'settings', 'label' => '5541|E-mail/SMTP',        'legacy' => array(),   'dangerous' => true),
@@ -140,7 +143,7 @@ function permission_default_roles(): array
 			'levels'      => array(
 				'finans.kassekladde' => 'write', 'finans.regnskab' => 'write', 'finans.rapporter' => 'write',
 				'system.kontoplan' => 'write', 'system.indstillinger' => 'read',
-				'settings.finance' => 'write', 'settings.company' => 'read',
+				'settings.finance' => 'write', 'settings.company' => 'read', 'settings.audit.read' => 'read',
 				'debitor.konti' => 'write', 'debitor.rapporter' => 'write',
 				'kreditor.konti' => 'write', 'kreditor.rapporter' => 'write',
 				'debitor.ordre' => 'read', 'kreditor.ordre' => 'read',
@@ -182,6 +185,7 @@ function permission_default_roles(): array
 			'levels'      => array(
 				'finans.kassekladde' => 'read', 'finans.regnskab' => 'read', 'finans.rapporter' => 'read',
 				'system.kontoplan' => 'read', 'debitor.rapporter' => 'read', 'kreditor.rapporter' => 'read',
+				'settings.audit.read' => 'read',
 			),
 		),
 	);

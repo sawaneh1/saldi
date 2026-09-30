@@ -61,6 +61,7 @@
 //                  shared is_input_too_long() from std_func.php.
 // 20260916 Sawaneh Successful login written to audit_log (roles & permissions, spec R7).
 // 20260929 Sawaneh Roles stage 2 (§8.4, §8.6): tmp_kode read and written in the common format; ?invite= opens the invitation page.
+// 20260930 Sawaneh Roles stage 2 (§7.1): login.failed, login.2fa_failed, login.ip_blocked and session.forced_logout in the audit log.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 if (isset($_GET['invite'])) {
@@ -369,6 +370,7 @@ while($row = db_fetch_array($query)) {
 }
 if (isset($_POST['force_logout']) && isset($_POST['user_to_logout'])) {
     $user_to_logout = db_escape_string($_POST['user_to_logout']);
+    $forcedLogoutOf = (string) $_POST['user_to_logout'];
     
     // Remove the selected user from online table
     $qtxt = "DELETE FROM online WHERE brugernavn = '$user_to_logout' AND db = '$db'";
@@ -453,6 +455,7 @@ if (isset ($brug_timestamp)) {
 		$accepted_ips = explode(',', $accepted_ips);
 		if (!in_array($ip_address, $accepted_ips)) {
 			$fejltxt = "Din IP-adresse er ikke godkendt til at logge ind.";
+			login_audit('login.ip_blocked', (string) $brugernavn, isset($r['id']) ? (string) $r['id'] : '');
 			echo "<script type='text/javascript'>
 				alert(" . json_encode($fejltxt) . ");
 					window.location.href = 'index.php';
@@ -761,6 +764,9 @@ if ($userId) {
 	include_once("../includes/permissions.php");
 	if (function_exists('audit_log')) {
 		audit_log('login.success', $db, 'session', (string) $db);
+		if (!empty($forcedLogoutOf)) {
+			audit_log('session.forced_logout', $brugernavn . ' -> ' . $forcedLogoutOf, 'session', (string) $db);
+		}
 	}
 
 	# ###################################################
@@ -809,6 +815,7 @@ if ($userId) {
 				$status = "success";
 			} else {
 				$status = "Ikke en valid kode, prøv igen";
+				login_audit('login.2fa_failed', (string) $brugernavn, (string) $bruger_id);
 			}
 		}
 		if ($bruger_id && $tlf_num) {
@@ -971,6 +978,7 @@ if (!$sag_rettigheder&&$rettigheder) {
 		print "<meta http-equiv=\"refresh\" content=\"0;URL=index.php\">";
 	}
 } else {
+	login_audit('login.failed', (string) $brugernavn, '');
 	include("../includes/connect.php");
 	db_modify("delete from online where session_id='$s_id'",__FILE__ . " linje " . __LINE__);
 	include("../includes/std_func.php");
@@ -978,6 +986,19 @@ if (!$sag_rettigheder&&$rettigheder) {
 	login($regnskab,$brugernavn,$fejltxt);
 #	print "<meta http-equiv=\"refresh\" content=\"0;URL=index.php?regnskab=".htmlentities($regnskab,ENT_COMPAT,$charset)."&navn=".htmlentities($brugernavn,ENT_COMPAT,$charset)."\">";
 	exit;
+}
+
+/**
+ * Audit entry for a refused login (roles stage 2, §7.1), written to the company database the
+ * connection points at. Never the password or a code.
+ */
+function login_audit($handling, $attemptedName, $userId) {
+	global $db, $sqdb;
+	if (!$db || $db == $sqdb) return;
+	include_once("../includes/permissions.php");
+	if (function_exists('audit_log')) {
+		audit_log($handling, 'brugernavn: ' . mb_substr((string) $attemptedName, 0, 80), $userId !== '' ? 'bruger' : '', (string) $userId, 'login');
+	}
 }
 
 function online($regnskab,$db,$userId,$brugernavn,$password,$timestamp,$s_id) {

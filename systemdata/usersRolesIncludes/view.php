@@ -25,6 +25,11 @@
 // 20260916 Sawaneh View functions for systemdata/usersRoles.php (users, roles matrix, audit log).
 // 20260928 Sawaneh Back button top-left in the theme colour, as elsewhere in the system (was Close top-right).
 // 20260929 Sawaneh Roles stage 2 (§8.4): Invite user / Create user, status Invited, resend invitation.
+// 20260930 Sawaneh Roles stage 2 (§7.2): audit log filters, search, pages, CSV export, readable actions.
+// 20260930 Sawaneh Back goes one step up: from a user or role card to its list, from a list to the settings
+//                  front page (the history fallback landed on the old VAT page);
+//                  password fields on the user card are not filled in by the browser; bulk results say how
+//                  many were done and why the rest were skipped; own card says why it cannot be closed.
 
 /**
  * @param array<string, mixed> $vm From ur_view_model().
@@ -45,12 +50,12 @@ function ur_view(array $vm): void
 	$roleName = function (?array $role) use ($sprog, $t): string {
 		return $role ? htmlspecialchars(perm_role_name($role, $sprog), ENT_QUOTES, 'UTF-8') : $t('5554|Ingen rolle');
 	};
-	$flash = ur_flash($vm['msg'], $sprog, isset($vm['skipped']) ? (int) $vm['skipped'] : 0);
+	$flash = ($vm['msg'] === 'bulk') ? ur_bulk_flash($vm['act'], (int) $vm['done'], $vm['why'], $sprog) : ur_flash($vm['msg'], $sprog);
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(findtekst('5536|Brugere & roller', $sprog), 'UTF-8', $charset)) ?>;</script>
 <div class="ur-page">
-  <a class="ur-back" style="<?= $h(ur_back_style()) ?>" href="<?= $h(function_exists('nav_back_url') ? nav_back_url('syssetup.php') : 'syssetup.php') ?>"><i class='bx bx-arrow-back'></i><?= $t('5647|Tilbage') ?></a>
+  <a class="ur-back" style="<?= $h(ur_back_style()) ?>" href="<?= $h($vm['editUser'] !== null ? $vm['linkPrefix'] . 'tab=users' : ($vm['editRole'] !== null ? $vm['linkPrefix'] . 'tab=roles' : 'settings.php')) ?>"><i class='bx bx-arrow-back'></i><?= $t('5647|Tilbage') ?></a>
   <header class="ur-head">
     <div>
       <h1><i class='bx bx-group'></i><?= $t('5536|Brugere & roller') ?></h1>
@@ -68,8 +73,8 @@ function ur_view(array $vm): void
 
   <nav class="ur-tabs">
     <a class="<?= $vm['tab'] === 'users' ? 'on' : '' ?>" href="<?= $link('tab=users') ?>"><i class='bx bx-user'></i><?= $t('5549|Brugere') ?><span class="ur-count"><?= count($vm['users']) ?></span></a>
-    <a class="<?= $vm['tab'] === 'roles' ? 'on' : '' ?>" href="<?= $link('tab=roles') ?>"><i class='bx bx-shield-quarter'></i><?= $t('5550|Roller') ?><span class="ur-count"><?= count($vm['roles']) ?></span></a>
-    <a class="<?= $vm['tab'] === 'log' ? 'on' : '' ?>" href="<?= $link('tab=log') ?>"><i class='bx bx-history'></i><?= $t('5551|Log') ?></a>
+    <?php if ($vm['canRoles']) { ?><a class="<?= $vm['tab'] === 'roles' ? 'on' : '' ?>" href="<?= $link('tab=roles') ?>"><i class='bx bx-shield-quarter'></i><?= $t('5550|Roller') ?><span class="ur-count"><?= count($vm['roles']) ?></span></a><?php } ?>
+    <?php if ($vm['canAudit']) { ?><a class="<?= $vm['tab'] === 'log' ? 'on' : '' ?>" href="<?= $link('tab=log') ?>"><i class='bx bx-history'></i><?= $t('5796|Audit-log') ?></a><?php } ?>
   </nav>
 
   <?php
@@ -84,7 +89,7 @@ function ur_view(array $vm): void
 		}
 		ur_view_roles($vm, $h, $t, $link, $roleName);
 	} else {
-		ur_view_log($vm, $h, $t);
+		ur_view_log($vm, $h, $t, $link);
 	}
 	?>
 </div>
@@ -106,18 +111,44 @@ function ur_view(array $vm): void
 	}
 	if (search) { search.addEventListener('input', applyFilters); }
 	if (statusFilter) { statusFilter.addEventListener('change', applyFilters); }
+	// A bulk button is only active when it applies to at least one ticked user, and its
+	// confirmation counts only those users.
+	function applies(tr, rule) {
+		var st = tr.dataset.status, self = tr.dataset.self === '1';
+		if (rule === 'notself') { return !self; }
+		if (rule === 'open') { return !self && st !== 'closed'; }
+		return st === rule;
+	}
+	function applicable(rule) {
+		var n = 0;
+		document.querySelectorAll('#ur-users tbody input[name="ids[]"]:checked').forEach(function (cb) {
+			if (applies(cb.closest('tr'), rule)) { n++; }
+		});
+		return n;
+	}
+	function refreshBulk() {
+		document.querySelectorAll('[data-applies]').forEach(function (b) { b.disabled = applicable(b.dataset.applies) === 0; });
+	}
 	document.querySelectorAll('[data-bulk-confirm]').forEach(function (b) {
 		b.addEventListener('click', function (e) {
-			var n = document.querySelectorAll('#ur-users input[name="ids[]"]:checked').length;
+			var n = b.dataset.applies ? applicable(b.dataset.applies) : document.querySelectorAll('#ur-users input[name="ids[]"]:checked').length;
 			if (n === 0 || !window.confirm(b.dataset.bulkConfirm + ' (' + n + ')?')) { e.preventDefault(); }
 		});
 	});
+	document.addEventListener('change', function (e) { if (e.target.name === 'ids[]' || e.target.id === 'ur-check-all') { refreshBulk(); } });
+	refreshBulk();
 	var all = document.getElementById('ur-check-all');
 	if (all) {
 		all.addEventListener('change', function () {
 			document.querySelectorAll('#ur-users tbody tr:not([hidden]) input[name="ids[]"]').forEach(function (cb) { cb.checked = all.checked; });
+			refreshBulk();
 		});
 	}
+	// Browsers fill a saved login into the password fields of another user's card; the fields
+	// stay read-only until the admin clicks into them.
+	document.querySelectorAll('input[data-nofill]').forEach(function (i) {
+		if (!i.disabled) { i.addEventListener('focus', function () { i.removeAttribute('readonly'); }, { once: true }); }
+	});
 	document.querySelectorAll('form[data-confirm]').forEach(function (f) {
 		f.addEventListener('submit', function (e) {
 			if (!window.confirm(f.dataset.confirm)) { e.preventDefault(); }
@@ -142,7 +173,45 @@ function ur_back_style(): string
 /**
  * @return array{type: string, text: string}|null
  */
-function ur_flash(string $msg, int $sprog, int $skipped = 0): ?array
+/**
+ * Result of a bulk action: how many were really changed, and why the rest were not.
+ *
+ * @param array<string, int> $why reason => number of users
+ * @return array{type: string, text: string}
+ */
+function ur_bulk_flash(string $act, int $done, array $why, int $sprog): array
+{
+	$doneText = array(
+		'close'  => '5849|%s brugere er lukket.',
+		'reopen' => '5850|%s brugere er genåbnet.',
+		'resend' => '5851|%s invitationer er sendt igen.',
+		'role'   => '5852|%s brugere har fået ny rolle.',
+	);
+	$reasonText = array(
+		'already'    => array('close' => '5854|%s var allerede lukket.', 'reopen' => '5855|%s var allerede aktive.'),
+		'unchanged'  => '5856|%s havde allerede rollen.',
+		'notinvited' => '5857|%s er ikke inviteret og fik ingen invitation.',
+		'mailfailed' => '5858|%s invitationer kunne ikke sendes. Åbn brugeren for at få linket.',
+		'self'       => '5846|Du kan ikke lukke din egen bruger.',
+		'ownrole'    => '5761|Du kan ikke ændre din egen rolle',
+		'lastadmin'  => '5760|Regnskabet skal have mindst én administrator.',
+		'escalation' => '5577|Du kan ikke tildele flere rettigheder, end du selv har',
+	);
+	$act = isset($doneText[$act]) ? $act : 'role';
+	$parts = array($done > 0 ? sprintf(findtekst($doneText[$act], $sprog), $done) : findtekst('5853|Ingen brugere blev ændret.', $sprog));
+	foreach ($why as $reason => $count) {
+		if (!isset($reasonText[$reason])) {
+			continue;
+		}
+		$text = is_array($reasonText[$reason]) ? (isset($reasonText[$reason][$act]) ? $reasonText[$reason][$act] : '') : $reasonText[$reason];
+		if ($text !== '') {
+			$parts[] = rtrim(strpos($text, '%s') !== false ? sprintf(findtekst($text, $sprog), $count) : findtekst($text, $sprog), '.') . '.';
+		}
+	}
+	return array('type' => $done > 0 ? 'ok' : 'err', 'text' => implode(' ', $parts));
+}
+
+function ur_flash(string $msg, int $sprog): ?array
 {
 	$map = array(
 		'usersaved'   => array('ok',  '5572|Brugeren er gemt'),
@@ -170,15 +239,13 @@ function ur_flash(string $msg, int $sprog, int $skipped = 0): ?array
 		'invitelink'  => array('err', '5783|E-mailen kunne ikke sendes. Send dette link til brugeren.'),
 		'emailrequired' => array('err', '5786|En gyldig e-mail er påkrævet for at invitere'),
 		'notinvited'  => array('err', '5794|Brugeren har allerede valgt en adgangskode'),
+		'noaccess'    => array('err', '5809|Du har ikke adgang til dette'),
+		'already'     => array('err', '5853|Ingen brugere blev ændret.'),
 	);
 	if (!isset($map[$msg])) {
 		return null;
 	}
-	$text = findtekst($map[$msg][1], $sprog);
-	if ($skipped > 0) {
-		$text .= ' ' . sprintf(findtekst('5772|%s brugere blev sprunget over', $sprog), $skipped);
-	}
-	return array('type' => $map[$msg][0], 'text' => $text);
+	return array('type' => $map[$msg][0], 'text' => findtekst($map[$msg][1], $sprog));
 }
 
 function ur_view_users(array $vm, callable $h, callable $t, callable $link, callable $roleName): void
@@ -229,10 +296,10 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
           <option value="<?= (int) $role['id'] ?>"><?= $roleName($role) ?></option>
           <?php } ?>
         </select>
-        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="role"><i class='bx bx-user-check'></i><?= $t('1091|Opdater') ?></button>
-        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="close" data-bulk-confirm="<?= $t('5764|Luk valgte') ?>"><i class='bx bx-lock-alt'></i><?= $t('5764|Luk valgte') ?></button>
-        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="reopen" data-bulk-confirm="<?= $t('5765|Genåbn valgte') ?>"><i class='bx bx-lock-open-alt'></i><?= $t('5765|Genåbn valgte') ?></button>
-        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="resend" data-bulk-confirm="<?= $t('5781|Send invitation igen') ?>"><i class='bx bx-envelope'></i><?= $t('5781|Send invitation igen') ?></button>
+        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="role" data-applies="notself" data-bulk-confirm="<?= $t('5560|Tildel rolle til valgte') ?>"><i class='bx bx-user-check'></i><?= $t('1091|Opdater') ?></button>
+        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="close" data-applies="open" data-bulk-confirm="<?= $t('5764|Luk valgte') ?>"><i class='bx bx-lock-alt'></i><?= $t('5764|Luk valgte') ?></button>
+        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="reopen" data-applies="closed" data-bulk-confirm="<?= $t('5765|Genåbn valgte') ?>"><i class='bx bx-lock-open-alt'></i><?= $t('5765|Genåbn valgte') ?></button>
+        <button class="ur-btn ur-btn-ghost" type="submit" name="bulk" value="resend" data-applies="invited" data-bulk-confirm="<?= $t('5781|Send invitation igen') ?>"><i class='bx bx-envelope'></i><?= $t('5781|Send invitation igen') ?></button>
       </div>
       <a class="ur-btn ur-btn-ghost" href="<?= $link('tab=users&bruger=0&mode=classic') ?>"><i class='bx bx-plus'></i><?= $t('5780|Opret bruger') ?></a>
       <a class="ur-btn ur-btn-primary" href="<?= $link('tab=users&bruger=0') ?>"><i class='bx bx-envelope'></i><?= $t('5779|Inviter bruger') ?></a>
@@ -257,7 +324,7 @@ function ur_view_users(array $vm, callable $h, callable $t, callable $link, call
           <?php foreach ($vm['users'] as $u) {
           	$searchBlob = mb_strtolower($u['navn'] . ' ' . $u['brugernavn'] . ' ' . $u['email'] . ' ' . ($u['role'] ? perm_role_name($u['role'], $vm['sprogId']) : ''));
           ?>
-          <tr data-search="<?= $h($searchBlob) ?>" data-status="<?= $u['closed'] ? 'closed' : ($u['invited'] ? 'invited' : 'active') ?>"<?= ($vm['editUser'] && $vm['editUser']['id'] === $u['id']) ? ' class="on"' : '' ?>>
+          <tr data-search="<?= $h($searchBlob) ?>" data-status="<?= $u['closed'] ? 'closed' : ($u['invited'] ? 'invited' : 'active') ?>"<?= $u['id'] === $vm['selfId'] ? ' data-self="1"' : '' ?><?= ($vm['editUser'] && $vm['editUser']['id'] === $u['id']) ? ' class="on"' : '' ?>>
             <?php if ($vm['canWrite']) { ?><td class="ur-cb"><input type="checkbox" name="ids[]" value="<?= (int) $u['id'] ?>"></td><?php } ?>
             <td><a class="ur-userlink" href="<?= $link('tab=users&bruger=' . $u['id']) ?>"><span class="ur-avatar"><?= $h(mb_strtoupper(mb_substr($u['initialer'] !== '' ? $u['initialer'] : $u['navn'], 0, 2))) ?></span><?= $h($u['navn']) ?><?php if ($u['isRevisor']) { ?><span class="ur-tag"><?= $t('2562|Revisor') ?></span><?php } ?></a></td>
             <td class="ur-mut"><?= $h($u['brugernavn']) ?></td>
@@ -335,12 +402,12 @@ function ur_view_user_card(array $vm, callable $h, callable $t, callable $link, 
         <?php if (!$inviteNew) { ?>
         <div class="ur-field">
           <label><?= $t('324|Adgangskode') ?></label>
-          <input class="ur-input" type="password" name="kode" autocomplete="new-password"<?= $ro ?>>
+          <input class="ur-input" type="password" name="kode" autocomplete="new-password" readonly data-nofill<?= $ro ?>>
           <?php if (!$isNew) { ?><span class="ur-help"><?= $t('5525|Lad felterne stå tomme for at beholde din adgangskode') ?></span><?php } ?>
         </div>
         <div class="ur-field">
           <label><?= $t('328|Gentag adgangskode') ?></label>
-          <input class="ur-input" type="password" name="kode2" autocomplete="new-password"<?= $ro ?>>
+          <input class="ur-input" type="password" name="kode2" autocomplete="new-password" readonly data-nofill<?= $ro ?>>
         </div>
         <?php } ?>
         <div class="ur-field">
@@ -394,6 +461,9 @@ function ur_view_user_card(array $vm, callable $h, callable $t, callable $link, 
       <button class="ur-btn ur-btn-ghost" type="submit"><i class='bx bx-envelope'></i><?= $t('5781|Send invitation igen') ?></button>
     </form>
     <?php } ?>
+    <?php if ($vm['canWrite'] && !$isNew && $u['id'] === $vm['selfId']) { ?>
+    <p class="ur-help ur-danger"><?= $t('5846|Du kan ikke lukke din egen bruger.') ?></p>
+    <?php } ?>
     <?php if ($vm['canWrite'] && !$isNew && $u['id'] !== $vm['selfId']) { ?>
     <div class="ur-danger">
       <p class="ur-help"><?= $t('5770|Lukkede brugere kan ikke logge ind og kan genåbnes senere.') ?></p>
@@ -425,7 +495,7 @@ function ur_view_roles(array $vm, callable $h, callable $t, callable $link, call
 	?>
   <div class="ur-toolbar">
     <span class="ur-spacer"></span>
-    <?php if ($vm['canWrite']) { ?>
+    <?php if ($vm['canRolesWrite']) { ?>
     <a class="ur-btn ur-btn-primary" href="<?= $link('tab=roles&rolle=0') ?>"><i class='bx bx-plus'></i><?= $t('5565|Ny rolle') ?></a>
     <?php } ?>
   </div>
@@ -442,8 +512,8 @@ function ur_view_roles(array $vm, callable $h, callable $t, callable $link, call
       <div class="ur-rolecard-foot">
         <span class="ur-mut"><i class='bx bx-user'></i> <?= (int) $count ?> <?= $t('5549|Brugere') ?></span>
         <span class="ur-spacer"></span>
-        <a class="ur-btn ur-btn-ghost ur-btn-sm" href="<?= $link('tab=roles&rolle=' . $role['id']) ?>"><i class='bx bx-edit-alt'></i><?= $vm['canWrite'] ? $t('5567|Rediger') : $t('5569|Rettigheder') ?></a>
-        <?php if ($vm['canWrite']) { ?>
+        <a class="ur-btn ur-btn-ghost ur-btn-sm" href="<?= $link('tab=roles&rolle=' . $role['id']) ?>"><i class='bx bx-edit-alt'></i><?= $vm['canRolesWrite'] ? $t('5567|Rediger') : $t('5569|Rettigheder') ?></a>
+        <?php if ($vm['canRolesWrite']) { ?>
         <form method="post" action="<?= $h($vm['selfUrl']) ?>"><input type="hidden" name="action" value="copy_role"><input type="hidden" name="id" value="<?= (int) $role['id'] ?>"><button class="ur-btn ur-btn-ghost ur-btn-sm" type="submit"><i class='bx bx-copy'></i><?= $t('5566|Kopiér') ?></button></form>
         <?php if (!$role['system']) { ?>
         <form method="post" action="<?= $h($vm['selfUrl']) ?>" data-confirm="<?= $t('5586|Slet rolle?') ?> <?= $roleName($role) ?>"><input type="hidden" name="action" value="delete_role"><input type="hidden" name="id" value="<?= (int) $role['id'] ?>"><button class="ur-btn ur-btn-ghost ur-btn-sm ur-txt-danger" type="submit"<?= $count > 0 ? ' disabled' : '' ?>><i class='bx bx-trash'></i><?= $t('1099|Slet') ?></button></form>
@@ -460,7 +530,7 @@ function ur_view_role_editor(array $vm, callable $h, callable $t, callable $link
 {
 	$role = $vm['editRole'];
 	$isNew = ($role['id'] === 0);
-	$ro = $vm['canWrite'] ? '' : ' disabled';
+	$ro = $vm['canRolesWrite'] ? '' : ' disabled';
 	$rank = perm_level_rank();
 	$registry = permission_registry();
 	$name = $isNew ? '' : perm_role_name($role, $vm['sprogId']);
@@ -509,13 +579,13 @@ function ur_view_role_editor(array $vm, callable $h, callable $t, callable $link
         </div>
         <?php } ?>
       </div>
-      <?php if ($vm['canWrite']) { ?>
+      <?php if ($vm['canRolesWrite']) { ?>
       <div class="ur-actions">
         <button class="ur-btn ur-btn-primary" type="submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button>
       </div>
       <?php } ?>
     </form>
-    <?php if ($vm['canWrite'] && !$isNew && $role['system']) { ?>
+    <?php if ($vm['canRolesWrite'] && !$isNew && $role['system']) { ?>
     <form method="post" action="<?= $h($vm['selfUrl']) ?>" class="ur-danger" data-confirm="<?= $t('5767|Nulstil rollen til standard?') ?>">
       <input type="hidden" name="action" value="reset_role"><input type="hidden" name="id" value="<?= (int) $role['id'] ?>">
       <button class="ur-btn ur-btn-ghost" type="submit"><i class='bx bx-reset'></i><?= $t('5717|Nulstil til standard') ?></button>
@@ -525,10 +595,20 @@ function ur_view_role_editor(array $vm, callable $h, callable $t, callable $link
 	<?php
 }
 
-function ur_view_log(array $vm, callable $h, callable $t): void
+function ur_view_log(array $vm, callable $h, callable $t, callable $link): void
 {
 	$mode = $vm['enforceMode'];
+	$f = $vm['logFilter'];
+	$types = array(
+		'login'      => '5810|Login og logud',
+		'session'    => '5811|Sessioner',
+		'user'       => '5549|Brugere',
+		'role'       => '5550|Roller',
+		'permission' => '5812|Rettigheder og sikkerhed',
+		'setting'    => '122|Indstillinger',
+	);
 	?>
+  <?php if ($vm['canRoles']) { ?>
   <section class="ur-card ur-editor">
     <div class="ur-editor-head">
       <h2><i class='bx bx-lock-alt'></i><?= $t('5595|Håndhævelse') ?></h2>
@@ -536,9 +616,9 @@ function ur_view_log(array $vm, callable $h, callable $t): void
     <p class="ur-mut" style="margin:0 0 12px"><?= $t('5601|Skift til "Afvis" først, når listen over sider uden nøgle er tom, og alle "ville være afvist"-hændelser er forventede.') ?></p>
     <form method="post" action="<?= $h($vm['selfUrl']) ?>" class="ur-enforce">
       <input type="hidden" name="action" value="set_enforce">
-      <label class="ur-check"><input type="radio" name="mode" value="log"<?= $mode === 'log' ? ' checked' : '' ?><?= $vm['canWrite'] ? '' : ' disabled' ?>><span><b><?= $t('5596|Log kun (intet blokeres)') ?></b></span></label>
-      <label class="ur-check"><input type="radio" name="mode" value="deny"<?= $mode === 'deny' ? ' checked' : '' ?><?= $vm['canWrite'] ? '' : ' disabled' ?>><span><b><?= $t('5597|Afvis (standard-afvis er slået til)') ?></b></span></label>
-      <?php if ($vm['canWrite']) { ?><button class="ur-btn ur-btn-primary" type="submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button><?php } ?>
+      <label class="ur-check"><input type="radio" name="mode" value="log"<?= $mode === 'log' ? ' checked' : '' ?><?= $vm['canRolesWrite'] ? '' : ' disabled' ?>><span><b><?= $t('5596|Log kun (intet blokeres)') ?></b></span></label>
+      <label class="ur-check"><input type="radio" name="mode" value="deny"<?= $mode === 'deny' ? ' checked' : '' ?><?= $vm['canRolesWrite'] ? '' : ' disabled' ?>><span><b><?= $t('5597|Afvis (standard-afvis er slået til)') ?></b></span></label>
+      <?php if ($vm['canRolesWrite']) { ?><button class="ur-btn ur-btn-primary" type="submit"><i class='bx bx-save'></i><?= $t('3|Gem') ?></button><?php } ?>
     </form>
     <div class="ur-grid" style="margin-top:16px">
       <div>
@@ -555,18 +635,57 @@ function ur_view_log(array $vm, callable $h, callable $t): void
       </div>
     </div>
   </section>
+  <?php } ?>
+
+  <form method="get" action="usersRoles.php" class="ur-logfilter">
+    <?php if (strpos($vm['linkPrefix'], 'inframe=1') !== false) { ?><input type="hidden" name="inframe" value="1"><?php } ?>
+    <input type="hidden" name="tab" value="log">
+    <?php if ($f['wd']) { ?><input type="hidden" name="wd" value="1"><?php } ?>
+    <label><span><?= $t('5797|Fra') ?></span><input class="ur-input" type="date" name="fra" value="<?= $h($f['fra']) ?>"></label>
+    <label><span><?= $t('5798|Til') ?></span><input class="ur-input" type="date" name="til" value="<?= $h($f['til']) ?>"></label>
+    <select class="ur-select ur-select-sm" name="bruger" aria-label="<?= $t('225|Brugernavn') ?>">
+      <option value=""><?= $t('5799|Alle brugere') ?></option>
+      <?php foreach ($vm['logOptions']['users'] as $name) { ?><option value="<?= $h($name) ?>"<?= $name === $f['bruger'] ? ' selected' : '' ?>><?= $h($name) ?></option><?php } ?>
+    </select>
+    <select class="ur-select ur-select-sm" name="type" aria-label="<?= $t('5582|Handling') ?>"<?= $f['wd'] ? ' disabled' : '' ?>>
+      <option value=""><?= $t('5800|Alle handlinger') ?></option>
+      <?php foreach ($types as $key => $label) { ?><option value="<?= $h($key) ?>"<?= $key === $f['type'] ? ' selected' : '' ?>><?= $t($label) ?></option><?php } ?>
+    </select>
+    <?php if ($vm['logOptions']['objects']) { ?>
+    <select class="ur-select ur-select-sm" name="objekt" aria-label="<?= $t('5806|Objekt') ?>">
+      <option value=""><?= $t('5801|Alle objekter') ?></option>
+      <?php foreach ($vm['logOptions']['objects'] as $o) { ?><option value="<?= $h($o) ?>"<?= $o === $f['objekt'] ? ' selected' : '' ?>><?= $h($o) ?></option><?php } ?>
+    </select>
+    <?php } ?>
+    <div class="ur-search"><i class='bx bx-search'></i><input type="search" name="q" value="<?= $h($f['q']) ?>" placeholder="<?= $t('5802|Søg i brugernavn og objekt…') ?>"></div>
+    <button class="ur-btn ur-btn-primary" type="submit"><i class='bx bx-filter-alt'></i><?= $t('5803|Filtrér') ?></button>
+    <a class="ur-btn ur-btn-ghost" href="<?= $link('tab=log') ?>"><?= $t('5804|Nulstil filtre') ?></a>
+  </form>
+  <div class="ur-toolbar">
+    <a class="ur-btn ur-btn-sm <?= $f['wd'] ? 'ur-btn-primary' : 'ur-btn-ghost' ?>" href="<?= $link(ur_log_query($f, array('wd' => !$f['wd'], 'type' => '', 'side' => 0))) ?>"><i class='bx bx-block'></i><?= $t('5600|Ville være afvist') ?></a>
+    <span class="ur-mut ur-grow"><?= $h(sprintf(findtekst('5845|Viser %s–%s', $vm['sprogId']), $vm['log'] ? $f['side'] * UR_LOG_PAGE + 1 : 0, $f['side'] * UR_LOG_PAGE + count($vm['log']))) ?></span>
+    <?php if ($vm['canExport']) { ?><a class="ur-btn ur-btn-ghost ur-btn-sm" href="<?= $link(ur_log_query($f, array('side' => 0)) . '&export=csv') ?>" download><i class='bx bx-download'></i><?= $t('5805|Eksportér CSV') ?></a><?php } ?>
+  </div>
 
   <div class="ur-card ur-table-wrap">
-    <p class="ur-mut ur-pad"><?= $t('5592|Kun de seneste 200 hændelser vises') ?></p>
     <table class="ur-table">
-      <thead><tr><th><?= $t('5581|Tidspunkt') ?></th><th><?= $t('225|Brugernavn') ?></th><th><?= $t('5582|Handling') ?></th><th><?= $t('5583|Detaljer') ?></th><th>IP</th></tr></thead>
+      <thead><tr><th><?= $t('5581|Tidspunkt') ?></th><th><?= $t('225|Brugernavn') ?></th><th><?= $t('5582|Handling') ?></th><th><?= $t('5806|Objekt') ?></th><th><?= $t('5583|Detaljer') ?></th><th>IP</th></tr></thead>
       <tbody>
-        <?php foreach ($vm['log'] as $row) { ?>
+        <?php foreach ($vm['log'] as $row) {
+        	$handling = (string) $row['handling'];
+        	$label = ur_action_label($handling);
+        	$object = ur_log_object($row, $vm['userNames']);
+        	$details = (string) $row['detaljer'];
+        	if (!empty($row['setting_key'])) {
+        		$details = trim((string) $row['setting_key'] . ': ' . (string) ifset($row, 'old_value', '') . ' → ' . (string) ifset($row, 'new_value', '') . ' ' . $details);
+        	}
+        ?>
         <tr>
           <td class="ur-mut ur-nowrap"><?= $h(substr((string) $row['tidspunkt'], 0, 19)) ?></td>
           <td><?= $h($row['brugernavn']) ?></td>
-          <td><span class="ur-action ur-action-<?= $h(str_replace('.', '-', (string) $row['handling'])) ?>"><?= $h($row['handling']) ?></span></td>
-          <td class="ur-mut"><?= $h($row['detaljer']) ?></td>
+          <td class="ur-nowrap"><span class="ur-action ur-action-<?= $h(preg_replace('/[^a-z0-9]+/', '-', $handling)) ?>" title="<?= $h($handling) ?>"><?= $label !== '' ? $t($label) : $h($handling) ?></span></td>
+          <td class="ur-mut"><?= $h($object) ?></td>
+          <td class="ur-mut ur-details"><?php if (mb_strlen($details) > 90) { ?><details><summary><?= $h(mb_substr($details, 0, 90)) ?>…</summary><?= $h($details) ?></details><?php } else { ?><?= $h($details) ?><?php } ?></td>
           <td class="ur-mut ur-nowrap"><?= $h($row['ip']) ?></td>
         </tr>
         <?php } ?>
@@ -574,5 +693,76 @@ function ur_view_log(array $vm, callable $h, callable $t): void
     </table>
     <?php if (!$vm['log']) { ?><div class="ur-empty"><?= $t('5584|Ingen hændelser endnu') ?></div><?php } ?>
   </div>
+  <?php if ($f['side'] > 0 || $vm['logMore']) { ?>
+  <div class="ur-pager">
+    <?php if ($f['side'] > 0) { ?><a class="ur-btn ur-btn-ghost ur-btn-sm" href="<?= $link(ur_log_query($f, array('side' => $f['side'] - 1))) ?>"><i class='bx bx-chevron-left'></i><?= $t('5808|Nyere') ?></a><?php } ?>
+    <?php if ($vm['logMore']) { ?><a class="ur-btn ur-btn-ghost ur-btn-sm" href="<?= $link(ur_log_query($f, array('side' => $f['side'] + 1))) ?>"><?= $t('5807|Ældre') ?><i class='bx bx-chevron-right'></i></a><?php } ?>
+  </div>
+  <?php } ?>
 	<?php
+}
+
+/**
+ * Readable name of an audit action (text id), or '' for an action without one.
+ */
+function ur_action_label(string $handling): string
+{
+	$map = array(
+		'login'                 => '5813|Logget ind',
+		'login.success'         => '5813|Logget ind',
+		'login.failed'          => '5814|Login afvist',
+		'login.2fa_failed'      => '5815|Forkert tofaktor-kode',
+		'login.ip_blocked'      => '5816|IP-adresse afvist',
+		'logout'                => '5817|Logget ud',
+		'session.revisor_open'  => '5818|Regnskab åbnet fra admin',
+		'session.forced_logout' => '5819|Bruger logget ud af en anden',
+		'user.created'          => '5820|Bruger oprettet',
+		'user.updated'          => '5821|Bruger ændret',
+		'user.deactivated'      => '5822|Bruger lukket',
+		'user.reactivated'      => '5823|Bruger genåbnet',
+		'user.deleted'          => '5824|Bruger slettet',
+		'user.role_changed'     => '5825|Brugerens rolle skiftet',
+		'user.invited'          => '5826|Bruger inviteret',
+		'user.invite_resent'    => '5827|Invitation sendt igen',
+		'user.password_set'     => '5828|Adgangskode valgt',
+		'user.password'         => '5829|Adgangskode ændret',
+		'user.twofactor'        => '5830|Tofaktor-login ændret',
+		'user.2fa_changed'      => '5830|Tofaktor-login ændret',
+		'user.contact'          => '5831|Kontaktoplysninger ændret',
+		'user.settings'         => '5832|Personlige indstillinger ændret',
+		'role.created'          => '5833|Rolle oprettet',
+		'role.updated'          => '5834|Rolle ændret',
+		'role.deleted'          => '5835|Rolle slettet',
+		'role.reset'            => '5836|Rolle nulstillet',
+		'permission.would_deny' => '5600|Ville være afvist',
+		'would-deny'            => '5600|Ville være afvist',
+		'unguarded'             => '5837|Side uden rettighedsnøgle',
+		'denied'                => '5838|Adgang afvist',
+		'csrf'                  => '5839|Ugyldig formular (CSRF)',
+		'permissions.mode'      => '5599|Håndhævelsen er ændret',
+		'setting.change'        => '5840|Indstilling ændret',
+		'setting.action'        => '5841|Indstillingshandling udført',
+		'revisor.set'           => '5842|Revisor valgt',
+		'revisor.unset'         => '5843|Revisor fjernet',
+		'audit.exported'        => '5844|Audit-log eksporteret',
+	);
+	return isset($map[$handling]) ? $map[$handling] : '';
+}
+
+/**
+ * What an entry is about: a user by name, else type and id.
+ *
+ * @param array<int, string> $userNames
+ */
+function ur_log_object(array $row, array $userNames): string
+{
+	$type = (string) ifset($row, 'objekt_type', '');
+	$id = (string) ifset($row, 'objekt_id', '');
+	if ($type === 'bruger' && isset($userNames[(int) $id])) {
+		return $userNames[(int) $id];
+	}
+	if ($type === '' && !empty($row['setting_key'])) {
+		return (string) $row['section'];
+	}
+	return trim($type . ' ' . $id);
 }

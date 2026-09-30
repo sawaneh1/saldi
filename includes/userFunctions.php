@@ -27,6 +27,7 @@
 //                  the API share them: create, close instead of delete, reopen, the
 //                  last-administrator rule.
 // 20260929 Sawaneh Invitation flow (§8.4): user_invite, resend, welcome mail, first password.
+// 20260930 Sawaneh Close, reopen and role change report 'already'/'unchanged' instead of success when nothing changes.
 
 include_once(__DIR__ . '/permissions.php');
 
@@ -132,7 +133,7 @@ function user_create(array $data, string $kilde = 'ui'): int
  * Close a user: no login, sessions ended, linked employee closed as before. The row stays,
  * so the audit trail keeps its originator.
  *
- * @return string '' on success, else the reason: 'self', 'lastadmin', 'missing'
+ * @return string '' on success, else the reason: 'self', 'lastadmin', 'missing', 'already'
  */
 function user_close(int $id, int $selfId, string $kilde = 'ui'): string
 {
@@ -142,6 +143,9 @@ function user_close(int $id, int $selfId, string $kilde = 'ui'): string
 	$r = db_fetch_array(db_select("select * from brugere where id = $id", __FILE__ . " linje " . __LINE__));
 	if (!$r) {
 		return 'missing';
+	}
+	if (!user_row_active($r)) {
+		return 'already';
 	}
 	if (user_is_last_admin($id)) {
 		return 'lastadmin';
@@ -155,11 +159,17 @@ function user_close(int $id, int $selfId, string $kilde = 'ui'): string
 	return '';
 }
 
+/**
+ * @return string '' on success, else 'missing' or 'already' (the user is not closed)
+ */
 function user_reopen(int $id, string $kilde = 'ui'): string
 {
 	$r = db_fetch_array(db_select("select * from brugere where id = $id", __FILE__ . " linje " . __LINE__));
 	if (!$r) {
 		return 'missing';
+	}
+	if (user_row_active($r)) {
+		return 'already';
 	}
 	db_modify("update brugere set status = 't' where id = $id", __FILE__ . " linje " . __LINE__);
 	if ((int) $r['ansat_id'] > 0) {
@@ -197,7 +207,7 @@ function user_delete(int $id, int $selfId, string $kilde = 'ui'): string
 /**
  * Give a user another role. One audit entry per user (acceptance 9).
  *
- * @return string '' on success, else 'ownrole', 'lastadmin', 'escalation', 'missing'
+ * @return string '' on success, else 'unchanged', 'ownrole', 'lastadmin', 'escalation', 'missing'
  */
 function user_set_role(int $id, int $roleId, int $selfId, string $kilde = 'ui'): string
 {
@@ -207,7 +217,7 @@ function user_set_role(int $id, int $roleId, int $selfId, string $kilde = 'ui'):
 	}
 	$current = (int) $r['role_id'];
 	if ($current === $roleId) {
-		return '';
+		return 'unchanged';
 	}
 	if ($id === $selfId) {
 		return 'ownrole';

@@ -36,6 +36,7 @@
 // 20260904 Sawaneh WP-1.3: popup window.open links now carry popup=1 so the opened
 //                  window is treated as a popup by request, not by user preference.
 // 20260907 CDX/LH Mark the POS launcher as a popup when opening it in a new window.
+// 20260930 Sawaneh Every user passes this page right after login: open to all, or Deny mode would refuse users without Kontoplan.
 
 @session_start();	# Skal angives oeverst i filen??!!
 $s_id=session_id();
@@ -56,6 +57,7 @@ if(!isset($regnskab)){
 	exit;
 }
 $modulnr=0;
+$permission_key = 'any';
 include("../includes/connect.php");
 include("../includes/online.php");
 include("../includes/std_func.php");

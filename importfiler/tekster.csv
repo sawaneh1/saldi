@@ -5393,3 +5393,66 @@
 5793	Til login	To login	Til innlogging
 5794	Brugeren har allerede valgt en adgangskode	The user has already chosen a password	Brukeren har allerede valgt et passord
 5795	Send invitation	Send invitation	Send invitasjon
+5796	Audit-log	Audit log	Revisjonslogg
+5797	Fra	From	Fra
+5798	Til	To	Til
+5799	Alle brugere	All users	Alle brukere
+5800	Alle handlinger	All actions	Alle handlinger
+5801	Alle objekter	All objects	Alle objekter
+5802	Søg i brugernavn og objekt…	Search username and object…	Søk i brukernavn og objekt…
+5803	Filtrér	Filter	Filtrer
+5804	Nulstil filtre	Clear filters	Nullstill filtre
+5805	Eksportér CSV	Export CSV	Eksporter CSV
+5806	Objekt	Object	Objekt
+5807	Ældre	Older	Eldre
+5808	Nyere	Newer	Nyere
+5809	Du har ikke adgang til dette	You do not have access to this	Du har ikke tilgang til dette
+5810	Login og logud	Login and logout	Innlogging og utlogging
+5811	Sessioner	Sessions	Økter
+5812	Rettigheder og sikkerhed	Permissions and security	Rettigheter og sikkerhet
+5813	Logget ind	Logged in	Logget inn
+5814	Login afvist	Login refused	Innlogging avvist
+5815	Forkert tofaktor-kode	Wrong two-factor code	Feil tofaktorkode
+5816	IP-adresse afvist	IP address refused	IP-adresse avvist
+5817	Logget ud	Logged out	Logget ut
+5818	Regnskab åbnet fra admin	Company opened from admin	Regnskap åpnet fra admin
+5819	Bruger logget ud af en anden	User logged out by another	Bruker logget ut av en annen
+5820	Bruger oprettet	User created	Bruker opprettet
+5821	Bruger ændret	User changed	Bruker endret
+5822	Bruger lukket	User closed	Bruker lukket
+5823	Bruger genåbnet	User reopened	Bruker gjenåpnet
+5824	Bruger slettet	User deleted	Bruker slettet
+5825	Brugerens rolle skiftet	User's role changed	Brukerens rolle byttet
+5826	Bruger inviteret	User invited	Bruker invitert
+5827	Invitation sendt igen	Invitation resent	Invitasjon sendt på nytt
+5828	Adgangskode valgt	Password chosen	Passord valgt
+5829	Adgangskode ændret	Password changed	Passord endret
+5830	Tofaktor-login ændret	Two-factor login changed	Tofaktorinnlogging endret
+5831	Kontaktoplysninger ændret	Contact details changed	Kontaktopplysninger endret
+5832	Personlige indstillinger ændret	Personal settings changed	Personlige innstillinger endret
+5833	Rolle oprettet	Role created	Rolle opprettet
+5834	Rolle ændret	Role changed	Rolle endret
+5835	Rolle slettet	Role deleted	Rolle slettet
+5836	Rolle nulstillet	Role reset	Rolle nullstilt
+5837	Side uden rettighedsnøgle	Page without permission key	Side uten rettighetsnøkkel
+5838	Adgang afvist	Access refused	Tilgang avvist
+5839	Ugyldig formular (CSRF)	Invalid form (CSRF)	Ugyldig skjema (CSRF)
+5840	Indstilling ændret	Setting changed	Innstilling endret
+5841	Indstillingshandling udført	Settings action run	Innstillingshandling utført
+5842	Revisor valgt	Auditor chosen	Revisor valgt
+5843	Revisor fjernet	Auditor removed	Revisor fjernet
+5844	Audit-log eksporteret	Audit log exported	Revisjonslogg eksportert
+5845	Viser %s–%s	Showing %s–%s	Viser %s–%s
+5846	Du kan ikke lukke din egen bruger.	You cannot close your own user.	Du kan ikke lukke din egen bruker.
+5847	Invitationen sendes kun igen til brugere med status Inviteret.	The invitation is only resent to users with status Invited.	Invitasjonen sendes bare på nytt til brukere med status Invitert.
+5848	%s af %s brugere er opdateret.	%s of %s users updated.	%s av %s brukere er oppdatert.
+5849	%s brugere er lukket.	%s users closed.	%s brukere er lukket.
+5850	%s brugere er genåbnet.	%s users reopened.	%s brukere er gjenåpnet.
+5851	%s invitationer er sendt igen.	%s invitations resent.	%s invitasjoner er sendt på nytt.
+5852	%s brugere har fået ny rolle.	%s users got a new role.	%s brukere har fått ny rolle.
+5853	Ingen brugere blev ændret.	No users were changed.	Ingen brukere ble endret.
+5854	%s var allerede lukket.	%s were already closed.	%s var allerede lukket.
+5855	%s var allerede aktive.	%s were already active.	%s var allerede aktive.
+5856	%s havde allerede rollen.	%s already had the role.	%s hadde allerede rollen.
+5857	%s er ikke inviteret og fik ingen invitation.	%s are not invited and got no invitation.	%s er ikke invitert og fikk ingen invitasjon.
+5858	%s invitationer kunne ikke sendes. Åbn brugeren for at få linket.	%s invitations could not be sent. Open the user to get the link.	%s invitasjoner kunne ikke sendes. Åpne brukeren for å få lenken.

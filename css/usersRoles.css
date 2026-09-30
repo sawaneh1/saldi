@@ -180,3 +180,16 @@ html, body {
 .ur-select-sm { max-width: 190px; }
 .ur-danger { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ur-danger .ur-help { flex-basis: 100%; margin: 0 0 4px; }
+
+.ur-logfilter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-bottom: 10px; }
+.ur-logfilter label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 600; color: #3a4457; }
+.ur-logfilter .ur-input { height: 38px; }
+.ur-grow { flex: 1; }
+.ur-details details summary { cursor: pointer; }
+.ur-details details[open] summary { margin-bottom: 4px; }
+.ur-pager { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.ur-action-login-success, .ur-action-login { background: #e2f5ea; color: #145c35; }
+.ur-action-login-failed, .ur-action-login-2fa-failed, .ur-action-login-ip-blocked, .ur-action-csrf, .ur-action-permission-would-deny, .ur-action-would-deny { background: #fde5e0; color: #7a2214; }
+@media (max-width: 780px) { .ur-logfilter > * { flex: 1 1 140px; } }
+.ur-table .ur-action { font-family: inherit; }
+.ur-btn:disabled { opacity: 0.45; cursor: not-allowed; }
