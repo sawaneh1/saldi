@@ -51,6 +51,7 @@
 // 20260928 Sawaneh Phase 4: System → Settings opens systemdata/settings.php, shown per settings-group access.
 // 20260928 Sawaneh After the page-change confirm, clear the iframe's docChange so its beforeunload does not ask twice.
 // 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
+// 20260930 Sawaneh Dashboard items in the user menu hidden, not greyed out, away from the dashboard (Adam).
 @session_start();
 $s_id = session_id();
 
@@ -181,7 +182,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=10' rel='stylesheet'>
+<link href='../css/topbar.css?v=11' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -525,7 +526,7 @@ function brightenColor($color, $amount = 0.2) {
   // Dashboard items in the chip (Skjul/Rediger oversigt) only act on the dashboard itself.
   function topbarSetDashState(path) {
     const onDash = /\/index\/dashboard\.php$/.test(path || '');
-    document.querySelectorAll('.topbar-dash').forEach((el) => { el.disabled = !onDash; });
+    document.querySelectorAll('.topbar-dash').forEach((el) => { el.hidden = !onDash; });
   }
   function topbarDashHide() {
     const iframe = document.querySelector('.content-iframe');

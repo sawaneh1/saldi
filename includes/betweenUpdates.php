@@ -748,4 +748,12 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 // custom roles, kept for review on the dashboard. Last in the file, after the audit_log columns exist.
 perm_migrate_users();
 
+// 20260930 Sawaneh Audit log for administrators only (Adam 2026-09-30): the read level the built-in Bogholder and
+// Revisor roles got on 2026-09-30 is taken back once. Custom roles are left as their administrator set them.
+$qtxt = "select id from settings where var_grp = 'permissions' and var_name = 'audit_admin_only'";
+if (perm_tables_ready() && !db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	db_modify("delete from role_permissions where permission_key = 'settings.audit.read' and role_id in (select id from roles where role_key in ('bogholder', 'revisor'))", __FILE__ . " linje " . __LINE__);
+	db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('permissions', 'audit_admin_only', '" . date('Ymd') . "', 'Audit log read removed from Bogholder and Revisor', 0)", __FILE__ . " linje " . __LINE__);
+}
+
 ?>

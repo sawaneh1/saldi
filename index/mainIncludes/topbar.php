@@ -30,6 +30,7 @@
 // 20260927 Sawaneh Step 1b: cluster wrapper + move button (top/sidebar placement, spec 2.3);
 //                  Who is online counts every session in the company, current user marked.
 // 20260928 Sawaneh PoS shortcut shown only with the pos.kasse permission.
+// 20260930 Sawaneh Dashboard items in the user menu are hidden, not greyed out, away from the dashboard (Adam 2026-09-30).
 //                  Who is online shown to users who may manage users (settings.users.manage).
 
 /**
@@ -381,10 +382,10 @@ function topbar_render(array $ctx, int $sprogId): void
           </div>
           <?php } ?>
 
-          <div class="topbar-pop-section"><?= $t('2224|Oversigt') ?></div>
-          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" data-dash-hide="1" onclick="topbarDashHide()" disabled><i class='bx <?= $ctx['dashHidden'] ? 'bx-show' : 'bx-hide' ?>'></i><span class="topbar-dash-hide-label"><?= $ctx['dashHidden'] ? $t('5604|Vis oversigt') : $t('5603|Skjul oversigt') ?></span></button>
+          <div class="topbar-pop-section topbar-dash" hidden><?= $t('2224|Oversigt') ?></div>
+          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" data-dash-hide="1" onclick="topbarDashHide()" hidden><i class='bx <?= $ctx['dashHidden'] ? 'bx-show' : 'bx-hide' ?>'></i><span class="topbar-dash-hide-label"><?= $ctx['dashHidden'] ? $t('5604|Vis oversigt') : $t('5603|Skjul oversigt') ?></span></button>
           <?php if (!$ctx['dashHidden']) { ?>
-          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" onclick="topbarDashEdit()" disabled><i class='bx bx-edit-alt'></i><?= $t('5605|Rediger oversigt') ?></button>
+          <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" onclick="topbarDashEdit()" hidden><i class='bx bx-edit-alt'></i><?= $t('5605|Rediger oversigt') ?></button>
           <?php } ?>
 
           <?php if ($ctx['isAdmin']) { ?>

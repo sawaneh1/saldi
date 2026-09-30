@@ -43,7 +43,7 @@ $s_id = session_id();
 ob_start();
 
 $title = "Brugere & roller";
-$css = "../css/usersRoles.css";
+$css = "../css/usersRoles.css?v=20260930";
 $modulnr = 1; // legacy gate (Indstillinger)
 $permission_key = 'settings.users.manage';
 
@@ -96,6 +96,8 @@ ur_view($vm);
 // 20260929 Sawaneh Roles stage 2 (§8.4): invite a user instead of choosing the password, resend, status Invited.
 // 20260930 Sawaneh Roles stage 2 (§8.1, §8.2): reset password by mail, last active from live sessions.
 // 20260930 Sawaneh Roles stage 2 (§6.3): review of migrated roles - confirm, use the suggestion, bulk; a role is required.
+// 20260930 Sawaneh Layout after prototype_brugere_roller.html: user drawer, role list + matrix, move users when deleting
+//                  a role, IP list one per line (validated), username locked after creation.
 // 20260930 Sawaneh Roles stage 2 (§7.2): audit log with filters, search, pages and CSV export; Roles tab behind
 //                  settings.roles.manage, Log tab behind settings.audit.read.
 
@@ -139,7 +141,7 @@ function ur_handle_post(array $post, int $selfId, int $regnaar): string
 		case 'save_role':
 			return ur_save_role($post);
 		case 'delete_role':
-			return ur_delete_role((int) ifset($post, 'id', 0));
+			return ur_delete_role((int) ifset($post, 'id', 0), (int) ifset($post, 'move_to', 0), $selfId);
 		case 'copy_role':
 			return ur_copy_role((int) ifset($post, 'id', 0));
 		case 'set_enforce':
@@ -168,11 +170,19 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 	$kode2 = (string) ifset($post, 'kode2', '');
 	$roleId = (int) ifset($post, 'role_id', 0);
 	$ansatId = (int) ifset($post, 'ansat_id', 0);
-	$ip = trim((string) ifset($post, 'ip_address', ''));
+	$ipList = array_values(array_filter(preg_split('/[\s,;]+/', trim((string) ifset($post, 'ip_address', '')))));
+	$ip = implode(',', $ipList);
 	$tlf = trim((string) ifset($post, 'tlf', ''));
 	$email = trim((string) ifset($post, 'email', ''));
 	$twofactor = !empty($post['twofactor']) ? 't' : 'f';
 	$isRevisor = !empty($post['revisor']);
+	if ($id > 0) {
+		// The username is locked after creation (spec §8.2).
+		$current = db_fetch_array(db_select("select brugernavn from brugere where id = $id", __FILE__ . " linje " . __LINE__));
+		if ($current) {
+			$navn = (string) $current['brugernavn'];
+		}
+	}
 	$invite = ($id === 0 && ifset($post, 'mode', 'invite') !== 'classic');
 	$back = 'tab=users&bruger=' . $id . ($id === 0 && !$invite ? '&mode=classic' : '');
 
@@ -181,6 +191,14 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 	}
 	if ($roleId <= 0) {
 		return $back . '&msg=norole';
+	}
+	foreach ($ipList as $one) {
+		if (!filter_var($one, FILTER_VALIDATE_IP)) {
+			return $back . '&msg=badip';
+		}
+	}
+	if (strlen($ip) > 45) {
+		return $back . '&msg=iptoolong';
 	}
 	if ($kode !== '' && $kode !== $kode2) {
 		return $back . '&msg=pwmismatch';
@@ -448,7 +466,7 @@ function ur_save_role(array $post): string
 	return 'tab=roles&rolle=' . $id . '&msg=rolesaved';
 }
 
-function ur_delete_role(int $id): string
+function ur_delete_role(int $id, int $moveTo = 0, int $selfId = 0): string
 {
 	if ($id <= 0) {
 		return 'tab=roles';
@@ -456,6 +474,17 @@ function ur_delete_role(int $id): string
 	$r = db_fetch_array(db_select("select navn, system from roles where id = $id", __FILE__ . " linje " . __LINE__));
 	if (!$r || $r['system'] === 't' || $r['system'] === true || $r['system'] === '1' || $r['system'] === 1) {
 		return 'tab=roles';
+	}
+	if ($moveTo > 0 && $moveTo !== $id) {
+		// Move the users first, one by one with the usual rules and one log entry each.
+		$q = db_select("select id from brugere where role_id = $id", __FILE__ . " linje " . __LINE__);
+		$holders = array();
+		while ($u = db_fetch_array($q)) {
+			$holders[] = (int) $u['id'];
+		}
+		foreach ($holders as $uid) {
+			user_set_role($uid, $moveTo, $selfId);
+		}
 	}
 	$inUse = db_fetch_array(db_select("select id from brugere where role_id = $id limit 1", __FILE__ . " linje " . __LINE__));
 	if ($inUse) {
@@ -635,6 +664,31 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		}
 	}
 
+	if ($editRole === null && $tab === 'roles' && $roles) {
+		$editRole = $roles[0];
+		$editRole['levels'] = perm_levels_from_role($roles[0]['id']);
+	}
+	$roleChanged = false;
+	if ($editRole !== null && $editRole['system']) {
+		$defaults = permission_default_roles();
+		if (isset($defaults[$editRole['key']])) {
+			foreach ($editRole['levels'] as $key => $level) {
+				$want = isset($defaults[$editRole['key']]['levels'][$key]) ? $defaults[$editRole['key']]['levels'][$key] : 'none';
+				if ($level !== $want) {
+					$roleChanged = true;
+					break;
+				}
+			}
+		}
+	}
+	// The user drawer shows what the chosen role grants, per module, and follows the role picker.
+	$roleLevels = array();
+	if ($editUser !== null) {
+		foreach ($roles as $role) {
+			$roleLevels[$role['id']] = perm_levels_from_role($role['id']);
+		}
+	}
+
 	$log = array();
 	$logMore = false;
 	$logFilter = ur_log_filter($get);
@@ -696,6 +750,8 @@ function ur_view_model(array $get, int $selfId, int $sprogId, string $dbEncode, 
 		'roleCounts'   => $counts,
 		'employees'    => $employees,
 		'editUser'     => $editUser,
+		'roleChanged'  => $roleChanged,
+		'roleLevels'   => $roleLevels,
 		'newMode'      => (isset($get['mode']) && $get['mode'] === 'classic') ? 'classic' : 'invite',
 		'inviteLink'   => $inviteLink,
 		'editRole'     => $editRole,
@@ -747,6 +803,10 @@ function ur_log_filter(array $get): array
 		return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && checkdate((int) substr($v, 5, 2), (int) substr($v, 8, 2), (int) substr($v, 0, 4)) ? $v : '';
 	};
 	$type = isset($get['type']) ? (string) $get['type'] : '';
+	if ($type === 'wd') {
+		$get['wd'] = 1;
+		$type = '';
+	}
 	return array(
 		'fra'    => $date(ifset($get, 'fra', '')),
 		'til'    => $date(ifset($get, 'til', '')),
