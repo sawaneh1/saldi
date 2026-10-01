@@ -43,7 +43,7 @@ $s_id = session_id();
 ob_start();
 
 $title = "Brugere & roller";
-$css = "../css/usersRoles.css?v=20260930";
+$css = "../css/usersRoles.css?v=20260930b";
 $modulnr = 1; // legacy gate (Indstillinger)
 $permission_key = 'settings.users.manage';
 

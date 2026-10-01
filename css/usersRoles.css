@@ -52,6 +52,13 @@ html, body {
 .ur-btn-light:hover { background: #ffffff33; }
 .ur-btn-sm { padding: 5px 10px; font-size: 12.5px; }
 .ur-btn:disabled, .ur-btn[disabled] { opacity: .45; cursor: default; }
+/* includes/online.php paints every submit button in the theme colour with !important; this page
+   keeps its own button styles. */
+.ur-btn[type="submit"] { background: #fff !important; color: var(--ur-txt) !important; border: 1px solid var(--ur-line) !important; }
+.ur-btn[type="submit"]:hover:not(:disabled) { background: #f6f8fb !important; }
+.ur-btn-primary[type="submit"], .ur-btn-primary[type="submit"]:hover:not(:disabled) { background: var(--ur-accent) !important; color: #fff !important; border-color: transparent !important; }
+.ur-btn-danger[type="submit"] { color: var(--ur-red) !important; border-color: #f3c9c2 !important; }
+.ur-btn-danger[type="submit"]:hover:not(:disabled) { background: #fff3f0 !important; }
 .ur-link { font: inherit; border: none; background: none; padding: 0; cursor: pointer; color: var(--ur-accent); font-size: 11.5px; font-weight: 500; }
 .ur-back { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13.5px; margin-bottom: 14px; }
 
