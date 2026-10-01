@@ -408,7 +408,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=2"></script>
+<script src="../javascript/settingsSection.js?v=3"></script>
 	<?php
 }
 

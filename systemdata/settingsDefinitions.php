@@ -18,6 +18,7 @@
 // Copyright (c) 2003-2026 Saldi.dk ApS
 // ----------------------------------------------------------------------
 // 20260929 Sawaneh Registry v2 (Requirements_settings_redesign_EN.md §7.1): the definition of each
+// 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 //                  setting - key, type, scope, group/section, label and help text ids, default,
 //                  storage (the EXISTING location and encoding), permission, dependencies.
 //                  Section pages, save logic, search, change history and the "moved" page are
@@ -335,7 +336,8 @@ if (!function_exists('getSettingsSections')) {
 
 	function settings_section_url(string $sectionId, string $key = ''): string
 	{
-		return 'settingsSection.php?s=' . rawurlencode($sectionId) . ($key !== '' ? '#' . $key : '');
+		// A query parameter, not #key: the shell keeps the page address in its own #.
+		return 'settingsSection.php?s=' . rawurlencode($sectionId) . ($key !== '' ? '&field=' . rawurlencode($key) : '');
 	}
 
 	/**

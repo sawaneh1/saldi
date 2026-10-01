@@ -2,6 +2,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §8.1, §8.3, §8.11, §8.12, §8.14): behaviour of a
 //                  generated settings section - toggles, dependencies, save bar, deep links,
 //                  lookups, confirmation dialog and keyboard shortcuts.
+// 20260930 Sawaneh Field links open inside the shell and use ?field= (spec §8.11).
 (function () {
 	'use strict';
 	var cfg = window.SALDI_SETTINGS || {};
@@ -97,7 +98,7 @@
 		}
 		var copy = e.target.closest('[data-copy]');
 		if (copy) {
-			var url = window.location.href.split('#')[0].replace(/[?&](saved|moved|reverted|err)=[^&]*/g, '') + '#' + copy.closest('.st-field').dataset.key;
+			var url = fieldLink(copy.closest('.st-field').dataset.key);
 			if (navigator.clipboard) { navigator.clipboard.writeText(url).then(function () { say(cfg.copied); }); }
 			return;
 		}
@@ -256,8 +257,15 @@
 		snack.hidden = false;
 		window.setTimeout(function () { snack.hidden = true; }, 2200);
 	}
+	// The link opens the page inside the shell (index/main.php#/systemdata/...), which is how
+	// Guides, SALDI Assist and support send people to one field.
+	function fieldLink(key) {
+		var root = window.location.pathname.replace(/\/systemdata\/[^\/]*$/, '');
+		var section = new URLSearchParams(window.location.search).get('s') || '';
+		return window.location.origin + root + '/index/main.php#/systemdata/settingsSection.php?s=' + encodeURIComponent(section) + '&field=' + encodeURIComponent(key);
+	}
 	function highlight() {
-		var id = decodeURIComponent((window.location.hash || '').replace('#', ''));
+		var id = new URLSearchParams(window.location.search).get('field') || decodeURIComponent((window.location.hash || '').replace('#', ''));
 		if (!id) { return; }
 		var el = document.getElementById(id);
 		if (!el) { return; }
@@ -272,7 +280,7 @@
 	// once shown, so a reload does not repeat them.
 	function cleanUrl() {
 		if (!window.history || !window.history.replaceState) { return; }
-		var url = window.location.pathname + window.location.search.replace(/([?&])(saved|moved|reverted|err)=[^&]*/g, '$1').replace(/[?&]+$/, '').replace(/([?&])&+/g, '$1');
+		var url = window.location.pathname + window.location.search.replace(/([?&])(saved|moved|reverted|err|field)=[^&]*/g, '$1').replace(/[?&]+$/, '').replace(/([?&])&+/g, '$1');
 		window.history.replaceState(null, '', url);
 	}
 	window.addEventListener('hashchange', highlight);
@@ -280,6 +288,6 @@
 	refresh();
 	highlight();
 	var firstError = form.querySelector('.st-invalid');
-	if (firstError && !window.location.hash) { firstError.scrollIntoView({ block: 'center' }); }
+	if (firstError && !window.location.hash && !new URLSearchParams(window.location.search).get('field')) { firstError.scrollIntoView({ block: 'center' }); }
 	cleanUrl();
 })();
