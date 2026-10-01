@@ -25,6 +25,8 @@
 // 20260927 Sawaneh Notification center (topbar spec §3): company-local notifications with
 //                  per-user read state; v1 sources = Saldi news, missing/expiring fiscal year,
 //                  batch expiry, bank-integration connection. Types can be switched off per user.
+// 20260930 Sawaneh Daily e-mail summary of unread notifications (Adam: summary only, no mail per notification),
+//                  sent by tools/notification_digest.php once a day for users who switched it on.
 
 /**
  * @return array<string, string> type -> label text id
@@ -285,4 +287,61 @@ function notif_relative(string $created, int $sprogId): string
 		return findtekst('5637|i går', $sprogId);
 	}
 	return sprintf(findtekst('5638|for %s dage siden', $sprogId), (int) floor($diff / 86400));
+}
+
+/**
+ * Unread notifications for the daily summary: newer than the last summary, of the types the
+ * user has on.
+ *
+ * @return array<int, array{title: string, body: string, link: string, created: string}>
+ */
+function notif_digest_items(int $brugerId, string $since): array
+{
+	$off = notif_disabled_types($brugerId);
+	$typeFilter = $off ? " and n.type not in ('" . implode("','", array_map('db_escape_string', $off)) . "')" : '';
+	$sinceFilter = $since !== '' ? " and n.created > '" . db_escape_string($since) . "'" : '';
+	$qtxt = "select n.title, n.body, n.link, n.created from notifications n "
+		. "left join notification_read r on r.notification_id = n.id and r.user_id = $brugerId "
+		. "where r.read_at is null and (n.user_id is null or n.user_id = $brugerId) and (n.expires is null or n.expires >= current_date)$typeFilter$sinceFilter "
+		. "order by n.created desc limit 50";
+	$out = array();
+	$q = db_select($qtxt, __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$out[] = array('title' => (string) $r['title'], 'body' => (string) $r['body'], 'link' => (string) $r['link'], 'created' => (string) $r['created']);
+	}
+	return $out;
+}
+
+/**
+ * Send one user's daily summary through the company's mail setup. The caller refreshes the
+ * sources first (notif_refresh), as the bell does.
+ *
+ * @param array<string, mixed> $user row from brugere
+ * @return string 'sent', 'none' (nothing new), 'noemail' or 'mailfailed'
+ */
+function notif_send_digest(array $user, int $sprogId): string
+{
+	$id = (int) $user['id'];
+	$to = trim((string) $user['email']);
+	if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+		return 'noemail';
+	}
+	$since = (string) get_settings_value('digest_last', 'notifications', '', $id);
+	$items = notif_digest_items($id, $since);
+	if (!$items) {
+		return 'none';
+	}
+	$h = 'user_mail_h';
+	$company = user_company_name();
+	$body = '<p>' . $h(sprintf(findtekst('5964|Du har %s ulæste notifikationer i %s:', $sprogId), count($items), $company)) . '</p><ul>';
+	foreach ($items as $item) {
+		$body .= '<li><b>' . $h($item['title']) . '</b>' . ($item['body'] !== '' ? '<br>' . $h($item['body']) : '') . '</li>';
+	}
+	$body .= '</ul><p>' . $h(findtekst('5965|Log ind i Saldi og åbn klokken for at se dem.', $sprogId)) . '</p>';
+	$body .= '<p style="color:#888;font-size:12px">' . $h(findtekst('5966|Du får denne mail, fordi du har slået den daglige opsummering til under Personlige indstillinger → Notifikationer.', $sprogId)) . '</p>';
+	if (!user_send_mail($to, sprintf(findtekst('5967|Daglig opsummering fra %s', $sprogId), $company), $body)) {
+		return 'mailfailed';
+	}
+	update_settings_value('digest_last', 'notifications', date('Y-m-d H:i:s'), 'Time of the last daily summary', $id);
+	return 'sent';
 }

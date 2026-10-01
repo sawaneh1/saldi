@@ -32,6 +32,7 @@
 // 20260928 Sawaneh Back button top-left in the theme colour, as elsewhere in the system (was Close top-right).
 // 20260928 Sawaneh Popup windows, background colour and highlight removed (settings redesign spec, Personal settings).
 // 20260929 Sawaneh Order autocomplete moved here from Ordrerelaterede valg, saved through SettingsService.
+// 20260930 Sawaneh Notifications tab: daily e-mail summary on/off (Adam: summary only).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -238,6 +239,7 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 		foreach (notif_types() as $type => $label) {
 			update_settings_value('type_' . $type, 'notifications', in_array($type, $on, true) ? '1' : '0', 'Notification type on/off', $brugerId);
 		}
+		update_settings_value('digest', 'notifications', !empty($post['digest']) ? '1' : '0', 'Daily summary by e-mail', $brugerId);
 	}
 
 	if ($reloadShell) {
@@ -382,6 +384,7 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		'levels'    => $levels,
 		'admins'    => $admins,
 		'notifOff'  => function_exists('notif_disabled_types') ? notif_disabled_types($brugerId) : array(),
+		'digest'    => ((string) get_settings_value('digest', 'notifications', '0', $brugerId) === '1'),
 	);
 }
 
@@ -770,6 +773,16 @@ function personal_settings_view_notifications(array $d, callable $h, callable $t
           <span class="ps-check-txt"><b><?= $t($label) ?></b></span>
         </label>
         <?php } ?>
+      </div>
+    </section>
+    <section class="ps-card">
+      <h2><i class='bx bx-envelope'></i><?= $t('52|E-mail') ?></h2>
+      <div class="ps-checks">
+        <label class="ps-check">
+          <input type="checkbox" name="digest" value="1"<?= $d['digest'] ? ' checked' : '' ?>>
+          <span class="ps-check-txt"><b><?= $t('5961|Send mig en daglig opsummering af ulæste notifikationer') ?></b>
+          <span><?= $d['email'] !== '' ? $h(sprintf(findtekst('5962|Sendes én gang om dagen til %s, kun når der er noget nyt.', $d['language']), $d['email'])) : $t('5963|Tilføj en e-mail under Profil for at få opsummeringen.') ?></span></span>
+        </label>
       </div>
     </section>
     <footer class="ps-save">

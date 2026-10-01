@@ -5548,3 +5548,10 @@
 5955	%s har fuld adgang som Administrator, %s fik en tilpasset rolle. Gennemgå fordelingen, så kun de rigtige har alt.	%s have full access as Administrator, %s got a custom role. Review the distribution so only the right people have everything.	%s har full tilgang som Administrator, %s fikk en tilpasset rolle. Gå gjennom fordelingen, så bare de riktige har alt.
 5959	Vis	Show	Vis
 5960	%s brugere · %s administratorer · %s inviterede · %s lukkede	%s users · %s administrators · %s invited · %s closed	%s brukere · %s administratorer · %s inviterte · %s lukkede
+5961	Send mig en daglig opsummering af ulæste notifikationer	Send me a daily summary of unread notifications	Send meg en daglig oppsummering av uleste varsler
+5962	Sendes én gang om dagen til %s, kun når der er noget nyt.	Sent once a day to %s, only when there is something new.	Sendes én gang om dagen til %s, bare når det er noe nytt.
+5963	Tilføj en e-mail under Profil for at få opsummeringen.	Add an email under Profile to get the summary.	Legg til en e-post under Profil for å få oppsummeringen.
+5964	Du har %s ulæste notifikationer i %s:	You have %s unread notifications in %s:	Du har %s uleste varsler i %s:
+5965	Log ind i Saldi og åbn klokken for at se dem.	Log in to Saldi and open the bell to see them.	Logg inn i Saldi og åpne klokken for å se dem.
+5966	Du får denne mail, fordi du har slået den daglige opsummering til under Personlige indstillinger → Notifikationer.	You get this email because you switched on the daily summary under Personal settings → Notifications.	Du får denne e-posten fordi du har slått på den daglige oppsummeringen under Personlige innstillinger → Varsler.
+5967	Daglig opsummering fra %s	Daily summary from %s	Daglig oppsummering fra %s
