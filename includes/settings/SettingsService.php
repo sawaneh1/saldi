@@ -25,6 +25,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261002 Sawaneh Settings changes in audit_log carry objekt_type 'indstilling' and the key as objekt_id (settings redesign §11.2).
 
 include_once(__DIR__ . '/../../systemdata/settingsRegistry.php');
 
@@ -36,6 +37,7 @@ class SettingsService
 	private static $settings = array();
 	/** @var bool|null */
 	private static $auditColumns = null;
+	private static $auditObjekt = false;
 
 	// ------------------------------------------------------------ definitions
 
@@ -355,6 +357,7 @@ class SettingsService
 	{
 		if (self::$auditColumns === null) {
 			self::$auditColumns = (bool) db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'audit_log' and column_name = 'setting_key'", __FILE__ . " linje " . __LINE__));
+			self::$auditObjekt = self::$auditColumns && (bool) db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'audit_log' and column_name = 'objekt_type'", __FILE__ . " linje " . __LINE__));
 		}
 		return self::$auditColumns;
 	}
@@ -371,10 +374,13 @@ class SettingsService
 			return;
 		}
 		$ip = db_escape_string(isset($_SERVER['REMOTE_ADDR']) ? substr((string) $_SERVER['REMOTE_ADDR'], 0, 45) : '');
-		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, setting_key, section, old_value, new_value) values (";
+		// objekt_type 'indstilling' is what the roles spec's audit log groups settings changes by (settings redesign §11.2).
+		$objekt = self::$auditObjekt ? ", objekt_type, objekt_id, kilde" : "";
+		$objektValues = self::$auditObjekt ? ", 'indstilling', '" . db_escape_string(substr($def['key'], 0, 60)) . "', 'ui'" : "";
+		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, setting_key, section, old_value, new_value$objekt) values (";
 		$qtxt .= (int) $bruger_id . ", '" . db_escape_string((string) $brugernavn) . "', 'setting.change', '" . db_escape_string($def['key']) . "', '$ip', ";
 		$qtxt .= "'" . db_escape_string($def['key']) . "', '" . db_escape_string($section) . "', ";
-		$qtxt .= "'" . db_escape_string($secret ? '' : $old) . "', '" . db_escape_string($secret ? '' : $new) . "')";
+		$qtxt .= "'" . db_escape_string($secret ? '' : $old) . "', '" . db_escape_string($secret ? '' : $new) . "'$objektValues)";
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 	}
 

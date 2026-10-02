@@ -178,10 +178,21 @@ foreach (getSettingsRegistry() as $entry) {
 		continue;
 	}
 
+	// A hit through an old menu name carries the "Tidligere: ..." tag, as single settings do (spec §8.10).
+	$legacyTag = '';
+	if ($match['type'] !== 'label' && isset($entry['section']) && $search !== '') {
+		foreach (getSettingsSections()[$entry['section']]['legacy'] as $path) {
+			if (mb_strpos(settings_legacy_all_languages($path), mb_strtolower($search)) !== false) {
+				$legacyTag = settings_legacy_text($path, $sprog_id);
+				break;
+			}
+		}
+	}
 	$result = array(
 		'key' => $entry['key'],
 		'url' => $entry['url'],
 		'label' => $label,
+		'legacy' => $legacyTag,
 		'category' => $entry['category'],
 		'group' => ($entryGroup === 'personal') ? findtekst('5500|Personlige indstillinger', $sprog_id) : (isset($accessibleGroups[$entryGroup]) ? findtekst($accessibleGroups[$entryGroup]['def']['label'], $sprog_id) : ''),
 		'matchType' => $match['type'],

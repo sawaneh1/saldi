@@ -30,7 +30,7 @@ $css="../css/standard.css";
 
 include("../includes/connect.php");
 $modulnr = 1; // 20260928 Sawaneh Security 4.0 (A8)
-$permission_key = 'settings.smtp';
+$permission_key = 'settings.email'; // 20261002 Sawaneh key renamed per settings redesign §11.1
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");

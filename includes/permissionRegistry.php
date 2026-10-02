@@ -33,6 +33,8 @@
 // 20260930 Sawaneh Audit log for administrators only (Adam 2026-09-30): Bogholder and Revisor no longer read it.
 // 20261002 Sawaneh Standard role matrix for the settings groups as settings redesign §11.4 (hand-over 2 Oct): Administrator
 //                  write, Bogholder read on all eight, every other role none (Lager lost items write / organisation read).
+// 20261002 Sawaneh Keys per settings redesign §11.1: settings.email (was settings.smtp), settings.backup (was system.backup),
+//                  settings.company.danger and settings.organisation.sensitive added; settings.integrations.keys withdrawn.
 
 /**
  * Every permission key the system knows. A key is granted at level none / read / write.
@@ -70,7 +72,6 @@ function permission_registry(): array
 
 		'system.kontoplan'       => array('group' => 'system',   'label' => '113|Kontoplan',           'legacy' => array(0),  'dangerous' => false),
 		'system.indstillinger'   => array('group' => 'system',   'label' => '122|Indstillinger',       'legacy' => array(1),  'dangerous' => false),
-		'system.backup'          => array('group' => 'system',   'label' => '521|Sikkerhedskopi',      'legacy' => array(11), 'dangerous' => false),
 
 		// No legacy position of its own: users without a role inherit it from Debitorordre (5),
 		// which is what opens the cash register today ('derive').
@@ -92,8 +93,12 @@ function permission_registry(): array
 		'settings.roles.manage'  => array('group' => 'settings', 'label' => '5550|Roller',             'legacy' => array(),   'dangerous' => true, 'since' => '20260930'),
 		'settings.audit.read'    => array('group' => 'settings', 'label' => '5796|Audit-log',          'legacy' => array(),   'dangerous' => false, 'since' => '20260930'),
 		'settings.integrations'  => array('group' => 'settings', 'label' => '5537|Integrationer',      'legacy' => array(),   'dangerous' => true),
-		'settings.integrations.keys' => array('group' => 'settings', 'label' => '5540|API-nøgler',     'legacy' => array(),   'dangerous' => true, 'renamed_from' => 'settings.api'),
-		'settings.smtp'          => array('group' => 'settings', 'label' => '5541|E-mail/SMTP',        'legacy' => array(),   'dangerous' => true),
+		// Settings redesign §11.1: the separate API-keys key is withdrawn (secrets need write on settings.integrations),
+		// e-mail, backup, the company danger zone and sensitive employee fields are keys of their own.
+		'settings.email'         => array('group' => 'settings', 'label' => '5541|E-mail/SMTP',        'legacy' => array(),   'dangerous' => true, 'renamed_from' => 'settings.smtp'),
+		'settings.backup'        => array('group' => 'settings', 'label' => '521|Sikkerhedskopi',      'legacy' => array(11), 'dangerous' => true, 'renamed_from' => 'system.backup'),
+		'settings.company.danger' => array('group' => 'settings', 'label' => '6053|Nulstil og slet regnskab (farezone)', 'legacy' => array(), 'dangerous' => true, 'since' => '20261002'),
+		'settings.organisation.sensitive' => array('group' => 'settings', 'label' => '6054|Følsomme medarbejderfelter (CPR og løn)', 'legacy' => array(), 'dangerous' => false, 'since' => '20261002'),
 		'settings.import_export' => array('group' => 'settings', 'label' => '5539|Import & eksport',   'legacy' => array(),   'dangerous' => true, 'renamed_from' => 'settings.importexport'),
 		'system.backup.restore'  => array('group' => 'settings', 'label' => '5542|Gendan sikkerhedskopi', 'legacy' => array(), 'dangerous' => true),
 	);

@@ -154,7 +154,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('language','languages','change language','select language','preferred language','edit translation texts','ui language','current language','sprogindstillinger','sprog','språk','språkinnstillinger')),
 			array('key' => 'div_io',                'group' => 'import_export', 'url' => 'diverse.php?sektion=div_io',               'category' => 'data', 'textId' => 802,
 				'keywords' => array('import export','chart of accounts import export','customer import export','product import export','form import export','data import','data export','solar vvs import','kontoplan import','debitor import','varer import','formular import')),
-			array('key' => 'backup',                'group' => 'import_export', 'url' => '../admin/backup.php', 'category' => 'data', 'textId' => 614, 'permission' => 'system.backup',
+			array('key' => 'backup',                'group' => 'import_export', 'url' => '../admin/backup.php', 'category' => 'data', 'textId' => 614, 'permission' => 'settings.backup',
 				'keywords' => array('backup','restore','sikkerhedskopi','gendan','sikkerhetskopi','gjenopprett','database backup')),
 
 			// -- 20260928: pages that belong to a settings group but had no entry --

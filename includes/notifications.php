@@ -153,7 +153,7 @@ function notif_source_fiscal_year(int $sprogId): void
 	}
 	$link = '/systemdata/regnskabsaar.php';
 	if ($current === null || !$current['open']) {
-		notif_upsert('fiscal:missing', null, 'warning', findtekst('5627|Intet aktivt regnskabsår', $sprogId), findtekst('5646|Aktivér et regnskabsår under System » Indstillinger » Regnskabsår', $sprogId), $link, date('Y-m-d', strtotime('+7 days')));
+		notif_upsert('fiscal:missing', null, 'warning', findtekst('5627|Intet aktivt regnskabsår', $sprogId), findtekst('5646|Aktivér et regnskabsår under Indstillinger » Virksomhed » Regnskabsår', $sprogId), $link, date('Y-m-d', strtotime('+7 days')));
 		return;
 	}
 	$daysLeft = (int) floor((strtotime($current['end']) - strtotime($today)) / 86400);

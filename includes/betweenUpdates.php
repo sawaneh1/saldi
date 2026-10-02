@@ -733,6 +733,12 @@ foreach ($gamle_242 as $gammel) {
 	db_modify("delete from tekster where tekst_id = '242' and tekst = '$gammel'", __FILE__ . " linje " . __LINE__);
 }
 
+// 20261002 Sawaneh Text 5646 (no active fiscal year) named the old "System » Indstillinger" menu. Rows still holding the
+// old wording are removed so findtekst() re-seeds them from tekster.csv; edited texts are left alone.
+foreach (array('Aktivér et regnskabsår under System » Indstillinger » Regnskabsår', 'Activate a fiscal year under System » Settings » Fiscal year', 'Aktiver et regnskapsår under System » Innstillinger » Regnskapsår') as $gammel5646) {
+	db_modify("delete from tekster where tekst_id = '5646' and tekst = '" . db_escape_string($gammel5646) . "'", __FILE__ . " linje " . __LINE__);
+}
+
 // 20260916 Sawaneh Roles & permissions (user/settings system spec, part 2): roles,
 // role_permissions, brugere.role_id and the audit log. Built-in roles are seeded and users
 // holding every legacy right get the Administrator role; see includes/permissions.php.

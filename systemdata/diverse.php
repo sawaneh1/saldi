@@ -180,6 +180,7 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20260928 Sawaneh Phase 4: frame switch reduced to top.php, the Diverse sub-menu column and landing list
 //                  replaced by the registry-driven frame/front page, dead userSettings/personlige_valg code removed.
 // 20260928 Sawaneh Key names follow the settings redesign spec (settings.integrations.keys, settings.import_export).
+// 20261002 Sawaneh Keys per settings redesign §11.1: settings.integrations and settings.email; reset/delete need settings.company.danger.
 // 20260928 Sawaneh Security 4.0: CSRF check on POST (token injected into every posted form), pickup debug log removed,
 //                  SQL tool (Dataudtræk), DocuBizz and Paperflow removed, MobilePay/QuickPay secrets write-only.
 // 20261001 Sawaneh One row per setting (unique index on settings): KDS colours saved as color_1, color_2...;
@@ -189,9 +190,9 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
 // them; a role only gets them when an administrator grants them explicitly.
 $dangerousSections = array(
-	'api_valg' => 'settings.integrations.keys',
-	'email' => 'settings.smtp',
-	'smtp' => 'settings.smtp',
+	'api_valg' => 'settings.integrations',
+	'email' => 'settings.email',
+	'smtp' => 'settings.email',
 	'stripe_valg' => 'settings.integrations',
 	'shop_valg' => 'settings.integrations',
 	'adresser_io' => 'settings.import_export',
@@ -204,6 +205,10 @@ $dangerousSections = array(
 );
 if (isset($dangerousSections[$sektion]) && function_exists('require_permission')) {
 	require_permission($dangerousSections[$sektion], ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'write' : 'read');
+}
+// Resetting or deleting the company is the danger zone of G1.4 (settings redesign §11.1): Administrator only.
+if ($sektion == 'kontoindstillinger' && $_SERVER['REQUEST_METHOD'] === 'POST' && (!empty($_POST['nulstil']) || isset($_POST['slet'])) && function_exists('require_permission')) {
+	require_permission('settings.company.danger', 'write');
 }
 $skiftnavn  = if_isset($_GET['skiftnavn']);
 // 20260928 Sawaneh Security 4.0 (A12): every POST to this shared entry must carry the session's

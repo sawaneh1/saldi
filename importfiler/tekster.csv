@@ -5264,7 +5264,7 @@
 5643	System	System	System
 5644	Vælg hvilke notifikationer du vil se i klokken	Choose which notifications to show in the bell	Velg hvilke varsler du vil se i bjellen
 5645	lige nu	just now	akkurat nå
-5646	Aktivér et regnskabsår under System » Indstillinger » Regnskabsår	Activate a fiscal year under System » Settings » Fiscal year	Aktiver et regnskapsår under System » Innstillinger » Regnskapsår
+5646	Aktivér et regnskabsår under Indstillinger » Virksomhed » Regnskabsår	Activate a fiscal year under Settings » Company » Fiscal year	Aktiver et regnskapsår under Innstillinger » Virksomhet » Regnskapsår
 5647	Tilbage	Back	Tilbake
 5648	Indstillingsområder	Settings areas	Innstillingsområder
 5649	Firma	Company	Firma
@@ -5657,3 +5657,5 @@
 6050	Filtrér – fx Diverse valg	Filter – e.g. Diverse valg	Filtrer – f.eks. Diverse valg
 6051	Anvend batch- og udløbsdatostyring	Use batch and expiry date handling	Bruk batch- og utløpsdatostyring
 6052	Viser felterne til udløbsdato på varekortet. Varegruppen skal desuden have batchkontrol	Shows the expiry date fields on the product card. The product group must also have batch control	Viser feltene for utløpsdato på varekortet. Varegruppen må også ha batchkontroll
+6053	Nulstil og slet regnskab (farezone)	Reset and delete company (danger zone)	Nullstill og slett regnskap (faresone)
+6054	Følsomme medarbejderfelter (CPR og løn)	Sensitive employee fields (CPR and salary)	Sensitive ansattfelter (fødselsnummer og lønn)

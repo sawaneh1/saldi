@@ -33,7 +33,7 @@ include ("../../includes/std_func.php");
 // 20260928 Sawaneh Security 4.0 (A10): the Flatpay login is exchanged for the GUID here on the server,
 //                  so username/password never leave the browser for a third-party host and are never logged.
 if (function_exists('require_permission')) {
-	require_permission('settings.integrations.keys', 'write');
+	require_permission('settings.integrations', 'write');
 }
 $post = json_decode(file_get_contents('php://input'));
 $username = isset($post->username) ? (string) $post->username : '';

@@ -277,7 +277,7 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 					if (input.value.trim().toLowerCase() !== q) { return; }
 					legacyLabel = data.legacyLabel || '';
 					personalLabel = data.personalLabel || '';
-					hits = (data.results || []).map(function (r) { return { label: r.label, url: r.url, path: r.group || '', legacy: '', personal: false }; })
+					hits = (data.results || []).map(function (r) { return { label: r.label, url: r.url, path: r.group || '', legacy: r.legacy || '', personal: false }; })
 						.concat((data.fields || []).map(function (f) { return { label: f.label, url: f.url, path: f.personal ? f.group : (f.group + (f.section ? ' › ' + f.section : '')), legacy: f.legacy || '', personal: !!f.personal }; }));
 					sel = 0;
 					render(q);

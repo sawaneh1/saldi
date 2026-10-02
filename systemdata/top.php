@@ -25,7 +25,8 @@
 // 20260710 SZ Added Settings search box to sidebar (settingsSearch.php/.js/.css)
 // 20260928 Sawaneh Phase 4: menu column generated from settingsRegistry.php (current group, access-filtered),
 //                  Back goes to settings.php, unsaved-changes guard for the settings pages.
-// 20261002 Sawaneh The page tells the shell its breadcrumb trail (settings redesign §8.0).
+// 20261002 Sawaneh The page tells the shell its breadcrumb trail (settings redesign §8.0); the tab is kept after a save
+//                  (the old forms post without ?valg).
 // 20260928 Sawaneh Unsaved-changes guard uses the native beforeunload dialog (settings redesign spec §8.1).
 
 $small=NULL;
@@ -81,7 +82,12 @@ print "<tr><td width=\"170px\"><br></td></tr>";
 // (settingsRegistry.php), filtered by the user's access; without a match, the groups.
 include_once(__DIR__ . "/settingsRegistry.php");
 $settingsGroups = settings_accessible_groups();
-$currentEntries = settings_entries_for_request(basename($_SERVER['PHP_SELF']), $_GET);
+// The old pages post without their ?valg (syssetup.php); the posted value says which tab is shown.
+$currentRequest = $_GET;
+if (!isset($currentRequest['valg']) && isset($_POST['valg']) && is_string($_POST['valg'])) {
+	$currentRequest['valg'] = $_POST['valg'];
+}
+$currentEntries = settings_entries_for_request(basename($_SERVER['PHP_SELF']), $currentRequest);
 $currentGroup = '';
 foreach ($currentEntries as $currentEntry) {
 	if (isset($settingsGroups[$currentEntry['group']])) {
