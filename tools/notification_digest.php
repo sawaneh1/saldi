@@ -22,6 +22,7 @@
 //                  Goes through every open company and mails the users who switched the summary on
 //                  under Personal settings -> Notifications. Nothing is sent when there is nothing new.
 //                  Options: --db=<database> one company only, --dry-run count without sending.
+// 20261001 Sawaneh MySQL: select the company database after connecting (as online.php).
 
 if (php_sapi_name() !== 'cli') { header('HTTP/1.1 403 Forbidden'); print 'CLI only'; exit; }
 chdir(__DIR__);
@@ -52,6 +53,9 @@ while ($r = db_fetch_array($q)) {
 $totals = array('sent' => 0, 'none' => 0, 'noemail' => 0, 'mailfailed' => 0);
 foreach ($companies as $company) {
 	$connection = db_connect($sqhost, $squser, $sqpass, $company['db']);
+	if ($connection && ($db_type === 'mysqli' || $db_type === 'mysql') && !mysqli_select_db($connection, $company['db'])) {
+		$connection = false;
+	}
 	if (!$connection) {
 		fwrite(STDERR, "{$company['db']}: no connection\n");
 		continue;

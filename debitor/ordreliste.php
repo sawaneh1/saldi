@@ -58,6 +58,7 @@
 // 20260701 CDX/NTR Fixed the default search to handle numeric comparisons and fixed TEXT searches from throwing fatal errors.
 // 20260911 CDX/LH SD-186 Label the searchable employee column Udført af in order and invoice lists.
 //                  Define it in the column pool so saved layouts use the same field configuration.
+// 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 
 @session_start();
 $s_id = session_id();
@@ -363,6 +364,7 @@ if (db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
     $qtxt = "UPDATE settings SET var_value = '$valg' WHERE var_name = 'ordreliste_valg' AND var_grp = 'debitor' AND user_id = '$bruger_id'";
 } else {
     $qtxt = "INSERT INTO settings (var_name, var_value, var_grp, user_id) VALUES ('ordreliste_valg', '$valg', 'debitor', '$bruger_id')";
+    $qtxt .= (in_array($GLOBALS['db_type'], array('mysql', 'mysqli')) ? '' : ' ON CONFLICT DO NOTHING');
 }
 db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 #if ($valg=="ordrer" && $sort=="fakturanr") $sort="ordrenr";

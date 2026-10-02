@@ -61,7 +61,7 @@ include("../includes/online.php");
 include("../includes/std_func.php");
 
 if (!isset($exec_path)) $exec_path="/usr/bin";
-$localPrint=if_isset($_COOKIE, NULL, 'localPrint');
+$localPrint = (get_settings_value('localPrint', 'print', '', (int) $bruger_id) === 'on') ? 'on' : if_isset($_COOKIE, NULL, 'localPrint'); #20261002 personal setting, cookie kept one release
 $udfil=$zx=NULL;
 
 $ps_fil        = if_isset($_GET, NULL, 'ps_fil');
@@ -77,6 +77,7 @@ $ordre_antal   = if_isset($_GET, NULL, 'ordre_antal');
 $returside    = if_isset($_GET, NULL, 'returside');
 // 20260812 MJ Begraens til same-origin stier — afviser protokoller (javascript:, http://) og cross-origin URL'er
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261002 Sawaneh Local print read from the user's personal setting first; the old cookie still counts for one release.
 $returside = (function($s) {
     $s = trim((string)$s);
     if ($s === '' || $s === 'ordreliste.php') return $s; // 'ordreliste.php' normaliseres nedenfor linje 93

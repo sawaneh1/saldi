@@ -33,6 +33,7 @@
 // 20230718 PHR Added $begin & $end to be used in no dates in 'beskrivelse'
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20250407 PHR will now use phpmailer from composer if old phpmailer is not present
+// 20261001 Sawaneh The mail text row is found whether its user_id is 0 or NULL (one row per setting).
 
 @session_start();
 $s_id=session_id();
@@ -55,7 +56,7 @@ $begin = if_isset($_GET['start']);
 $end = if_isset($_GET['slut']);
 
 if ($mailtekst) {
-	$qtxt = "select id from settings where var_name = 'mailtext' and var_grp = 'paylist' and user_id='0'";
+	$qtxt = "select id from settings where var_name = 'mailtext' and var_grp = 'paylist' and coalesce(user_id, 0) = 0";
 	$r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
 	if ($r['id']) $qtxt = "update settings set var_value = '". db_escape_string($mailtekst) ."' where id =  '$r[id]'";
 	else {

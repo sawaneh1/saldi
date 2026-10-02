@@ -25,8 +25,60 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.3, §8.1): the components every generated
 //                  settings form is built from, and the conversion between a posted field and
 //                  the stored string. Styles live in css/unified-components.css (.st-*).
+// 20261001 Sawaneh Accessibility §8.6: readable text on a user-chosen button colour, darker shade for links/outlines.
+// 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
+// 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
+//                  dependent fields indented; actions are rows too.
 
 include_once(__DIR__ . '/SettingsService.php');
+
+/**
+ * Contrast ratio of two #rrggbb colours (WCAG 2.1).
+ */
+function st_contrast(string $a, string $b): float
+{
+	$lum = function (string $hex): float {
+		$hex = ltrim($hex, '#');
+		if (strlen($hex) === 3) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		$c = array();
+		foreach (array(0, 2, 4) as $i) {
+			$v = hexdec(substr($hex, $i, 2)) / 255;
+			$c[] = ($v <= 0.03928) ? $v / 12.92 : pow(($v + 0.055) / 1.055, 2.4);
+		}
+		return 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2];
+	};
+	$la = $lum($a);
+	$lb = $lum($b);
+	return (max($la, $lb) + 0.05) / (min($la, $lb) + 0.05);
+}
+
+/**
+ * The CSS variables of a settings page from the user's button colours (spec §8.6): the fill as chosen,
+ * text on the fill that can be read (dark text when the chosen colour is too light), and a darker
+ * shade of the colour for links and focus outlines on white.
+ */
+function st_accent_style(string $buttonColor, string $buttonTxtColor): string
+{
+	$norm = function (string $c, string $fallback): string {
+		$c = trim($c);
+		if (preg_match('/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i', $c, $m)) {
+			return '#' . (strlen($m[1]) === 3 ? preg_replace('/(.)/', '$1$1', $m[1]) : $m[1]);
+		}
+		return $fallback;
+	};
+	$accent = $norm($buttonColor, '#114691');
+	$txt = $norm($buttonTxtColor, '#ffffff');
+	if (st_contrast($accent, $txt) < 4.5) {
+		$txt = (st_contrast($accent, '#1c2431') >= st_contrast($accent, '#ffffff')) ? '#1c2431' : '#ffffff';
+	}
+	$ink = $accent;
+	for ($i = 0; $i < 12 && st_contrast($ink, '#ffffff') < 4.5 && function_exists('darkenColor'); $i++) {
+		$ink = darkenColor($ink, 0.15);
+	}
+	return '--st-accent: ' . $accent . '; --st-accent-txt: ' . $txt . '; --st-accent-ink: ' . $ink . ';';
+}
 
 function st_charset(): string
 {
@@ -121,6 +173,9 @@ function st_form_value(array $def, string $raw): string
 	if ($def['type'] === 'item' && isset($def['item_as']) && $def['item_as'] === 'id') {
 		return st_item_varenr($raw);
 	}
+	if ($def['type'] === 'date') {
+		return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $m) ? $m[3] . '-' . $m[2] . '-' . $m[1] : $raw;
+	}
 	return $raw;
 }
 
@@ -151,6 +206,18 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 		case 'decimal':
 			if ($value !== '' && !preg_match('/^-?[0-9]+([.,][0-9]+)?$/', $value)) {
 				$error = 5732;
+			} else {
+				// Stored with a dot, as the old pages did through usdecimal().
+				$raw = str_replace(',', '.', $value);
+			}
+			break;
+		case 'date':
+			if ($value === '') {
+				$raw = '';
+			} elseif (preg_match('/^(\d{1,2})[-.\/](\d{1,2})[-.\/](\d{4})$/', $value, $m) && checkdate((int) $m[2], (int) $m[1], (int) $m[3])) {
+				$raw = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+			} else {
+				$error = 6010;
 			}
 			break;
 		case 'email':
@@ -181,6 +248,9 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 			}
 			break;
 	}
+	if ($error === null && $value !== '' && is_array($def['validate']) && $def['validate'][0] === 'range' && ((int) $value < (int) $def['validate'][1] || (int) $value > (int) $def['validate'][2])) {
+		$error = 5732;
+	}
 	if ($error === null && is_array($def['validate']) && $def['validate'][0] === 'requires' && $def['type'] === 'bool' && $value === '1') {
 		$other = isset($posted[$def['validate'][1]]) ? trim($posted[$def['validate'][1]]) : null;
 		if ($other === null) {
@@ -206,6 +276,8 @@ function st_display_value(array $def, string $raw): string
 			return isset($def['options'][$raw]) ? st_txt($def['options'][$raw]) : $raw;
 		case 'secret':
 			return st_txt(5713);
+		case 'date':
+			return $raw === '' ? '—' : st_form_value($def, $raw);
 		case 'item':
 			$v = (isset($def['item_as']) && $def['item_as'] === 'id') ? st_item_varenr($raw) : $raw;
 			return $v === '' ? '—' : $v;
@@ -289,7 +361,8 @@ function st_locked(array $def): int
 // ---------------------------------------------------------------- rendering
 
 /**
- * One field of a generated form.
+ * One field of a generated form: a row with label and help text on the left and the control on the
+ * right (settings redesign §8.0, prototype_indstillinger_v4.html).
  *
  * @param array<string, mixed> $state value (form value), original, error (text id), readonly, locked (text id), visible, mine
  */
@@ -299,6 +372,7 @@ function st_render_field(array $def, array $state): void
 	$id = 'f-' . str_replace('.', '-', $key);
 	$value = (string) $state['value'];
 	$disabled = (!empty($state['readonly']) || !empty($state['locked']));
+	$rule = $def['visible_if'];
 	$classes = 'st-field st-type-' . $def['type'];
 	if (!empty($state['error'])) {
 		$classes .= ' st-invalid';
@@ -306,7 +380,13 @@ function st_render_field(array $def, array $state): void
 	if (!empty($state['mine'])) {
 		$classes .= ' st-mine';
 	}
-	$rule = $def['visible_if'];
+	if ($rule && $rule[0] !== 'module') {
+		// Indented under its parent only when the parent sits in the same card.
+		$parent = SettingsService::definition((string) $rule[1]);
+		if ($parent && $parent['sub'] === $def['sub'] && $parent['group'] . '.' . $parent['section'] === $def['group'] . '.' . $def['section']) {
+			$classes .= ' st-dep';
+		}
+	}
 	$clientRule = ($rule && $rule[0] !== 'module') ? json_encode($rule) : '';
 	$defaultForm = st_form_value($def, st_default_raw($def));
 	$help = isset($def['help']) ? st_txt($def['help']) : '';
@@ -314,83 +394,88 @@ function st_render_field(array $def, array $state): void
 	if ($def['type'] === 'bool' || $def['type'] === 'select') {
 		$hasDefault = array_key_exists('default', $def);
 	}
-	$defaultText = $hasDefault ? st_txt(5714) . ' ' . st_display_value($def, st_default_raw($def)) : '';
+	$defaultText = $hasDefault ? st_txt(5714) . ' ' . st_display_value($def, st_default_raw($def)) . '.' : '';
 	$nameAttr = $disabled ? '' : ' name="f[' . st_h($key) . ']"';
+	$invalid = !empty($state['error']) ? ' aria-invalid="true" aria-describedby="e-' . $id . '"' : '';
 	?>
 <div class="<?= $classes ?>" id="<?= st_h($key) ?>" data-key="<?= st_h($key) ?>" data-default="<?= st_h($defaultForm) ?>"<?= $clientRule !== '' ? ' data-visible-if="' . st_h($clientRule) . '"' : '' ?><?= empty($state['visible']) ? ' hidden' : '' ?>>
+  <div class="st-tx">
+    <span class="st-labelrow">
 	<?php if ($def['type'] === 'bool') { ?>
-  <div class="st-toggle">
-    <button type="button" role="switch" class="st-switch" id="<?= $id ?>" aria-checked="<?= $value === '1' ? 'true' : 'false' ?>" aria-labelledby="l-<?= $id ?>"<?= $disabled ? ' disabled' : '' ?>><span></span></button>
-    <span class="st-label" id="l-<?= $id ?>"><?= st_t($def['label']) ?></span>
-    <button type="button" class="st-copy" data-copy title="<?= st_t(5741) ?>" aria-label="<?= st_t(5741) ?>"><i class='bx bx-link'></i></button>
-  </div>
-  <input type="hidden"<?= $nameAttr ?> value="<?= st_h($value) ?>" data-control>
+      <span class="st-label" id="l-<?= $id ?>"><?= st_t($def['label']) ?></span>
 	<?php } else { ?>
-  <div class="st-field-head">
-    <label class="st-label" for="<?= $id ?>"><?= st_t($def['label']) ?></label>
-    <button type="button" class="st-copy" data-copy title="<?= st_t(5741) ?>" aria-label="<?= st_t(5741) ?>"><i class='bx bx-link'></i></button>
-  </div>
-		<?php if ($def['type'] === 'select') { ?>
-  <select class="st-input st-select" id="<?= $id ?>"<?= $nameAttr ?> data-control<?= $disabled ? ' disabled' : '' ?>>
-			<?php foreach ($def['options'] as $optValue => $optLabel) { ?>
-    <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= st_t($optLabel) ?></option>
-			<?php } ?>
-  </select>
-		<?php } elseif ($def['type'] === 'account' || $def['type'] === 'item') {
-			$resolved = '';
-			if ($value !== '') {
-				if ($def['type'] === 'account') {
-					$resolved = (string) st_account_name($value);
-				} else {
-					$item = st_item_by_varenr($value);
-					$resolved = $item ? $item['name'] : '';
-				}
-			}
-			?>
-  <div class="st-lookup" data-lookup="<?= $def['type'] ?>">
-    <input class="st-input st-input-short" type="text" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>" autocomplete="off" data-control role="combobox" aria-autocomplete="list" aria-expanded="false"<?= $disabled ? ' readonly' : '' ?>>
-    <span class="st-resolved"><?= $resolved !== '' ? '· ' . st_h($resolved) : '' ?></span>
-    <ul class="st-lookup-list" role="listbox" hidden></ul>
-  </div>
-		<?php } else {
-			$type = ($def['type'] === 'email') ? 'email' : 'text';
-			$mode = ($def['type'] === 'int') ? ' inputmode="numeric"' : (($def['type'] === 'decimal') ? ' inputmode="decimal"' : '');
-			$short = ($def['type'] === 'int' || $def['type'] === 'decimal') ? ' st-input-short' : '';
-			?>
-  <div class="st-input-wrap">
-    <input class="st-input<?= $short ?>" type="<?= $type ?>" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>"<?= $mode ?> data-control<?= $disabled ? ' readonly' : '' ?><?= !empty($state['error']) ? ' aria-invalid="true" aria-describedby="e-' . $id . '"' : '' ?>>
-			<?php if (isset($def['unit'])) { ?><span class="st-unit"><?= st_h(st_unit($def)) ?></span><?php } ?>
-  </div>
-		<?php } ?>
+      <label class="st-label" for="<?= $id ?>"><?= st_t($def['label']) ?></label>
 	<?php } ?>
-  <input type="hidden" name="o[<?= st_h($key) ?>]" value="<?= st_h(isset($state['original']) ? $state['original'] : $value) ?>">
+      <i class="st-chg" aria-hidden="true"></i>
+      <button type="button" class="st-copy" data-copy title="<?= st_t(5741) ?>" aria-label="<?= st_t(5741) ?>"><i class='bx bx-link'></i></button>
+    </span>
 	<?php if ($help !== '' || $defaultText !== '') { ?>
-  <p class="st-help"><?= st_h($help) ?><?= ($help !== '' && $defaultText !== '') ? ' ' : '' ?><?php if ($defaultText !== '') { ?><span class="st-default"><?= st_h($defaultText) ?></span><?php } ?>
-		<?php if ($hasDefault && !$disabled) { ?> <button type="button" class="st-reset" data-reset hidden><?= st_t(5717) ?></button><?php } ?>
-  </p>
+    <span class="st-help"><?= st_h($help) ?><?= ($help !== '' && $defaultText !== '') ? ' ' : '' ?><?php if ($defaultText !== '') { ?><span class="st-default"><?= st_h($defaultText) ?></span><?php } ?><?php if ($hasDefault && !$disabled) { ?> <button type="button" class="st-reset" data-reset hidden><?= st_t(5717) ?></button><?php } ?></span>
 	<?php } ?>
 	<?php if (!empty($state['locked'])) { ?>
-  <p class="st-locked"><i class='bx bx-lock-alt'></i> <?= st_t($state['locked']) ?></p>
+    <span class="st-locked"><i class='bx bx-lock-alt' aria-hidden="true"></i> <?= st_t($state['locked']) ?></span>
 	<?php } ?>
 	<?php if (!empty($state['error'])) { ?>
-  <p class="st-error" id="e-<?= $id ?>"><i class='bx bx-error-circle'></i> <?= st_t($state['error']) ?></p>
+    <span class="st-error" id="e-<?= $id ?>"><i class='bx bx-error-circle' aria-hidden="true"></i> <?= st_t($state['error']) ?></span>
 	<?php } ?>
+  </div>
+  <div class="st-ctl">
+	<?php if ($def['type'] === 'bool') { ?>
+    <button type="button" role="switch" class="st-switch" id="<?= $id ?>" aria-checked="<?= $value === '1' ? 'true' : 'false' ?>" aria-labelledby="l-<?= $id ?>"<?= $disabled ? ' disabled' : '' ?>><span></span></button>
+    <input type="hidden"<?= $nameAttr ?> value="<?= st_h($value) ?>" data-control>
+	<?php } elseif ($def['type'] === 'select') { ?>
+    <select class="st-input st-select" id="<?= $id ?>"<?= $nameAttr ?> data-control<?= $disabled ? ' disabled' : '' ?><?= $invalid ?>>
+		<?php foreach ($def['options'] as $optValue => $optLabel) { ?>
+      <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= st_t($optLabel) ?></option>
+		<?php } ?>
+    </select>
+	<?php } elseif ($def['type'] === 'account' || $def['type'] === 'item') {
+		$resolved = '';
+		if ($value !== '') {
+			if ($def['type'] === 'account') {
+				$resolved = (string) st_account_name($value);
+			} else {
+				$item = st_item_by_varenr($value);
+				$resolved = $item ? $item['name'] : '';
+			}
+		}
+		?>
+    <div class="st-lookup" data-lookup="<?= $def['type'] ?>">
+      <span class="st-look"><input class="st-input" type="text" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>" autocomplete="off" data-control role="combobox" aria-autocomplete="list" aria-expanded="false"<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>><i class='bx bx-search' aria-hidden="true"></i></span>
+      <span class="st-resolved"><?= $resolved !== '' ? '· ' . st_h($resolved) : '' ?></span>
+      <ul class="st-lookup-list" role="listbox" hidden></ul>
+    </div>
+	<?php } else {
+		$type = ($def['type'] === 'email') ? 'email' : 'text';
+		$mode = ($def['type'] === 'int') ? ' inputmode="numeric"' : (($def['type'] === 'decimal') ? ' inputmode="decimal"' : '');
+		$short = ($def['type'] === 'int' || $def['type'] === 'decimal' || $def['type'] === 'date') ? ' st-input-short' : '';
+		if ($def['type'] === 'date') {
+			$mode = ' inputmode="numeric" placeholder="dd-mm-' . date('Y') . '"';
+		}
+		?>
+    <input class="st-input<?= $short ?>" type="<?= $type ?>" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>"<?= $mode ?> data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>>
+		<?php if (isset($def['unit'])) { ?><span class="st-unit"><?= st_h(st_unit($def)) ?></span><?php } ?>
+	<?php } ?>
+    <input type="hidden" name="o[<?= st_h($key) ?>]" value="<?= st_h(isset($state['original']) ? $state['original'] : $value) ?>">
+  </div>
 </div>
 	<?php
 }
 
 /**
- * An action (spec P4): its own button with a confirmation dialog, run on POST only.
+ * An action (spec P4): a row with its own button and a confirmation dialog, run on POST only.
  */
 function st_render_action(array $def, bool $canRun, bool $visible): void
 {
 	?>
-<div class="st-action<?= !empty($def['danger']) ? ' st-action-danger' : '' ?>" id="<?= st_h($def['key']) ?>" data-key="<?= st_h($def['key']) ?>"<?= $def['visible_if'] ? ' data-visible-if="' . st_h(json_encode($def['visible_if'])) . '"' : '' ?><?= $visible ? '' : ' hidden' ?>>
-  <div>
+<div class="st-action" id="<?= st_h($def['key']) ?>" data-key="<?= st_h($def['key']) ?>"<?= $def['visible_if'] ? ' data-visible-if="' . st_h(json_encode($def['visible_if'])) . '"' : '' ?><?= $visible ? '' : ' hidden' ?>>
+  <div class="st-tx">
     <span class="st-label"><?= st_t($def['label']) ?></span>
-		<?php if (isset($def['help'])) { ?><p class="st-help"><?= st_t($def['help']) ?></p><?php } ?>
+	<?php if (isset($def['help'])) { ?><span class="st-help"><?= st_t($def['help']) ?></span><?php } ?>
   </div>
-  <button type="button" class="st-btn" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?>" data-verb="<?= st_t($def['label']) ?>"<?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?></button>
+  <div class="st-ctl">
+    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?>" data-verb="<?= st_t($def['label']) ?>"<?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
+  </div>
 </div>
 	<?php
 }

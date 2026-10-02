@@ -30,6 +30,8 @@
 // 20260930 Sawaneh Close, reopen and role change report 'already'/'unchanged' instead of success when nothing changes.
 // 20260930 Sawaneh Reset password by mail (§8.2), shared mail sender, last active from live sessions (§8.1).
 // 20260930 Sawaneh Confirming a migrated role (§6.3); any role change counts as the confirmation.
+// 20261001 Sawaneh Review fixes: only users within the actor's own access can be changed (R5); a user the
+//                  audit log did not see being created counts as having logged in; booleans as true/false.
 
 include_once(__DIR__ . '/permissions.php');
 
@@ -94,7 +96,26 @@ function user_has_logged_in(int $id): bool
 	if (!audit_ready()) {
 		return true;
 	}
-	return (bool) db_fetch_array(db_select("select id from audit_log where bruger_id = $id and handling in ('login', 'login.success') limit 1", __FILE__ . " linje " . __LINE__));
+	if (db_fetch_array(db_select("select id from audit_log where bruger_id = $id and handling in ('login', 'login.success') limit 1", __FILE__ . " linje " . __LINE__))) {
+		return true;
+	}
+	// The audit log only knows logins since it was introduced. A user it did not see being
+	// created may well have logged in before that, so only users created since count as new.
+	return !db_fetch_array(db_select("select id from audit_log where objekt_type = 'bruger' and objekt_id = '$id' and handling in ('user.created', 'user.invited') limit 1", __FILE__ . " linje " . __LINE__));
+}
+
+/**
+ * True when the current user may change this user: their present access must lie within the
+ * current user's own (spec R5). Otherwise a user manager could set an administrator's password
+ * or e-mail and log in as them, or demote and close administrators.
+ *
+ * @param array<string, mixed> $row from brugere
+ */
+function user_may_manage(array $row): bool
+{
+	$roleId = (int) ifset($row, 'role_id', 0);
+	$levels = $roleId > 0 ? perm_levels_from_role($roleId) : perm_levels_from_legacy((string) ifset($row, 'rettigheder', ''));
+	return perm_within_own($levels);
 }
 
 /**
@@ -117,7 +138,7 @@ function user_create(array $data, string $kilde = 'ui'): int
 	$qtxt .= "'" . db_escape_string(mb_substr((string) (isset($data['ip_address']) ? $data['ip_address'] : ''), 0, 45)) . "', ";
 	$qtxt .= "'" . db_escape_string(mb_substr((string) (isset($data['tlf']) ? $data['tlf'] : ''), 0, 16)) . "', ";
 	$qtxt .= "'$twofactor', '" . db_escape_string((string) (isset($data['email']) ? $data['email'] : '')) . "', ";
-	$qtxt .= ($roleId > 0 ? (string) $roleId : 'null') . ", 't')";
+	$qtxt .= ($roleId > 0 ? (string) $roleId : 'null') . ", true)";
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 	$r = db_fetch_array(db_select("select id from brugere where brugernavn = '$navnSql' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
 	$id = (int) $r['id'];
@@ -149,10 +170,13 @@ function user_close(int $id, int $selfId, string $kilde = 'ui'): string
 	if (!user_row_active($r)) {
 		return 'already';
 	}
+	if (!user_may_manage($r)) {
+		return 'above';
+	}
 	if (user_is_last_admin($id)) {
 		return 'lastadmin';
 	}
-	db_modify("update brugere set status = 'f' where id = $id", __FILE__ . " linje " . __LINE__);
+	db_modify("update brugere set status = false where id = $id", __FILE__ . " linje " . __LINE__);
 	if ((int) $r['ansat_id'] > 0) {
 		db_modify("update ansatte set lukket = 'on', slutdate = '" . date('Y-m-d') . "' where id = " . (int) $r['ansat_id'], __FILE__ . " linje " . __LINE__);
 	}
@@ -173,7 +197,10 @@ function user_reopen(int $id, string $kilde = 'ui'): string
 	if (user_row_active($r)) {
 		return 'already';
 	}
-	db_modify("update brugere set status = 't' where id = $id", __FILE__ . " linje " . __LINE__);
+	if (!user_may_manage($r)) {
+		return 'above';
+	}
+	db_modify("update brugere set status = true where id = $id", __FILE__ . " linje " . __LINE__);
 	if ((int) $r['ansat_id'] > 0) {
 		db_modify("update ansatte set lukket = '', slutdate = null where id = " . (int) $r['ansat_id'], __FILE__ . " linje " . __LINE__);
 	}
@@ -197,6 +224,9 @@ function user_delete(int $id, int $selfId, string $kilde = 'ui'): string
 	}
 	if (user_is_last_admin($id)) {
 		return 'lastadmin';
+	}
+	if (!user_may_manage($r)) {
+		return 'above';
 	}
 	if (user_has_logged_in($id)) {
 		return 'hasloggedin';
@@ -223,6 +253,9 @@ function user_set_role(int $id, int $roleId, int $selfId, string $kilde = 'ui'):
 	}
 	if ($id === $selfId) {
 		return 'ownrole';
+	}
+	if (!user_may_manage($r)) {
+		return 'above';
 	}
 	if ($roleId > 0 && !perm_within_own(perm_levels_from_role($roleId))) {
 		return 'escalation';
@@ -382,6 +415,9 @@ function user_reset_password(int $id, int $sprogId, string $kilde = 'ui'): strin
 	}
 	if (!user_row_active($r)) {
 		return 'closed';
+	}
+	if (!user_may_manage($r)) {
+		return 'above';
 	}
 	$to = trim((string) ifset($r, 'email', ''));
 	if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {

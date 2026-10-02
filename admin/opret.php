@@ -109,6 +109,7 @@
 //             instead of relying only on $db != $sqdb (SD-615)
 // 20260818 CL/LH Corrected Stripe table boolean default definitions
 // 20260908 CL/NTR Reject account names over 60 and usernames over 80 characters (is_input_too_long)
+// 20261002 Sawaneh The unused notifications table (msg, read_status) is no longer created; see includes/betweenUpdates.php.
 //                  before creating the account, matching login.php and varchar(60) on regnskab.regnskab
 
 @session_start();
@@ -671,7 +672,8 @@ if ($db_type=="mysql" or $db_type=="mysqli") {
 	$qtxt.= "created_at timestamp DEFAULT CURRENT_TIMESTAMP, resolved_at timestamp, PRIMARY KEY (id))";
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 
-	db_modify("CREATE TABLE notifications ($id_column, msg varchar(255), read_status integer, PRIMARY KEY (id))", __FILE__ . " linje " . __LINE__);
+	// 20261002 Sawaneh notifications is created at the first login by includes/betweenUpdates.php (notification
+	// center); the old table (msg, read_status) had no reader left.
 
 	db_modify("CREATE TABLE rentalclosed ($id_column, day integer, PRIMARY KEY (id))", __FILE__ . " linje " . __LINE__);
 

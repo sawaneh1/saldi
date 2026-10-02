@@ -62,7 +62,8 @@
 // 20260916 Sawaneh Successful login written to audit_log (roles & permissions, spec R7).
 // 20260929 Sawaneh Roles stage 2 (§8.4, §8.6): tmp_kode read and written in the common format; ?invite= opens the invitation page.
 // 20260930 Sawaneh Roles stage 2 (§7.1): login.failed, login.2fa_failed, login.ip_blocked and session.forced_logout in the audit log.
-// 20260930 Sawaneh Indexes on online.session_id and online.logtime (roles spec §4.7, without the primary key: see comment).
+// 20260930 Sawaneh Indexes on online.session_id and online.logtime (roles spec §4.7, without the primary key: see comment);
+//                  created only when missing.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
 if (isset($_GET['invite'])) {
@@ -138,8 +139,13 @@ if ($db_type == 'mysql' || $db_type == 'mysqli') {
 		}
 	}
 } else {
-	db_modify("CREATE INDEX IF NOT EXISTS online_session_idx ON online (session_id)", __FILE__ . " linje " . __LINE__);
-	db_modify("CREATE INDEX IF NOT EXISTS online_logtime_idx ON online (logtime)", __FILE__ . " linje " . __LINE__);
+	// Look first: CREATE INDEX IF NOT EXISTS still takes a lock on the table at every login.
+	foreach (array('online_session_idx' => 'session_id', 'online_logtime_idx' => 'logtime') as $idxName => $idxCol) {
+		$qtxt = "SELECT indexname FROM pg_indexes WHERE tablename = 'online' AND indexname = '$idxName'";
+		if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+			db_modify("CREATE INDEX IF NOT EXISTS $idxName ON online ($idxCol)", __FILE__ . " linje " . __LINE__);
+		}
+	}
 }
 #$_COOKIE['timezone'] = $timezone;#20210929
 $qtxt = "SELECT table_name FROM information_schema.columns WHERE table_name = 'settings'";

@@ -177,7 +177,6 @@ include("productCardIncludes/itemVat.php");
 include("productCardIncludes/percentageField.php");
 include_once("../includes/emballage_schema.php");
 $packagingModuleEnabled = (get_settings_value("packagingModuleEnabled", "items", "off") === "on");
-if ($packagingModuleEnabled) ensure_emballage_schema();
 
 $qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='varer' and column_name='specialtype'";
 if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {

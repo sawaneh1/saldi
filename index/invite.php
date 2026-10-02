@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------
 // 20260929 Sawaneh Roles stage 2 (Requirements_roles_stage2_EN.md §8.4): the page an invitation link
 //                  opens. The invited user chooses a password and is then logged in the normal way.
+// 20261001 Sawaneh MySQL: select the company database after connecting (as online.php).
 
 @session_start();
 if (empty($_SESSION['nonce'])) {
@@ -73,7 +74,7 @@ invite_view($state, $token, $invite, $error, $login, $sprog_id, $nonce);
  */
 function invite_lookup(string $token): array
 {
-	global $sqhost, $squser, $sqpass, $sqdb, $connection;
+	global $sqhost, $squser, $sqpass, $sqdb, $connection, $db_type, $db;
 	$none = array('state' => 'invalid', 'regnskab' => '', 'user' => null);
 	if (!preg_match('/^(\d{1,9})-([a-f0-9]{48})$/', $token, $m)) {
 		return $none;
@@ -83,6 +84,11 @@ function invite_lookup(string $token): array
 		return $none;
 	}
 	$connection = db_connect("'$sqhost'", "'$squser'", "'$sqpass'", "'" . trim((string) $r['db']) . "'");
+	// MySQL connects to the server only; the company database is selected separately (as in online.php).
+	if ($connection && ($db_type === 'mysqli' || $db_type === 'mysql') && !mysqli_select_db($connection, trim((string) $r['db']))) {
+		return $none;
+	}
+	$db = trim((string) $r['db']);
 	if (!$connection) {
 		return $none;
 	}

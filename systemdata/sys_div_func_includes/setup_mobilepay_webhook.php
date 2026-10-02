@@ -26,6 +26,7 @@
 // 20240209 PHR Added indbetaling
 // 20240227 PHR Added $printfile and call to saldiprint.php
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261001 Sawaneh The old webhook secret is removed before the new one is stored (one row per setting).
 
 #print '<head>';
 #print '<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap" rel="stylesheet">';
@@ -232,6 +233,8 @@ if ($response === false) {
 	echo "Status Code: " . $status_code . "\n";
 	if ($status_code === 201) {
 		$data = json_decode($response, true);
+		// A new webhook replaces the old secret (one row per setting).
+		db_modify("delete from settings where var_name = 'webhook_secret' and var_grp = 'mobilepay'", __FILE__ . " linje " . __LINE__);
 		$qtxt="insert into settings (var_name, var_grp, var_value, var_description) values ('webhook_secret', 'mobilepay', '$data[secret]', 'The secret that is genertated for the webhook')";
 		db_modify($qtxt,__FILE__ . " linje " . __LINE__);
 print_r($data);

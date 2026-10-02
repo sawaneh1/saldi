@@ -67,6 +67,8 @@
 //                  Phase 3 gate: perm_enforce_request() after the legacy check ($permission_key /
 //                  $permission_level / $permission_post_read declared by the page, $modulnr as
 //                  fallback); auditor sessions get the Revisor role once enforcement is 'deny'.
+// 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
+// 20261002 Sawaneh Same for the USET row in grupper (unique index on the settings arts of grupper).
 
 #include("../includes/connect.php"); #20211001
 if (!isset($buttonColor))    $buttonColor = '#114691';
@@ -99,6 +101,7 @@ if ($r['var_value']) {
 		$qtxt = "insert into settings (var_name,var_value,var_description)";
 		$qtxt .= " values ";
 		$qtxt .= "('timezone','$timezone','Generel tidszone. Anvendes hvis der ikke er sat tidszone i det enkelte regnskab')";
+		$qtxt .= (in_array($GLOBALS['db_type'], array('mysql', 'mysqli')) ? '' : ' ON CONFLICT DO NOTHING');
 	}
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 }
@@ -288,7 +291,7 @@ if (isset($db_id) && isset($db) && isset($sqdb) && $db != $sqdb) { #20200928
 		if (!$r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 			#			$r = db_fetch_array(db_select("select max(id) as id from grupper",__FILE__ . " linje " . __LINE__)); 20140117 
 #			$g_id=$r['id']+1;
-			db_modify("insert into grupper(beskrivelse,art,kodenr,box1,box2,box3,box4,box5) values ('Usersettings','USET','$bruger_id','$jsvars','','S','#eeeef0','')", __FILE__ . " linje " . __LINE__);
+			db_modify("insert into grupper(beskrivelse,art,kodenr,box1,box2,box3,box4,box5) values ('Usersettings','USET','$bruger_id','$jsvars','','S','#eeeef0','')" . (in_array($db_type, array('mysql', 'mysqli')) ? '' : ' ON CONFLICT DO NOTHING'), __FILE__ . " linje " . __LINE__);
 		} else {
 			$jsvars = $r['box1'];
 			$popup = $r['box2'];

@@ -27,6 +27,8 @@
 //                  batch expiry, bank-integration connection. Types can be switched off per user.
 // 20260930 Sawaneh Daily e-mail summary of unread notifications (Adam: summary only, no mail per notification),
 //                  sent by tools/notification_digest.php once a day for users who switched it on.
+// 20261001 Sawaneh notif_ready() remembers its answer per company database (the digest script visits several).
+// 20261002 Sawaneh notif_ready() checks the table's shape: an older unused table has the same name in most companies.
 
 /**
  * @return array<string, string> type -> label text id
@@ -43,11 +45,15 @@ function notif_types(): array
 
 function notif_ready(): bool
 {
-	static $ready = null;
-	if ($ready === null) {
-		$ready = function_exists('tbl_exists') && tbl_exists('notifications') && tbl_exists('notification_read');
+	// Per database: the daily summary script walks through every company in one process.
+	static $ready = array();
+	$key = isset($GLOBALS['db']) ? (string) $GLOBALS['db'] : '';
+	if (!isset($ready[$key])) {
+		// The 'type' column tells the notification center's table from the older unused one of the same name.
+		$ready[$key] = function_exists('tbl_exists') && tbl_exists('notification_read')
+			&& (bool) db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'notifications' and column_name = 'type'", __FILE__ . " linje " . __LINE__));
 	}
-	return $ready;
+	return $ready[$key];
 }
 
 /**

@@ -19,6 +19,8 @@
 // ----------------------------------------------------------------------
 // 20260929 Sawaneh Registry v2 (Requirements_settings_redesign_EN.md §7.1): the definition of each
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
+// 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
+//                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
 //                  setting - key, type, scope, group/section, label and help text ids, default,
 //                  storage (the EXISTING location and encoding), permission, dependencies.
 //                  Section pages, save logic, search, change history and the "moved" page are
@@ -64,8 +66,58 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'items', 'section' => 'stock', 'number' => 'G5.5', 'label' => 5680, 'icon' => 'bx-package',
 				'subsections' => array('stock' => 5688, 'cost' => 5689, 'mail' => 5690, 'card' => 5691),
 				'legacy' => array(array(782, 786), array(782, 787)),
+				'old' => array('productOptions' => array(782, 787)),
 				'context' => array('lager/varekort.php', 'lager/varer.php'),
 				'keywords' => array('lager', 'stock', 'inventory', 'kostpris', 'cost price', 'fifo', 'beholdning', 'minimumsbeholdning'),
+			),
+			// ---- phase 4b
+			'finance.cash_journal' => array(
+				'group' => 'finance', 'section' => 'cash_journal', 'number' => 'G2.5', 'label' => 5983, 'icon' => 'bx-book',
+				'subsections' => array('journal' => 601, 'payments' => 532, 'due' => 2732, 'rounding' => 170),
+				'legacy' => array(array(782, 794), array(782, 170), array(2732)),
+				'old' => array('div_valg' => array(782, 794), 'orediff' => array(782, 170), 'betalinger' => array(2732)),
+				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
+				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
+			),
+			'sales.mysale' => array(
+				'group' => 'sales', 'section' => 'mysale', 'number' => 'G3.6', 'label' => 5986, 'icon' => 'bx-store',
+				'subsections' => array('mysale' => 5986, 'labels' => 5992),
+				'legacy' => array(array(782, 794)),
+				'old' => array('div_valg' => array(782, 794)),
+				'context' => array('mysale/showMySale.php', 'debitor/debitor_kommission.php'),
+				'keywords' => array('mit salg', 'mysale', 'my sales', 'loppemarked', 'kommission', 'provisionskunder', 'labels'),
+			),
+			'items.consignment' => array(
+				'group' => 'items', 'section' => 'consignment', 'number' => 'G5.6', 'label' => 5975, 'icon' => 'bx-purchase-tag', 'module' => 'pos',
+				'subsections' => array('consignment' => 5975, 'accounts' => 117, 'settlement' => 2051),
+				'legacy' => array(array(782, 787)),
+				'old' => array('productOptions' => array(782, 787)),
+				'context' => array('lager/varekort.php', 'debitor/kasseoptaelling.php'),
+				'keywords' => array('kommission', 'kommissionsvarer', 'consignment', 'commission', 'brugte varer', 'used items', 'afregning', 'settlement'),
+			),
+			'items.packaging' => array(
+				'group' => 'items', 'section' => 'packaging', 'number' => 'G5.7', 'label' => 5976, 'icon' => 'bx-box',
+				'subsections' => array('packaging' => 5976),
+				'legacy' => array(array(782, 787)),
+				'old' => array('productOptions' => array(782, 787)),
+				'context' => array('lager/emballage.php', 'lager/varekort.php'),
+				'keywords' => array('emballage', 'packaging', 'producentansvar', 'producer responsibility', 'emballageafgift'),
+			),
+			'documents.print' => array(
+				'group' => 'documents', 'section' => 'print', 'number' => 'G6.4', 'label' => 5993, 'icon' => 'bx-printer',
+				'subsections' => array('print' => 5993),
+				'legacy' => array(array(782, 794)),
+				'old' => array('div_valg' => array(782, 794)),
+				'context' => array('includes/udskriv.php'),
+				'keywords' => array('udskrift', 'print', 'printer', 'lokal printer', 'local printer', 'html', 'postscript', 'formulargenerering', 'form generation'),
+			),
+			'organisation.commission' => array(
+				'group' => 'organisation', 'section' => 'commission', 'number' => 'G7.4', 'label' => 657, 'icon' => 'bx-line-chart',
+				'subsections' => array('basis' => 1263, 'card' => 566),
+				'legacy' => array(array(782, 784), array(782, 787)),
+				'old' => array('provision' => array(782, 784)),
+				'context' => array('finans/provisionsrapport.php', 'lager/varekort.php'),
+				'keywords' => array('provision', 'commission', 'provisionsrapport', 'commission report', 'kundeansvarlig', 'referenceperson', 'skæringsdato', 'cut-off'),
 			),
 		);
 	}
@@ -85,6 +137,8 @@ if (!function_exists('getSettingsSections')) {
 		$vare = array(782, 787);
 		$divvalg = array(782, 794);
 		$mass = array(782, 200);
+		$prov = array(782, 784);
+		$ore = array(782, 170);
 
 		$defs = array(
 			// ---------------------------------------------------------------- G3.2 Debtor card
@@ -230,11 +284,113 @@ if (!function_exists('getSettingsSections')) {
 			'items.stock.confirm_stock_change' => array('sub' => 'card', 'type' => 'bool', 'label' => 1277, 'help' => 1278, 'default' => false,
 				'storage' => array('settings', 'items', 'confirmStockChange', 'onEmpty'), 'legacy' => $vare),
 
+			// ---------------------------------------------------------------- G2.5 Cash journal & payments
+			'finance.cash_journal.different_dates_same_voucher' => array('sub' => 'journal', 'type' => 'bool', 'label' => 708, 'help' => 709, 'default' => false,
+				'storage' => array('grupper', 'DIV', 2, 'box4', 'onEmpty', 'row_name' => 'Div_valg'), 'legacy' => $divvalg,
+				'keywords' => array('bilagsnummer', 'voucher number', 'dato', 'date')),
+			'finance.cash_journal.payment_lists' => array('sub' => 'payments', 'type' => 'select', 'label' => 184, 'help' => 185, 'default' => '',
+				'options' => array('' => 2541, 'B' => 1266, 'D' => 5985, 'K' => 607),
+				'storage' => array('grupper', 'DIV', 2, 'box10', 'raw', 'row_name' => 'Div_valg'), 'legacy' => $divvalg,
+				'keywords' => array('betalingslister', 'payment lists', 'erh', 'bank')),
+			'finance.cash_journal.payment_days' => array('sub' => 'due', 'type' => 'int', 'label' => 2733, 'help' => 2734, 'default' => '', 'empty_ok' => true, 'unit' => 5025,
+				'storage' => array('settings', 'payment_list', 'paymentDays', 'raw'), 'legacy' => array(2732),
+				'keywords' => array('betalingsfrist', 'betalingsdage', 'payment days', 'forfald', 'due date')),
+			'finance.cash_journal.rounding_max' => array('sub' => 'rounding', 'type' => 'decimal', 'label' => 172, 'help' => 171, 'default' => '',
+				'storage' => array('grupper', 'OreDif', 1, 'box1', 'raw', 'row_name' => 'Oredifferencer'), 'legacy' => $ore,
+				'keywords' => array('øredifference', 'rounding', 'afrunding')),
+			'finance.cash_journal.rounding_account' => array('sub' => 'rounding', 'type' => 'account', 'label' => 174, 'help' => 173, 'default' => '',
+				'storage' => array('grupper', 'OreDif', 1, 'box2', 'raw', 'row_name' => 'Oredifferencer'), 'legacy' => $ore, 'validate' => array('account_exists'),
+				'keywords' => array('øredifferencekonto', 'rounding account')),
+
+			// ---------------------------------------------------------------- G3.6 mySale
+			'sales.mysale.enabled' => array('sub' => 'mysale', 'type' => 'bool', 'label' => 768, 'help' => 767, 'default' => false,
+				'storage' => array('settings', 'debitor', 'mySale', 'onEmpty'), 'legacy' => $divvalg,
+				'keywords' => array('mit salg', 'mysale', 'my sales')),
+			'sales.mysale.show_times' => array('sub' => 'mysale', 'type' => 'bool', 'label' => 5990, 'help' => 5991, 'default' => false,
+				'storage' => array('settings', 'mysale', 'showMysaleTimes', 'oneZero'), 'legacy' => $divvalg,
+				'visible_if' => array('setting', 'sales.mysale.enabled', true)),
+			'sales.mysale.disable_customer_labels' => array('sub' => 'labels', 'type' => 'bool', 'label' => 5987, 'help' => 5988, 'default' => false,
+				'storage' => array('settings', 'debitor', 'mySaleLabel', 'onEmpty'), 'legacy' => $divvalg,
+				'visible_if' => array('setting', 'sales.mysale.enabled', true)),
+			'sales.mysale.label_max_length' => array('sub' => 'labels', 'type' => 'int', 'label' => 5989, 'help' => 2450, 'default' => 22,
+				'storage' => array('settings', 'mysale', 'labelsize', 'raw'), 'legacy' => $divvalg,
+				'visible_if' => array('setting', 'sales.mysale.enabled', true)),
+
+			// ---------------------------------------------------------------- G5.6 Consignment items (PoS)
+			'items.consignment.enabled' => array('sub' => 'consignment', 'type' => 'bool', 'label' => 1281, 'help' => 1282, 'default' => false,
+				'storage' => array('settings', 'items', 'useCommission', 'onEmpty'), 'legacy' => $vare,
+				'keywords' => array('kommission', 'consignment', 'commission')),
+			'items.consignment.default_rate' => array('sub' => 'consignment', 'type' => 'decimal', 'label' => 1283, 'help' => 1284, 'default' => '', 'unit' => '%',
+				'storage' => array('settings', 'items', 'defaultCommission', 'raw'), 'legacy' => $vare,
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.include_vat' => array('sub' => 'consignment', 'type' => 'bool', 'label' => 2544, 'help' => 2545, 'default' => false,
+				'storage' => array('settings', 'items', 'commissionInclVat', 'onEmpty'), 'legacy' => $vare,
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.income_account_new' => array('sub' => 'accounts', 'type' => 'account', 'label' => 1286, 'help' => 1287, 'default' => '',
+				'storage' => array('settings', 'items', 'commissionAccountNew', 'raw'), 'legacy' => $vare, 'validate' => array('account_exists'),
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.settlement_account_new' => array('sub' => 'accounts', 'type' => 'account', 'label' => 1289, 'help' => 1290, 'default' => '',
+				'storage' => array('settings', 'items', 'customerCommissionAccountNew', 'raw'), 'legacy' => $vare, 'validate' => array('account_exists'),
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.own_account_new' => array('sub' => 'accounts', 'type' => 'account', 'label' => 1291, 'help' => 1292, 'default' => '',
+				'storage' => array('settings', 'items', 'ownCommissionAccountNew', 'raw'), 'legacy' => $vare, 'validate' => array('account_exists'),
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.income_account_used' => array('sub' => 'accounts', 'type' => 'account', 'label' => 1293, 'help' => 1294, 'default' => '',
+				'storage' => array('settings', 'items', 'commissionAccountUsed', 'raw'), 'legacy' => $vare, 'validate' => array('account_exists'),
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.settlement_account_used' => array('sub' => 'accounts', 'type' => 'account', 'label' => 1295, 'help' => 1296, 'default' => '',
+				'storage' => array('settings', 'items', 'customerCommissionAccountUsed', 'raw'), 'legacy' => $vare, 'validate' => array('account_exists'),
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.own_account_used' => array('sub' => 'accounts', 'type' => 'account', 'label' => 1297, 'help' => 1298, 'default' => '',
+				'storage' => array('settings', 'items', 'ownCommissionAccountUsed', 'raw'), 'legacy' => $vare, 'validate' => array('account_exists'),
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.settlement_from' => array('sub' => 'settlement', 'type' => 'date', 'label' => 1306, 'help' => 1307, 'default' => '2021-01-01',
+				'storage' => array('settings', 'items', 'commissionFromDate', 'raw'), 'legacy' => $vare,
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+			'items.consignment.convert_existing' => array('sub' => 'settlement', 'type' => 'action', 'label' => 1299, 'help' => 6005,
+				'confirm_title' => 1299, 'confirm' => 6006, 'run' => 'convert_commission_items', 'legacy' => $vare,
+				'visible_if' => array('setting', 'items.consignment.enabled', true)),
+
+			// ---------------------------------------------------------------- G5.7 Packaging
+			'items.packaging.enabled' => array('sub' => 'packaging', 'type' => 'bool', 'label' => 5995, 'help' => 5996, 'default' => false,
+				'storage' => array('settings', 'items', 'packagingModuleEnabled', 'onEmpty'), 'legacy' => $vare, 'on_save' => 'ensure_emballage_schema',
+				'keywords' => array('emballage', 'packaging', 'producentansvar')),
+
+			// ---------------------------------------------------------------- G6.4 Print
+			'documents.print.local_printer' => array('sub' => 'print', 'type' => 'bool', 'label' => 763, 'help' => 5994, 'default' => false,
+				'storage' => array('grupper', 'PV', 1, 'box1', 'onEmpty', 'row_name' => 'Udskrift'), 'legacy' => $divvalg,
+				'keywords' => array('lokal printer', 'local printer', 'port 9100')),
+			'documents.print.html_forms' => array('sub' => 'print', 'type' => 'bool', 'label' => 818, 'help' => 817, 'default' => false,
+				'storage' => array('grupper', 'PV', 1, 'box3', 'onEmpty', 'row_name' => 'Udskrift'), 'legacy' => $divvalg,
+				'keywords' => array('html', 'css', 'postscript', 'formulargenerering')),
+
+			// ---------------------------------------------------------------- G7.4 Commission
+			'organisation.commission.basis' => array('sub' => 'basis', 'type' => 'select', 'label' => 1269, 'help' => 6002, 'default' => 'fak',
+				'options' => array('fak' => 1264, 'bet' => 1265),
+				'storage' => array('grupper', 'DIV', 1, 'box4', 'raw', 'row_name' => 'Provisionsrapport'), 'legacy' => $prov),
+			'organisation.commission.person_source' => array('sub' => 'basis', 'type' => 'select', 'label' => 1268, 'help' => 6003, 'default' => 'smart',
+				'options' => array('smart' => 1266, 'ref' => 6001, 'kua' => 386),
+				'storage' => array('grupper', 'DIV', 1, 'box1', 'raw', 'row_name' => 'Provisionsrapport'), 'legacy' => $prov),
+			'organisation.commission.cost_source' => array('sub' => 'basis', 'type' => 'select', 'label' => 1270, 'help' => 6004, 'default' => 'batch',
+				'options' => array('batch' => 1271, 'kort' => 566),
+				'storage' => array('grupper', 'DIV', 1, 'box2', 'raw', 'row_name' => 'Provisionsrapport'), 'legacy' => $prov),
+			'organisation.commission.cutoff_day' => array('sub' => 'basis', 'type' => 'int', 'label' => 1272, 'help' => 1724, 'default' => '', 'empty_ok' => true,
+				'storage' => array('grupper', 'DIV', 1, 'box3', 'raw', 'row_name' => 'Provisionsrapport'), 'legacy' => $prov,
+				'validate' => array('range', 1, 28)),
+			'organisation.commission.default_rate' => array('sub' => 'card', 'type' => 'decimal', 'label' => 5997, 'help' => 5998, 'default' => '', 'unit' => '%',
+				'storage' => array('settings', 'items', 'defaultProvision', 'raw'), 'legacy' => $vare),
+			'organisation.commission.show_on_item_card' => array('sub' => 'card', 'type' => 'bool', 'label' => 5999, 'help' => 6000, 'default' => false,
+				'storage' => array('settings', 'items', 'showProvision', 'onEmpty'), 'legacy' => $vare),
+
 			// ---------------------------------------------------------------- Personal (topbar spec §4)
 			'personal.orders.autocomplete' => array('group' => 'personal', 'section' => 'profile', 'sub' => 'profile', 'scope' => 'user',
 				'type' => 'bool', 'label' => 5704, 'help' => 5705, 'default' => true, 'permission' => 'any',
 				'storage' => array('settings', 'ordre', 'ordreAutocomplete', 'onEmpty'), 'legacy' => $ordre,
 				'keywords' => array('autosøgning', 'autocomplete')),
+			'personal.print.local_print' => array('group' => 'personal', 'section' => 'print', 'sub' => 'print', 'scope' => 'user',
+				'type' => 'bool', 'label' => 6007, 'help' => 6008, 'default' => false, 'permission' => 'any',
+				'storage' => array('settings', 'print', 'localPrint', 'onEmpty'), 'legacy' => $divvalg,
+				'keywords' => array('lokal printer', 'local printer')),
 		);
 
 		$groups = getSettingsGroups();
@@ -244,7 +400,7 @@ if (!function_exists('getSettingsSections')) {
 				$def['group'] = $parts[0];
 				$def['section'] = $parts[1];
 			}
-			$def += array('scope' => 'company', 'audit' => true, 'visible_if' => null, 'validate' => null, 'keywords' => array());
+			$def += array('scope' => 'company', 'audit' => true, 'visible_if' => null, 'validate' => null, 'keywords' => array(), 'on_save' => null);
 			if (!isset($def['permission'])) {
 				$def['permission'] = isset($groups[$def['group']]) ? $groups[$def['group']]['permission'] : 'system.indstillinger';
 			}
@@ -277,18 +433,19 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(780), 'to' => array(array('documents', null, 'formularkort.php?valg=formularer'))),
 			array('old' => array(781), 'to' => array(array('items', null, 'enheder.php'))),
 			array('old' => array($d, 783), 'to' => array(array('company', null, 'diverse.php?sektion=kontoindstillinger'))),
-			array('old' => array($d, 784), 'to' => array(array('organisation', null, 'diverse.php?sektion=provision'))),
+			array('old' => array($d, 784), 'to' => array(array('organisation', 'organisation.commission', null))),
 			array('old' => array($d, 786), 'to' => array(array('sales', 'sales.orders', null), array('sales', 'sales.debtor_card', null), array('purchase', 'purchase.orders', null), array('items', 'items.stock', null), array('personal', null, 'personalSettings.php'))),
-			array('old' => array($d, 787), 'to' => array(array('items', 'items.stock', null), array('items', null, 'diverse.php?sektion=productOptions'))),
+			array('old' => array($d, 787), 'to' => array(array('items', 'items.stock', null), array('items', 'items.consignment', null), array('items', 'items.packaging', null))),
 			array('old' => array($d, 788), 'to' => array(array('items', null, 'diverse.php?sektion=variant_valg'))),
 			array('old' => array($d, 790), 'to' => array(array('integrations', null, 'diverse.php?sektion=api_valg'))),
 			array('old' => array($d, 791), 'to' => array(array('items', null, 'diverse.php?sektion=labels'))),
 			array('old' => array($d, 792), 'to' => array(array('purchase', null, 'diverse.php?sektion=pricelists'))),
 			array('old' => array($d, 793), 'to' => array(array('sales', null, 'diverse.php?sektion=rykker_valg'))),
-			array('old' => array($d, 794), 'to' => array(array('sales', 'sales.debtor_card', null), array('company', null, 'diverse.php?sektion=div_valg'))),
+			array('old' => array($d, 794), 'to' => array(array('sales', 'sales.debtor_card', null), array('finance', 'finance.cash_journal', null), array('sales', 'sales.mysale', null), array('documents', 'documents.print', null), array('company', null, 'diverse.php?sektion=div_valg'))),
 			array('old' => array($d, 796), 'to' => array(array('organisation', null, 'diverse.php?sektion=tjekliste'))),
 			array('old' => array($d, 797), 'to' => array(array('finance', null, 'diverse.php?sektion=bilag'))),
-			array('old' => array($d, 170), 'to' => array(array('finance', null, 'diverse.php?sektion=orediff'))),
+			array('old' => array($d, 170), 'to' => array(array('finance', 'finance.cash_journal', null))),
+			array('old' => array(2732), 'to' => array(array('finance', 'finance.cash_journal', null))),
 			array('old' => array($d, 200), 'to' => array(array('sales', 'sales.orders', null))),
 			array('old' => array($d, 271), 'to' => array(array('pos', null, 'diverse.php?sektion=posOptions'))),
 			array('old' => array($d, 801), 'to' => array(array('personal', null, 'personalSettings.php'), array('company', null, 'diverse.php?sektion=sprog'))),

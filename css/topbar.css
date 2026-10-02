@@ -1,6 +1,7 @@
 /* Shell global bar (index/main.php via index/mainIncludes/topbar.php).
    2026-09-17 topbar spec, topbar mode: slim white bar, cluster right-aligned
-   (language · Assist · PoS · bell · user chip), empty middle, no breadcrumb.
+   (language · Assist · PoS · bell · user chip), empty middle; breadcrumb only on
+   settings pages (2026-10-02, settings redesign 8.0).
    Panels overlay the content iframe. */
 
 :root {
@@ -30,6 +31,16 @@
 }
 
 .topbar-spacer { flex: 1; }
+
+/* Breadcrumb on settings pages (settings redesign §8.0). Shrinks from the left when space is short. */
+.topbar-crumb { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex: 0 1 auto; min-width: 0; overflow: hidden; margin-left: 14px; font-size: 13.5px; white-space: nowrap; color: var(--topbar-mut); }
+.topbar-crumb[hidden] { display: none; }
+.topbar-crumb > * { flex: none; }
+.topbar-crumb a { color: var(--topbar-mut); text-decoration: none; }
+.topbar-crumb a:hover { color: var(--topbar-accent); }
+.topbar-crumb a:focus-visible { outline: 2px solid var(--topbar-accent); outline-offset: 2px; border-radius: 3px; }
+.topbar-crumb i { font-style: normal; color: #aab6cc; }
+.topbar-crumb b { color: var(--topbar-txt); font-weight: 600; }
 .topbar-item { position: relative; }
 .topbar-mobile { display: none; }
 

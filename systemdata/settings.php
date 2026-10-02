@@ -26,6 +26,10 @@
 //                  settings group the user may open, generated from systemdata/settingsRegistry.php.
 // 20260929 Sawaneh Phase 4a (settings redesign spec §8.5, §8.10, §8.13, §8.14): search finds single settings and
 //                  old menu names, transition banner, "Hvor er...?" link, PoS licence card, shortcuts.
+// 20261001 Sawaneh Phase 4a §8.13: optional modules shown on or off with Aktivér, computed status badges per card.
+// 20261002 Sawaneh Hand-over 2 Oct (A1, settings redesign §8.0): groups as rows in three labelled lists instead of tiles,
+//                  "Kræver opmærksomhed" above them, status as a dot plus text, search results in a dropdown, no Back
+//                  button (the shell shows the breadcrumb). Optional modules are shown inside their group, not here.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -39,7 +43,7 @@
 $s_id = session_id();
 
 $title = "Indstillinger";
-$css = "../css/settingsHub.css";
+$css = "../css/settingsHub.css?v=20261002b";
 $modulnr = 1;
 $permission_key = 'any';
 
@@ -59,15 +63,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	header('Location: settings.php');
 	exit;
 }
-$showBanner = ((int) $bruger_id > 0) && get_settings_value('transition_banner', 'settings_ui', '', (int) $bruger_id) !== 'dismissed';
-$posLocked = (function_exists('perm_can') && perm_can('settings.pos', 'read') && !settings_has_module('pos'));
 
-settings_hub_view(settings_accessible_groups(), (int) $sprog_id, (string) $db_encode, $showBanner, $posLocked, (string) $_SESSION['csrf_token']);
+$hubGroups = settings_accessible_groups();
+$hubAttention = settings_attention($hubGroups, (int) $sprog_id);
+$hubReadOnly = (bool) $hubGroups;
+foreach ($hubGroups as $hubGroup) {
+	if (!function_exists('perm_can') || perm_can($hubGroup['def']['permission'], 'write')) {
+		$hubReadOnly = false;
+		break;
+	}
+}
+settings_hub_view(array(
+	'groups'    => $hubGroups,
+	'status'    => settings_group_status($hubGroups, settings_optional_modules(), $hubAttention, (int) $sprog_id),
+	'attention' => $hubAttention,
+	'readOnly'  => $hubReadOnly,
+	'notice'    => ((int) $bruger_id > 0) && get_settings_value('transition_banner', 'settings_ui', '', (int) $bruger_id) !== 'dismissed',
+	'posLocked' => (function_exists('perm_can') && perm_can('settings.pos', 'read') && !settings_has_module('pos')),
+	'company'   => function_exists('st_company') ? st_company() : '',
+	'csrf'      => (string) $_SESSION['csrf_token'],
+), (int) $sprog_id, (string) $db_encode);
 
 /**
- * @param array<string, array{def: array<string, string>, entries: array<int, array<string, mixed>>}> $groups
+ * @param array<string, mixed> $vm groups, status, attention, readOnly, notice, posLocked, company, csrf
  */
-function settings_hub_view(array $groups, int $sprogId, string $dbEncode, bool $showBanner, bool $posLocked, string $csrfToken): void
+function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 {
 	global $buttonColor, $buttonTxtColor;
 	$charset = ($dbEncode === 'UTF8') ? 'UTF-8' : 'ISO-8859-1';
@@ -77,185 +97,225 @@ function settings_hub_view(array $groups, int $sprogId, string $dbEncode, bool $
 	$t = function (string $text) use ($sprogId, $h): string {
 		return $h(findtekst($text, $sprogId));
 	};
-	$backUrl = function_exists('nav_back_url') ? nav_back_url('../index/dashboard.php') : '../index/dashboard.php';
-	$sections = getSettingsSections();
-	$backStyle = 'background:' . (!empty($buttonColor) ? $buttonColor : '#114691') . ';color:' . (!empty($buttonTxtColor) ? $buttonTxtColor : '#ffffff');
+	$js = function (string $text) use ($sprogId, $charset): string {
+		return json_encode(mb_convert_encoding(findtekst($text, $sprogId), 'UTF-8', $charset), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+	};
+	$groups = $vm['groups'];
+	$accent = st_accent_style(!empty($buttonColor) ? (string) $buttonColor : '#114691', !empty($buttonTxtColor) ? (string) $buttonTxtColor : '#ffffff');
+	$dots = array('warn' => 'sh-dot-warn', 'err' => 'sh-dot-err', 'ok' => 'sh-dot-ok');
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-<link rel="stylesheet" type="text/css" href="../css/unified-components.css">
-<script>document.title = <?= json_encode(mb_convert_encoding(findtekst('122|Indstillinger', $sprogId), 'UTF-8', $charset)) ?>;</script>
-<div class="sh-page st-page" style="padding-bottom:60px">
-  <a class="sh-back" style="<?= $h($backStyle) ?>" href="<?= $h($backUrl) ?>"><i class='bx bx-arrow-back'></i><?= $t('5647|Tilbage') ?></a>
-  <header class="sh-head">
-    <h1><i class='bx bx-cog'></i><?= $t('122|Indstillinger') ?></h1>
-    <div class="sh-search">
-      <i class='bx bx-search'></i>
-      <input type="search" id="sh-search" placeholder="<?= $t('5663|Søg i indstillinger…') ?>" autocomplete="off" aria-controls="sh-results">
-      <button type="button" class="st-btn st-btn-ghost sh-keys" id="sh-keys" title="<?= $t('5739|Genveje') ?>" aria-label="<?= $t('5739|Genveje') ?>">?</button>
+<script>document.title = <?= $js('122|Indstillinger') ?>;</script>
+<?= settings_breadcrumb_script(settings_breadcrumb('', '', $sprogId), $charset) ?>
+<div class="sh-page" style="<?= $h($accent) ?>">
+  <section class="sh-phead">
+    <div>
+      <h1><?= $t('122|Indstillinger') ?></h1>
+      <p class="sh-lead"><?= $h(sprintf(findtekst('6020|Gælder for alle i %s. Dine personlige valg finder du under dit navn øverst til højre.', $sprogId), $vm['company'])) ?></p>
     </div>
-  </header>
-
-  <?php if ($showBanner) { ?>
-  <form method="post" action="settings.php" class="st-toast" role="status">
-    <input type="hidden" name="csrf_token" value="<?= $h($csrfToken) ?>">
-    <input type="hidden" name="dismiss" value="1">
-    <i class='bx bx-transfer-alt'></i>
-    <span><?= $t('5724|Indstillingerne har fået ny struktur — det hele er her stadig. Søg, eller se hvor tingene er flyttet hen.') ?> <a href="settingsMoved.php"><?= $t('5725|Hvor er…?') ?></a></span>
-    <button type="submit" class="st-toast-close" aria-label="<?= $t('5746|Skjul') ?>" title="<?= $t('5746|Skjul') ?>"><i class='bx bx-x'></i></button>
-  </form>
-  <?php } ?>
-
-  <section class="sh-results" id="sh-results" aria-live="polite" hidden></section>
+    <div class="sh-search">
+      <label for="sh-search"><i class='bx bx-search' aria-hidden="true"></i><input type="search" id="sh-search" placeholder="<?= $t('6039|Søg – fx moms, GLS eller et gammelt menunavn') ?>" aria-label="<?= $t('5663|Søg i indstillinger…') ?>" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sh-res" aria-autocomplete="list"><kbd aria-hidden="true">/</kbd></label>
+      <div class="sh-res" id="sh-res" role="listbox" hidden></div>
+    </div>
+  </section>
 
   <?php if (!$groups) { ?>
-  <div class="sh-empty"><i class='bx bx-lock-alt'></i><?= $t('5665|Du har ikke adgang til nogen indstillinger. Kontakt en administrator.') ?></div>
+  <div class="sh-attn"><div><i class='bx bx-lock-alt' aria-hidden="true"></i><div class="sh-tx"><b><?= $t('5665|Du har ikke adgang til nogen indstillinger. Kontakt en administrator.') ?></b></div></div></div>
+  <?php } elseif ($vm['readOnly']) { ?>
+  <div class="sh-attn" role="status"><div><i class='bx bx-lock-alt' aria-hidden="true"></i><div class="sh-tx"><b><?= $t('6031|Du har læseadgang') ?></b><span><?= $t('6032|Du kan se indstillingerne, men ikke ændre dem. Kontakt en administrator.') ?></span></div></div></div>
   <?php } ?>
 
-  <div class="sh-grid" id="sh-grid">
-    <?php foreach ($groups as $group => $g) { ?>
-    <section class="sh-card" data-group="<?= $h($group) ?>" data-title="<?= $h(settings_text_all_languages((int) $g['def']['label'])) ?>">
-      <div class="sh-card-head">
-        <span class="sh-icon"><i class='bx <?= $h($g['def']['icon']) ?>'></i></span>
-        <div>
-          <h2><?= $t($g['def']['label']) ?></h2>
-          <p><?= $t($g['def']['description']) ?></p>
-        </div>
+  <?php if ($vm['attention']) { ?>
+  <section class="sh-sect">
+    <h2><?= $t('6016|Kræver opmærksomhed') ?></h2>
+    <div class="sh-attn">
+      <?php foreach ($vm['attention'] as $item) { ?>
+      <div>
+        <i class="sh-dot <?= $dots[$item['kind']] ?>" aria-hidden="true"></i>
+        <div class="sh-tx"><b><?= $h($item['title']) ?></b><span><?= $h($item['sub']) ?></span></div>
+        <a class="sh-btn" href="<?= $h($item['url']) ?>"><?= $h($item['button']) ?></a>
       </div>
-      <ul class="sh-links">
-        <?php foreach ($g['entries'] as $entry) {
-        	$label = settings_entry_label($entry, $sprogId);
-        	$search = $label . ' ' . implode(' ', isset($entry['keywords']) ? $entry['keywords'] : array());
-        	// The name in every language, and for a generated section its old menu names.
-        	if (isset($entry['textId'])) {
-        		$search .= ' ' . settings_text_all_languages($entry['textId']);
-        	}
-        	foreach (array('labelDa', 'labelEn', 'labelNo') as $other) {
-        		if (!empty($entry[$other])) {
-        			$search .= ' ' . $entry[$other];
-        		}
-        	}
-        	if (isset($entry['section'], $sections[$entry['section']])) {
-        		foreach ($sections[$entry['section']]['legacy'] as $path) {
-        			$search .= ' ' . settings_legacy_all_languages($path);
-        		}
-        	}
-        	$search = mb_strtolower(html_entity_decode($search, ENT_QUOTES | ENT_HTML5, $charset));
+      <?php } ?>
+    </div>
+  </section>
+  <?php } ?>
+
+  <div class="sh-cols">
+    <?php foreach (settings_group_lists() as $listId => $list) {
+    	$rows = array_values(array_filter($list['groups'], function ($g) use ($groups) { return isset($groups[$g]); }));
+    	$locked = ($listId === 'trade' && $vm['posLocked'] && !isset($groups['pos']));
+    	if (!$rows && !$locked) {
+    		continue;
+    	}
+    ?>
+    <section class="sh-sect">
+      <h2><?= $t($list['label']) ?></h2>
+      <div class="sh-card">
+        <?php foreach ($rows as $group) {
+        	$g = $groups[$group];
+        	$st = isset($vm['status'][$group]) ? $vm['status'][$group] : null;
         ?>
-        <li data-search="<?= $h($search) ?>"><a href="<?= $h($entry['url']) ?>"><?= $h($label) ?><i class='bx bx-chevron-right'></i></a></li>
+        <a class="sh-row" href="<?= $h($g['entries'][0]['url']) ?>">
+          <i class='bx <?= $h($g['def']['icon']) ?> sh-ic' aria-hidden="true"></i>
+          <span class="sh-tx"><b><?= $t($g['def']['label']) ?></b><span><?= $t($g['def']['description']) ?></span></span>
+          <span class="sh-meta<?= ($st && $st['kind'] !== '') ? ' sh-meta-' . $h($st['kind']) : '' ?>"><?php if ($st) { ?><?php if (isset($dots[$st['kind']])) { ?><i class="sh-dot sh-dot-s <?= $dots[$st['kind']] ?>" aria-hidden="true"></i><?php } ?><?= $h($st['text']) ?><?php } ?></span>
+          <i class='bx bx-chevron-right sh-chev' aria-hidden="true"></i>
+        </a>
         <?php } ?>
-      </ul>
+        <?php if ($locked) { ?>
+        <div class="sh-row sh-row-off" aria-disabled="true">
+          <i class='bx bx-store-alt sh-ic' aria-hidden="true"></i>
+          <span class="sh-tx"><b><?= $t('2226|Kasse') ?></b><span><?= $t('5740|Kræver kasselicens — kontakt Saldi') ?></span></span>
+          <span class="sh-meta"></span>
+          <i class='bx bx-lock-alt sh-chev' aria-hidden="true"></i>
+        </div>
+        <?php } ?>
+      </div>
     </section>
     <?php } ?>
-    <?php if ($posLocked) { ?>
-    <section class="sh-card sh-card-locked" aria-disabled="true">
-      <div class="sh-card-head">
-        <span class="sh-icon"><i class='bx bx-store-alt'></i></span>
-        <div>
-          <h2><?= $t('2226|Kasse') ?></h2>
-          <p><i class='bx bx-lock-alt'></i> <?= $t('5740|Kræver kasselicens — kontakt Saldi') ?></p>
+
+    <?php if ($vm['notice'] && $groups) { ?>
+    <section class="sh-sect">
+      <h2><?= $t('6021|Ny struktur') ?></h2>
+      <div class="sh-notice">
+        <p><?= $t('6022|Indstillingerne er samlet i færre, tydeligere grupper. Alt er her stadig – søg efter det gamle menunavn, så finder du det nye sted.') ?></p>
+        <div class="sh-ls">
+          <a href="settingsMoved.php"><?= $t('6023|Hvor er de gamle menupunkter?') ?><i class='bx bx-right-arrow-alt' aria-hidden="true"></i></a>
+          <button type="button" data-keys><?= $t('6024|Tastaturgenveje') ?><i class='bx bx-right-arrow-alt' aria-hidden="true"></i></button>
         </div>
+        <form method="post" action="settings.php">
+          <input type="hidden" name="csrf_token" value="<?= $h($vm['csrf']) ?>">
+          <input type="hidden" name="dismiss" value="1">
+          <button type="submit" class="sh-btn sh-btn-quiet"><?= $t('5746|Skjul') ?></button>
+        </form>
       </div>
     </section>
     <?php } ?>
   </div>
-  <div class="sh-empty" id="sh-nomatch" hidden><i class='bx bx-search-alt'></i><?= $t('5664|Ingen indstillinger matcher søgningen') ?></div>
-  <p class="sh-foot"><a href="settingsMoved.php"><i class='bx bx-transfer-alt'></i><?= $t('5725|Hvor er…?') ?></a></p>
 
-  <div class="st-backdrop" id="sh-backdrop" hidden></div>
-  <div class="st-dialog" id="sh-dialog" role="dialog" aria-modal="true" aria-labelledby="sh-dialog-title" hidden>
-    <h2 id="sh-dialog-title"><?= $t('5739|Genveje') ?></h2>
-    <table class="sh-keytable">
-      <tr><td><kbd>/</kbd></td><td><?= $t('913|Søg') ?></td></tr>
-      <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td><?= $t('3|Gem') ?></td></tr>
-      <tr><td><kbd>Esc</kbd></td><td><?= $t('2172|Luk') ?></td></tr>
-      <tr><td><kbd>Alt</kbd> + <kbd>←</kbd></td><td><?= $t('5647|Tilbage') ?></td></tr>
-    </table>
-    <div class="st-dialog-btns"><button type="button" class="st-btn st-btn-primary" id="sh-dialog-close"><?= $t('2172|Luk') ?></button></div>
+  <?php if ($groups && !$vm['notice']) { ?>
+  <p class="sh-foot"><a href="settingsMoved.php"><?= $t('6023|Hvor er de gamle menupunkter?') ?></a><button type="button" data-keys><?= $t('6024|Tastaturgenveje') ?></button></p>
+  <?php } ?>
+
+  <div class="sh-backdrop" id="sh-backdrop" hidden></div>
+  <div class="sh-dialog" id="sh-dialog" role="dialog" aria-modal="true" aria-labelledby="sh-dialog-title" hidden>
+    <h3 id="sh-dialog-title"><?= $t('6024|Tastaturgenveje') ?></h3>
+    <div class="sh-keys">
+      <div><?= $t('5663|Søg i indstillinger…') ?><kbd>/</kbd></div>
+      <div><?= $t('3|Gem') ?><kbd>Ctrl S</kbd></div>
+      <div><?= $t('2172|Luk') ?><kbd>Esc</kbd></div>
+      <div><?= $t('5647|Tilbage') ?><kbd>Alt ←</kbd></div>
+    </div>
+    <div class="sh-dialog-btns"><button type="button" class="sh-btn sh-btn-primary" id="sh-dialog-close"><?= $t('2172|Luk') ?></button></div>
   </div>
 </div>
+
 <script>
 (function () {
-	var input = document.getElementById('sh-search');
-	// Focus without letting the browser scroll the surrounding shell (autofocus does).
-	if (input) { try { input.focus({ preventScroll: true }); } catch (e) {} }
-	if (!input) { return; }
-	input.addEventListener('input', function () {
-		var q = input.value.trim().toLowerCase();
-		var any = false;
-		document.querySelectorAll('.sh-card').forEach(function (card) {
-			var hits = 0;
-			var titleHit = q !== '' && ((card.dataset.title || '') + ' ' + card.querySelector('h2').textContent.toLowerCase()).indexOf(q) !== -1;
-			card.querySelectorAll('li[data-search]').forEach(function (li) {
-				var hit = q === '' || titleHit || li.dataset.search.indexOf(q) !== -1;
-				li.hidden = !hit;
-				if (hit) { hits++; }
-			});
-			card.hidden = hits === 0;
-			if (hits > 0) { any = true; }
-		});
-		document.getElementById('sh-nomatch').hidden = any || fieldHits > 0;
-		lookup(q);
-	});
+	var input = document.getElementById('sh-search'), res = document.getElementById('sh-res');
+	var txt = { count: <?= $js('6040|%s resultater') ?>, none: <?= $js('6042|Ingen resultater. Prøv et andet ord, eller se "Hvor er de gamle menupunkter?"') ?> };
+	var hits = [], sel = 0, timer = null, legacyLabel = '', personalLabel = '';
 
-	// Single settings from the registry (spec §8.5): max 8, grouped, "Vis alle" expands.
-	var results = document.getElementById('sh-results');
-	var showAllText = <?= json_encode(mb_convert_encoding(findtekst('5743|Vis alle', $sprogId), 'UTF-8', $charset)) ?>;
-	var fieldHits = 0, timer = null, selected = -1;
-	function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-	function render(data, all) {
-		var rows = data.fields || [];
-		fieldHits = rows.length;
-		selected = -1;
-		if (!rows.length) { results.hidden = true; results.innerHTML = ''; return; }
-		var shown = all ? rows : rows.slice(0, 8), html = '', group = null;
-		shown.forEach(function (r) {
-			var g = r.group + (r.section ? ' → ' + r.section : '');
-			if (g !== group) { if (group !== null) { html += '</ul>'; } html += '<h3>' + esc(g) + '</h3><ul>'; group = g; }
-			html += '<li><a href="' + esc(r.url) + '">' + esc(r.label);
-			if (r.personal) { html += ' <span class="st-tag st-tag-personal">' + esc(data.personalLabel) + '</span>'; }
-			if (r.legacy) { html += ' <span class="st-tag">' + esc(data.legacyLabel + ' ' + r.legacy) + '</span>'; }
-			html += '</a></li>';
-		});
-		html += '</ul>';
-		if (!all && rows.length > 8) { html += '<button type="button" class="st-btn st-btn-ghost" id="sh-all">' + esc(showAllText) + ' (' + rows.length + ')</button>'; }
-		results.innerHTML = html;
-		results.hidden = false;
-		document.getElementById('sh-nomatch').hidden = true;
-		var more = document.getElementById('sh-all');
-		if (more) { more.addEventListener('click', function () { render(data, true); }); }
+	function mark(parent, text, q) {
+		var i = text.toLowerCase().indexOf(q);
+		if (q === '' || i < 0) { parent.appendChild(document.createTextNode(text)); return; }
+		parent.appendChild(document.createTextNode(text.slice(0, i)));
+		var m = document.createElement('mark');
+		m.textContent = text.slice(i, i + q.length);
+		parent.appendChild(m);
+		parent.appendChild(document.createTextNode(text.slice(i + q.length)));
 	}
-	function lookup(q) {
+	function close() { res.hidden = true; res.textContent = ''; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); }
+	function render(q) {
+		res.textContent = '';
+		var head = document.createElement('div');
+		if (!hits.length) {
+			head.className = 'sh-none';
+			head.textContent = txt.none;
+			res.appendChild(head);
+		} else {
+			head.className = 'sh-cnt';
+			head.textContent = txt.count.replace('%s', hits.length);
+			res.appendChild(head);
+			hits.forEach(function (hit, i) {
+				var a = document.createElement('a');
+				a.className = 'sh-it' + (i === sel ? ' sh-sel' : '');
+				a.href = hit.url;
+				a.id = 'sh-it-' + i;
+				a.setAttribute('role', 'option');
+				a.setAttribute('aria-selected', i === sel ? 'true' : 'false');
+				var b = document.createElement('b');
+				mark(b, hit.label, q);
+				a.appendChild(b);
+				if (hit.path) {
+					var s = document.createElement('span');
+					if (hit.personal) { s.className = 'sh-per'; }
+					s.textContent = hit.path;
+					a.appendChild(s);
+				}
+				if (hit.legacy) {
+					var em = document.createElement('em');
+					em.appendChild(document.createTextNode(legacyLabel + ' '));
+					mark(em, hit.legacy, q);
+					a.appendChild(em);
+				}
+				res.appendChild(a);
+			});
+			input.setAttribute('aria-activedescendant', 'sh-it-' + sel);
+		}
+		res.hidden = false;
+		input.setAttribute('aria-expanded', 'true');
+	}
+	function lookup() {
+		var q = input.value.trim().toLowerCase();
 		window.clearTimeout(timer);
-		if (q.length < 2) { fieldHits = 0; results.hidden = true; results.innerHTML = ''; return; }
+		if (q.length < 2) { hits = []; close(); return; }
 		timer = window.setTimeout(function () {
 			fetch('settingsSearch.php?search=' + encodeURIComponent(q), { credentials: 'same-origin' })
 				.then(function (r) { return r.json(); })
-				.then(function (data) { if (input.value.trim().toLowerCase() === q) { render(data, false); } })
+				.then(function (data) {
+					if (input.value.trim().toLowerCase() !== q) { return; }
+					legacyLabel = data.legacyLabel || '';
+					personalLabel = data.personalLabel || '';
+					hits = (data.results || []).map(function (r) { return { label: r.label, url: r.url, path: r.group || '', legacy: '', personal: false }; })
+						.concat((data.fields || []).map(function (f) { return { label: f.label, url: f.url, path: f.personal ? f.group : (f.group + (f.section ? ' › ' + f.section : '')), legacy: f.legacy || '', personal: !!f.personal }; }));
+					sel = 0;
+					render(q);
+				})
 				.catch(function () {});
 		}, 150);
 	}
+	input.addEventListener('input', lookup);
+	input.addEventListener('focus', function () { if (input.value.trim().length >= 2) { lookup(); } });
+	input.addEventListener('blur', function () { window.setTimeout(close, 150); });
 	input.addEventListener('keydown', function (e) {
-		var links = results.querySelectorAll('a');
-		if (e.key === 'Escape') { input.value = ''; input.dispatchEvent(new Event('input')); return; }
-		if (!links.length) { return; }
+		if (e.key === 'Escape') { input.value = ''; hits = []; close(); input.blur(); return; }
+		if (res.hidden || !hits.length) { return; }
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 			e.preventDefault();
-			selected = (selected + (e.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
-			links.forEach(function (a, i) { a.classList.toggle('on', i === selected); });
-		} else if (e.key === 'Enter' && selected >= 0) {
-			window.location = links[selected].getAttribute('href');
+			sel = Math.max(0, Math.min(hits.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+			render(input.value.trim().toLowerCase());
+			var cur = document.getElementById('sh-it-' + sel);
+			if (cur && cur.scrollIntoView) { cur.scrollIntoView({ block: 'nearest' }); }
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			window.location = hits[sel].url;
 		}
 	});
+	res.addEventListener('mousedown', function (e) { e.preventDefault(); });
+	res.addEventListener('click', function (e) { var a = e.target.closest('a'); if (a) { window.location = a.getAttribute('href'); } });
 
-	var dialog = document.getElementById('sh-dialog'), backdrop = document.getElementById('sh-backdrop'), keys = document.getElementById('sh-keys');
-	function toggleDialog(open) {
+	var dialog = document.getElementById('sh-dialog'), backdrop = document.getElementById('sh-backdrop'), opener = null;
+	function toggleDialog(open, from) {
 		dialog.hidden = !open;
 		backdrop.hidden = !open;
-		(open ? document.getElementById('sh-dialog-close') : keys).focus();
+		if (open) { opener = from; document.getElementById('sh-dialog-close').focus(); }
+		else if (opener) { opener.focus(); }
 	}
-	keys.addEventListener('click', function () { toggleDialog(true); });
+	document.querySelectorAll('[data-keys]').forEach(function (b) { b.addEventListener('click', function () { toggleDialog(true, b); }); });
 	backdrop.addEventListener('click', function () { toggleDialog(false); });
 	document.getElementById('sh-dialog-close').addEventListener('click', function () { toggleDialog(false); });
+	dialog.addEventListener('keydown', function (e) { if (e.key === 'Tab') { e.preventDefault(); document.getElementById('sh-dialog-close').focus(); } });
 	document.addEventListener('keydown', function (e) {
 		var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
 		if (e.key === '/' && !typing) { e.preventDefault(); input.focus(); }

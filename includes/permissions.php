@@ -32,6 +32,9 @@
 // 20260929 Sawaneh Roles stage 2: audit_log() records object and source; event names follow the spec (§7.1).
 // 20260930 Sawaneh Roles stage 2 (§6): migration of users without a role, custom roles per rights pattern,
 //                  covering-role suggestion and the review list.
+// 20261001 Sawaneh Review fixes: the migration leaves users without a rights string alone and never rewrites a
+//                  rights string; booleans written as true/false (MySQL); custom roles get no audit log;
+//                  notification check per database; one review flag per user (unique index on settings).
 
 include_once(__DIR__ . '/permissionRegistry.php');
 
@@ -543,7 +546,7 @@ function perm_ensure_default_roles(): void
 		}
 		$navn = db_escape_string(explode('|', $def['label'], 2)[1]);
 		$beskrivelse = db_escape_string(explode('|', $def['beskrivelse'], 2)[1]);
-		db_modify("insert into roles (role_key, navn, beskrivelse, system) values ('$key', '$navn', '$beskrivelse', 't')", __FILE__ . " linje " . __LINE__);
+		db_modify("insert into roles (role_key, navn, beskrivelse, system) values ('$key', '$navn', '$beskrivelse', true)", __FILE__ . " linje " . __LINE__);
 		$r = db_fetch_array(db_select("select id from roles where role_key = '$key'", __FILE__ . " linje " . __LINE__));
 		if ($r) {
 			$roleId = (int) $r['id'];
@@ -678,8 +681,10 @@ function perm_covering_role(string $rettigheder): ?array
 /**
  * Give every user without a role one (spec §6.2): all rights → Administrator, a string equal
  * to a standard role → that role, anything else → one "Custom role <n>" per pattern with
- * exactly the rights the user had. No rights at all → View only. Custom and empty cases are
- * kept for review (§6.3). Idempotent: only users without a role are touched.
+ * exactly the rights the user had; custom cases are kept for review (§6.3). Idempotent: only
+ * users without a role are touched, and what a user can do never changes: users with no
+ * rights string at all (e.g. Sager workers, who live on their sag rights) are left without a
+ * role, and the rights string is only cut to 16 positions, never rewritten.
  */
 function perm_migrate_users(): void
 {
@@ -702,7 +707,6 @@ function perm_migrate_users(): void
 		}
 	}
 	$adminId = perm_role_id_by_key('administrator');
-	$viewId = perm_role_id_by_key('kunvisning');
 	$sprog = isset($sprog_id) ? (int) $sprog_id : 1;
 	$counts = perm_migration_summary();
 	foreach ($pending as $r) {
@@ -710,8 +714,7 @@ function perm_migrate_users(): void
 		$string = perm_normalize_legacy((string) $r['rettigheder']);
 		$review = false;
 		if ($string === '') {
-			$roleId = $viewId;
-			$review = true;
+			continue;
 		} elseif ($string === str_repeat('1', 16)) {
 			$roleId = $adminId;
 		} elseif (isset($standard[$string])) {
@@ -723,15 +726,17 @@ function perm_migrate_users(): void
 		if ($roleId <= 0) {
 			continue;
 		}
-		db_modify("update brugere set role_id = $roleId, rettigheder = '" . perm_legacy_string(perm_levels_from_role($roleId)) . "' where id = $id", __FILE__ . " linje " . __LINE__);
+		$keep = (strlen(trim((string) $r['rettigheder'])) > 16) ? ", rettigheder = '$string'" : '';
+		db_modify("update brugere set role_id = $roleId$keep where id = $id", __FILE__ . " linje " . __LINE__);
 		if ($review) {
+			db_modify("delete from settings where var_grp = 'permissions' and var_name = 'review' and user_id = $id", __FILE__ . " linje " . __LINE__);
 			db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('permissions', 'review', '" . db_escape_string((string) $r['rettigheder']) . "', 'Role set by the migration, not confirmed yet', $id)", __FILE__ . " linje " . __LINE__);
 		}
 		audit_log('user.role_changed', (string) $r['brugernavn'] . ': - -> ' . perm_role_label_plain($roleId), 'bruger', (string) $id, 'migrering');
 		$counts['total']++;
 		if ($roleId === $adminId) {
 			$counts['admin']++;
-		} elseif ($review && $string !== '') {
+		} elseif ($review) {
 			$counts['custom']++;
 		}
 	}
@@ -754,6 +759,7 @@ function perm_custom_role_for(string $string, int $sprog): int
 		$n = (int) $r['antal'] + 1;
 	}
 	$levels = perm_levels_from_legacy($string);
+	$levels['settings.audit.read'] = 'none';
 	$grants = array();
 	foreach (permission_registry() as $permKey => $def) {
 		if ($def['legacy'] && $levels[$permKey] !== 'none') {
@@ -762,7 +768,7 @@ function perm_custom_role_for(string $string, int $sprog): int
 	}
 	$navn = sprintf(findtekst('5877|Tilpasset rolle %s', $sprog), $n);
 	$beskrivelse = sprintf(findtekst('5878|Oprettet ved overgangen til roller ud fra de gamle rettigheder: %s', $sprog), implode(', ', $grants));
-	db_modify("insert into roles (role_key, navn, beskrivelse, system) values ('" . db_escape_string($key) . "', '" . db_escape_string($navn) . "', '" . db_escape_string(mb_substr($beskrivelse, 0, 1000)) . "', 'f')", __FILE__ . " linje " . __LINE__);
+	db_modify("insert into roles (role_key, navn, beskrivelse, system) values ('" . db_escape_string($key) . "', '" . db_escape_string($navn) . "', '" . db_escape_string(mb_substr($beskrivelse, 0, 1000)) . "', false)", __FILE__ . " linje " . __LINE__);
 	$roleId = perm_role_id_by_key($key);
 	if ($roleId > 0) {
 		perm_save_role_levels($roleId, $levels);

@@ -23,6 +23,7 @@
 // Copyright (c) 2003-2024 Saldi.dk ApS
 // ----------------------------------------------------------------------
 // 20201111 PHR rehamed to mailTxt.php and added ordinary mail til customers not using MySale
+// 20261001 Sawaneh Subject and text saved by key (update_settings_value) instead of the posted row id; read with NULL = 0.
 
 #ob_start();
 @session_start();
@@ -58,22 +59,13 @@ if ($valg=='historik') {
 	$var_description='Subject for invitation email to mySale users';
 }
 if ($subject && $mailText) {
-	if ($subjId) $qtxt="update settings set var_value='". db_escape_string($subject) ."' where id='$subjId'";
-	else {
-		if ($valg=='historik') $var_description='Subject for email to customers';
-		else $var_description='Subject for invitation email to mySale users';
-		$qtxt = "insert into settings (var_name,var_grp,var_description,user_id,var_value) values ";
-		$qtxt.= "('mailSubject','$varGrp','$var_description',0,'". db_escape_string($subject) ."')";
-	}
-	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
-	if ($txtId) $qtxt="update settings set var_value='". db_escape_string($mailText) ."' where id='$txtId'";
-	else {
-		if ($valg=='historik') $var_description='Text for email to customers';
-		else $var_description='Text for invitation email to mySale users';
-		$qtxt = "insert into settings (var_name,var_grp,var_description,user_id,var_value) values ";
-		$qtxt.= "('mailText','$varGrp','$var_description',0,'". db_escape_string($mailText) ."')";
-	}
-	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
+	// Saved by key, not by the row id the form saw: a stale or resubmitted form made duplicates.
+	if ($valg=='historik') $var_description='Subject for email to customers';
+	else $var_description='Subject for invitation email to mySale users';
+	update_settings_value('mailSubject', $varGrp, db_escape_string($subject), $var_description, 0);
+	if ($valg=='historik') $var_description='Text for email to customers';
+	else $var_description='Text for invitation email to mySale users';
+	update_settings_value('mailText', $varGrp, db_escape_string($mailText), $var_description, 0);
 }
 $qtxt="select * from adresser where art='S'";
 $r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
@@ -90,10 +82,10 @@ if ($valg=='historik') {
 	$mailText.= "".findtekst('1159|Bedste hilsner', $sprog_id)."\n$firmanavn\n";
 }
 
-$qtxt="select id,var_value from settings where var_name = 'mailSubject' and var_grp = '$varGrp' and user_id='0'";
+$qtxt="select id,var_value from settings where var_name = 'mailSubject' and var_grp = '$varGrp' and coalesce(user_id, 0) = 0";
 $r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
 if ($subjId = $r['id']) $subject=$r['var_value'];
-$qtxt="select id,var_value from settings where var_name = 'mailText' and var_grp = '$varGrp' and user_id='0'";
+$qtxt="select id,var_value from settings where var_name = 'mailText' and var_grp = '$varGrp' and coalesce(user_id, 0) = 0";
 $r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
 if ($txtId = $r['id']) $mailText=$r['var_value'];
 

@@ -31,6 +31,8 @@
 // 20260930 Sawaneh Roles stage 2 (§3.1): settings.roles.manage and settings.audit.read.
 // 20260930 Sawaneh Built-in role descriptions are text ids, so they follow the user's language.
 // 20260930 Sawaneh Audit log for administrators only (Adam 2026-09-30): Bogholder and Revisor no longer read it.
+// 20261002 Sawaneh Standard role matrix for the settings groups as settings redesign §11.4 (hand-over 2 Oct): Administrator
+//                  write, Bogholder read on all eight, every other role none (Lager lost items write / organisation read).
 
 /**
  * Every permission key the system knows. A key is granted at level none / read / write.
@@ -145,7 +147,9 @@ function permission_default_roles(): array
 			'levels'      => array(
 				'finans.kassekladde' => 'write', 'finans.regnskab' => 'write', 'finans.rapporter' => 'write',
 				'system.kontoplan' => 'write', 'system.indstillinger' => 'read',
-				'settings.finance' => 'write', 'settings.company' => 'read',
+				// Read on the eight settings groups (settings redesign §11.4): what "Indstillinger = read" gave before.
+				'settings.company' => 'read', 'settings.finance' => 'read', 'settings.sales' => 'read', 'settings.purchase' => 'read',
+				'settings.items' => 'read', 'settings.documents' => 'read', 'settings.organisation' => 'read', 'settings.pos' => 'read',
 				'debitor.konti' => 'write', 'debitor.rapporter' => 'write',
 				'kreditor.konti' => 'write', 'kreditor.rapporter' => 'write',
 				'debitor.ordre' => 'read', 'kreditor.ordre' => 'read',
@@ -173,7 +177,6 @@ function permission_default_roles(): array
 			'levels'      => array(
 				'lager.varer' => 'write', 'lager.varemodtagelse' => 'write', 'lager.produktion' => 'write', 'lager.rapporter' => 'write',
 				'debitor.ordre' => 'read', 'kreditor.ordre' => 'read',
-				'settings.items' => 'write', 'settings.organisation' => 'read',
 			),
 		),
 		'kunvisning' => array(

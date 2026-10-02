@@ -33,6 +33,7 @@
 // 20260928 Sawaneh Popup windows, background colour and highlight removed (settings redesign spec, Personal settings).
 // 20260929 Sawaneh Order autocomplete moved here from Ordrerelaterede valg, saved through SettingsService.
 // 20260930 Sawaneh Notifications tab: daily e-mail summary on/off (Adam: summary only).
+// 20261002 Sawaneh Print card: print to local printer is a personal setting (settings redesign G6.4), not a cookie.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -209,6 +210,7 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 
 		// Moved here from Ordrerelaterede valg: it was always a per-user choice (settings redesign spec §4).
 		SettingsService::save('personal.orders.autocomplete', !empty($post['order_autocomplete']), $brugerId);
+		SettingsService::save('personal.print.local_print', !empty($post['local_print']), $brugerId);
 
 		if (isset($post['due_date_warning_days']) && $post['due_date_warning_days'] !== '') {
 			update_settings_value('due_date_warning_days', 'lager', max(1, intval($post['due_date_warning_days'])), 'Days before expiry to warn', $brugerId);
@@ -378,6 +380,7 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		'popup'     => ($uset && trim((string) $uset['box2']) !== ''),
 		'warnDays'  => get_due_date_warning_days($brugerId),
 		'autocomplete' => (bool) SettingsService::get('personal.orders.autocomplete', $brugerId),
+		'localPrint' => (bool) SettingsService::get('personal.print.local_print', $brugerId),
 		'sessions'  => $sessionRows,
 		'sessionId' => $sessionId,
 		'roleName'  => $roleName,
@@ -643,6 +646,18 @@ function personal_settings_view_profile(array $d, callable $h, callable $t, stri
         <div class="ps-field">
           <label for="ps-warn"><?= $t('5006|Advar om udløb (dage før)') ?></label>
           <input class="ps-input ps-input-short" type="number" min="1" id="ps-warn" name="due_date_warning_days" value="<?= (int) $d['warnDays'] ?>">
+        </div>
+      </div>
+    </section>
+
+    <section class="ps-card">
+      <h2><i class='bx bx-printer'></i><?= $t('5993|Udskrift') ?></h2>
+      <div class="ps-grid">
+        <div class="ps-field ps-field-full" id="personal.print.local_print">
+          <label class="ps-check">
+            <input type="checkbox" name="local_print" value="on"<?= $d['localPrint'] ? ' checked' : '' ?>>
+            <span class="ps-check-txt"><b><?= $t('6007|Udskriv til lokal printer') ?></b><span><?= $t('6008|Udskrifter sendes til den printer, der er sat op under Dokumenter → Udskrift. Gælder kun for dig.') ?></span></span>
+          </label>
         </div>
       </div>
     </section>

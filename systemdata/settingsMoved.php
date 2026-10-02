@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------
 // 20260929 Sawaneh Settings redesign phase 4a (spec §8.10): "Hvor er...?" - the old menu next to
 //                  where each item lives now, searchable. Generated from getSettingsMovedMap().
+// 20261002 Sawaneh Hand-over 2 Oct (§8.0): page head with the filter on the right, no Back button, list in one card.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -29,7 +30,7 @@
 $s_id = session_id();
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css";
+$css = "../css/unified-components.css?v=20261002";
 $modulnr = 1;
 $permission_key = 'any';
 
@@ -52,14 +53,16 @@ function settings_moved_view(int $sprogId): void
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(st_txt(5725), 'UTF-8', st_charset())) ?>;</script>
-<div class="st-page" style="--st-accent: <?= st_h($accent) ?>; --st-accent-txt: <?= st_h($accentTxt) ?>; max-width: 980px;">
-  <a class="st-back" href="settings.php"><i class='bx bx-arrow-back'></i><?= st_t(5647) ?></a>
-  <header class="st-head">
-    <h1><i class='bx bx-transfer-alt'></i><?= st_t(5725) ?></h1>
-    <p class="st-scope"><?= st_t(5724) ?></p>
-  </header>
-  <input class="st-input st-moved-search" type="search" id="st-moved-search" placeholder="<?= st_t(913) ?>" autocomplete="off" aria-label="<?= st_t(913) ?>">
-  <div class="st-moved">
+<?= settings_breadcrumb_script(settings_breadcrumb('', st_txt(5725), (int) $GLOBALS['sprog_id']), st_charset()) ?>
+<div class="st-page" style="<?= st_h(st_accent_style((string) $accent, (string) $accentTxt)) ?>">
+  <section class="st-phead">
+    <div>
+      <h1><?= st_t(6023) ?></h1>
+      <p class="st-lead"><?= st_t(6049) ?></p>
+    </div>
+    <label class="st-search" for="st-moved-search"><i class='bx bx-search' aria-hidden="true"></i><input type="search" id="st-moved-search" placeholder="<?= st_t(6050) ?>" autocomplete="off" aria-label="<?= st_t(913) ?>"></label>
+  </section>
+  <div class="st-card st-moved">
     <table>
       <thead><tr><th scope="col"><?= st_t(5726) ?></th><th scope="col"><?= st_t(5727) ?></th></tr></thead>
       <tbody>

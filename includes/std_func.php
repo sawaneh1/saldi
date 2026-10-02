@@ -85,6 +85,8 @@
 //                  (vertical padding kept at 2 px) as we want to control padding in the print.
 // 20260916 Sawaneh includes/permissions.php (roles, require_permission, audit_log) loaded here so every page has it.
 // 20260930 Sawaneh check_permissions() shared here (was three copies); read access ('2') counts (roles spec §4.4).
+// 20261001 Sawaneh update_settings_value() treats NULL and 0 (user, till, group) as the same key, as the unique
+//                  index on settings does; a concurrent insert of the same key is dropped (ON CONFLICT DO NOTHING).
 
 include(__DIR__ . '/stdFunc/dkDecimal.php');
 include(__DIR__ . '/stdFunc/nrCast.php');
@@ -2975,16 +2977,17 @@ if(!function_exists('update_settings_value')){
 		 * @return void
 		 */
                 # Expect a posted ID
-                $qtxt = "SELECT var_value FROM settings WHERE var_name='$var_name' AND var_grp = '$var_grp'";
-                if ($user !== NULL)  $qtxt .= " AND user_id=$user";
-				if ($posid !== NULL) $qtxt .= " AND pos_id=$posid";
+                # NULL and 0 (and NULL and '' for the group) are the same key, as in the unique index on settings.
+                $qtxt = "SELECT var_value FROM settings WHERE var_name='$var_name' AND coalesce(var_grp, '') = '$var_grp'";
+                if ($user !== NULL)  $qtxt .= " AND coalesce(user_id, 0)=$user";
+				if ($posid !== NULL) $qtxt .= " AND coalesce(pos_id, 0)=$posid";
                 $r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
 				
                 # If the row already exsists
                 if ($r) {
-                        $qtxt = "UPDATE settings SET var_value='$var_value' WHERE var_name='$var_name' AND var_grp = '$var_grp'";
-                        if ($user !== NULL)  $qtxt .= " AND user_id=$user";
-                        if ($posid !== NULL) $qtxt .= " AND pos_id=$posid";
+                        $qtxt = "UPDATE settings SET var_value='$var_value' WHERE var_name='$var_name' AND coalesce(var_grp, '') = '$var_grp'";
+                        if ($user !== NULL)  $qtxt .= " AND coalesce(user_id, 0)=$user";
+                        if ($posid !== NULL) $qtxt .= " AND coalesce(pos_id, 0)=$posid";
                         db_modify($qtxt, __FILE__ . " linje " . __LINE__);
                 # If the row needs to be created in the database
                 } else {
@@ -2996,6 +2999,9 @@ if(!function_exists('update_settings_value')){
                         if ($user !== NULL)  $qtxt .= ", $user";
                         if ($posid !== NULL) $qtxt .= ", $posid";
                         $qtxt = $qtxt.")";
+                        # Two requests saving the same new key at once: the second is dropped instead of failing.
+                        global $db_type;
+                        if ($db_type != 'mysql' && $db_type != 'mysqli') $qtxt .= " ON CONFLICT DO NOTHING";
 
                         db_modify($qtxt, __FILE__ . " linje " . __LINE__);
                 }

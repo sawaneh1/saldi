@@ -665,8 +665,24 @@ include_once(__DIR__ . "/permissions.php");
 perm_ensure_default_roles();
 
 // 20260927 Sawaneh Notification center (topbar spec §3.2): notifications + per-user read state.
-$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='notifications'";
+// 20261002 Sawaneh Most companies already hold an older, unused table of the same name (id, msg, read_status; from
+// admin/opret.php and opdat_4.0.php, all its readers are commented out). The new table is recognised by its 'type'
+// column; the old one is kept under another name, so nothing is deleted.
+$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='notifications' and column_name='type'";
 if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+	$qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='notifications'";
+	if (db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
+		$legacyName = 'notifications_legacy';
+		if (db_fetch_array(db_select("SELECT column_name FROM information_schema.columns WHERE table_name='$legacyName'", __FILE__ . " linje " . __LINE__))) {
+			$legacyName .= '_' . date('YmdHis');
+		}
+		db_modify("ALTER TABLE notifications RENAME TO $legacyName", __FILE__ . " linje " . __LINE__);
+		if ($db_type != 'mysql' && $db_type != 'mysqli') {
+			// The old key and sequence keep the names the new table wants.
+			db_modify("ALTER INDEX IF EXISTS notifications_pkey RENAME TO {$legacyName}_pkey", __FILE__ . " linje " . __LINE__);
+			db_modify("ALTER SEQUENCE IF EXISTS notifications_id_seq RENAME TO {$legacyName}_id_seq", __FILE__ . " linje " . __LINE__);
+		}
+	}
 	$qtxt = "CREATE TABLE notifications (
 		id SERIAL PRIMARY KEY NOT NULL,
 		user_id integer,
@@ -678,6 +694,9 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 		expires date,
 		source_key varchar(80))";
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+	if ($db_type != 'mysql' && $db_type != 'mysqli') {
+		db_modify("DROP INDEX IF EXISTS notifications_user_idx", __FILE__ . " linje " . __LINE__);
+	}
 	db_modify("CREATE INDEX notifications_user_idx ON notifications (user_id, created)", __FILE__ . " linje " . __LINE__);
 }
 $qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='notification_read'";
@@ -754,6 +773,29 @@ $qtxt = "select id from settings where var_grp = 'permissions' and var_name = 'a
 if (perm_tables_ready() && !db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify("delete from role_permissions where permission_key = 'settings.audit.read' and role_id in (select id from roles where role_key in ('bogholder', 'revisor'))", __FILE__ . " linje " . __LINE__);
 	db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('permissions', 'audit_admin_only', '" . date('Ymd') . "', 'Audit log read removed from Bogholder and Revisor', 0)", __FILE__ . " linje " . __LINE__);
+}
+
+// 20261001 Sawaneh Settings redesign §7.2: one row per setting. Duplicates are merged (removed rows kept in
+// settings_removed) and the unique index is added once; after that only the index lookup runs.
+include_once(__DIR__ . "/settings/uniqueIndex.php");
+settings_unique_migrate();
+
+// 20261002 Sawaneh Risk review R9: the same for the settings arts of grupper (removed rows kept in grupper_removed).
+include_once(__DIR__ . "/settings/grupperIndex.php");
+grupper_unique_migrate();
+
+// 20261002 Sawaneh Settings 4b (G5.7): the packaging tables are created here when the module is on, not when a page
+// renders (spec P5). G2.5: paymentDays was written under 'payment' but only read under 'payment_list'; copied once.
+$r = db_fetch_array(db_select("select var_value from settings where var_grp = 'items' and var_name = 'packagingModuleEnabled'", __FILE__ . " linje " . __LINE__));
+if ($r && trim((string) $r['var_value']) === 'on') {
+	include_once(__DIR__ . "/emballage_schema.php");
+	ensure_emballage_schema();
+}
+if (!db_fetch_array(db_select("select id from settings where var_grp = 'payment_list' and var_name = 'paymentDays'", __FILE__ . " linje " . __LINE__))) {
+	$r = db_fetch_array(db_select("select var_value from settings where var_grp = 'payment' and var_name = 'paymentDays' and coalesce(var_value, '') <> ''", __FILE__ . " linje " . __LINE__));
+	if ($r) {
+		db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('payment_list', 'paymentDays', '" . db_escape_string((string) $r['var_value']) . "', 'Default payment days', 0)", __FILE__ . " linje " . __LINE__);
+	}
 }
 
 ?>

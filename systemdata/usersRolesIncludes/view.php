@@ -35,6 +35,9 @@
 // 20260930 Sawaneh Layout after Adam's prototype_brugere_roller.html: review banner, toolbar card with a bulk bar
 //                  that appears on selection, user drawer, role list next to the matrix, dialogs instead of
 //                  browser confirms.
+// 20261001 Sawaneh Messages for a user above the actor's own access and for an expired form (CSRF); the Administrator
+//                  role's users and roles rows cannot be lowered.
+// 20261002 Sawaneh The page tells the shell its breadcrumb trail (settings redesign §8.0).
 
 /**
  * @param array<string, mixed> $vm From ur_view_model().
@@ -61,6 +64,7 @@ function ur_view(array $vm): void
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(findtekst('5536|Brugere & roller', $sprog), 'UTF-8', $charset)) ?>;</script>
+<?= function_exists('settings_breadcrumb') ? settings_breadcrumb_script(settings_breadcrumb('', findtekst('5536|Brugere & roller', $sprog), (int) $sprog), $charset) : '' ?>
 <div class="ur-page">
   <a class="ur-back" style="<?= $h(ur_back_style()) ?>" href="<?= $h($back) ?>"><i class='bx bx-arrow-back'></i><?= $t('5647|Tilbage') ?></a>
 
@@ -520,11 +524,12 @@ function ur_view_roles(array $vm, callable $h, callable $t, callable $link, call
           <?php foreach ($keys as $key => $def) {
           	$level = isset($role['levels'][$key]) ? $role['levels'][$key] : 'none';
           	$own = isset($vm['ownLevels'][$key]) ? $vm['ownLevels'][$key] : 'none';
+          	$adminLock = ($role['key'] === 'administrator' && in_array($key, UR_ADMIN_LOCKED, true));
           ?>
-          <div class="ur-prow">
+          <div class="ur-prow"<?= $adminLock ? ' title="' . $t('5971|Administrator-rollen beholder altid adgang til brugere og roller') . '"' : '' ?>>
             <b><?= $t($def['label']) ?><?php if ($def['dangerous']) { ?> <i class='bx bx-lock-alt ur-mut'></i><?php } ?></b>
             <?php foreach (array('none', 'read', 'write') as $opt) {
-            	$locked = ($rank[$opt] > $rank[$own]);
+            	$locked = ($rank[$opt] > $rank[$own]) || ($adminLock && $opt !== 'write');
             ?>
             <span class="ur-lv"><input type="radio" name="level[<?= $h($key) ?>]" value="<?= $opt ?>" aria-label="<?= $t($def['label']) ?>: <?= $h(perm_level_label($opt, $vm['sprogId'])) ?>"<?= $level === $opt ? ' checked' : '' ?><?= ($locked || !$write) ? ' disabled' : '' ?>></span>
             <?php } ?>
@@ -941,6 +946,7 @@ function ur_bulk_flash(string $act, int $done, array $why, int $sprog): array
 		'ownrole'    => '5761|Du kan ikke ændre din egen rolle',
 		'lastadmin'  => '5760|Regnskabet skal have mindst én administrator.',
 		'escalation' => '5577|Du kan ikke tildele flere rettigheder, end du selv har',
+		'above'      => '5968|Du kan ikke ændre brugere med flere rettigheder end dig selv',
 	);
 	$act = isset($doneText[$act]) ? $act : 'role';
 	$parts = array($done > 0 ? sprintf(findtekst($doneText[$act], $sprog), $done) : findtekst('5853|Ingen brugere blev ændret.', $sprog));
@@ -966,6 +972,9 @@ function ur_flash(string $msg, int $sprog): ?array
 		'assigned'    => array('ok',  '5580|Rollerne er tildelt'),
 		'roleinuse'   => array('err', '5576|Rollen kan ikke slettes, mens brugere har den'),
 		'escalation'  => array('err', '5577|Du kan ikke tildele flere rettigheder, end du selv har'),
+		'above'       => array('err', '5968|Du kan ikke ændre brugere med flere rettigheder end dig selv'),
+		'csrf'        => array('err', '5969|Siden var for gammel til at gemme. Prøv igen.'),
+		'adminlock'   => array('err', '5970|Administrator-rollen skal altid have skriveadgang til brugere og roller'),
 		'duplicate'   => array('err', '5578|Brugernavnet findes allerede'),
 		'self'        => array('err', '5579|Du kan ikke slette din egen bruger'),
 		'pwmismatch'  => array('err', '5589|Adgangskoden og gentagelsen er ikke ens'),

@@ -51,18 +51,31 @@ include(__DIR__ . "/../includes/connect.php");
 include(__DIR__ . "/../includes/online.php");
 include(__DIR__ . "/../includes/std_func.php");
 include_once(__DIR__ . "/../includes/userFunctions.php");
+include_once(__DIR__ . "/settingsRegistry.php");
 include(__DIR__ . "/usersRolesIncludes/view.php");
 
 // Rows per page of the audit log. Declared before any code that reads it: a const statement is
 // not hoisted like the functions further down.
 const UR_LOG_PAGE = 100;
+const UR_ADMIN_LOCKED = array('settings.users.manage', 'settings.roles.manage');
 
 require_permission('settings.users.manage', 'read');
 
 $contextQuery = (!empty($_GET['inframe']) ? 'inframe=1' : '');
 
+// Every posted form carries the session token (added to the page below), as in diverse.php.
+if (empty($_SESSION['csrf_token'])) {
+	$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	require_permission('settings.users.manage', 'write');
+	if (!isset($_POST['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], (string) $_POST['csrf_token'])) {
+		audit_log('csrf', 'usersRoles.php');
+		ob_end_clean();
+		header('Location: usersRoles.php?' . ($contextQuery !== '' ? $contextQuery . '&' : '') . 'tab=users&msg=csrf');
+		exit;
+	}
 	$redirect = ur_handle_post($_POST, (int) $bruger_id, (int) $regnaar);
 	if (!empty($GLOBALS['user_sessions_to_end'])) {
 		// Sessions live in the master database: back to it for this last write.
@@ -87,8 +100,13 @@ if (isset($_GET['tab'], $_GET['export']) && $_GET['tab'] === 'log' && $_GET['exp
 	exit;
 }
 
+$urToken = "<input type=\"hidden\" name=\"csrf_token\" value=\"" . htmlspecialchars((string) $_SESSION['csrf_token'], ENT_QUOTES) . "\">";
+ob_start(function ($buffer) use ($urToken) {
+	return preg_replace('/(<form\b[^>]*\bmethod="post"[^>]*>)/i', '$1' . $urToken, $buffer);
+});
 $vm = ur_view_model($_GET, (int) $bruger_id, (int) $sprog_id, (string) $db_encode, $contextQuery);
 ur_view($vm);
+ob_end_flush();
 
 // 20260929 Sawaneh Roles stage 2: close/reopen instead of delete, last-administrator and own-role rules, bulk
 //                  close/reopen with one audit entry per user, reset of built-in roles; user operations
@@ -96,6 +114,10 @@ ur_view($vm);
 // 20260929 Sawaneh Roles stage 2 (§8.4): invite a user instead of choosing the password, resend, status Invited.
 // 20260930 Sawaneh Roles stage 2 (§8.1, §8.2): reset password by mail, last active from live sessions.
 // 20260930 Sawaneh Roles stage 2 (§6.3): review of migrated roles - confirm, use the suggestion, bulk; a role is required.
+// 20261001 Sawaneh Review fixes: CSRF token on every posted form; users above the actor's own access cannot be
+//                  changed (msg=above).
+// 20261001 Sawaneh The Administrator role keeps write on users and roles (msg=adminlock); the department is
+//                  stored for the user, not for the employee id.
 // 20260930 Sawaneh Layout after prototype_brugere_roller.html: user drawer, role list + matrix, move users when deleting
 //                  a role, IP list one per line (validated), username locked after creation.
 // 20260930 Sawaneh Roles stage 2 (§7.2): audit log with filters, search, pages and CSV export; Roles tab behind
@@ -217,7 +239,10 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 		return $back . '&msg=duplicate';
 	}
 
-	$current = ($id > 0) ? db_fetch_array(db_select("select role_id from brugere where id = $id", __FILE__ . " linje " . __LINE__)) : null;
+	$current = ($id > 0) ? db_fetch_array(db_select("select role_id, rettigheder from brugere where id = $id", __FILE__ . " linje " . __LINE__)) : null;
+	if ($current && $id !== $selfId && !user_may_manage($current)) {
+		return $back . '&msg=above';
+	}
 	$currentRole = $current ? (int) $current['role_id'] : 0;
 	if ($roleId !== $currentRole) {
 		if (!ur_role_assignable($roleId)) {
@@ -266,7 +291,7 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 	if ($ansatId > 0) {
 		$r = db_fetch_array(db_select("select afd from ansatte where id = $ansatId", __FILE__ . " linje " . __LINE__));
 		if ($r) {
-			update_settings_value('afd', 'brugerAfd', (int) $r['afd'], 'Department of employee', $ansatId);
+			update_settings_value('afd', 'brugerAfd', (int) $r['afd'], 'Department of employee', $id);
 		}
 	}
 	ur_set_revisor_user($id, $isRevisor);
@@ -446,7 +471,15 @@ function ur_save_role(array $post): string
 	}
 	$navnSql = db_escape_string($navn);
 	$beskSql = db_escape_string(mb_substr($beskrivelse, 0, 500));
-	$existing = ($id > 0) ? db_fetch_array(db_select("select navn, beskrivelse, system from roles where id = $id", __FILE__ . " linje " . __LINE__)) : null;
+	$existing = ($id > 0) ? db_fetch_array(db_select("select role_key, navn, beskrivelse, system from roles where id = $id", __FILE__ . " linje " . __LINE__)) : null;
+	// The Administrator role always keeps users and roles, so nobody can lock the company out (Adam 2026-10-01).
+	if ($existing && $existing['role_key'] === 'administrator') {
+		foreach (UR_ADMIN_LOCKED as $lockedKey) {
+			if ($levels[$lockedKey] !== 'write') {
+				return 'tab=roles&rolle=' . $id . '&msg=adminlock';
+			}
+		}
+	}
 	if ($existing && in_array($existing['system'], array('t', true, '1', 1), true)) {
 		// Built-in roles keep their name and description; only the matrix can be edited (spec §3.2).
 		$navn = (string) $existing['navn'];
@@ -454,7 +487,7 @@ function ur_save_role(array $post): string
 		$beskSql = db_escape_string((string) $existing['beskrivelse']);
 	}
 	if ($id === 0) {
-		db_modify("insert into roles (role_key, navn, beskrivelse, system) values (null, '$navnSql', '$beskSql', 'f')", __FILE__ . " linje " . __LINE__);
+		db_modify("insert into roles (role_key, navn, beskrivelse, system) values (null, '$navnSql', '$beskSql', false)", __FILE__ . " linje " . __LINE__);
 		$r = db_fetch_array(db_select("select id from roles where navn = '$navnSql' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
 		$id = (int) $r['id'];
 		audit_log('role.created', $navn, 'rolle', (string) $id);
@@ -535,7 +568,7 @@ function ur_copy_role(int $id): string
 	$navn = findtekst('5587|Kopi af', (int) $sprog_id) . ' ' . perm_role_name($source, (int) $sprog_id);
 	$navnSql = db_escape_string(mb_substr($navn, 0, 80));
 	$beskSql = db_escape_string($source['beskrivelse']);
-	db_modify("insert into roles (role_key, navn, beskrivelse, system) values (null, '$navnSql', '$beskSql', 'f')", __FILE__ . " linje " . __LINE__);
+	db_modify("insert into roles (role_key, navn, beskrivelse, system) values (null, '$navnSql', '$beskSql', false)", __FILE__ . " linje " . __LINE__);
 	$r = db_fetch_array(db_select("select id from roles where navn = '$navnSql' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
 	$newId = (int) $r['id'];
 	perm_save_role_levels($newId, perm_levels_from_role($id));

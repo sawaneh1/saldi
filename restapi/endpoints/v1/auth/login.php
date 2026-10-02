@@ -130,6 +130,13 @@ class AuthLoginEndpoint extends BaseEndpoint
             return;
         }
         
+        // A closed user (brugere.status = false) cannot log in, as on the web login.
+        if (array_key_exists('status', $user) && in_array($user['status'], array('f', false, '0', 0), true)) {
+            write_log("Login failed: User is closed: $username in database: $tenant_db", $tenant_db, 'WARNING');
+            $this->sendResponse(false, null, 'Invalid username or password', 401);
+            return;
+        }
+
         // Verify password
         $pw1 = md5($password);
         $pw2 = saldikrypt($user['id'], $password);

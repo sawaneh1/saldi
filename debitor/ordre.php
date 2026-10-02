@@ -131,6 +131,7 @@
 //                newly visible now that it's restored. Only write the file when valg is
 //                actually present on this request; otherwise leave the previously-written
 //                value alone.
+// 20261002 Sawaneh Print to local printer remembered as a personal setting (settings redesign G6.4) instead of a saldi.dk cookie.
 
 @session_start();
 $s_id = session_id();
@@ -261,7 +262,7 @@ $title = findtekst('1092|Kundeordre', $sprog_id);
 $txt370 = findtekst('370|Kontant', $sprog_id);
 $txt283 = findtekst('283|Kreditkort', $sprog_id);
 
-$localPrint = if_isset($_COOKIE, NULL, 'localPrint');
+$localPrint = (get_settings_value('localPrint', 'print', '', (int) $bruger_id) === 'on') ? 'on' : if_isset($_COOKIE, NULL, 'localPrint'); #20261002 personal setting, cookie kept one release
 #print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/confirmclose.js\"></script>\n";
 #print "<script type=\"text/javascript\" src=\"https://code.jquery.com/jquery-latest.min.js\"></script>\n";
 #print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/arrowkey.js\"></script>\n";
@@ -947,12 +948,13 @@ if (($b_submit || isset($_POST['udskriv_til'])) && $id = $_POST['id']) {
 		$phone = substr($phone, 0, 15);
 	}
 	$udskriv_til = db_escape_string($_POST['udskriv_til']); // SD-639: reaches an UPDATE ordrer statement below unescaped
+	// Remembered per user (settings redesign G6.4), no longer a cookie bound to saldi.dk.
 	if ($udskriv_til == 'localPrint') {
-		setcookie('localPrint', 'on', time() + 10000000000, '/', 'saldi.dk');
+		update_settings_value('localPrint', 'print', 'on', 'Print to local printer', (int) $bruger_id);
 		$localPrint = 'on';
 		$udskriv_til = 'PDF';
 	} else {
-		setcookie('localPrint', 'off', time() + 10, '/', 'saldi.dk');
+		update_settings_value('localPrint', 'print', '', 'Print to local printer', (int) $bruger_id);
 		$localPrint = NULL;
 	}
 	$formularsprog = db_escape_string(if_isset($_POST, ($current_user_sprog ? $current_user_sprog : 'Dansk'), 'sprog')); # 2022113 Tilføjet 'sprog # SD-639: reaches an UPDATE ordrer statement below unescaped

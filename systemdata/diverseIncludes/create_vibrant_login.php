@@ -22,6 +22,7 @@
 //
 // Copyright (c) 2012-2023 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261001 Sawaneh Input escaped; an account with the same e-mail is replaced (one row per setting).
 @session_start();
 $s_id = session_id();
 
@@ -34,6 +35,9 @@ $post = json_decode(file_get_contents('php://input'));
 $email = $post->{'email'};
 $passwd = $post->{'passwd'};
 
+$email = db_escape_string((string) $email);
+$passwd = db_escape_string((string) $passwd);
+db_modify("DELETE FROM settings WHERE var_name = '$email' AND var_grp = 'vibrant_account'", __FILE__ . " linje " . __LINE__);
 $qtxt = "INSERT INTO settings(var_name, var_grp, var_value, var_description) VALUES ('$email', 'vibrant_account', '$passwd', 'The used vibrant account for logging into the clients terminal, var_name is the email and var_value is the password')";
 db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 

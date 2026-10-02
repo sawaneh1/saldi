@@ -56,6 +56,8 @@
 // 20260429 PHR Check for $regnaar in function transtjek()
 // 20260604 CL/PHR cvrnr_land/cvrnr_omr: added $baseCountry param — single-letter+digit CVR (NIF) treated as domestic; home country configurable via settings.baseCountry
 // 20260827 Sawaneh get_next_number: debtors and creditors draw from one shared kontonr sequence
+// 20261001 Sawaneh update_settings_value() treats NULL and 0 (user, till, group) as the same key, as the unique
+//                  index on settings does; a concurrent insert of the same key is dropped (ON CONFLICT DO NOTHING).
 //                 (highest number in use + 1, min 1000) instead of two independent first-free-gap
 //                 series, so a debtor and a creditor can no longer receive the same number and a
 //                 deleted account's number is never reused; kontonr above 8 digits (EAN-like
@@ -2804,16 +2806,17 @@ if(!function_exists('update_settings_value')){
 		 * @return void
 		 */
                 # Expect a posted ID
-                $qtxt = "SELECT var_value FROM settings WHERE var_name='$var_name' AND var_grp = '$var_grp'";
-                if ($user !== NULL)  $qtxt .= " AND user_id=$user";
-				if ($posid !== NULL) $qtxt .= " AND pos_id=$posid";
+                # NULL and 0 (and NULL and '' for the group) are the same key, as in the unique index on settings.
+                $qtxt = "SELECT var_value FROM settings WHERE var_name='$var_name' AND coalesce(var_grp, '') = '$var_grp'";
+                if ($user !== NULL)  $qtxt .= " AND coalesce(user_id, 0)=$user";
+				if ($posid !== NULL) $qtxt .= " AND coalesce(pos_id, 0)=$posid";
                 $r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
 				
                 # If the row already exsists
                 if ($r) {
-                        $qtxt = "UPDATE settings SET var_value='$var_value' WHERE var_name='$var_name' AND var_grp = '$var_grp'";
-                        if ($user !== NULL)  $qtxt .= " AND user_id=$user";
-                        if ($posid !== NULL) $qtxt .= " AND pos_id=$posid";
+                        $qtxt = "UPDATE settings SET var_value='$var_value' WHERE var_name='$var_name' AND coalesce(var_grp, '') = '$var_grp'";
+                        if ($user !== NULL)  $qtxt .= " AND coalesce(user_id, 0)=$user";
+                        if ($posid !== NULL) $qtxt .= " AND coalesce(pos_id, 0)=$posid";
                         db_modify($qtxt, __FILE__ . " linje " . __LINE__);
                 # If the row needs to be created in the database
                 } else {
@@ -2825,6 +2828,9 @@ if(!function_exists('update_settings_value')){
                         if ($user !== NULL)  $qtxt .= ", $user";
                         if ($posid !== NULL) $qtxt .= ", $posid";
                         $qtxt = $qtxt.")";
+                        # Two requests saving the same new key at once: the second is dropped instead of failing.
+                        global $db_type;
+                        if ($db_type != 'mysql' && $db_type != 'mysqli') $qtxt .= " ON CONFLICT DO NOTHING";
 
                         db_modify($qtxt, __FILE__ . " linje " . __LINE__);
                 }

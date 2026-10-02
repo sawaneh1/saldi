@@ -25,6 +25,7 @@
 // 20260710 SZ Added Settings search box to sidebar (settingsSearch.php/.js/.css)
 // 20260928 Sawaneh Phase 4: menu column generated from settingsRegistry.php (current group, access-filtered),
 //                  Back goes to settings.php, unsaved-changes guard for the settings pages.
+// 20261002 Sawaneh The page tells the shell its breadcrumb trail (settings redesign §8.0).
 // 20260928 Sawaneh Unsaved-changes guard uses the native beforeunload dialog (settings redesign spec §8.1).
 
 $small=NULL;
@@ -89,6 +90,14 @@ foreach ($currentEntries as $currentEntry) {
 	}
 }
 $currentKeys = array_map(function ($e) { return $e['key']; }, $currentEntries);
+if ($currentGroup !== '') {
+	foreach ($currentEntries as $currentEntry) {
+		if ($currentEntry['group'] === $currentGroup) {
+			print settings_breadcrumb_script(settings_breadcrumb($currentGroup, settings_entry_label($currentEntry, (int) $sprog_id), (int) $sprog_id), (isset($db_encode) && $db_encode !== 'UTF8') ? 'ISO-8859-1' : 'UTF-8');
+			break;
+		}
+	}
+}
 $activeStyle = "$buttonStyle; filter:brightness(1.25); font-weight:bold";
 if ($currentGroup !== '') {
 	print "<tr><td style='padding:6px 2px 2px;font-weight:bold;font-size:12px;text-transform:uppercase;letter-spacing:.4px'>".findtekst($settingsGroups[$currentGroup]['def']['label'], $sprog_id)."</td></tr>";

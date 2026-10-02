@@ -27,6 +27,7 @@ ob_start(); //Starter output buffering
 // 2015.01.04 Initerer variablen $nextver så den bypasser versionskontrol i online.php
 // 2015.01.14 PK - Tilføjet session_unset,session_destroy, som tømmer alle sessions variabler
 // 2015.01.27 PHR	- Tilføjet rettigheder da man ellers bliver smidt af ved forsøg på login med tmp kode.  
+// 20261001 Sawaneh The temporary password is read with tmp_code_check() (type|expire|code, as in index/login.php).
 
 @session_start();
 $s_id=session_id();
@@ -192,14 +193,13 @@ if (isset ($brug_timestamp)) {
 	if (!$bruger_id) {
 		$row=db_fetch_array(db_select("select * from brugere where brugernavn='".db_escape_string($brugernavn)."'",__FILE__ . " linje " . __LINE__));
 		if ($row['tmp_kode']) {
-			list($tidspkt,$tmp_kode)=explode("|",$row['tmp_kode']);
-			if (date("U")<=$tidspkt) {
-				if ($tmp_kode==$password) {
-					$bruger_id=$row['id'];
-					$rettigheder=trim($row['rettigheder']); #20150127
-					$regnskabsaar=$row['regnskabsaar'];
-				} 
-			} elseif ($tmp_kode==$password) print "<BODY onLoad=\"javascript:alert('Midlertidig adgangskode udløbet')\">";
+			include_once(__DIR__ . "/tmpCode.php");
+			$tmpState = tmp_code_check($row['tmp_kode'], 'reset', (string) $password);
+			if ($tmpState === 'ok') {
+				$bruger_id=$row['id'];
+				$rettigheder=trim($row['rettigheder']); #20150127
+				$regnskabsaar=$row['regnskabsaar'];
+			} elseif ($tmpState === 'expired') print "<BODY onLoad=\"javascript:alert('Midlertidig adgangskode udløbet')\">";
 		}
 	}
 }

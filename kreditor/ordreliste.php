@@ -34,6 +34,7 @@
 // 20260219 PHR if ($row['valutakurs'] && $row['valutakurs'] != 100) changed to ($sum && $row['valutakurs'] && $row['valutakurs'] != 100)
 // 20260219 PHR orders with status 0 was not listet if $hurtigfakt was selected;
 // 20260605 Sawaneh Make the whole order line clickable (and right-clickable for "open in new tab/window"), not just the order number.
+// 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 
 
 ob_start();
@@ -71,6 +72,7 @@ if ($konto_id) {
         $qtxt = "UPDATE settings SET var_value = '$konto_id' WHERE var_name = 'kreditorId' AND var_grp = 'kreditor' AND user_id = '$bruger_id'";
     } else {
         $qtxt = "INSERT INTO settings (var_name, var_value, var_grp, user_id) VALUES ('kreditorId', '$konto_id', 'kreditor', '$bruger_id')";
+        $qtxt .= (in_array($GLOBALS['db_type'], array('mysql', 'mysqli')) ? '' : ' ON CONFLICT DO NOTHING');
     }
     db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 } else {

@@ -106,6 +106,7 @@
 //             0. Skip the check when the field is blank, matching debitor/debkort_save.php's SD-513 fix
 // 20260904 Sawaneh WP-1.1: Historik/Opgaveliste links now urlencode a returside that carries the card id (was id-less, masked by the nav stack)
 // 20260907 CDX/LH Sanitize the return parameter once before navigation and order-context handling.
+// 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 @session_start();
 $s_id = session_id();
 
@@ -125,7 +126,6 @@ include("../includes/topline_settings.php");
 include("../includes/grid.php");
 include_once("../includes/emballage_schema.php");
 $packagingModuleEnabled = (get_settings_value("packagingModuleEnabled", "items", "off") === "on");
-if ($packagingModuleEnabled) ensure_emballage_schema();
 # >> Date picker scripts 
 print "<script LANGUAGE=\"JavaScript\" SRC=\"../javascript/jquery-3.6.4.min.js\"></script>";
 print "<script LANGUAGE=\"JavaScript\" SRC=\"../javascript/moment.min.js\"></script>";
@@ -139,6 +139,7 @@ if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	$qtxt = "insert into settings (var_name, var_grp, user_id, var_description) ";
 	$qtxt .= "values ";
 	$qtxt .= "('debitorId','debitor', '$bruger_id','Used to track debitor Id when orderlist is called from debitor card')";
+	$qtxt .= (in_array($GLOBALS['db_type'], array('mysql', 'mysqli')) ? '' : ' ON CONFLICT DO NOTHING');
 }
 db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 

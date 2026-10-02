@@ -52,6 +52,8 @@
 // 20260928 Sawaneh After the page-change confirm, clear the iframe's docChange so its beforeunload does not ask twice.
 // 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
 // 20260930 Sawaneh Dashboard items in the user menu hidden, not greyed out, away from the dashboard (Adam).
+// 20261002 Sawaneh Hand-over 2 Oct: sidebar "System" replaced by one entry "Indstillinger", Kontoplan under Finans (also for
+//                  users with only that right), breadcrumb in the topbar on settings pages (settings redesign §8.0, decision 16).
 @session_start();
 $s_id = session_id();
 
@@ -182,7 +184,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=11' rel='stylesheet'>
+<link href='../css/topbar.css?v=12' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -216,7 +218,7 @@ function brightenColor($color, $amount = 0.2) {
       </ul>
     </li>
 
-    <li style="display: <?php if (check_permissions(array(2, 3, 4))) {
+    <li style="display: <?php if (check_permissions(array(0, 2, 3, 4))) {
                           echo 'block';
                         } else {
                           echo 'none';
@@ -239,6 +241,10 @@ function brightenColor($color, $amount = 0.2) {
         }
         if (check_permissions(array(4))) {
           echo '<li><a href="#" id="rapport" onclick=\'update_iframe("/finans/rapport.php")\'>' . findtekst('603|Rapporter', $sprog_id) . '</a></li>';
+        }
+        // 20261002 Settings redesign decision 16: the chart of accounts is a daily tool and sits under Finans.
+        if (check_permissions(array(0))) {
+          echo '<li><a href="#" id="kontoplan" onclick=\'update_iframe("/systemdata/kontoplan.php")\'>' . findtekst('612|Kontoplan', $sprog_id) . '</a></li>';
         }
         ?>
       </ul>
@@ -368,46 +374,19 @@ function brightenColor($color, $amount = 0.2) {
       </li>
       <?php } ?>
 
-      <!-- System -->
-      <li style="display: <?php if (check_permissions(array(0, 11)) || $settingsGroups) {
-                            echo 'block';
-                          } else {
-                            echo 'none';
-                          } ?>">
-        <div class="icon_link" id="system">
-          <a href="#">
-            <i class='bx bx-cog'></i>
-            <span class="link_name"><?php print findtekst('2377|System', $sprog_id); ?></span>
-          </a>
-          <i class='bx bxs-chevron-down arrow'> </i>
-        </div>
-        <ul class="sub-menu">
-          <li><span class="link_name">System</span></li>
-          <?php
-          if (check_permissions(array(0))) {
-            echo '<li><a href="#" onclick=\'update_iframe("/systemdata/kontoplan.php")\'>' . findtekst('612|Kontoplan', $sprog_id) . '</a></li>';
-          }
-          // 20260928 Phase 4: Settings opens the front page and shows for anyone with a settings group.
-          if ($settingsGroups) {
-            echo '<li><a href="#" onclick=\'update_iframe("/systemdata/settings.php")\'>' . findtekst('122|Indstillinger', $sprog_id) . '</a></li>';
-          }
-          if (isset($settingsGroups['pos'])) {
-            # Kassesystem eller ej
-            $qtxt = "SELECT id FROM grupper WHERE art='POS' AND box1>='1' AND fiscal_year='$regnaar'";
-            $state = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-            if ($state) {
-              print "<li><a href=\"#\" onclick='update_iframe(\"/systemdata/posmenuer.php\")'>" . findtekst('1940|POS-menuer', $sprog_id) . "</a></li>";
-            }
-          }
-          if (check_permissions(array(11))) {
-            $restoreRaw = findtekst('1903|Gendan brugers IP', $sprog_id);
-            $restore1 = explode(" ", $restoreRaw);
-            $restore = $restore1[0];
-            echo '<li><a href="#" onclick=\'update_iframe("/admin/backup.php")\'>' . findtekst('614|Sikkerhedskopi', $sprog_id) . '/'.$restore.'</a></li>';
-          }
-          ?>
+      <!-- Indstillinger (settings redesign decision 16): one entry that opens the settings front page. Kontoplan is
+           under Finans, POS-menuer under Indstillinger → Kasse, Sikkerhedskopi under Indstillinger → Import & eksport. -->
+      <?php if ($settingsGroups) { ?>
+      <li>
+        <a href="#" id="indstillinger" onclick='clear_sidebar(); this.parentElement.classList.add("active"); update_iframe("/systemdata/settings.php")'>
+          <i class='bx bx-cog'></i>
+          <span class="link_name"><?php print findtekst('122|Indstillinger', $sprog_id); ?></span>
+        </a>
+        <ul class="sub-menu blank">
+          <li><a class="" href="#" onclick='clear_sidebar(); update_iframe("/systemdata/settings.php")'><?php print findtekst('122|Indstillinger', $sprog_id); ?></a></li>
         </ul>
       </li>
+      <?php } ?>
   </ul>
 
   <ul class="nav-links">
@@ -460,6 +439,7 @@ function brightenColor($color, $amount = 0.2) {
       onLoad="
       document.title = 'Saldi - ' + this.contentWindow.document.title;
       topbarSetDashState(this.contentWindow.location.pathname);
+      topbarSetCrumb(this.contentWindow);
       console.log('Locaiton', this.contentWindow.document.location.href);
       trigger_iframe_load();
       stopLoading();
@@ -524,6 +504,41 @@ function brightenColor($color, $amount = 0.2) {
   }
 
   // Dashboard items in the chip (Skjul/Rediger oversigt) only act on the dashboard itself.
+  // Settings pages declare their trail in window.saldiBreadcrumb; every other page leaves the left side empty.
+  function topbarSetCrumb(win) {
+    const nav = document.getElementById('topbar-crumb');
+    if (!nav) return;
+    let trail = null;
+    try { trail = win && Array.isArray(win.saldiBreadcrumb) ? win.saldiBreadcrumb : null; } catch (e) { trail = null; }
+    nav.textContent = '';
+    const entry = document.getElementById('indstillinger');
+    if (entry) {
+      if (trail && trail.length) { clear_sidebar(); entry.parentElement.classList.add('active'); }
+      else { entry.parentElement.classList.remove('active'); }
+    }
+    if (!trail || !trail.length) { nav.hidden = true; return; }
+    const items = [{ label: nav.dataset.company || '', url: '/index/dashboard.php' }].concat(trail);
+    items.forEach((item, i) => {
+      if (!item || !item.label) return;
+      if (nav.childNodes.length) {
+        const sep = document.createElement('i');
+        sep.textContent = '/';
+        sep.setAttribute('aria-hidden', 'true');
+        nav.appendChild(sep);
+      }
+      const last = (i === items.length - 1) || !item.url;
+      const el = document.createElement(last ? 'b' : 'a');
+      el.textContent = item.label;
+      if (last) {
+        el.setAttribute('aria-current', 'page');
+      } else {
+        el.href = '#';
+        el.addEventListener('click', (e) => { e.preventDefault(); update_iframe(item.url); });
+      }
+      nav.appendChild(el);
+    });
+    nav.hidden = false;
+  }
   function topbarSetDashState(path) {
     const onDash = /\/index\/dashboard\.php$/.test(path || '');
     document.querySelectorAll('.topbar-dash').forEach((el) => { el.hidden = !onDash; });

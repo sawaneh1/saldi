@@ -17,7 +17,6 @@ function emballage($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
                    $simulering, $lagerbev) {
 	global $db, $menu, $sprog_id;
 	include_once("../includes/emballage_schema.php");
-	ensure_emballage_schema();
 
 	$view = if_isset($_GET['view'], if_isset($_POST['view'], 'detailed'));
 	$land = if_isset($_GET['land'], if_isset($_POST['land'], 'Denmark'));

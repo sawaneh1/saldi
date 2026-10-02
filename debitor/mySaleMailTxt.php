@@ -22,6 +22,7 @@
 //
 // Copyright (c) 2020 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261001 Sawaneh Subject and text saved by key (update_settings_value) instead of the posted row id.
 
 #ob_start();
 @session_start();
@@ -48,18 +49,9 @@ isset ($_POST['txtId'])?$txtId=$_POST['txtId']:$txtId=NULL;
 isset ($_POST['mailText'])?$mailText=$_POST['mailText']:$mailText=NULL;
 
 if ($subject && $mailText) {
-	if ($subjId) $qtxt="update settings set var_value='". db_escape_string($subject) ."' where id='$subjId'";
-	else {
-		$qtxt = "insert into settings (var_name,var_grp,var_description,var_value,user_id) values ";
-		$qtxt.= "('mailSubject','mySale','Subject for invitation email to mySale users','". db_escape_string($subject) ."','0')";
-	}
-	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
-	if ($txtId) $qtxt="update settings set var_value='". db_escape_string($mailText) ."' where id='$txtId'";
-	else {
-		$qtxt = "insert into settings (var_name,var_grp,var_description,var_value,user_id) values ";
-		$qtxt.= "('mailText','mySale','Text for invitation email to mySale users','". db_escape_string($mailText) ."','0')";
-	}
-	db_modify($qtxt,__FILE__ . " linje " . __LINE__);
+	// Saved by key, not by the row id the form saw: a stale or resubmitted form made duplicates.
+	update_settings_value('mailSubject', 'mySale', db_escape_string($subject), 'Subject for invitation email to mySale users', 0);
+	update_settings_value('mailText', 'mySale', db_escape_string($mailText), 'Text for invitation email to mySale users', 0);
 }
 $qtxt="select * from adresser where art='S'";
 $r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));

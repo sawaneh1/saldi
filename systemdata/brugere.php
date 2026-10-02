@@ -29,6 +29,7 @@
 // 20260219 PHR Added employeeInitials
 // 20260908 CL/NTR Reject usernames over 80 characters (is_input_too_long) on create/update, matching login.php
 // 20260916 Sawaneh Superseded by systemdata/usersRoles.php (Brugere & roller). Redirects there.
+// 20261001 Sawaneh The department setting is stored for the user ($id); the employee id went in as description.
 
 header('Location: usersRoles.php');
 exit;
@@ -175,7 +176,7 @@ if ($addUser || $updateUser) {
 		if ($employeeId[0]) {
 			$qtxt = "select afd from ansatte where id = '$employeeId[0]'";
 			$r = db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
-			update_settings_value('afd', 'brugerAfd', $r['afd'], $employeeId[0]);
+			update_settings_value('afd', 'brugerAfd', $r['afd'], 'Bruger afdeling', $id);
 		}
 	}
 	// if($restore_user){

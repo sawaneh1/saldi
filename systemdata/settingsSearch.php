@@ -183,6 +183,7 @@ foreach (getSettingsRegistry() as $entry) {
 		'url' => $entry['url'],
 		'label' => $label,
 		'category' => $entry['category'],
+		'group' => ($entryGroup === 'personal') ? findtekst('5500|Personlige indstillinger', $sprog_id) : (isset($accessibleGroups[$entryGroup]) ? findtekst($accessibleGroups[$entryGroup]['def']['label'], $sprog_id) : ''),
 		'matchType' => $match['type'],
 		'matchedTerm' => $match['matchedTerm'],
 	);

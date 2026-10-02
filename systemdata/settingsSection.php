@@ -25,6 +25,9 @@
 // 20260929 Sawaneh Settings redesign phase 4a: a settings section generated from the registry
 //                  (spec §7.3, §8). Controller: POST with CSRF -> validation -> conflict check ->
 //                  transaction -> audit -> redirect. View below. No hand-written form.
+// 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
+// 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
+//                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -44,7 +47,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css";
+$css = "../css/unified-components.css?v=20261002";
 $modulnr = 1;
 $permission_key = 'system.indstillinger';
 $permission_post_read = false;
@@ -54,6 +57,7 @@ include(__DIR__ . "/../includes/online.php");
 include(__DIR__ . "/../includes/std_func.php");
 include_once(__DIR__ . "/settingsRegistry.php");
 include_once(__DIR__ . "/../includes/settings/components.php");
+include_once(__DIR__ . "/../includes/settings/actions.php");
 
 $sections = getSettingsSections();
 $sectionId = isset($_GET['s']) ? (string) $_GET['s'] : '';
@@ -63,6 +67,11 @@ if (!isset($sections[$sectionId])) {
 	exit;
 }
 $section = $sections[$sectionId];
+if (!empty($section['module']) && !settings_has_module($section['module'])) {
+	ob_end_clean();
+	header('Location: settings.php?err=module');
+	exit;
+}
 $groups = getSettingsGroups();
 $permission = $groups[$section['group']]['permission'];
 require_permission($permission, 'read');
@@ -99,9 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$target = $selfUrl;
 		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
 			audit_log('setting.action', $key);
-			if ($defs[$key]['run'] === 'update_cost_prices') {
-				$target = '../includes/opdat_kostpriser.php?metode=' . (int) SettingsService::raw('items.stock.cost_method');
-			}
+			$target = settings_run_action($defs[$key], $selfUrl);
 		}
 		ob_end_clean();
 		header('Location: ' . $target);
@@ -183,6 +190,11 @@ function settings_section_save(string $sectionId, array $defs, array $post): arr
 			SettingsService::saveRaw($key, $raw);
 		}
 		transaktion('commit');
+		foreach ($toSave as $key => $raw) {
+			if (!empty($defs[$key]['on_save'])) {
+				settings_after_save($defs[$key], $raw);
+			}
+		}
 	}
 	return array('errors' => $errors, 'posted' => $posted, 'conflict' => $conflict, 'flash' => array());
 }
@@ -237,22 +249,26 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	if (!empty($_GET['reverted'])) {
 		$flash[] = array('ok', st_txt(5752));
 	}
+	if (isset($_GET['converted'])) {
+		$flash[] = array('ok', sprintf(st_txt(6013), (int) $_GET['converted']));
+	}
 	if (!$canWrite) {
 		$flash[] = array('info', st_txt(5755));
+	}
+	if (isset($_GET['saved']) && preg_match('/^[0-9]{4}$/', (string) $_GET['saved'])) {
+		$flash[] = array('ok', st_txt(5709) . ' ' . substr($_GET['saved'], 0, 2) . ':' . substr($_GET['saved'], 2));
 	}
 	$moved = isset($_GET['moved']) ? (string) $_GET['moved'] : '';
 	$movedText = '';
 	if ($moved !== '' && isset($section['old'][$moved])) {
 		$movedText = st_txt(5720) . ' ' . settings_legacy_text($section['old'][$moved], $sprogId) . '. ' . st_txt(5721);
 	}
-	$savedAt = (isset($_GET['saved']) && preg_match('/^[0-9]{4}$/', (string) $_GET['saved'])) ? substr($_GET['saved'], 0, 2) . ':' . substr($_GET['saved'], 2) : '';
 
 	$tabs = settings_section_tabs($section['group'], $sprogId);
 	$history = SettingsService::history($sectionId, 20);
 	$version = SettingsService::version($sectionId);
-	$flashIcons = array('ok' => 'bx-check-circle', 'warn' => 'bx-error', 'err' => 'bx-x-circle', 'info' => 'bx-info-circle');
 	$config = array(
-		'noChanges' => st_txt(5707), 'unsaved' => st_txt(5708), 'savedAt' => $savedAt !== '' ? st_txt(5709) . ' ' . $savedAt : '',
+		'unsavedN' => st_txt(6043), 'unsaved1' => st_txt(6044),
 		'copied' => st_txt(5718), 'notFound' => st_txt(5719), 'cancel' => st_txt(5), 'lookupUrl' => 'settingsLookup.php',
 		'restoreTitle' => st_txt(5747), 'restoreBody' => st_txt(5748), 'restoreVerb' => st_txt(5711),
 	);
@@ -262,20 +278,25 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(st_txt($section['label']), 'UTF-8', $charset)) ?>;</script>
-<div class="st-page" style="--st-accent: <?= st_h($accent) ?>; --st-accent-txt: <?= st_h($accentTxt) ?>;">
+<?= settings_breadcrumb_script(settings_breadcrumb((string) $section['group'], st_txt($section['label']), $sprogId), $charset) ?>
+<div class="st-page" style="<?= st_h(st_accent_style((string) $accent, (string) $accentTxt)) ?>">
   <a class="st-skip" href="#st-form"><?= st_t(5751) ?></a>
-  <a class="st-back" href="settings.php"><i class='bx bx-arrow-back'></i><?= st_t(5647) ?></a>
-  <header class="st-head">
-    <p class="st-crumb"><a href="settings.php"><?= st_t(122) ?></a> <i class='bx bx-chevron-right'></i> <?= st_h(html_entity_decode(findtekst($group['label'], $sprogId), ENT_QUOTES | ENT_HTML5, $charset)) ?></p>
-    <h1><i class='bx <?= st_h($section['icon']) ?>'></i><?= st_t($section['label']) ?></h1>
-    <p class="st-scope"><i class='bx bx-buildings'></i><?= st_t(5706) ?> <?= st_h(st_company()) ?></p>
-  </header>
+  <section class="st-phead">
+    <div>
+      <h1><?= st_t($section['label']) ?></h1>
+      <p class="st-lead"><?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
+    </div>
+  </section>
 
-	<?php if ($movedText !== '') { ?>
-  <div class="st-toast" role="status"><i class='bx bx-transfer-alt'></i><span><?= st_h($movedText) ?> <a href="settingsMoved.php"><?= st_t(5722) ?></a></span><button type="button" class="st-toast-close" aria-label="<?= st_t(2172) ?>" data-dismiss><i class='bx bx-x'></i></button></div>
-	<?php } ?>
-	<?php foreach ($flash as $f) { ?>
-  <div class="st-flash st-flash-<?= $f[0] ?>" role="<?= $f[0] === 'err' ? 'alert' : 'status' ?>"><i class='bx <?= $flashIcons[$f[0]] ?>'></i><span><?= st_h($f[1]) ?></span></div>
+	<?php if ($movedText !== '' || $flash) { ?>
+  <div class="st-notes">
+		<?php if ($movedText !== '') { ?>
+    <div class="st-toast" role="status"><i class="st-dotw st-dot-acc" aria-hidden="true"></i><span><?= st_h($movedText) ?> <a href="settingsMoved.php"><?= st_t(5722) ?></a></span><button type="button" class="st-toast-close" aria-label="<?= st_t(2172) ?>" data-dismiss><i class='bx bx-x'></i></button></div>
+		<?php } ?>
+		<?php foreach ($flash as $f) { ?>
+    <div class="st-flash st-flash-<?= $f[0] ?>" role="<?= $f[0] === 'err' ? 'alert' : 'status' ?>"><?php if ($f[0] === 'info') { ?><i class='bx bx-lock-alt' aria-hidden="true"></i><?php } else { ?><i class="st-dotw st-dot-<?= $f[0] ?>" aria-hidden="true"></i><?php } ?><span><?= st_h($f[1]) ?></span></div>
+		<?php } ?>
+  </div>
 	<?php } ?>
 
   <div class="st-layout">
@@ -307,6 +328,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 
 		<?php
 		$actions = array();
+		$danger = array();
 		foreach ($section['subsections'] as $sub => $subLabel) {
 			$fields = array();
 			foreach ($defs as $key => $def) {
@@ -314,7 +336,11 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 					continue;
 				}
 				if ($def['type'] === 'action') {
-					$actions[$key] = $def;
+					if (!empty($def['danger'])) {
+						$danger[$key] = $def;
+					} else {
+						$actions[$key] = $def;
+					}
 					continue;
 				}
 				if ($def['visible_if'] && $def['visible_if'][0] === 'module' && !st_visible($def, $values)) {
@@ -326,8 +352,9 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 				continue;
 			}
 			?>
-      <section class="st-sub" id="sub-<?= st_h($sub) ?>">
+      <section class="st-sect" id="sub-<?= st_h($sub) ?>">
         <h2><?= st_t($subLabel) ?></h2>
+        <div class="st-card">
 			<?php foreach ($fields as $key => $def) {
 				st_render_field($def, array(
 					'value'    => $values[$key],
@@ -339,60 +366,80 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 					'mine'     => ($state['conflict'] && isset($state['conflict']['mine'][$key])),
 				));
 			} ?>
+        </div>
       </section>
 		<?php } ?>
 
-		<?php if ($actions) { ?>
-      <section class="st-sub st-actions" id="sub-actions">
+		<?php if ($actions && $canWrite) { ?>
+      <section class="st-sect" id="sub-actions">
         <h2><?= st_t(3285) ?></h2>
+        <p><?= st_t(6047) ?></p>
+        <div class="st-card">
 			<?php foreach ($actions as $def) {
 				st_render_action($def, $canWrite, st_visible($def, $values));
 			} ?>
+        </div>
+      </section>
+		<?php } ?>
+		<?php if ($danger && $canWrite) { ?>
+      <section class="st-sect st-sect-danger" id="sub-danger">
+        <h2><?= st_t(6048) ?></h2>
+        <div class="st-card st-card-danger">
+			<?php foreach ($danger as $def) {
+				st_render_action($def, $canWrite, st_visible($def, $values));
+			} ?>
+        </div>
       </section>
 		<?php } ?>
 
-      <footer class="st-savebar<?= $savedAt !== '' ? ' st-saved' : '' ?>" id="st-savebar">
-        <span class="st-status" id="st-status" role="status"><?= $savedAt !== '' ? '<i class="bx bx-check-circle"></i> ' . st_t(5709) . ' ' . st_h($savedAt) : st_t(5707) ?></span>
-        <span class="st-savebar-btns">
-          <button type="button" class="st-btn st-btn-ghost" id="st-undo" disabled><?= st_t(159) ?></button>
-          <button type="submit" class="st-btn st-btn-primary" id="st-save"<?= $canWrite ? '' : ' disabled' ?>><i class='bx bx-save'></i><?= st_t(3) ?></button>
-        </span>
+		<?php if ($canWrite) { ?>
+      <footer class="st-savebar" id="st-savebar" hidden>
+        <div class="st-savebar-in">
+          <span class="st-status"><i class="st-dotw st-dot-warn" aria-hidden="true"></i><span id="st-status" role="status"></span></span>
+          <span class="st-savebar-btns">
+            <kbd aria-hidden="true">Ctrl S</kbd>
+            <button type="button" class="st-btn st-btn-quiet" id="st-undo" disabled><?= st_t(159) ?></button>
+            <button type="submit" class="st-btn st-btn-primary" id="st-save"><?= st_t(6045) ?></button>
+          </span>
+        </div>
       </footer>
+		<?php } ?>
     </form>
 
-    <aside class="st-history">
-      <details<?= !empty($_GET['reverted']) ? ' open' : '' ?>>
-        <summary><i class='bx bx-history'></i><?= st_t(5710) ?></summary>
-			<?php if (!$history) { ?>
-        <p class="st-history-empty"><?= st_t(5712) ?></p>
-			<?php } ?>
-        <ol>
-			<?php foreach ($history as $row) {
+    <aside class="st-hist" aria-labelledby="st-hist-title">
+      <h2 id="st-hist-title"><?= st_t(5710) ?></h2>
+      <div class="st-card">
+			<?php
+			$shown = 0;
+			foreach ($history as $row) {
 				$key = (string) $row['setting_key'];
 				if (!isset($defs[$key])) {
 					continue;
 				}
+				$shown++;
 				$def = $defs[$key];
 				$secret = ($def['type'] === 'secret');
 				$oldText = st_display_value($def, (string) $row['old_value']);
 				?>
-          <li>
-            <span class="st-history-meta"><b><?= st_h($row['brugernavn']) ?></b> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'd-m-Y H:i')) ?></span>
-            <a class="st-history-field" href="#<?= st_h($key) ?>"><?= st_t($def['label']) ?></a>
-            <span class="st-history-change"><?php if ($secret) { ?><?= st_t(5713) ?><?php } else { ?><?= st_h($oldText) ?> <i class='bx bx-right-arrow-alt'></i> <?= st_h(st_display_value($def, (string) $row['new_value'])) ?><?php } ?></span>
-				<?php if (!$secret && $canWrite && !st_locked($def)) { ?>
-            <button type="button" class="st-restore" data-restore="<?= (int) $row['id'] ?>" data-value="<?= st_h($oldText) ?>"><?= st_t(5711) ?></button>
-				<?php } ?>
-          </li>
+        <div class="st-h">
+          <a class="st-h-field" href="#<?= st_h($key) ?>"><?= st_t($def['label']) ?></a>
+          <span class="st-h-ch"><?php if ($secret) { ?><?= st_t(5713) ?><?php } else { ?><s><?= st_h($oldText) ?></s> → <?= st_h(st_display_value($def, (string) $row['new_value'])) ?><?php } ?></span>
+          <span class="st-h-m"><span><?= st_h($row['brugernavn']) ?> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'j/n H:i')) ?></span><?php if (!$secret && $canWrite && !st_locked($def)) { ?><button type="button" class="st-tl" data-restore="<?= (int) $row['id'] ?>" data-value="<?= st_h($oldText) ?>"><?= st_t(5711) ?></button><?php } ?></span>
+        </div>
 			<?php } ?>
-        </ol>
-      </details>
+			<?php if (!$shown) { ?>
+        <p class="st-h-empty"><?= st_t(5712) ?></p>
+			<?php } ?>
+			<?php if (function_exists('perm_can') && perm_can('settings.audit.read', 'read')) { ?>
+        <div class="st-h-foot"><a class="st-tl" href="usersRoles.php?tab=log"><?= st_t(6046) ?></a></div>
+			<?php } ?>
+      </div>
     </aside>
   </div>
 
   <div class="st-backdrop" id="st-backdrop" hidden></div>
   <div class="st-dialog" id="st-dialog" role="dialog" aria-modal="true" aria-labelledby="st-dialog-title" hidden>
-    <h2 id="st-dialog-title"></h2>
+    <h3 id="st-dialog-title"></h3>
     <p id="st-dialog-body"></p>
     <form method="post" action="<?= st_h($selfUrl) ?>" id="st-dialog-form">
       <input type="hidden" name="csrf_token" value="<?= st_h($csrfToken) ?>">
@@ -400,7 +447,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
       <input type="hidden" name="key" value="">
       <input type="hidden" name="entry" value="">
       <div class="st-dialog-btns">
-        <button type="button" class="st-btn st-btn-ghost" id="st-dialog-cancel"><?= st_t(5) ?></button>
+        <button type="button" class="st-btn st-btn-quiet" id="st-dialog-cancel"><?= st_t(5) ?></button>
         <button type="submit" class="st-btn st-btn-primary" id="st-dialog-ok"></button>
       </div>
     </form>
@@ -408,7 +455,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=3"></script>
+<script src="../javascript/settingsSection.js?v=4"></script>
 	<?php
 }
 

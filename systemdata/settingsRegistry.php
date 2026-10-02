@@ -50,6 +50,12 @@
 // 20260928 Sawaneh Groups, keys and placement aligned with Requirements_settings_redesign_EN.md §4 and Appendix A.
 // 20260929 Sawaneh Phase 4a: registry v2 (settingsDefinitions.php) included; generated sections G3.2, G3.3, G4.2
 //                  and G5.5 replace the ordre_valg and massefakt pages; PoS visibility from the licence flag.
+// 20261001 Sawaneh Phase 4a §8.13: optional modules (on or off) and computed status badges for the front page.
+// 20261002 Sawaneh Phase 4b batch 1: provision, productOptions, orediff and betalinger_settings entries point at the
+//                  generated sections (commission, consignment, packaging, cash journal); mySale and print added.
+// 20261002 Sawaneh Hand-over 2 Oct (A3, A4): breadcrumb trail for the shell's topbar; backup is an entry under Import & eksport
+//                  with its own key, since the sidebar's System menu is gone (decision 16).
+// 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 
 if (!function_exists('getSettingsRegistry')) {
 	function getSettingsRegistry() {
@@ -91,17 +97,23 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'kontoindstillinger',    'group' => 'company', 'url' => 'diverse.php?sektion=kontoindstillinger',   'category' => 'diverse', 'textId' => 783,
 				'keywords' => array('account settings','company settings','system settings','rename account','rename company','company name change','base currency','system currency','timezone','time zone','max users','user limit','number of users','reset account data','wipe all data','delete account','close account','terminate account','smtp settings','mail server settings','email server settings','regnskabsnavn','tidszone','nulstil regnskab','slet regnskab','antal brugere','kontoinnstillinger',
 					'sort by phone number','postings last 12 months','alternative smtp server','smtp port','smtp username','smtp password','smtp encryption','keep customers and suppliers on reset','keep products on reset','reset account confirmation','backup before reset warning','5 year backup retention','bookkeeping law backup')),
-			array('key' => 'provision',             'group' => 'organisation', 'url' => 'diverse.php?sektion=provision',            'category' => 'diverse', 'textId' => 784,
+			array('key' => 'provision',             'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.commission', 'section' => 'organisation.commission', 'category' => 'diverse', 'textId' => 657,
 				'keywords' => array('commission report settings','commission calculation','sales commission','provisionsrapport','provision','provisjonsberegning','provisjon',
-					'commission basis','invoiced or paid commission','commission source person','customer responsible person commission','reference person commission','cost price source for commission','purchase price commission','product card cost price commission','cutoff date commission calculation')),
+					'commission basis','invoiced or paid commission','commission source person','customer responsible person commission','reference person commission','cost price source for commission','purchase price commission','product card cost price commission','cutoff date commission calculation', 'default commission rate', 'show commission on item card', 'standard provisionssats')),
 			array('key' => 'userSettings',          'group' => 'personal', 'url' => 'personalSettings.php',                     'category' => 'personal', 'textId' => 5500,
 				'keywords' => array('personal settings','my settings','profile settings','appearance settings','theme color','button color','text color','button text color','ui color customization','user interface preferences','personlige valg','knapfarve',
 					'expiry warning days','udløbsadvarsel','language','sprog','password','adgangskode','two factor','2fa','notifications','notifikationer','active sessions','global bar placement')),
 			array('key' => 'ordre_valg',             'group' => 'sales', 'url' => 'settingsSection.php?s=sales.orders', 'section' => 'sales.orders', 'category' => 'invoicing', 'textId' => 5679,
 				'keywords' => array('order settings','order options','vat on orders','show vat private customers','show vat business customers','negative stock','allow negative stock','low stock warning','out of stock warning','fifo costing','cost method','quick invoicing','immediate posting','same day posting','discount item number','delivery note text','packing slip text','shipping item number','freight item number','postage item','pick list email','send pick list by mail','gs1 barcode scanning','barcode parsing','order autocomplete','search autocomplete orders','lock invoice until paid','ipad system','ordrerelaterede valg','hurtigfaktura','negativt lager','rabatvarenummer','bestillingsrelaterte valg','bestilling',
 					'automatic cost price adjustment','average cost price','replacement cost price','update cost prices button','packing slip comments','quantity only on packing slip','total price bundle discount','percentage invoicing','rental percentage invoicing','percentage surcharge','item number for surcharge','cash sale account number','credit card sale account number','internal order note','debtor ipad self email','discount decimals on orders','immediate posting purchase orders','immediate posting sales orders','item number for set bundle','mass invoicing','batch invoicing','consolidated invoicing','partial delivery','delivery deadline days','massefakturering','dellevering')),
-			array('key' => 'productOptions',        'group' => 'items', 'url' => 'diverse.php?sektion=productOptions',       'category' => 'products', 'textId' => 787,
+			array('key' => 'mysale',               'group' => 'sales', 'url' => 'settingsSection.php?s=sales.mysale', 'section' => 'sales.mysale', 'category' => 'invoicing', 'textId' => 5986,
+				'keywords' => array('mysale','my sales','mit salg','loppemarked','flea market','commission customers','provisionskunder','mysale labels','label maxlength','disable labels for customers','mitt salg')),
+			array('key' => 'print',                'group' => 'documents', 'url' => 'settingsSection.php?s=documents.print', 'section' => 'documents.print', 'category' => 'documents', 'textId' => 5993,
+				'keywords' => array('print','printer','local printer','direct print','lokal printer','direkte print','html forms','postscript','formulargenerering','html/css','utskrift','skriver')),
+			array('key' => 'consignment',          'group' => 'items', 'url' => 'settingsSection.php?s=items.consignment', 'section' => 'items.consignment', 'category' => 'products', 'textId' => 5975, 'visibilityRule' => 'posModule',
 				'keywords' => array('product options','vat on product card','show prices with vat','confirm description change','confirm stock change','consignment sales','commission sales','used goods commission','commission percentage','commission account','minimum stock level','reorder level','low stock threshold','stock status email','stock status report','email frequency stock','varerelaterede valg','kommissionsvarer','minimumsbeholdning','lagerstatus mail','lagerstatus rapport','varerelaterte valg','kommisjonsvarer','provisjonssalg','minimumsbeholdning av varer','lagerstatusrapporter','mva på varekort')),
+			array('key' => 'packaging',            'group' => 'items', 'url' => 'settingsSection.php?s=items.packaging', 'section' => 'items.packaging', 'category' => 'products', 'textId' => 5976,
+				'keywords' => array('packaging module','producer responsibility','packaging tax','emballage','emballagemodul','producentansvar','emballasje','produsentansvar')),
 			array('key' => 'variant_valg',           'group' => 'items', 'url' => 'diverse.php?sektion=variant_valg',         'category' => 'products', 'textId' => 788,
 				'keywords' => array('product variants','variant types','variant values','color variant','size variant','import variants','import variant types','import variant values','csv import variants','variantrelaterede valg','varianter','variasjonsrelaterte valg',
 					'webshop selection','internal webshop','external webshop','no webshop','webshop url','fetch products from shop','shop character encoding','quickpay merchant number','quickpay agreement id','quickpay md5 secret')),
@@ -129,8 +141,8 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'bilag',                 'group' => 'finance', 'url' => 'diverse.php?sektion=bilag',                'category' => 'documents', 'textId' => 797,
 				'keywords' => array('attachment storage','receipt storage','document storage settings','ftp storage for attachments','internal storage','external storage','cloud storage for receipts','scan receipts by email','bilag ftp','bilagshåndtering','dokumenthåndtering',
 					'scanned receipts storage','store documents per gb per month','receipt email inbox address','own ftp server for documents','google docs viewer','ftp server name or ip','ftp username and password for documents','ftp folder for receipts','no storage option')),
-			array('key' => 'orediff',               'group' => 'finance', 'url' => 'diverse.php?sektion=orediff',              'category' => 'finance', 'textId' => 170,
-				'keywords' => array('rounding difference account','penny difference','cash rounding','rounding account','øredifferencer','øreforskjeller')),
+			array('key' => 'cash_journal',          'group' => 'finance', 'url' => 'settingsSection.php?s=finance.cash_journal', 'section' => 'finance.cash_journal', 'category' => 'finance', 'textId' => 5983,
+				'keywords' => array('rounding difference account','penny difference','cash rounding','rounding account','øredifferencer','øreforskjeller', 'payment terms','credit terms','payment due days','default payment days','invoice due date settings','betalingsfrist','betalingsdato', 'payment lists','betalingslister','different dates same voucher','forskellige datoer','bilagsnummer')),
 			array('key' => 'posOptions',            'group' => 'pos', 'url' => 'diverse.php?sektion=posOptions',           'category' => 'pos', 'textId' => 271, 'visibilityRule' => 'posModule',
 				'keywords' => array('pos settings','cash register settings','point of sale options','number of cash registers','number of card terminals','card payment accounts','cash accounts','department per register','vat group cash customers','discount item cash sale','receipt printing','print receipt automatically','disable receipt printing','bon print','cash drawer','opening float','starting cash amount','cash count assistance','coins and banknotes','interim account','cash difference account','table selection','restaurant table','number of tables','table name','font size pos','gift card numbers','gift card text','voucher numbers','active gift card','post each trade immediately','post immediately to finance','printer ip','receipt printer ip','card terminal ip','card terminal type','flatpay','move3500','lane3000','vibrant terminal','ip baseret terminal','payment terminal type','other payment cards','kitchen printer ip','mobile pos','screen width','zoom level','flip menu','reverse primary secondary menu','cash on amount button','account lookup button','deposit button','forced user selection','clerk selection before checkout','customer display','bundle price','set price','jump to price field','show stock in pos','show inventory in pos','larger order total','print timeout','kasseantal','kortkonti','kassekonti','kortterminal','køkkenprinter','kasseprimo',
 					'kassaapparat','avdeling','mva-gruppe','kredittkort','skriverens ip','kjøkken ip','terminaltype','kontantsaldo','kundedisplay','tvunget brukervalg','tabellvalg','antall bord')),
@@ -142,6 +154,8 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('language','languages','change language','select language','preferred language','edit translation texts','ui language','current language','sprogindstillinger','sprog','språk','språkinnstillinger')),
 			array('key' => 'div_io',                'group' => 'import_export', 'url' => 'diverse.php?sektion=div_io',               'category' => 'data', 'textId' => 802,
 				'keywords' => array('import export','chart of accounts import export','customer import export','product import export','form import export','data import','data export','solar vvs import','kontoplan import','debitor import','varer import','formular import')),
+			array('key' => 'backup',                'group' => 'import_export', 'url' => '../admin/backup.php', 'category' => 'data', 'textId' => 614, 'permission' => 'system.backup',
+				'keywords' => array('backup','restore','sikkerhedskopi','gendan','sikkerhetskopi','gjenopprett','database backup')),
 
 			// -- 20260928: pages that belong to a settings group but had no entry --
 			array('key' => 'kontoplan',         'group' => 'finance',    'url' => 'kontoplan.php',             'category' => 'finance',  'textId' => 612,
@@ -162,8 +176,6 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('pdf conversion tools','weasyprint','pdftk','ps2pdf','ftp tool path','database dump tool','backup tool path','zip unzip tar path','system alert text','dashboard news snippet','system tools')),
 			array('key' => 'email_settings',    'group' => 'documents', 'url' => 'email_settings.php',                'category' => 'documents', 'labelDa' => 'Email Indstillinger', 'labelEn' => 'Email settings', 'labelNo' => 'E-postinnstillinger',
 				'keywords' => array('sender email','sender name','email from address','invoice email sender','background specific email settings','afsender email','afsender navn')),
-			array('key' => 'betalinger_settings', 'group' => 'finance', 'url' => '../debitor/betalinger_settings.php', 'category' => 'finance', 'labelDa' => 'Betalingsindstillinger', 'labelEn' => 'Payment settings', 'labelNo' => 'Betalingsinnstillinger',
-				'keywords' => array('payment terms','credit terms','payment due days','default payment days','invoice due date settings','betalingsfrist','betalingsdato')),
 			array('key' => 'rental_settings',   'group' => 'sales', 'url' => '../rental/settings.php',            'category' => 'rental', 'labelDa' => 'Udlejningsindstillinger', 'labelEn' => 'Rental settings', 'labelNo' => 'Utleieinnstillinger',
 				'keywords' => array('rental booking settings','booking format','date or timeslot booking','customer search fields','move in day','move out day','delete confirmation popup','combine consecutive bookings','automatic order creation','rental invoice date','password protect settings','week helper date picker')),
 		);
@@ -182,6 +194,165 @@ if (!function_exists('settings_has_module')) {
 			include_once(__DIR__ . '/../includes/settings/SettingsService.php');
 		}
 		return SettingsService::hasModule($module);
+	}
+}
+
+if (!function_exists('settings_optional_modules')) {
+	/**
+	 * Optional modules shown on the front page whether on or off (settings redesign §8.13). 'active' is
+	 * read from the flag the old page sets; 'url' is where it is switched on today. GLS and Danske
+	 * Fragtmænd cannot be created from the old page (spec B-D4), so they get no Aktivér button until 4b.
+	 *
+	 * @return array<int, array{key: string, group: string, label: string, active: bool, url: string, activate: bool}>
+	 */
+	function settings_optional_modules(): array
+	{
+		$flags = array();
+		$q = db_select("select var_grp, var_name, var_value from settings where (var_grp = 'debitor' and var_name = 'mySale') or (var_grp = 'items' and var_name in ('packagingModuleEnabled', 'useCommission')) or (var_grp = 'GLS' and var_name in ('gls_user', 'dfm_user')) or (var_grp = 'mobilepay' and var_name = 'client_id')", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			if (trim((string) $r['var_value']) !== '') {
+				$flags[$r['var_grp'] . '/' . $r['var_name']] = (string) $r['var_value'];
+			}
+		}
+		$modules = array(
+			array('key' => 'mysale', 'group' => 'sales', 'label' => 'mySale', 'active' => isset($flags['debitor/mySale']), 'url' => 'settingsSection.php?s=sales.mysale', 'activate' => true),
+			array('key' => 'packaging', 'group' => 'items', 'label' => '5976|Emballage (producentansvar)', 'active' => isset($flags['items/packagingModuleEnabled']) && $flags['items/packagingModuleEnabled'] === 'on', 'url' => 'settingsSection.php?s=items.packaging', 'activate' => true),
+		);
+		if (settings_has_module('pos')) {
+			$modules[] = array('key' => 'consignment', 'group' => 'items', 'label' => '5975|Kommissionsvarer', 'active' => isset($flags['items/useCommission']), 'url' => 'settingsSection.php?s=items.consignment', 'activate' => true);
+		}
+		$modules[] = array('key' => 'gls', 'group' => 'integrations', 'label' => 'GLS', 'active' => isset($flags['GLS/gls_user']), 'url' => 'diverse.php?sektion=div_valg', 'activate' => false);
+		$modules[] = array('key' => 'dfm', 'group' => 'integrations', 'label' => 'Danske Fragtmænd', 'active' => isset($flags['GLS/dfm_user']), 'url' => 'diverse.php?sektion=div_valg', 'activate' => false);
+		$modules[] = array('key' => 'mobilepay', 'group' => 'integrations', 'label' => 'MobilePay', 'active' => isset($flags['mobilepay/client_id']), 'url' => 'diverse.php?sektion=div_valg', 'activate' => true);
+		return $modules;
+	}
+
+	/**
+	 * The three labelled lists of the front page (settings redesign §8.0), in display order.
+	 *
+	 * @return array<string, array{label: string, groups: array<int, string>}>
+	 */
+	function settings_group_lists(): array
+	{
+		return array(
+			'company' => array('label' => '6017|Virksomhed & regnskab', 'groups' => array('company', 'finance', 'organisation', 'users')),
+			'trade'   => array('label' => '6018|Handel', 'groups' => array('sales', 'purchase', 'items', 'pos')),
+			'data'    => array('label' => '6019|Data & forbindelser', 'groups' => array('integrations', 'documents', 'import_export')),
+		);
+	}
+
+	/**
+	 * What needs the administrator's attention, computed on every view and never stored (§8.0, §8.13).
+	 *
+	 * @return array<string, array{kind: string, title: string, sub: string, button: string, url: string}> keyed by group
+	 */
+	function settings_attention(array $groups, int $sprogId): array
+	{
+		$out = array();
+		if (isset($groups['integrations'])) {
+			$mp = array();
+			$q = db_select("select var_name, var_value from settings where var_grp = 'mobilepay' and var_name in ('client_id', 'webhook_secret')", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$mp[$r['var_name']] = trim((string) $r['var_value']);
+			}
+			if (!empty($mp['client_id']) && empty($mp['webhook_secret'])) {
+				$out['integrations'] = array('kind' => 'err', 'title' => findtekst('6029|MobilePay: webhook er ikke forbundet', $sprogId), 'sub' => findtekst('6030|Betalinger registreres ikke automatisk', $sprogId), 'button' => findtekst('6041|Se fejl', $sprogId), 'url' => 'diverse.php?sektion=div_valg');
+			}
+		}
+		if (isset($groups['documents'])) {
+			// Mail falls back to the company's own address, so a sender is only missing when both are empty.
+			$sender = db_fetch_array(db_select("select id from settings where var_grp = 'email_settings' and var_name = 'sender_email' and coalesce(var_value, '') <> '' limit 1", __FILE__ . " linje " . __LINE__));
+			$own = db_fetch_array(db_select("select email from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
+			if (!$sender && (!$own || trim((string) $own['email']) === '')) {
+				$out['documents'] = array('kind' => 'warn', 'title' => findtekst('6025|Afsender-e-mail mangler', $sprogId), 'sub' => findtekst('5671|Dokumenter & e-mail', $sprogId), 'button' => findtekst('6026|Tilføj afsender', $sprogId), 'url' => 'email_settings.php');
+			}
+		}
+		if (isset($groups['users']) && function_exists('perm_review_pending')) {
+			$pending = count(perm_review_pending());
+			if ($pending > 0) {
+				$out['users'] = array('kind' => 'warn', 'title' => sprintf(findtekst('6028|%s brugere venter på rollegennemgang', $sprogId), $pending), 'sub' => findtekst('5536|Brugere & roller', $sprogId), 'button' => findtekst('5880|Gennemgå', $sprogId), 'url' => 'usersRoles.php?tab=users&status=review');
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Short status per group row: a dot plus text for a warning or error, plain text otherwise (§8.0).
+	 *
+	 * @param array<int, array<string, mixed>> $modules from settings_optional_modules()
+	 * @return array<string, array{kind: string, text: string}> kind '', 'ok', 'warn' or 'err'
+	 */
+	function settings_group_status(array $groups, array $modules, array $attention, int $sprogId): array
+	{
+		global $regnaar;
+		$st = array();
+		$count = function (string $qtxt): int {
+			$r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
+			return $r ? (int) $r['antal'] : 0;
+		};
+		if (isset($groups['company']) && (int) $regnaar > 0) {
+			$r = db_fetch_array(db_select("select beskrivelse from grupper where art = 'RA' and kodenr = '" . (int) $regnaar . "'", __FILE__ . " linje " . __LINE__));
+			if ($r && trim((string) $r['beskrivelse']) !== '') {
+				$st['company'] = array('kind' => '', 'text' => sprintf(findtekst('6037|%s aktivt', $sprogId), trim((string) $r['beskrivelse'])));
+			}
+		}
+		if (isset($groups['finance']) && (int) $regnaar > 0) {
+			$n = $count("select count(*) as antal from grupper where art in ('SM', 'KM', 'EM', 'YM') and fiscal_year = '" . (int) $regnaar . "'");
+			if ($n > 0) {
+				$st['finance'] = array('kind' => '', 'text' => sprintf(findtekst('6033|%s momskoder', $sprogId), $n));
+			}
+		}
+		if (isset($groups['organisation'])) {
+			$n = $count("select count(*) as antal from ansatte where konto_id in (select id from adresser where art = 'S') and (lukket is null or lukket <> 'on')");
+			if ($n > 0) {
+				$st['organisation'] = array('kind' => '', 'text' => sprintf(findtekst('6034|%s ansatte', $sprogId), $n));
+			}
+		}
+		if (isset($groups['users'])) {
+			$n = 0;
+			$q = db_select("select status from brugere", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				if (!in_array($r['status'], array('f', false, '0', 0), true)) {
+					$n++;
+				}
+			}
+			$st['users'] = array('kind' => '', 'text' => sprintf(findtekst('6036|%s brugere', $sprogId), $n));
+		}
+		if (isset($groups['items'])) {
+			$n = $count("select count(*) as antal from grupper where art = 'LG'");
+			$fifo = db_fetch_array(db_select("select box6 from grupper where art = 'DIV' and kodenr = '3'", __FILE__ . " linje " . __LINE__));
+			$text = $n > 0 ? sprintf(findtekst('6035|%s lagre', $sprogId), $n) : '';
+			if ($fifo && trim((string) $fifo['box6']) === 'on') {
+				$text .= ($text !== '' ? ' · ' : '') . 'FIFO';
+			}
+			if ($text !== '') {
+				$st['items'] = array('kind' => '', 'text' => $text);
+			}
+		}
+		if (isset($groups['pos']) && (int) $regnaar > 0) {
+			$r = db_fetch_array(db_select("select box1 from grupper where art = 'POS' and kodenr = '1' and fiscal_year = '" . (int) $regnaar . "'", __FILE__ . " linje " . __LINE__));
+			$tills = $r ? (int) $r['box1'] : 0;
+			if ($tills > 0) {
+				$st['pos'] = array('kind' => '', 'text' => ($tills === 1) ? findtekst('5982|1 kasse', $sprogId) : sprintf(findtekst('5978|%s kasser', $sprogId), $tills));
+			}
+		}
+		if (isset($groups['integrations'])) {
+			$active = 0;
+			foreach ($modules as $m) {
+				if ($m['group'] === 'integrations' && $m['active']) {
+					$active++;
+				}
+			}
+			if (isset($attention['integrations'])) {
+				$st['integrations'] = array('kind' => 'err', 'text' => sprintf(findtekst('6038|%s fejl', $sprogId), 1));
+			} elseif ($active > 0) {
+				$st['integrations'] = array('kind' => '', 'text' => sprintf(findtekst('5980|%s aktive', $sprogId), $active));
+			}
+		}
+		if (isset($attention['documents'])) {
+			$st['documents'] = array('kind' => 'warn', 'text' => findtekst('6027|Mangler afsender', $sprogId));
+		}
+		return $st;
 	}
 }
 
@@ -297,12 +468,15 @@ if (!function_exists('getSettingsGroups')) {
 	{
 		$out = array();
 		foreach (getSettingsGroups() as $group => $def) {
-			if (function_exists('perm_can') && !perm_can($def['permission'], 'read')) {
-				continue;
-			}
+			$groupOpen = !function_exists('perm_can') || perm_can($def['permission'], 'read');
 			$entries = array();
 			foreach (getSettingsRegistry() as $entry) {
-				if (isset($entry['group']) && $entry['group'] === $group && settings_entry_available($entry)) {
+				if (!isset($entry['group']) || $entry['group'] !== $group || !settings_entry_available($entry)) {
+					continue;
+				}
+				// An entry with its own key (backup) is shown to whoever holds that key, whatever the group's.
+				$open = isset($entry['permission']) ? (!function_exists('perm_can') || perm_can($entry['permission'], 'read')) : $groupOpen;
+				if ($open) {
 					$entries[] = $entry;
 				}
 			}
@@ -311,6 +485,50 @@ if (!function_exists('getSettingsGroups')) {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * A registry url (relative to systemdata/) as the path the shell's update_iframe() takes.
+	 */
+	function settings_shell_path(string $url): string
+	{
+		if (strpos($url, '../') === 0) {
+			return '/' . substr($url, 3);
+		}
+		return '/systemdata/' . $url;
+	}
+
+	/**
+	 * The trail the shell shows in the left side of the topbar on settings pages (settings redesign §8.0):
+	 * Indstillinger / group / current page. The shell puts the company name in front.
+	 *
+	 * @return array<int, array{label: string, url: string}> url '' for the current page
+	 */
+	function settings_breadcrumb(string $group, string $current, int $sprogId): array
+	{
+		$trail = array(array('label' => findtekst('122|Indstillinger', $sprogId), 'url' => ($group === '' && $current === '') ? '' : '/systemdata/settings.php'));
+		if ($group !== '') {
+			$groups = settings_accessible_groups();
+			if (isset($groups[$group])) {
+				$label = findtekst($groups[$group]['def']['label'], $sprogId);
+				$trail[] = array('label' => $label, 'url' => $current === '' ? '' : settings_shell_path((string) $groups[$group]['entries'][0]['url']));
+			}
+		}
+		if ($current !== '') {
+			$trail[] = array('label' => $current, 'url' => '');
+		}
+		return $trail;
+	}
+
+	/**
+	 * The page tells the shell its trail: index/main.php reads window.saldiBreadcrumb when the frame has loaded.
+	 */
+	function settings_breadcrumb_script(array $trail, string $charset = 'UTF-8'): string
+	{
+		foreach ($trail as $i => $crumb) {
+			$trail[$i]['label'] = html_entity_decode(mb_convert_encoding((string) $crumb['label'], 'UTF-8', $charset), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+		return '<script>window.saldiBreadcrumb = ' . json_encode($trail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';</script>';
 	}
 
 	/**

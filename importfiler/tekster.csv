@@ -5555,3 +5555,83 @@
 5965	Log ind i Saldi og åbn klokken for at se dem.	Log in to Saldi and open the bell to see them.	Logg inn i Saldi og åpne klokken for å se dem.
 5966	Du får denne mail, fordi du har slået den daglige opsummering til under Personlige indstillinger → Notifikationer.	You get this email because you switched on the daily summary under Personal settings → Notifications.	Du får denne e-posten fordi du har slått på den daglige oppsummeringen under Personlige innstillinger → Varsler.
 5967	Daglig opsummering fra %s	Daily summary from %s	Daglig oppsummering fra %s
+5968	Du kan ikke ændre brugere med flere rettigheder end dig selv	You cannot change users with more rights than yourself	Du kan ikke endre brukere med flere rettigheter enn deg selv
+5969	Siden var for gammel til at gemme. Prøv igen.	The page was too old to save. Please try again.	Siden var for gammel til å lagre. Prøv igjen.
+5970	Administrator-rollen skal altid have skriveadgang til brugere og roller	The Administrator role must always have write access to users and roles	Administrator-rollen må alltid ha skrivetilgang til brukere og roller
+5971	Administrator-rollen beholder altid adgang til brugere og roller	The Administrator role always keeps access to users and roles	Administrator-rollen beholder alltid tilgang til brukere og roller
+5972	Ikke aktiveret	Not activated	Ikke aktivert
+5973	Aktiv	Active	Aktiv
+5974	Aktivér	Activate	Aktiver
+5975	Kommissionsvarer	Consignment items	Kommisjonsvarer
+5976	Emballage (producentansvar)	Packaging (producer responsibility)	Emballasje (produsentansvar)
+5977	%s brugere · %s administratorer	%s users · %s administrators	%s brukere · %s administratorer
+5978	%s kasser	%s tills	%s kasser
+5979	Regnskabsår %s aktivt	Fiscal year %s active	Regnskapsår %s aktivt
+5980	%s aktive	%s active	%s aktive
+5981	Moduler	Modules	Moduler
+5982	1 kasse	1 till	1 kasse
+5983	Kassekladde & betalinger	Cash journal & payments	Kassekladde & betalinger
+5984	Betalingsfrist	Payment terms	Betalingsfrist
+5985	Debitorer	Debtors	Debitorer
+5986	Mit salg	My sales	Mitt salg
+5987	Deaktiver labels for kunder	Disable labels for customers	Deaktiver etiketter for kunder
+5988	Kun ejeren kan oprette labels; kunderne kan ikke.	Only the owner can create labels; customers cannot.	Bare eieren kan opprette etiketter; kundene kan ikke.
+5989	Maksimal længde på labels	Maximum label length	Maksimal lengde på etiketter
+5990	Vis tidspunkter i Mit salg	Show times in My sales	Vis tidspunkter i Mitt salg
+5991	Salgstidspunktet vises sammen med datoen i kundens oversigt.	The time of sale is shown with the date in the customer's overview.	Salgstidspunktet vises sammen med datoen i kundens oversikt.
+5992	Labels	Labels	Etiketter
+5993	Udskrift	Print	Utskrift
+5994	Printeren skal være oprettet på Saldi-serveren, og din router skal sende port 9100 videre til printeren. Kontakt Saldi for hjælp.	The printer must be set up on the Saldi server, and your router must forward port 9100 to the printer. Contact Saldi for help.	Skriveren må være opprettet på Saldi-serveren, og ruteren din må videresende port 9100 til skriveren. Kontakt Saldi for hjelp.
+5995	Anvend emballagemodul (producentansvar)	Use packaging module (producer responsibility)	Bruk emballasjemodul (produsentansvar)
+5996	Aktiverer emballagemodulet på varekort og i rapporter.	Activates the packaging module on item cards and in reports.	Aktiverer emballasjemodulen på varekort og i rapporter.
+5997	Standard provisionssats på varekort	Default commission rate on item card	Standard provisjonssats på varekort
+5998	Satsen foreslås på nye varer.	The rate is suggested on new items.	Satsen foreslås på nye varer.
+5999	Vis provision på varekort	Show commission on item card	Vis provisjon på varekort
+6000	Provisionsfeltet vises på varekortet.	The commission field is shown on the item card.	Provisjonsfeltet vises på varekortet.
+6001	Referenceperson	Reference person	Referanseperson
+6002	Faktureret: provision beregnes på fakturerede ordrer. Betalt: kun på betalte ordrer.	Invoiced: commission is calculated on invoiced orders. Paid: only on paid orders.	Fakturert: provisjon beregnes på fakturerte ordrer. Betalt: bare på betalte ordrer.
+6003	Begge: den kundeansvarlige, hvis der er en, ellers referencepersonen på ordren.	Both: the customer-responsible if there is one, otherwise the reference person on the order.	Begge: den kundeansvarlige hvis det finnes en, ellers referansepersonen på ordren.
+6004	Indkøbspris: varens reelle indkøbspris. Varekort: kostprisen fra varekortet.	Purchase price: the item's actual purchase price. Item card: the cost price from the item card.	Innkjøpspris: varens reelle innkjøpspris. Varekort: kostprisen fra varekortet.
+6005	Konverterer varer oprettet til Mit salg, hvor kostprisen blev brugt som kommissionsprocent: varer med varenummer kb/kn, salgspris 0 og kostpris mellem 0,10 og 0,50 får kostpris 1 − sats, og kommissionssatsen sættes. Kontakt os gerne først: +45 4690 2208.	Converts items created for My sales where the cost price was used as the commission percentage: items numbered kb/kn with sales price 0 and cost price between 0.10 and 0.50 get cost price 1 − rate, and the commission rate is set. Feel free to contact us first: +45 4690 2208.	Konverterer varer opprettet for Mitt salg der kostprisen ble brukt som provisjonsprosent: varer med varenummer kb/kn, salgspris 0 og kostpris mellom 0,10 og 0,50 får kostpris 1 − sats, og provisjonssatsen settes. Kontakt oss gjerne først: +45 4690 2208.
+6006	Varerne ændres med det samme og kan ikke fortrydes. Fortsæt?	The items are changed immediately and cannot be undone. Continue?	Varene endres med en gang og kan ikke angres. Fortsett?
+6007	Udskriv til lokal printer	Print to local printer	Skriv ut til lokal skriver
+6008	Udskrifter sendes til den printer, der er sat op under Dokumenter → Udskrift. Gælder kun for dig.	Printouts go to the printer set up under Documents → Print. Applies only to you.	Utskrifter sendes til skriveren som er satt opp under Dokumenter → Utskrift. Gjelder bare deg.
+6010	Ugyldig dato (dd-mm-åååå)	Invalid date (dd-mm-yyyy)	Ugyldig dato (dd-mm-åååå)
+6013	%s varer konverteret	%s items converted	%s varer konvertert
+6014	Dette modul er ikke aktiveret i regnskabet.	This module is not activated in the company.	Denne modulen er ikke aktivert i regnskapet.
+6015	Du er her	You are here	Du er her
+6016	Kræver opmærksomhed	Needs attention	Krever oppmerksomhet
+6017	Virksomhed & regnskab	Company & accounts	Virksomhet & regnskap
+6018	Handel	Trade	Handel
+6019	Data & forbindelser	Data & connections	Data & forbindelser
+6020	Gælder for alle i %s. Dine personlige valg finder du under dit navn øverst til højre.	Applies to everyone in %s. Your personal choices are under your name at the top right.	Gjelder for alle i %s. Dine personlige valg finner du under navnet ditt øverst til høyre.
+6021	Ny struktur	New structure	Ny struktur
+6022	Indstillingerne er samlet i færre, tydeligere grupper. Alt er her stadig – søg efter det gamle menunavn, så finder du det nye sted.	The settings are gathered in fewer, clearer groups. Everything is still here – search for the old menu name to find its new place.	Innstillingene er samlet i færre, tydeligere grupper. Alt er her fortsatt – søk etter det gamle menynavnet, så finner du det nye stedet.
+6023	Hvor er de gamle menupunkter?	Where are the old menu items?	Hvor er de gamle menypunktene?
+6024	Tastaturgenveje	Keyboard shortcuts	Tastatursnarveier
+6025	Afsender-e-mail mangler	Sender e-mail is missing	Avsender-e-post mangler
+6026	Tilføj afsender	Add sender	Legg til avsender
+6027	Mangler afsender	Sender missing	Mangler avsender
+6028	%s brugere venter på rollegennemgang	%s users await role review	%s brukere venter på rollegjennomgang
+6029	MobilePay: webhook er ikke forbundet	MobilePay: webhook is not connected	MobilePay: webhook er ikke tilkoblet
+6030	Betalinger registreres ikke automatisk	Payments are not registered automatically	Betalinger registreres ikke automatisk
+6031	Du har læseadgang	You have read access	Du har lesetilgang
+6032	Du kan se indstillingerne, men ikke ændre dem. Kontakt en administrator.	You can see the settings but not change them. Contact an administrator.	Du kan se innstillingene, men ikke endre dem. Kontakt en administrator.
+6033	%s momskoder	%s VAT codes	%s mva-koder
+6034	%s ansatte	%s employees	%s ansatte
+6035	%s lagre	%s warehouses	%s lagre
+6036	%s brugere	%s users	%s brukere
+6037	%s aktivt	%s active	%s aktivt
+6038	%s fejl	%s error(s)	%s feil
+6039	Søg – fx moms, GLS eller et gammelt menunavn	Search – e.g. VAT, GLS or an old menu name	Søk – f.eks. mva, GLS eller et gammelt menynavn
+6040	%s resultater	%s results	%s resultater
+6041	Se fejl	See error	Se feil
+6042	Ingen resultater. Prøv et andet ord, eller se "Hvor er de gamle menupunkter?"	No results. Try another word, or see "Where are the old menu items?"	Ingen resultater. Prøv et annet ord, eller se "Hvor er de gamle menypunktene?"
+6043	%s ugemte ændringer	%s unsaved changes	%s ulagrede endringer
+6044	1 ugemt ændring	1 unsaved change	1 ulagret endring
+6045	Gem ændringer	Save changes	Lagre endringer
+6046	Hele audit-loggen	The full audit log	Hele audit-loggen
+6047	Udføres med det samme og gemmes ikke med Gem-knappen.	Run immediately and are not saved with the Save button.	Utføres med en gang og lagres ikke med Lagre-knappen.
+6048	Farezone	Danger zone	Faresone
+6049	Alt findes stadig. Listen viser, hvor hvert punkt i den gamle menu ligger nu.	Everything is still here. The list shows where each item of the old menu is now.	Alt finnes fortsatt. Listen viser hvor hvert punkt i den gamle menyen ligger nå.
+6050	Filtrér – fx Diverse valg	Filter – e.g. Diverse valg	Filtrer – f.eks. Diverse valg

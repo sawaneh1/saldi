@@ -3,6 +3,8 @@
 //                  generated settings section - toggles, dependencies, save bar, deep links,
 //                  lookups, confirmation dialog and keyboard shortcuts.
 // 20260930 Sawaneh Field links open inside the shell and use ?field= (spec §8.11).
+// 20261002 Sawaneh Hand-over 2 Oct (8.0): the save bar shows only while something is unsaved and counts the changes;
+//                  a changed field is marked.
 (function () {
 	'use strict';
 	var cfg = window.SALDI_SETTINGS || {};
@@ -59,26 +61,24 @@
 	}
 
 	// ------------------------------------------------------------ save bar
-	function isDirty() {
-		return fields.some(function (f) { return valueOf(f) !== initial[f.dataset.key]; });
-	}
+	// Shown only while something is unsaved (settings redesign 8.0); a changed field gets a small dot.
 	function refresh() {
-		var dirty = isDirty();
-		window.docChange = dirty;
-		if (undo) { undo.disabled = !dirty; }
-		if (dot) { dot.hidden = !dirty; }
-		if (dirty) {
-			bar.classList.remove('st-saved');
-			bar.classList.add('st-dirty');
-			status.textContent = cfg.unsaved;
-		} else {
-			bar.classList.remove('st-dirty');
-			if (!bar.classList.contains('st-saved')) { status.textContent = cfg.noChanges; }
-		}
+		var changed = 0;
 		fields.forEach(function (f) {
+			var ch = valueOf(f) !== initial[f.dataset.key];
+			f.classList.toggle('st-changed', ch);
+			if (ch) { changed++; }
 			var reset = f.querySelector('[data-reset]');
 			if (reset) { reset.hidden = (valueOf(f) === f.dataset.default); }
 		});
+		var dirty = changed > 0;
+		window.docChange = dirty;
+		if (undo) { undo.disabled = !dirty; }
+		if (dot) { dot.hidden = !dirty; }
+		if (bar) {
+			bar.hidden = !dirty;
+			if (status) { status.textContent = changed === 1 ? cfg.unsaved1 : String(cfg.unsavedN).replace('%s', changed); }
+		}
 		applyRules();
 	}
 
