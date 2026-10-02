@@ -48,6 +48,7 @@
 // 20260723 MJ  Varer/ydelser-type (box5) til VG-varegrupper for Momsrubrikker A/B/C-afledning.
 // 20260723 MJ  Fjernet Rubrik-kolonne (box5) fra SM/KM/YM/EM-momskoder: bruges ikke laengere.
 // 20260724 MJ  EU-zone-dropdown (box10) paa KG-kreditorgrupper til Momsrubrikker Rubrik A.
+// 20260917 CDX/LH Correct VAT mapping label translation reference (MB-45).
 // 20260928 Sawaneh Phase 4: only the side-menu frame (top.php) remains; top-menu and old-menu branches removed.
 
 @session_start();
@@ -129,7 +130,7 @@ if ($valg=='moms'){
 	$spantxt1 = findtekst('2244|En beskrivende tekst efter eget valg', $sprog_id);
 	$spantxt2 = findtekst('2245|Det nummer i kontoplanen som salgsmomsen skal konteres på.', $sprog_id);
 	$spantxt3 = findtekst('770|Moms', $sprog_id).' %';
-	$spantxt4 = findtekst('3039|Map til', $sprog_id);
+	$spantxt4 = findtekst('2340|Map til', $sprog_id);
 	$spantxt5 = findtekst('2246|Momskode hos SKAT', $sprog_id);
 	print "<tr><td></td><td colspan=3><b><span title='".findtekst('2247|Den moms du skal betale til SKAT', $sprog_id)."'>".findtekst('994|Salgsmoms (udgående moms)', $sprog_id)."</span></td></tr>\n";
 	print "<tr><td></td><td>".findtekst('2248|Nr.', $sprog_id)."</td>";

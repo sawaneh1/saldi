@@ -59,6 +59,8 @@
 //                  posted from an ISO-8859-1 page is filtered instead of rejected, and the result is converted
 //                  back to the page charset so a non-UTF8 database still matches. Length check now uses the
 //                  shared is_input_too_long() from std_func.php.
+// 20260908 CDX/PHR Preserve Danish characters when redisplaying an unknown account.
+// 20260908 CDX/PHR Count login input characters directly to support older std_func.php installations.
 // 20260916 Sawaneh Successful login written to audit_log (roles & permissions, spec R7).
 // 20260929 Sawaneh Roles stage 2 (§8.4, §8.6): tmp_kode read and written in the common format; ?invite= opens the invitation page.
 // 20260930 Sawaneh Roles stage 2 (§7.1): login.failed, login.2fa_failed, login.ip_blocked and session.forced_logout in the audit log.
@@ -230,7 +232,7 @@ function sanitize_input($input, $allowed_length = 80) {
 		return false;
 	}
 
-	if (is_input_too_long($input, $allowed_length)) {
+	if (mb_strlen($input, 'UTF-8') > $allowed_length) {
 		return false;
 	}
 
@@ -371,7 +373,7 @@ if (isset($_POST['regnskab'])) {
 		exit();
 		}
 		if ($regnskab) $fejltxt="Regnskab $regnskab findes ikke";
-		login(htmlentities($regnskab,ENT_COMPAT,$charset),htmlentities($brugernavn,ENT_COMPAT,$charset),$fejltxt);
+		login($regnskab,$brugernavn,$fejltxt);
  	}
 } else {
 	

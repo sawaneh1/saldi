@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261002 Sawaneh Merge of master: its new batchExpiryEnabled setting (was on the removed Varerelaterede valg page) is
+//                  items.stock.batch_expiry.
 //                  setting - key, type, scope, group/section, label and help text ids, default,
 //                  storage (the EXISTING location and encoding), permission, dependencies.
 //                  Section pages, save logic, search, change history and the "moved" page are
@@ -283,6 +285,10 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'items', 'confirmDescriptionChange', 'onEmpty'), 'legacy' => $vare),
 			'items.stock.confirm_stock_change' => array('sub' => 'card', 'type' => 'bool', 'label' => 1277, 'help' => 1278, 'default' => false,
 				'storage' => array('settings', 'items', 'confirmStockChange', 'onEmpty'), 'legacy' => $vare),
+			// From master (batch expiry, #457): was a checkbox on the old Varerelaterede valg page.
+			'items.stock.batch_expiry' => array('sub' => 'card', 'type' => 'bool', 'label' => 6051, 'help' => 6052, 'default' => false,
+				'storage' => array('settings', 'items', 'batchExpiryEnabled', 'onOff'), 'legacy' => $vare,
+				'keywords' => array('batch', 'batch management', 'batch control', 'expiry date', 'due date', 'shelf life', 'fefo', 'batchstyring', 'udløbsdato', 'holdbarhed', 'batchkontrol')),
 
 			// ---------------------------------------------------------------- G2.5 Cash journal & payments
 			'finance.cash_journal.different_dates_same_voucher' => array('sub' => 'journal', 'type' => 'bool', 'label' => 708, 'help' => 709, 'default' => false,
