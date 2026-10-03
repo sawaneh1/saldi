@@ -846,6 +846,8 @@ function perm_review_done(int $brugerId): void
 }
 
 // ------------------------------------------------------------------ audit log
+// 20261003 Sawaneh Roles spec §3 alignment for SD-724: handling up to 60 chars, detaljer no longer cut at 2000 chars,
+//                  audit_log_write() with the document-pool argument order.
 
 /**
  * Record who did what (spec R7). Never throws: an install without the table just skips.
@@ -863,8 +865,8 @@ function audit_log(string $handling, string $detaljer = '', string $objektType =
 	$id = isset($bruger_id) ? (int) $bruger_id : 0;
 	$navn = db_escape_string(isset($brugernavn) ? (string) $brugernavn : '');
 	$ip = db_escape_string(isset($_SERVER['REMOTE_ADDR']) ? substr((string) $_SERVER['REMOTE_ADDR'], 0, 45) : '');
-	$handling = db_escape_string(substr($handling, 0, 40));
-	$detaljer = db_escape_string(substr($detaljer, 0, 2000));
+	$handling = db_escape_string(substr($handling, 0, 60));
+	$detaljer = db_escape_string($detaljer);
 	if ($extended) {
 		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, objekt_type, objekt_id, kilde) values ($id, '$navn', '$handling', '$detaljer', '$ip', ";
 		$qtxt .= "'" . db_escape_string(substr($objektType, 0, 30)) . "', '" . db_escape_string(substr($objektId, 0, 60)) . "', '" . db_escape_string(substr($kilde, 0, 30)) . "')";
@@ -872,4 +874,12 @@ function audit_log(string $handling, string $detaljer = '', string $objektType =
 		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip) values ($id, '$navn', '$handling', '$detaljer', '$ip')";
 	}
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+}
+
+/**
+ * The same, in the argument order the document-pool work uses (SD-724). One table, one implementation.
+ */
+function audit_log_write(string $handling, string $objektType = '', string $objektId = '', string $detaljer = '', string $kilde = 'ui'): void
+{
+	audit_log($handling, $detaljer, $objektType, $objektId, $kilde);
 }

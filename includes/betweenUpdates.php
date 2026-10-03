@@ -772,8 +772,8 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 		id SERIAL PRIMARY KEY NOT NULL,
 		bruger_id integer,
 		brugernavn varchar(80),
-		tidspunkt timestamp DEFAULT now(),
-		handling varchar(40) NOT NULL,
+		tidspunkt timestamp NOT NULL DEFAULT now(),
+		handling varchar(60) NOT NULL,
 		detaljer text,
 		ip varchar(45))";
 	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
@@ -876,6 +876,14 @@ if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify("CREATE INDEX audit_log_bruger_idx ON audit_log (bruger_id)", __FILE__ . " linje " . __LINE__);
 	db_modify("CREATE INDEX audit_log_objekt_idx ON audit_log (objekt_type, objekt_id)", __FILE__ . " linje " . __LINE__);
 }
+// 20261003 Sawaneh Aligned with the roles spec §3 so the document-pool work (SD-724) shares the table: handling 60 wide,
+// tidspunkt not null. Runs once; a table made by SD-724 already looks like this.
+$qtxt = "SELECT character_maximum_length FROM information_schema.columns WHERE table_name='audit_log' and column_name='handling'";
+if (($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) && (int) $r['character_maximum_length'] > 0 && (int) $r['character_maximum_length'] < 60) {
+	db_modify("ALTER TABLE audit_log ALTER COLUMN handling TYPE varchar(60)", __FILE__ . " linje " . __LINE__);
+	db_modify("UPDATE audit_log SET tidspunkt = now() WHERE tidspunkt IS NULL", __FILE__ . " linje " . __LINE__);
+	db_modify("ALTER TABLE audit_log ALTER COLUMN tidspunkt SET NOT NULL", __FILE__ . " linje " . __LINE__);
+}
 $qtxt = "SELECT column_name FROM information_schema.columns WHERE table_name='brugere' and column_name='status'";
 if (!db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 	db_modify("ALTER TABLE brugere ADD COLUMN status boolean", __FILE__ . " linje " . __LINE__);
@@ -901,6 +909,9 @@ settings_unique_migrate();
 // 20261002 Sawaneh Risk review R9: the same for the settings arts of grupper (removed rows kept in grupper_removed).
 include_once(__DIR__ . "/settings/grupperIndex.php");
 grupper_unique_migrate();
+
+// 20261003 Sawaneh G6.3 (05b bug 45): the payment-list mail text used its own spelling of the key; one spelling for all mail texts.
+db_modify("update settings set var_name = 'mailText' where var_grp = 'paylist' and var_name = 'mailtext' and not exists (select 1 from settings s2 where s2.var_grp = 'paylist' and s2.var_name = 'mailText')", __FILE__ . " linje " . __LINE__);
 
 // 20261002 Sawaneh Settings 4b (G5.7): the packaging tables are created here when the module is on, not when a page
 // renders (spec P5). G2.5: paymentDays was written under 'payment' but only read under 'payment_list'; copied once.
