@@ -116,8 +116,8 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('packaging module','producer responsibility','packaging tax','emballage','emballagemodul','producentansvar','emballasje','produsentansvar')),
 			array('key' => 'variant_valg',           'group' => 'items', 'url' => 'diverse.php?sektion=variant_valg',         'category' => 'products', 'textId' => 788,
 				'keywords' => array('product variants','variant types','variant values','color variant','size variant','import variants','import variant types','import variant values','csv import variants','variantrelaterede valg','varianter','variasjonsrelaterte valg',
-					'webshop selection','internal webshop','external webshop','no webshop','webshop url','fetch products from shop','shop character encoding','quickpay merchant number','quickpay agreement id','quickpay md5 secret')),
-			array('key' => 'api_valg',              'group' => 'integrations', 'url' => 'diverse.php?sektion=api_valg',             'category' => 'integrations', 'textId' => 790,
+					'webshop selection','internal webshop','external webshop','no webshop','webshop url','fetch products from shop','shop character encoding')),
+			array('key' => 'api_valg',              'group' => 'integrations', 'url' => 'settingsSection.php?s=integrations.connections', 'section' => 'integrations.connections', 'category' => 'integrations', 'textId' => 5537,
 				'keywords' => array('api settings','api key','api access','ip whitelist','allowed ip addresses','external integration','import file path','api bruger','api nøgle',
 					'saldi db variable','saldi url variable','api client url','api reference user','update from shop','fetch new products from shop')),
 			array('key' => 'stripe_valg',           'group' => 'integrations', 'url' => 'diverse.php?sektion=stripe_valg',          'category' => 'integrations', 'labelDa' => 'Stripe abonnement', 'labelEn' => 'Stripe subscriptions',
@@ -133,9 +133,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('reminder settings','dunning settings','debt collection','collection agency','debt collector','inkasso','reminder responsible user','person responsible for reminders','rykkerrelaterede valg','rykker','påminnelsesrelaterte valg','påminnelse',
 					'reminder responsible email','interest rate per month reminder','reminder 1 deadline days','reminder 2 deadline days','reminder 3 deadline days','collection lawyer account number','collection attorney')),
 			array('key' => 'div_valg',               'group' => 'company', 'url' => 'diverse.php?sektion=div_valg',             'category' => 'diverse', 'textId' => 794,
-				'keywords' => array('shipping integration','carrier integration','freight integration','gls','bring','dfm','mobilepay','mobilepay webhook','copayone','quickpay','nemhandel','e-invoicing','electronic invoicing','vibrant','payment gateway','payment days','default payment terms','label size mysale','vat on orders private customers','vat on orders business customers','pickup address','multiple pickup addresses','fragtintegration','betalingsdage','afhentningsadresse',
-					'mysale','customer sales portal','salesperson self service','commission self service portal','let customers see own sales','jobkort','brug jobkort','use job cards','opgaveliste','task list','oppgaveliste','bruk jobbkort','task list under debtor accounts','job card system','work order tracking','payment list toggle','show payment list debitor creditor','betalingsliste','customer phone on new order','different dates on order','extra employee on order',
-					'mandatory debtor group on debtor card','mandatory customer responsible on debtor card','extra fields on employee card','payment lists erh bank format','debtor account as order phone','activate mysale flea market','max label character length','use jobkort task descriptions','direct print to local printer','html css form generation','different dates same voucher cash journal','collection agency account number','ebconnect integration','oioubl e-invoice','gls id','gls username','gls contact id','gls password','danske fragtmænd','dfm agreement number','dfm hub code','dfm api url','dfm clientid','dfm api username','dfm api password','default shipping type danske fragtmænd','default goods type danske fragtmænd','default payment method danske fragtmænd','default delivery method danske fragtmænd','pickup address different from main address','pickup company name','pickup zip code and city','order button name')),
+				'keywords' => array('payment days','default payment terms','label size mysale','vat on orders private customers','vat on orders business customers','pickup address','multiple pickup addresses','fragtintegration','betalingsdage','afhentningsadresse','mysale','customer sales portal','salesperson self service','commission self service portal','let customers see own sales','jobkort','brug jobkort','use job cards','opgaveliste','task list','oppgaveliste','bruk jobbkort','task list under debtor accounts','job card system','work order tracking','payment list toggle','show payment list debitor creditor','betalingsliste','customer phone on new order','different dates on order','extra employee on order','mandatory debtor group on debtor card','mandatory customer responsible on debtor card','extra fields on employee card','payment lists erh bank format','debtor account as order phone','activate mysale flea market','max label character length','use jobkort task descriptions','direct print to local printer','html css form generation','different dates same voucher cash journal','collection agency account number','ebconnect integration','pickup address different from main address','pickup company name','pickup zip code and city','order button name')),
 			array('key' => 'tjekliste',             'group' => 'organisation', 'url' => 'diverse.php?sektion=tjekliste',            'category' => 'diverse', 'textId' => 796,
 				'keywords' => array('checklist','checklists','case checklist','task list','workflow phases','case phases','sagsstyring tjekliste','tjekpunkt','sjekkliste','sjekklister','new check group','new checklist')),
 			array('key' => 'bilag',                 'group' => 'finance', 'url' => 'diverse.php?sektion=bilag',                'category' => 'documents', 'textId' => 797,
@@ -148,7 +146,7 @@ if (!function_exists('getSettingsRegistry')) {
 					'kassaapparat','avdeling','mva-gruppe','kredittkort','skriverens ip','kjøkken ip','terminaltype','kontantsaldo','kundedisplay','tvunget brukervalg','tabellvalg','antall bord')),
 			array('key' => 'bank_integration',      'group' => 'finance', 'url' => 'diverse.php?sektion=bank_integration',     'category' => 'integrations', 'labelDa' => 'Bank Integration', 'labelEn' => 'Bank integration', 'labelNo' => 'Bankintegrasjon',
 				'keywords' => array('bank feed','bank transaction import','bank statement import','show bank status','show status kassekladde','default date range bank import','date method','last quarter','this quarter','bank connection status')),
-			array('key' => 'barcodescan',           'group' => 'integrations', 'url' => 'barcodescan.php',                          'category' => 'pos', 'labelDa' => 'App Barcode', 'labelEn' => 'Barcode scanning app', 'labelNo' => 'App-strekkode',
+			array('key' => 'barcodescan',           'group' => 'integrations', 'url' => 'settingsSection.php?s=integrations.connections&item=app', 'section' => 'integrations.connections', 'category' => 'pos', 'labelDa' => 'App Barcode', 'labelEn' => 'Barcode scanning app', 'labelNo' => 'App-strekkode',
 				'keywords' => array('qr code login','app login','mobile app authentication','one time access qr','saldi app login','scan to login')),
 			array('key' => 'sprog',                 'group' => 'company', 'url' => 'diverse.php?sektion=sprog',                'category' => 'company', 'textId' => 801,
 				'keywords' => array('language','languages','change language','select language','preferred language','edit translation texts','ui language','current language','sprogindstillinger','sprog','språk','språkinnstillinger')),
@@ -200,8 +198,8 @@ if (!function_exists('settings_has_module')) {
 if (!function_exists('settings_optional_modules')) {
 	/**
 	 * Optional modules shown on the front page whether on or off (settings redesign §8.13). 'active' is
-	 * read from the flag the old page sets; 'url' is where it is switched on today. GLS and Danske
-	 * Fragtmænd cannot be created from the old page (spec B-D4), so they get no Aktivér button until 4b.
+	 * read from the flag the old page sets; 'url' is where it is switched on today (the Integrations drawer
+	 * since 4b, which can also create the GLS and Danske Fragtmænd rows the old page could not - spec B-D4).
 	 *
 	 * @return array<int, array{key: string, group: string, label: string, active: bool, url: string, activate: bool}>
 	 */
@@ -221,9 +219,9 @@ if (!function_exists('settings_optional_modules')) {
 		if (settings_has_module('pos')) {
 			$modules[] = array('key' => 'consignment', 'group' => 'items', 'label' => '5975|Kommissionsvarer', 'active' => isset($flags['items/useCommission']), 'url' => 'settingsSection.php?s=items.consignment', 'activate' => true);
 		}
-		$modules[] = array('key' => 'gls', 'group' => 'integrations', 'label' => 'GLS', 'active' => isset($flags['GLS/gls_user']), 'url' => 'diverse.php?sektion=div_valg', 'activate' => false);
-		$modules[] = array('key' => 'dfm', 'group' => 'integrations', 'label' => 'Danske Fragtmænd', 'active' => isset($flags['GLS/dfm_user']), 'url' => 'diverse.php?sektion=div_valg', 'activate' => false);
-		$modules[] = array('key' => 'mobilepay', 'group' => 'integrations', 'label' => 'MobilePay', 'active' => isset($flags['mobilepay/client_id']), 'url' => 'diverse.php?sektion=div_valg', 'activate' => true);
+		$modules[] = array('key' => 'gls', 'group' => 'integrations', 'label' => 'GLS', 'active' => isset($flags['GLS/gls_user']), 'url' => 'settingsSection.php?s=integrations.connections&item=gls', 'activate' => true);
+		$modules[] = array('key' => 'dfm', 'group' => 'integrations', 'label' => 'Danske Fragtmænd', 'active' => isset($flags['GLS/dfm_user']), 'url' => 'settingsSection.php?s=integrations.connections&item=dfm', 'activate' => true);
+		$modules[] = array('key' => 'mobilepay', 'group' => 'integrations', 'label' => 'MobilePay', 'active' => isset($flags['mobilepay/client_id']), 'url' => 'settingsSection.php?s=integrations.connections&item=mobilepay', 'activate' => true);
 		return $modules;
 	}
 
@@ -256,7 +254,7 @@ if (!function_exists('settings_optional_modules')) {
 				$mp[$r['var_name']] = trim((string) $r['var_value']);
 			}
 			if (!empty($mp['client_id']) && empty($mp['webhook_secret'])) {
-				$out['integrations'] = array('kind' => 'err', 'title' => findtekst('6029|MobilePay: webhook er ikke forbundet', $sprogId), 'sub' => findtekst('6030|Betalinger registreres ikke automatisk', $sprogId), 'button' => findtekst('6041|Se fejl', $sprogId), 'url' => 'diverse.php?sektion=div_valg');
+				$out['integrations'] = array('kind' => 'err', 'title' => findtekst('6029|MobilePay: webhook er ikke forbundet', $sprogId), 'sub' => findtekst('6030|Betalinger registreres ikke automatisk', $sprogId), 'button' => findtekst('6041|Se fejl', $sprogId), 'url' => 'settingsSection.php?s=integrations.connections&item=mobilepay');
 			}
 		}
 		if (isset($groups['documents'])) {

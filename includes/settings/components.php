@@ -29,6 +29,8 @@
 // 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
 //                  dependent fields indented; actions are rows too.
+// 20261002 Sawaneh Phase 4b batch 2 (G9): write-only 'secret' control (masked, Skift), 'info', 'link' and 'mini' rows,
+//                  computed select options, rule 'setting_set', lock 'ht_keys:<var>' for keys the installation manages.
 
 include_once(__DIR__ . '/SettingsService.php');
 
@@ -167,6 +169,9 @@ function st_account_name(string $kontonr): ?string
  */
 function st_form_value(array $def, string $raw): string
 {
+	if ($def['type'] === 'secret') {
+		return '';
+	}
 	if ($def['type'] === 'bool') {
 		return SettingsService::decode($def, $raw) ? '1' : '0';
 	}
@@ -226,8 +231,20 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 			}
 			break;
 		case 'select':
-			if (!isset($def['options'][$value])) {
+			if (!isset(st_options($def)[$value])) {
 				$raw = (string) $def['default'];
+			}
+			break;
+		case 'text':
+			if (is_array($def['validate']) && $def['validate'][0] === 'ip_list' && $value !== '') {
+				foreach (explode(',', $value) as $ip) {
+					$ip = trim($ip);
+					if ($ip !== '*' && !filter_var($ip, FILTER_VALIDATE_IP)) {
+						$error = 6060;
+						break;
+					}
+				}
+				$raw = implode(',', array_map('trim', explode(',', $value)));
 			}
 			break;
 		case 'account':
@@ -273,7 +290,8 @@ function st_display_value(array $def, string $raw): string
 		case 'bool':
 			return SettingsService::decode($def, $raw) ? st_txt(5715) : st_txt(5716);
 		case 'select':
-			return isset($def['options'][$raw]) ? st_txt($def['options'][$raw]) : $raw;
+			$options = st_options($def);
+			return isset($options[$raw]) ? (!empty($def['options_literal']) ? (string) $options[$raw] : st_txt($options[$raw])) : $raw;
 		case 'secret':
 			return st_txt(5713);
 		case 'date':
@@ -287,6 +305,38 @@ function st_display_value(array $def, string $raw): string
 			}
 			return $raw . st_unit($def, ' ');
 	}
+}
+
+/**
+ * The options of a select: as defined, or computed ('options_from') from the company's own lists.
+ *
+ * @return array<string, mixed> value => text id, or value => literal text when 'options_literal' is set
+ */
+function st_options(array $def): array
+{
+	if (!isset($def['options_from'])) {
+		return isset($def['options']) ? $def['options'] : array();
+	}
+	static $cache = array();
+	$from = (string) $def['options_from'];
+	if (!isset($cache[$from])) {
+		$cache[$from] = array('' => '');
+		if ($from === 'item_groups') {
+			$q = db_select("select kodenr, beskrivelse from grupper where art = 'VG' order by kodenr", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$cache[$from][(string) $r['kodenr']] = $r['kodenr'] . ' : ' . $r['beskrivelse'];
+			}
+		}
+	}
+	return $cache[$from];
+}
+
+/**
+ * A label that is a text id or, for product names such as "GLS", the literal text.
+ */
+function st_label($label): string
+{
+	return is_int($label) || ctype_digit((string) $label) ? st_t($label) : st_h($label);
 }
 
 function st_unit(array $def, string $prefix = ''): string
@@ -326,10 +376,10 @@ function st_visible(array $def, array $values): bool
 		return SettingsService::hasModule((string) $rule[1]);
 	}
 	$parent = (string) $rule[1];
-	if (isset($values[$parent])) {
+	$pdef = SettingsService::definition($parent);
+	if (isset($values[$parent]) && !($pdef && $pdef['type'] === 'secret')) {
 		$v = $values[$parent];
 	} else {
-		$pdef = SettingsService::definition($parent);
 		$v = $pdef ? st_form_value($pdef, SettingsService::raw($parent)) : '';
 	}
 	if ($rule[0] === 'setting') {
@@ -337,6 +387,10 @@ function st_visible(array $def, array $values): bool
 	}
 	if ($rule[0] === 'setting_in') {
 		return in_array($v, (array) $rule[2], true);
+	}
+	if ($rule[0] === 'setting_set') {
+		// A secret never reaches the form, so the stored value decides.
+		return $v !== '' || ($pdef !== null && $pdef['type'] === 'secret' && SettingsService::raw($parent) !== '');
 	}
 	return true;
 }
@@ -349,6 +403,14 @@ function st_locked(array $def): int
 	if (empty($def['locked_if'])) {
 		return 0;
 	}
+	if (strpos((string) $def['locked_if'], 'ht_keys:') === 0) {
+		// Hosted installations seed this key from .ht_keys.txt at every login (includes/betweenUpdates.php),
+		// so a value typed here would be overwritten; the field is read-only while the file names the key.
+		if (st_ht_key(substr((string) $def['locked_if'], 8)) !== '') {
+			return (int) $def['locked_text'];
+		}
+		return 0;
+	}
 	if ($def['locked_if'] === 'batch_control') {
 		// Quick invoicing cannot be combined with batch control on an item group.
 		if (db_fetch_array(db_select("select id from grupper where art = 'VG' and box9 = 'on'", __FILE__ . " linje " . __LINE__))) {
@@ -356,6 +418,25 @@ function st_locked(array $def): int
 		}
 	}
 	return 0;
+}
+
+/**
+ * A value of the installation's .ht_keys.txt (two levels above the Saldi root), '' when the file or the key is missing.
+ */
+function st_ht_key(string $var): string
+{
+	static $keys = null;
+	if ($keys === null) {
+		$keys = array();
+		$file = __DIR__ . '/../../../.ht_keys.txt';
+		if (is_file($file)) {
+			$keys = (function () use ($file) {
+				include $file;
+				return get_defined_vars();
+			})();
+		}
+	}
+	return isset($keys[$var]) && is_string($keys[$var]) ? trim($keys[$var]) : '';
 }
 
 // ---------------------------------------------------------------- rendering
@@ -391,8 +472,10 @@ function st_render_field(array $def, array $state): void
 	$defaultForm = st_form_value($def, st_default_raw($def));
 	$help = isset($def['help']) ? st_txt($def['help']) : '';
 	$hasDefault = array_key_exists('default', $def) && !($def['default'] === '' || $def['default'] === null);
-	if ($def['type'] === 'bool' || $def['type'] === 'select') {
+	if ($def['type'] === 'bool') {
 		$hasDefault = array_key_exists('default', $def);
+	} elseif ($def['type'] === 'select') {
+		$hasDefault = array_key_exists('default', $def) && (string) $def['default'] !== '';
 	}
 	$defaultText = $hasDefault ? st_txt(5714) . ' ' . st_display_value($def, st_default_raw($def)) . '.' : '';
 	$nameAttr = $disabled ? '' : ' name="f[' . st_h($key) . ']"';
@@ -425,8 +508,8 @@ function st_render_field(array $def, array $state): void
     <input type="hidden"<?= $nameAttr ?> value="<?= st_h($value) ?>" data-control>
 	<?php } elseif ($def['type'] === 'select') { ?>
     <select class="st-input st-select" id="<?= $id ?>"<?= $nameAttr ?> data-control<?= $disabled ? ' disabled' : '' ?><?= $invalid ?>>
-		<?php foreach ($def['options'] as $optValue => $optLabel) { ?>
-      <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= st_t($optLabel) ?></option>
+		<?php foreach (st_options($def) as $optValue => $optLabel) { ?>
+      <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= !empty($def['options_literal']) ? st_h($optLabel) : st_t($optLabel) ?></option>
 		<?php } ?>
     </select>
 	<?php } elseif ($def['type'] === 'account' || $def['type'] === 'item') {
@@ -445,7 +528,28 @@ function st_render_field(array $def, array $state): void
       <span class="st-resolved"><?= $resolved !== '' ? '· ' . st_h($resolved) : '' ?></span>
       <ul class="st-lookup-list" role="listbox" hidden></ul>
     </div>
-	<?php } else {
+	<?php } elseif ($def['type'] === 'secret') {
+		$isSet = (SettingsService::raw($key) !== '');
+		$when = isset($state['set_at']) && $state['set_at'] !== '' ? st_local_time((string) $state['set_at'], 'j/n-Y') : '';
+		?>
+    <div class="st-secret<?= $isSet ? ' st-secret-set' : '' ?>" data-secret>
+	<?php if ($isSet) { ?>
+      <span class="st-secret-state"><span class="st-secret-mask" aria-hidden="true">••••••••</span><span class="st-secret-when"><?= st_t(6139) ?><?= $when !== '' ? ' ' . st_h($when) : '' ?></span></span>
+		<?php if (!$disabled) { ?>
+      <button type="button" class="st-tl" data-secret-change aria-controls="<?= $id ?>"><?= st_t(6137) ?></button>
+		<?php } ?>
+	<?php } ?>
+      <input class="st-input" type="password" id="<?= $id ?>"<?= $nameAttr ?> value="" autocomplete="new-password" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?><?= $isSet ? ' hidden' : '' ?>>
+    </div>
+	<?php } elseif ($def['type'] === 'info') { ?>
+    <span class="st-info"><?= function_exists('settings_integration_info') ? settings_integration_info($def) : '' ?></span>
+	<?php } elseif ($def['type'] === 'link') { ?>
+    <a class="st-btn" href="<?= st_h($def['href']) ?>"<?= !empty($def['blank']) ? ' target="_blank" rel="noopener"' : '' ?>><?= st_t($def['button']) ?><?php if (!empty($def['blank'])) { ?> <i class='bx bx-link-external' aria-hidden="true"></i><?php } ?></a>
+	<?php } elseif ($def['type'] === 'mini') {
+		if (function_exists('settings_integration_mini')) {
+			settings_integration_mini($def, $disabled);
+		}
+	} else {
 		$type = ($def['type'] === 'email') ? 'email' : 'text';
 		$mode = ($def['type'] === 'int') ? ' inputmode="numeric"' : (($def['type'] === 'decimal') ? ' inputmode="decimal"' : '');
 		$short = ($def['type'] === 'int' || $def['type'] === 'decimal' || $def['type'] === 'date') ? ' st-input-short' : '';
@@ -456,7 +560,9 @@ function st_render_field(array $def, array $state): void
     <input class="st-input<?= $short ?>" type="<?= $type ?>" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>"<?= $mode ?> data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>>
 		<?php if (isset($def['unit'])) { ?><span class="st-unit"><?= st_h(st_unit($def)) ?></span><?php } ?>
 	<?php } ?>
+	<?php if (!in_array($def['type'], array('secret', 'info', 'link', 'mini'), true)) { ?>
     <input type="hidden" name="o[<?= st_h($key) ?>]" value="<?= st_h(isset($state['original']) ? $state['original'] : $value) ?>">
+	<?php } ?>
   </div>
 </div>
 	<?php
@@ -474,7 +580,7 @@ function st_render_action(array $def, bool $canRun, bool $visible): void
 	<?php if (isset($def['help'])) { ?><span class="st-help"><?= st_t($def['help']) ?></span><?php } ?>
   </div>
   <div class="st-ctl">
-    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?>" data-verb="<?= st_t($def['label']) ?>"<?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
+    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
   </div>
 </div>
 	<?php

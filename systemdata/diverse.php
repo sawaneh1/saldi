@@ -166,8 +166,9 @@ $landedSections = array(
 	'provision'      => 'settingsSection.php?s=organisation.commission&moved=provision',
 	'productOptions' => 'settingsSection.php?s=items.stock&moved=productOptions',
 	'orediff'        => 'settingsSection.php?s=finance.cash_journal&moved=orediff#sub-rounding',
+	'api_valg'       => 'settingsSection.php?s=integrations.connections&moved=api_valg',
 );
-if (isset($landedSections[$sektion])) {
+if (isset($landedSections[$sektion]) && !($sektion == 'api_valg' && !empty($_GET['varesync']))) {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
 	exit;
 }
@@ -187,6 +188,8 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 //                  item options look their row up when the form has no id.
 // 20261002 Sawaneh Phase 4b batch 1: provision, productOptions and orediff moved to the generated sections (their
 //                  save code is gone); div_valg no longer saves mySale, print, payment lists, payment days or voucher dates.
+// 20261002 Sawaneh Phase 4b batch 2: api_valg landed in Integrationer (only the shop sync still runs here); div_valg no longer
+//                  saves GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay, Vibrant or Copayone.
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
 // them; a role only gets them when an administrator grants them explicitly.
 $dangerousSections = array(
@@ -233,21 +236,8 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		$box9        = $_POST['box9'];    #ledig
 		$box10       = '';                #kept from the stored row below
 		$box12       = $_POST['box12'];
-		$gls_id      = $_POST['gls_id'];
-		$gls_user    = if_isset($_POST['gls_user']);
-		$gls_pass    = if_isset($_POST['gls_pass']);
-		$gls_ctId    = if_isset($_POST['gls_ctId']);
-		$dfm_id      = $_POST['dfm_id'];
-		$dfm_user    = if_isset($_POST['dfm_user']);
-		$dfm_pass    = if_isset($_POST['dfm_pass']);
-		$dfm_agree   = if_isset($_POST['dfm_agree']);
-		$dfm_hub     = if_isset($_POST['dfm_hub']);
-		$dfm_ship    = if_isset($_POST['dfm_ship']);
-		$dfm_good    = if_isset($_POST['dfm_good']);
-		$dfm_pay     = if_isset($_POST['dfm_pay']);
-		$dfm_url     = if_isset($_POST['dfm_url']);
-		$dfm_gooddes = if_isset($_POST['dfm_gooddes']);
-		$dfm_sercode = if_isset($_POST['dfm_sercode']);
+		// GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay and Vibrant are saved by Indstillinger » Integrationer (phase 4b);
+		// only the pick-up addresses are still posted here.
 		// Multiple pickup addresses - now handled as arrays
 		$dfm_pickup_group_ids   = isset($_POST['dfm_pickup_group_id'])   && is_array($_POST['dfm_pickup_group_id'])   ? $_POST['dfm_pickup_group_id']   : array();
 		$dfm_pickup_addrs       = isset($_POST['dfm_pickup_addr'])       && is_array($_POST['dfm_pickup_addr'])       ? $_POST['dfm_pickup_addr']       : array();
@@ -271,55 +261,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		$dfm_pickup_pays        = isset($_POST['dfm_pickup_pay'])        && is_array($_POST['dfm_pickup_pay'])        ? $_POST['dfm_pickup_pay']        : array();
 		$dfm_pickup_sercodes    = isset($_POST['dfm_pickup_sercode'])    && is_array($_POST['dfm_pickup_sercode'])    ? $_POST['dfm_pickup_sercode']    : array();
 		
-		$qp_agreement_id    = if_isset($_POST['qp_agreement_id']);
-		$qp_merchant        = if_isset($_POST['qp_merchant']);
-		$qp_md5secret       = if_isset($_POST['qp_md5secret']);
-		$qp_itemGrp         = if_isset($_POST['qp_itemGrp']);
-		$vibrant_api        = if_isset($_POST['vibrant_id']);
-
-		$mobilepay_client_id      = if_isset($_POST['mobilepay_client_id'], "");
-		$mobilepay_client_secret  = if_isset($_POST['mobilepay_client_secret'], "");
-		$mobilepay_subscription   = if_isset($_POST['mobilepay_subscription'], "");
-		$mobilepay_msn            = if_isset($_POST['mobilepay_msn'], "");
-
-		$copay_api = if_isset($_POST['copay_id']);
-		$nemhandel = if_isset($_POST['nemhandel']);
-
-		# Vibrant API save
-		if ($vibrant_api) {
-			update_settings_value("vibrant_auth", "globals", $vibrant_api, "The vibrant API key");
-		}
-
-		#mobilePay - secret and subscription key are write-only (A10): an empty field leaves the stored value.
-		if ($mobilepay_client_id) {
-			update_settings_value("client_id",       "mobilepay", $mobilepay_client_id,     "The client id provided for the mobile pay integration");
-			if ($mobilepay_client_secret !== '') {
-				update_settings_value("client_secret",   "mobilepay", $mobilepay_client_secret, "The client secret provided for the mobile pay integration");
-			}
-			if ($mobilepay_subscription !== '') {
-				update_settings_value("subscriptionKey", "mobilepay", $mobilepay_subscription,  "The Ocp-Apim-Subscription-Key provided for the mobile pay integration");
-			}
-			update_settings_value("MSN",             "mobilepay", $mobilepay_msn,           "The Merchant-Serial-Number provided for the mobilepay intergreation");
-		}
-
-
-		# Copayone API save
-		if ($copay_api) {
-			# Expect a posted ID
-			$qtxt = "SELECT var_value FROM settings WHERE var_name='copayone_auth'";
-			$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-
-			# If the row already exsists
-			if ($r) {
-				$qtxt = "UPDATE settings SET var_value='$copay_api' WHERE var_name='copayone_auth'";
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-				# If the row needs to be created in the database
-			} else {
-				$qtxt = "INSERT INTO settings(var_name, var_grp, var_value, var_description) VALUES ('copayone_auth', 'globals', '$copay_api', 'The copayone API key')";
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-			}
-		}
-
 		// if ($box8) {
 		// 	ftptest($_POST['oiourl'], $_POST['oiobruger'], $_POST['oiokode']);
 		// 	$box8 = $_POST['oiourl'] . chr(9) . $_POST['oiobruger'] . chr(9) . $_POST['oiokode'];
@@ -340,75 +281,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 			$qtxt.= "box1='$box1',box2='$box2',box3='$box3',box4='$box4',box5='$box5',box6='$box6',box7='$box7',box8='$box8',box9='$box9',box10='$box10',box11='$box11',box12='$box12' ";
 			$qtxt.= "WHERE id = '$id'";
 			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		}
-		$var_name        = array('gls_id', 'gls_user', 'gls_pass', 'gls_ctId');
-		$var_value       = array("$gls_id", "$gls_user", "$gls_pass", "$gls_ctId");
-		$var_description = array('GLS id', 'GLS brugernavn', 'GLS password', 'GLS kontakt ID');
-		for ($x = 0; $x < count($var_name); $x++) {
-			$var_description[$x] .= ', used at GLS integration';
-			$qtxt = "select id from settings where var_grp='GLS' and var_name='$var_name[$x]'";
-			if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-				$qtxt = "update settings set var_value='$var_value[$x]' where id='$r[id]'";
-			} elseif ($var_value[$x]) {
-/* 				$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-				$qtxt.= "('GLS','$var_name[$x]','$var_value[$x]','$var_description[$x]','0')"; */
-			} else
-				$qtxt = NULL;
-			if ($qtxt)
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		}
-		// DFM settings (without pickup addresses - they are now stored separately)
-		$var_name = array(
-			'dfm_id',
-			'dfm_user',
-			'dfm_pass',
-			'dfm_agree',
-			'dfm_hub',
-			'dfm_ship',
-			'dfm_good',
-			'dfm_pay',
-			'dfm_url',
-			'dfm_gooddes',
-			'dfm_sercode'
-		);
-		$var_value = array(
-			"$dfm_id",
-			"$dfm_user",
-			"$dfm_pass",
-			"$dfm_agree",
-			"$dfm_hub",
-			"$dfm_ship",
-			"$dfm_good",
-			"$dfm_pay",
-			"$dfm_url",
-			"$dfm_gooddes",
-			"$dfm_sercode"
-		);
-		$var_description = array(
-			'DFM id',
-			'DFM brugernavn',
-			'DFM password',
-			'DFM aftalenummer',
-			'DFM hub',
-			'DFM standardshippingmetode',
-			'DFM standardgodstype',
-			'DFM standardbetalingsmetode',
-			"DFM API URL",
-			"DFM standardgodsbeskrivelse",
-			"DFM standardleveringsmetode"
-		);
-		for ($x = 0; $x < count($var_name); $x++) {
-			$var_description[$x] .= ', used at DFM integration';
-			$qtxt = "select id from settings where var_grp='GLS' and var_name='$var_name[$x]'";
-			if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-				$qtxt = "update settings set var_value='" . db_escape_string($var_value[$x]) . "' where id='$r[id]'";
-			} elseif ($var_value[$x]) {
-/* 				$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-				$qtxt.= "('GLS','$var_name[$x]','" . db_escape_string($var_value[$x]) . "','$var_description[$x]','0')"; */
-			} else
-				$qtxt = NULL;
-			if ($qtxt)
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 		}
 		
 		// Handle multiple DFM pickup addresses
@@ -485,26 +357,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 				$qtxt = "delete from settings where var_grp='DFM_Pickup' and group_id='$old_group_id'";
 				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 			}
-		}
-		$var_name = array('qp_agreement_id', 'qp_merchant', 'qp_md5secret', 'qp_itemGrp');
-		$var_value = array($qp_agreement_id, $qp_merchant, $qp_md5secret, $qp_itemGrp);
-		$var_description = array('Agreement id from', 'Merchant no from', 'md5secret from', 'Item Group in Saldi for items paid using');
-		for ($x = 0; $x < count($var_name); $x++) {
-			if ($var_name[$x] === 'qp_md5secret' && (string) $var_value[$x] === '') {
-				continue; // write-only secret (A10): empty means unchanged
-			}
-			$var_value[$x] = db_escape_string((string) $var_value[$x]);
-			$var_description[$x] .= ', Quickpay';
-			$qtxt = "select id from settings where var_grp='quickpay' and var_name='$var_name[$x]'";
-			if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-				$qtxt = "update settings set var_value='$var_value[$x]' where id='$r[id]'";
-			} elseif ($var_value[$x]) {
-				$qtxt = "insert into settings (var_grp,var_name,var_value,var_description,user_id) values ";
-				$qtxt.= "('quickpay','$var_name[$x]','$var_value[$x]','$var_description[$x]','0')";
-			} else
-				$qtxt = NULL;
-			if ($qtxt)
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 		}
 		#######################################################################################
 	} elseif ($sektion == 'ordre_valg') {
@@ -762,27 +614,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 // 			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 // 		#######################################################################################
 // 	} 
-	elseif ($sektion == 'api_valg') {
-		$id   = if_isset($_POST['id']);
-		$box1 = db_escape_string(if_isset($_POST['api_key']));
-		$box2 = db_escape_string(if_isset($_POST['ip_list']));
-		$box3 = db_escape_string(if_isset($_POST['api_bruger']));
-		$box4 = db_escape_string(if_isset($_POST['api_fil']));
-		$box5 = db_escape_string(if_isset($_POST["api_fil2"]));
-		$box6 = db_escape_string(if_isset($_POST["api_fil3"]));
-		
-		$qtxt = NULL;
-		if ((!$id) && ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'API' and kodenr='1'", __FILE__ . " linje " . __LINE__))))
-			$id = $r['id'];
-		if (!$id) {
-			$qtxt = "insert into grupper (beskrivelse,kodenr,art,box1,box2,box3,box4,box5,box6) values ('API valg','1','API','$box1','$box2','$box3','$box4', '$box5', '$box6')";
-		} elseif ($id > 0) {
-			$qtxt = "update grupper set box1='$box1',box2='$box2',box3='$box3',box4='$box4',box5='$box5',box6='$box6' WHERE id = '$id'";
-		}
-		if ($qtxt)
-			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-		#######################################################################################
-	} elseif ($sektion == 'stripe_valg') {
+	elseif ($sektion == 'stripe_valg') {
 		include_once(__DIR__ . '/diverseIncludes/stripeValg.php');
 		stripeValgSave();
 		#######################################################################################

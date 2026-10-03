@@ -4,7 +4,7 @@
 //                  lookups, confirmation dialog and keyboard shortcuts.
 // 20260930 Sawaneh Field links open inside the shell and use ?field= (spec §8.11).
 // 20261002 Sawaneh Hand-over 2 Oct (8.0): the save bar shows only while something is unsaved and counts the changes;
-//                  a changed field is marked.
+//                  a changed field is marked; a sub-section whose fields are all hidden is hidden too.
 (function () {
 	'use strict';
 	var cfg = window.SALDI_SETTINGS || {};
@@ -57,6 +57,12 @@
 			var rule;
 			try { rule = JSON.parse(el.dataset.visibleIf); } catch (e) { return; }
 			el.hidden = !ruleHolds(rule);
+		});
+		// A sub-section is shown only while one of its fields is.
+		Array.prototype.forEach.call(form.querySelectorAll('.st-sect'), function (sect) {
+			var items = sect.querySelectorAll('.st-field, .st-action');
+			if (!items.length) { return; }
+			sect.hidden = !Array.prototype.some.call(items, function (el) { return !el.hidden; });
 		});
 	}
 

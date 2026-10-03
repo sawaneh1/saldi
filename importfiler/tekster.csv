@@ -5659,3 +5659,114 @@
 6052	Viser felterne til udløbsdato på varekortet. Varegruppen skal desuden have batchkontrol	Shows the expiry date fields on the product card. The product group must also have batch control	Viser feltene for utløpsdato på varekortet. Varegruppen må også ha batchkontroll
 6053	Nulstil og slet regnskab (farezone)	Reset and delete company (danger zone)	Nullstill og slett regnskap (faresone)
 6054	Følsomme medarbejderfelter (CPR og løn)	Sensitive employee fields (CPR and salary)	Sensitive ansattfelter (fødselsnummer og lønn)
+6055	API & webshop	API & webshop	API og nettbutikk
+6056	Fragt	Shipping	Frakt
+6057	E-faktura & app	E-invoicing & app	E-faktura og app
+6058	Betalingsudbydere	Payment providers	Betalingsleverandører
+6059	Lad webshop og andre systemer hente og oprette data	Let your webshop and other systems read and create data	La nettbutikk og andre systemer hente og opprette data
+6060	Skriv IP-adresser adskilt af komma, eller * for alle	Enter IP addresses separated by commas, or * for all	Skriv IP-adresser atskilt med komma, eller * for alle
+6061	API-klient til varesynkronisering	API client for item sync	API-klient for varesynkronisering
+6062	Send faktura til kunden pr. e-mail ved oprettelse via API	E-mail the invoice to the customer when it is created through the API	Send faktura til kunden på e-post ved opprettelse via API
+6063	Gælder fakturaer, der oprettes af webshoppen eller andre systemer via REST API	Applies to invoices created by the webshop or other systems through the REST API	Gjelder fakturaer som opprettes av nettbutikken eller andre systemer via REST API
+6064	Generér ny API-nøgle	Generate new API key	Generer ny API-nøkkel
+6065	Den gamle nøgle holder op med at virke med det samme. Den nye vises én gang	The old key stops working immediately. The new one is shown once	Den gamle nøkkelen slutter å virke med en gang. Den nye vises én gang
+6066	Generér ny API-nøgle?	Generate a new API key?	Generere ny API-nøkkel?
+6067	Webshop og andre systemer, der bruger den nuværende nøgle, mister adgang, indtil de får den nye	Your webshop and other systems using the current key lose access until they get the new one	Nettbutikk og andre systemer som bruker den nåværende nøkkelen mister tilgang til de får den nye
+6068	Webshop-synkronisering	Webshop sync	Nettbutikk-synkronisering
+6069	Varer, lager og ordrer mellem Saldi og jeres shop	Items, stock and orders between Saldi and your shop	Varer, lager og ordrer mellom Saldi og butikken deres
+6070	Shop-URL	Shop URL	Butikk-URL
+6071	Adressen på shoppens Saldi-klient. Kan indeholde opdat_status=1, shop_fakt=1 og betaling=kort	The address of the shop's Saldi client. May contain opdat_status=1, shop_fakt=1 and betaling=kort	Adressen til butikkens Saldi-klient. Kan inneholde opdat_status=1, shop_fakt=1 og betaling=kort
+6072	Tegnsæt i shoppen	Shop character set	Tegnsett i butikken
+6073	Kortbetaling ved tilmelding via webshop	Card payment at sign-up through the webshop	Kortbetaling ved påmelding via nettbutikk
+6074	Aftale-id	Agreement id	Avtale-id
+6075	Aftale-id fra QuickPay	Agreement id from QuickPay	Avtale-id fra QuickPay
+6076	Merchant-nr.	Merchant no.	Merchant-nr.
+6077	MD5-nøgle	MD5 secret	MD5-nøkkel
+6078	Krypteringsnøglen fra QuickPay	The encryption key from QuickPay	Krypteringsnøkkelen fra QuickPay
+6079	Opret pakkelabels direkte fra ordren	Create parcel labels straight from the order	Opprett pakkelapper direkte fra ordren
+6080	Bestil fragt og afhentning fra ordren	Book freight and pick-up from the order	Bestill frakt og henting fra ordren
+6081	Godsbeskrivelse som standard	Goods description by default	Godsbeskrivelse som standard
+6082	Afhentningsadresser	Pick-up addresses	Hentesteder
+6083	Flere afhentningsadresser og deres egne DFM-oplysninger redigeres stadig under Diverse valg	Several pick-up addresses with their own DFM details are still edited under Diverse valg	Flere hentesteder med egne DFM-opplysninger redigeres fortsatt under Diverse valg
+6084	E-faktura (NemHandel)	E-invoicing (NemHandel)	E-faktura (NemHandel)
+6085	Send og modtag OIOUBL-fakturaer	Send and receive OIOUBL invoices	Send og motta OIOUBL-fakturaer
+6086	easyUBL API-nøgle	easyUBL API key	easyUBL API-nøkkel
+6087	Nøglen fra easyUBL, som Saldi sender e-fakturaer med	The key from easyUBL that Saldi sends e-invoices with	Nøkkelen fra easyUBL som Saldi sender e-fakturaer med
+6088	Styres af Saldi-installationen og kan ikke ændres her	Managed by the Saldi installation and cannot be changed here	Styres av Saldi-installasjonen og kan ikke endres her
+6089	easyUBL virksomheds-id	easyUBL company id	easyUBL virksomhets-id
+6090	Virksomhedens id hos easyUBL. Udfyldes automatisk ved tilmelding	The company's id at easyUBL. Filled in automatically at sign-up	Virksomhetens id hos easyUBL. Fylles ut automatisk ved påmelding
+6091	App-login (QR)	App login (QR)	App-innlogging (QR)
+6092	Log ind i Saldi-appen ved at scanne en kode	Log in to the Saldi app by scanning a code	Logg inn i Saldi-appen ved å skanne en kode
+6093	App API-nøgle	App API key	App API-nøkkel
+6094	Nøglen Saldi-appen og bilagsgenkendelsen bruger	The key the Saldi app and voucher recognition use	Nøkkelen Saldi-appen og bilagsgjenkjenningen bruker
+6095	Vis QR-kode til app-login	Show QR code for app login	Vis QR-kode for app-innlogging
+6096	Betaling i kassen og via betalingslink	Payment at the till and by payment link	Betaling i kassen og via betalingslenke
+6097	Client ID	Client ID	Client ID
+6098	Fra MobilePay/Vipps' udviklerportal	From the MobilePay/Vipps developer portal	Fra MobilePay/Vipps' utviklerportal
+6099	Client secret	Client secret	Client secret
+6100	Subscription key	Subscription key	Subscription key
+6101	Merchant Serial Number (MSN)	Merchant Serial Number (MSN)	Merchant Serial Number (MSN)
+6102	Webhook ikke forbundet	Webhook not connected	Webhook ikke tilkoblet
+6103	Aktiv · webhook forbundet	Active · webhook connected	Aktiv · webhook tilkoblet
+6104	Forbind webhook	Connect webhook	Koble til webhook
+6105	Forbind webhook?	Connect the webhook?	Koble til webhook?
+6106	Saldi registrerer en webhook hos MobilePay med de gemte oplysninger, så betalinger registreres automatisk	Saldi registers a webhook at MobilePay with the stored details, so payments are registered automatically	Saldi registrerer en webhook hos MobilePay med de lagrede opplysningene, slik at betalinger registreres automatisk
+6107	Se QR-kode	View QR code	Vis QR-kode
+6108	Opret QR-koder til kasserne	Create QR codes for the tills	Opprett QR-koder for kassene
+6109	Én QR-kode pr. kasse, som kunden scanner for at betale. Kasser, der allerede har en kode, springes over	One QR code per till that the customer scans to pay. Tills that already have a code are skipped	Én QR-kode per kasse som kunden skanner for å betale. Kasser som allerede har en kode hoppes over
+6110	Opret QR-koder?	Create QR codes?	Opprette QR-koder?
+6111	Saldi henter en QR-kode hos MobilePay for hver kasse uden kode	Saldi fetches a QR code from MobilePay for every till without one	Saldi henter en QR-kode hos MobilePay for hver kasse uten kode
+6112	Kortterminal til kassen	Card terminal for the till	Kortterminal for kassen
+6113	Flatpay-login	Flatpay login	Flatpay-innlogging
+6114	Brugernavn og adgangskode bruges kun til at hente jeres Flatpay-ID og gemmes ikke	The username and password are only used to fetch your Flatpay ID and are not stored	Brukernavn og passord brukes bare til å hente Flatpay-ID-en deres og lagres ikke
+6115	Adgangskode	Password	Passord
+6116	Hent Flatpay-ID	Fetch Flatpay ID	Hent Flatpay-ID
+6117	Kortterminal på mobilen	Card terminal on the phone	Kortterminal på mobilen
+6118	Navn	Name	Navn
+6119	E-mail	E-mail	E-post
+6120	Aktiv	Active	Aktiv
+6121	Ikke aktiveret	Not activated	Ikke aktivert
+6122	Indstil	Configure	Still inn
+6123	Aktivér	Activate	Aktiver
+6124	Ret	Fix	Rett
+6125	Opsætningen gælder for hele regnskabet. Ændringer logges	The setup applies to the whole company. Changes are logged	Oppsettet gjelder hele regnskapet. Endringer logges
+6126	Forbindelser til webshop, fragt, e-faktura og betaling	Connections to webshop, shipping, e-invoicing and payment	Tilkoblinger til nettbutikk, frakt, e-faktura og betaling
+6127	nøgle sat	key set	nøkkel satt
+6128	Luk	Close	Lukk
+6129	Ny API-nøgle	New API key	Ny API-nøkkel
+6130	Kopiér den nu – den vises ikke igen	Copy it now – it is not shown again	Kopier den nå – den vises ikke igjen
+6131	Webhook forbundet	Webhook connected	Webhook tilkoblet
+6132	Webhook kunne ikke forbindes	The webhook could not be connected	Webhook kunne ikke kobles til
+6133	%s QR-koder oprettet	%s QR codes created	%s QR-koder opprettet
+6134	Flatpay-ID hentet og gemt	Flatpay ID fetched and stored	Flatpay-ID hentet og lagret
+6135	Login blev afvist	The login was rejected	Innloggingen ble avvist
+6136	Vibrant-login oprettet	Vibrant login created	Vibrant-innlogging opprettet
+6137	Skift	Change	Endre
+6138	Ikke sat	Not set	Ikke satt
+6139	sat	set	satt
+6140	Kommer senere	Coming later	Kommer senere
+6141	Bankforbindelse	Bank connection	Bankforbindelse
+6142	Hent posteringer automatisk	Fetch transactions automatically	Hent posteringer automatisk
+6143	Vis	View	Vis
+6144	Ugemte ændringer	Unsaved changes	Ulagrede endringer
+6145	Lukker du nu, mistes det, du ikke har gemt	If you close now, what you have not saved is lost	Lukker du nå, mistes det du ikke har lagret
+6146	Luk uden at gemme	Close without saving	Lukk uten å lagre
+6147	Saldi DB	Saldi DB	Saldi DB
+6148	Saldi URL	Saldi URL	Saldi URL
+6149	Swagger-dokumentation	Swagger documentation	Swagger-dokumentasjon
+6150	Terminal-login	Terminal login	Terminal-innlogging
+6151	Kontoen oprettes hos Vibrant og gemmes her. Adgangskoden vises aldrig igen	The account is created at Vibrant and stored here. The password is never shown again	Kontoen opprettes hos Vibrant og lagres her. Passordet vises aldri igjen
+6152	Gem Vibrant API-nøglen først	Save the Vibrant API key first	Lagre Vibrant API-nøkkelen først
+6153	Anden API-klient	Second API client	Andre API-klient
+6154	Tredje API-klient	Third API client	Tredje API-klient
+6155	Bruges af den samlede varesynkronisering til flere shops	Used by the full item sync to several shops	Brukes av den samlede varesynkroniseringen til flere butikker
+6156	Kunne ikke oprettes: %s	Could not be created: %s	Kunne ikke opprettes: %s
+6157	Åbn	Open	Åpne
+6158	Ingen kasser er sat op endnu	No tills are set up yet	Ingen kasser er satt opp ennå
+6159	QR-kode kasse %s	QR code till %s	QR-kode kasse %s
+6160	Vent…	Please wait…	Vent…
+6161	Varegruppe til QuickPay-varer	Item group for QuickPay items	Varegruppe for QuickPay-varer
+6162	Varer i denne gruppe kan betales ved tilmelding via QuickPay	Items in this group can be paid at sign-up through QuickPay	Varer i denne gruppen kan betales ved påmelding via QuickPay
+6163	QR-koder til kasserne	QR codes for the tills	QR-koder for kassene
+6164	Nøglen vises kun her, mens den er ny. Gem den i din API-klient med det samme	The key is only shown here while it is new. Store it in your API client right away	Nøkkelen vises bare her mens den er ny. Lagre den i API-klienten din med en gang
+6165	Afhentningsadresser redigeres under Diverse valg, indtil de får deres egen liste	Pick-up addresses are edited under Diverse valg until they get their own list	Hentesteder redigeres under Diverse valg til de får sin egen liste

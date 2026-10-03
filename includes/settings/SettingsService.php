@@ -25,6 +25,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261002 Sawaneh Phase 4b batch 2: lastChanged() for the 'sat <date>' note next to a write-only secret.
 // 20261002 Sawaneh Settings changes in audit_log carry objekt_type 'indstilling' and the key as objekt_id (settings redesign §11.2).
 
 include_once(__DIR__ . '/../../systemdata/settingsRegistry.php');
@@ -413,6 +414,25 @@ class SettingsService
 			$rows[] = $r;
 		}
 		return $rows;
+	}
+
+	/**
+	 * When each setting of a section was last changed through the registry (key => timestamp), for the
+	 * "sat 12/9" note next to a secret.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function lastChanged(string $section): array
+	{
+		if (!self::auditColumns()) {
+			return array();
+		}
+		$out = array();
+		$q = db_select("select setting_key, max(tidspunkt) as t from audit_log where section = '" . db_escape_string($section) . "' group by setting_key", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$out[(string) $r['setting_key']] = (string) $r['t'];
+		}
+		return $out;
 	}
 
 	public static function historyEntry(int $id): ?array

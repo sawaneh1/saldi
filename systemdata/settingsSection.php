@@ -28,6 +28,8 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261002 Sawaneh Phase 4b batch 2 (G9): a section of 'kind' list renders includes/settings/listView.php - rows with a drawer
+//                  per integration, each drawer its own form; an empty secret leaves the stored value (P8); item kept over redirects.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -47,7 +49,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261002";
+$css = "../css/unified-components.css?v=20261002b";
 $modulnr = 1;
 $permission_key = 'system.indstillinger';
 $permission_post_read = false;
@@ -58,6 +60,7 @@ include(__DIR__ . "/../includes/std_func.php");
 include_once(__DIR__ . "/settingsRegistry.php");
 include_once(__DIR__ . "/../includes/settings/components.php");
 include_once(__DIR__ . "/../includes/settings/actions.php");
+include_once(__DIR__ . "/../includes/settings/listView.php");
 
 $sections = getSettingsSections();
 $sectionId = isset($_GET['s']) ? (string) $_GET['s'] : '';
@@ -80,6 +83,15 @@ $canWrite = perm_can($permission, 'write');
 $defs = settings_section_definitions($sectionId);
 SettingsService::preload(array_keys($defs));
 $selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId);
+$isList = (!empty($section['kind']) && $section['kind'] === 'list');
+$item = '';
+if ($isList) {
+	$item = isset($_POST['item']) ? (string) $_POST['item'] : (isset($_GET['item']) ? (string) $_GET['item'] : '');
+	if (!isset($section['items'][$item])) {
+		$item = '';
+	}
+}
+$backUrl = $selfUrl . ($item !== '' ? '&item=' . rawurlencode($item) : '');
 
 $state = array('errors' => array(), 'posted' => null, 'conflict' => null, 'flash' => array());
 
@@ -99,16 +111,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			SettingsService::saveRaw($entry['setting_key'], (string) $entry['old_value']);
 		}
 		ob_end_clean();
-		header('Location: ' . $selfUrl . '&reverted=1#' . ($entry ? rawurlencode((string) $entry['setting_key']) : ''));
+		header('Location: ' . $backUrl . '&reverted=1#' . ($entry ? rawurlencode((string) $entry['setting_key']) : ''));
 		exit;
 	}
 
 	if ($action === 'run') {
 		$key = isset($_POST['key']) ? (string) $_POST['key'] : '';
-		$target = $selfUrl;
+		$target = $backUrl;
 		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
 			audit_log('setting.action', $key);
-			$target = settings_run_action($defs[$key], $selfUrl);
+			$target = settings_run_action($defs[$key], $backUrl);
 		}
 		ob_end_clean();
 		header('Location: ' . $target);
@@ -118,12 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$state = settings_section_save($sectionId, $defs, $_POST);
 	if (!$state['errors'] && !$state['conflict']) {
 		ob_end_clean();
-		header('Location: ' . $selfUrl . '&saved=' . date('Hi'));
+		header('Location: ' . $backUrl . '&saved=' . date('Hi'));
 		exit;
 	}
 }
 
-settings_section_view($sectionId, $section, $defs, $state, $canWrite, $csrfToken, $selfUrl);
+settings_section_view($sectionId, $section, $defs, $state, $canWrite, $csrfToken, $selfUrl, $item);
 
 // ---------------------------------------------------------------- controller
 
@@ -152,7 +164,10 @@ function settings_section_save(string $sectionId, array $defs, array $post): arr
 	$errors = array();
 	$toSave = array();
 	foreach ($defs as $key => $def) {
-		if ($def['type'] === 'action' || !isset($posted[$key]) || st_locked($def) || !st_visible($def, $posted)) {
+		if (in_array($def['type'], array('action', 'info', 'link', 'mini'), true) || !isset($posted[$key]) || st_locked($def) || !st_visible($def, $posted)) {
+			continue;
+		}
+		if ($def['type'] === 'secret' && trim($posted[$key]) === '') {
 			continue;
 		}
 		$res = st_posted_to_raw($def, $posted[$key], $posted);
@@ -206,7 +221,7 @@ function settings_section_save(string $sectionId, array $defs, array $post): arr
  * @param array<string, array<string, mixed>> $defs
  * @param array<string, mixed>                 $state
  */
-function settings_section_view(string $sectionId, array $section, array $defs, array $state, bool $canWrite, string $csrfToken, string $selfUrl): void
+function settings_section_view(string $sectionId, array $section, array $defs, array $state, bool $canWrite, string $csrfToken, string $selfUrl, string $item = ''): void
 {
 	global $sprog_id, $regnskab, $buttonColor, $buttonTxtColor;
 	$sprogId = (int) $sprog_id;
@@ -220,7 +235,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	$values = array();
 	$originals = array();
 	foreach ($defs as $key => $def) {
-		if ($def['type'] === 'action') {
+		if (in_array($def['type'], array('action', 'info', 'link', 'mini'), true)) {
 			continue;
 		}
 		$stored = st_form_value($def, SettingsService::raw($key));
@@ -252,6 +267,21 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	if (isset($_GET['converted'])) {
 		$flash[] = array('ok', sprintf(st_txt(6013), (int) $_GET['converted']));
 	}
+	if (!empty($_GET['newkey']) && !empty($_SESSION['settings_newkey'])) {
+		// The new API key is shown this once and then forgotten (P8).
+		$flash[] = array('key', $_SESSION['settings_newkey']);
+		unset($_SESSION['settings_newkey']);
+	}
+	if (isset($_GET['qr'])) {
+		$flash[] = array('ok', sprintf(st_txt(6133), (int) $_GET['qr']));
+	}
+	if (isset($_GET['webhook'])) {
+		$flash[] = ($_GET['webhook'] === 'ok') ? array('ok', st_txt(6131)) : array('err', st_txt(6132));
+	}
+	if (!empty($_SESSION['settings_error'])) {
+		$flash[] = array('err', (string) $_SESSION['settings_error']);
+		unset($_SESSION['settings_error']);
+	}
 	if (!$canWrite) {
 		$flash[] = array('info', st_txt(5755));
 	}
@@ -275,6 +305,15 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	foreach ($config as $k => $v) {
 		$config[$k] = mb_convert_encoding($v, 'UTF-8', $charset);
 	}
+	if (!empty($section['kind']) && $section['kind'] === 'list') {
+		settings_list_render(array(
+			'sectionId' => $sectionId, 'section' => $section, 'defs' => $defs, 'state' => $state, 'canWrite' => $canWrite,
+			'csrfToken' => $csrfToken, 'selfUrl' => $selfUrl, 'values' => $values, 'originals' => $originals, 'flash' => $flash,
+			'movedText' => $movedText, 'tabs' => $tabs, 'version' => $version, 'config' => $config, 'accent' => $accent,
+			'accentTxt' => $accentTxt, 'group' => $group, 'sprogId' => $sprogId, 'charset' => $charset, 'item' => $item,
+		));
+		return;
+	}
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(st_txt($section['label']), 'UTF-8', $charset)) ?>;</script>
@@ -294,6 +333,9 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
     <div class="st-toast" role="status"><i class="st-dotw st-dot-acc" aria-hidden="true"></i><span><?= st_h($movedText) ?> <a href="settingsMoved.php"><?= st_t(5722) ?></a></span><button type="button" class="st-toast-close" aria-label="<?= st_t(2172) ?>" data-dismiss><i class='bx bx-x'></i></button></div>
 		<?php } ?>
 		<?php foreach ($flash as $f) { ?>
+		<?php if ($f[0] === 'key') { ?>
+    <div class="st-flash st-flash-ok st-flash-key" role="status"><i class='bx bx-key' aria-hidden="true"></i><span><b><?= st_t(6129) ?>:</b> <code><?= st_h($f[1]) ?></code><br><?= st_t(6130) ?></span></div>
+		<?php continue; } ?>
     <div class="st-flash st-flash-<?= $f[0] ?>" role="<?= $f[0] === 'err' ? 'alert' : 'status' ?>"><?php if ($f[0] === 'info') { ?><i class='bx bx-lock-alt' aria-hidden="true"></i><?php } else { ?><i class="st-dotw st-dot-<?= $f[0] ?>" aria-hidden="true"></i><?php } ?><span><?= st_h($f[1]) ?></span></div>
 		<?php } ?>
   </div>
@@ -351,8 +393,16 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 			if (!$fields) {
 				continue;
 			}
+			// A sub-section whose fields are all hidden (dependents of a switch that is off) is hidden with them.
+			$anyVisible = false;
+			foreach ($fields as $key => $def) {
+				if (st_visible($def, $values)) {
+					$anyVisible = true;
+					break;
+				}
+			}
 			?>
-      <section class="st-sect" id="sub-<?= st_h($sub) ?>">
+      <section class="st-sect" id="sub-<?= st_h($sub) ?>"<?= $anyVisible ? '' : ' hidden' ?>>
         <h2><?= st_t($subLabel) ?></h2>
         <div class="st-card">
 			<?php foreach ($fields as $key => $def) {
@@ -455,7 +505,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=4"></script>
+<script src="../javascript/settingsSection.js?v=5"></script>
 	<?php
 }
 

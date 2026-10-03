@@ -19,6 +19,9 @@
 // ----------------------------------------------------------------------
 // 20261002 Sawaneh Settings redesign phase 4b: the actions a generated section can run (spec P4), each after a
 //                  confirmation on the page. Called from systemdata/settingsSection.php.
+// 20261002 Sawaneh Phase 4b batch 2 (G9): new API key, shop sync, MobilePay webhook and QR codes (includes/settings/integrations.php).
+
+include_once(__DIR__ . '/integrations.php');
 
 /**
  * Items created for mySale where the cost price was used as the commission percentage get a real
@@ -65,6 +68,22 @@ function settings_run_action(array $def, string $selfUrl): string
 			return '../includes/opdat_kostpriser.php?metode=' . (int) SettingsService::raw('items.stock.cost_method');
 		case 'convert_commission_items':
 			return $selfUrl . '&converted=' . settings_convert_commission_items();
+		case 'generate_api_key':
+			// Shown once on the next page view, then forgotten (P8): never in the address bar or the audit log.
+			$_SESSION['settings_newkey'] = settings_generate_api_key();
+			return $selfUrl . '&newkey=1';
+		case 'shop_sync_new':
+			return 'diverse.php?sektion=api_valg&varesync=1';
+		case 'shop_sync_update':
+			return 'diverse.php?sektion=api_valg&varesync=2';
+		case 'mobilepay_webhook':
+			return 'sys_div_func_includes/setup_mobilepay_webhook.php';
+		case 'mobilepay_qr':
+			$res = settings_mobilepay_create_qr();
+			if ($res['error'] !== '') {
+				$_SESSION['settings_error'] = $res['error'];
+			}
+			return $selfUrl . '&qr=' . (int) $res['created'];
 	}
 	return $selfUrl;
 }
