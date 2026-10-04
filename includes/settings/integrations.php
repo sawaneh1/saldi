@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261004 Sawaneh G10.3: card list items from the POS card lists, their status, the payment providers' state.
 // 20261002 Sawaneh Settings redesign phase 4b batch 2 (G9, hand-over 2 Oct): what the Integrations list needs beyond
 //                  the registry - the computed status of each integration (never stored, §8.13), the read-only info
 //                  rows, the two small login forms, a new API key, MobilePay QR codes per till (moved from the old
@@ -35,6 +36,12 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 	}
 	if (strpos($item, 'till_') === 0) {
 		return array('kind' => 'plain', 'text' => (string) $def['status_text'], 'button' => 6122);
+	}
+	if ($item === 'general') {
+		return array('kind' => 'plain', 'text' => '', 'button' => 6122);
+	}
+	if (strpos($item, 'card_') === 0) {
+		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(860), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6360), 'button' => 6122);
 	}
 	if (strpos($item, 'pl_') === 0) {
 		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(6233), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6234), 'button' => 6122);
@@ -110,6 +117,18 @@ function settings_list_dynamic_items(string $from): array
 			);
 		}
 	}
+	if ($from === 'cards') {
+		$items['general'] = array('sub' => 'general', 'abbr' => '*', 'literal' => true, 'label' => st_txt(6324), 'desc' => st_txt(6339));
+		foreach (settings_card_rows() as $i => $row) {
+			$n = $i + 1;
+			$items['card_' . $n] = array(
+				'sub' => 'cards', 'abbr' => (string) $n, 'literal' => true,
+				'label' => trim($row['name']) !== '' ? trim($row['name']) : '—',
+				'desc' => trim($row['account']) !== '' ? st_txt(284) . ' ' . trim($row['account']) . (trim($row['voucher']) !== '' ? ' · ' . st_txt(2272) : '') : (trim($row['voucher']) !== '' ? st_txt(2272) : ''),
+				'active' => trim($row['enabled']) !== '',
+			);
+		}
+	}
 	if ($from === 'pricelists') {
 		$q = db_select("select id, beskrivelse, box2, box12 from grupper where art = 'PL' order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
@@ -149,6 +168,18 @@ function settings_integration_info(array $def): string
 {
 	global $db;
 	switch ($def['info']) {
+		case 'pos_providers':
+			// G10.3 (decision 4): the payment providers' state, the keys themselves live under Integrations.
+			$sections = getSettingsSections();
+			$out = array();
+			foreach (array('mobilepay', 'vibrant', 'flatpay', 'quickpay') as $provider) {
+				if (isset($sections['integrations.connections']['items'][$provider])) {
+					$it = $sections['integrations.connections']['items'][$provider];
+					$status = settings_integration_status($provider, $it);
+					$out[] = st_h(is_int($it['label']) ? st_txt($it['label']) : $it['label']) . ': ' . st_h($status['text']);
+				}
+			}
+			return implode(' · ', $out);
 		case 'saldi_db':
 			return st_h($db);
 		case 'saldi_url':

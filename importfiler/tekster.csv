@@ -5916,3 +5916,57 @@
 6309	Indstilling gendannet	Setting restored	Innstilling gjenopprettet
 6310	Indstillingsrække oprettet	Setting row created	Innstillingsrad opprettet
 6311	Indstillingsrække slettet	Setting row deleted	Innstillingsrad slettet
+6312	Betalingskort & terminaler	Payment cards & terminals	Betalingskort og terminaler
+6313	Betalingsmåderne på kassen: navn, konto, om kortet går via terminalen, om det er et gavekort, og om det vises på kasseskærmen. Terminaltypen vælges på hver kasse under Kasser	The payment methods on the till: name, account, whether the card goes through the terminal, whether it is a gift card, and whether it is shown on the till screen. The terminal type is chosen per till under Tills	Betalingsmåtene på kassen: navn, konto, om kortet går via terminalen, om det er et gavekort, og om det vises på kasseskjermen. Terminaltypen velges på hver kasse under Kasser
+6314	Navn på betalingsmåde	Payment method name	Navn på betalingsmåte
+6315	Navnet kassen viser, f.eks. Dankort eller MobilePay	The name the till shows, e.g. Dankort or MobilePay	Navnet kassen viser, f.eks. Dankort eller MobilePay
+6316	Kort %s	Card %s	Kort %s
+6317	Nyt kort	New card	Nytt kort
+6318	Tilføj betalingsmåde	Add payment method	Legg til betalingsmåte
+6319	Flyt op	Move up	Flytt opp
+6320	Flyt ned	Move down	Flytt ned
+6321	Fjern betalingsmåde	Remove payment method	Fjern betalingsmåte
+6322	Kortet fjernes fra kassen. Bogførte betalinger ændres ikke.	The card is removed from the till. Posted payments are not changed.	Kortet fjernes fra kassen. Bokførte betalinger endres ikke.
+6323	Fjern betalingsmåden?	Remove the payment method?	Fjerne betalingsmåten?
+6324	Fælles for alle kort	Shared by all cards	Felles for alle kort
+6325	Kortsummer kan rettes ved kasseoptælling	Card totals can be corrected at the cash count	Kortsummer kan rettes ved kasseopptelling
+6326	Ved kasseoptællingen kan beløbet pr. kort rettes, hvis terminalens total afviger.	At the cash count the amount per card can be corrected when the terminal total differs.	Ved kasseopptellingen kan beløpet per kort rettes hvis terminalens total avviker.
+6327	Varenr. til gavekort / tilgodebevis	Item no. for gift card / voucher	Varenr. for gavekort / tilgodebevis
+6328	Varen der sælges, når kassen udsteder et gavekort eller tilgodebevis med denne betalingsmåde	The item sold when the till issues a gift card or voucher with this payment method	Varen som selges når kassen utsteder et gavekort eller tilgodebevis med denne betalingsmåten
+6329	Betalingsudbydere	Payment providers	Betalingsleverandører
+6330	Nøgler og forbindelser sættes op under Integrationer	Keys and connections are set up under Integrations	Nøkler og tilkoblinger settes opp under Integrasjoner
+6331	Åbn Integrationer	Open Integrations	Åpne Integrasjoner
+6332	Ingen betalingsmåder endnu	No payment methods yet	Ingen betalingsmåter ennå
+6333	Move3500 brugernavn	Move3500 username	Move3500 brukernavn
+6334	Move3500 adgangskode	Move3500 password	Move3500 passord
+6335	Login til Nets Move3500-terminalen på denne kasse	Login for the Nets Move3500 terminal on this till	Innlogging for Nets Move3500-terminalen på denne kassen
+6336	Valuta %s	Currency %s	Valuta %s
+6337	Konto for betalinger i valutaen på denne kasse, indtil de afstemmes	Account for payments in this currency on this till until they are reconciled	Konto for betalinger i valutaen på denne kassen til de avstemmes
+6338	Konto for kursdifferencer i valutaen på denne kasse	Account for exchange differences in this currency on this till	Konto for kursdifferanser i valutaen på denne kassen
+6339	Konto for andre kort og rettelse af kortsummer	Account for other cards and correction of card totals	Konto for andre kort og retting av kortsummer
+6340	Borde & bordplaner	Tables & floor plans	Bord og bordplaner
+6341	Bordene kassen kan vælge mellem, og bordplanerne i bordplanlæggeren.	The tables the till can choose between, and the floor plans in the floor planner.	Bordene kassen kan velge mellom, og bordplanene i bordplanleggeren.
+6342	Sættes tallet op, får de nye borde navnet Bord n. Sættes det ned, fjernes de sidste borde.	If the number goes up, the new tables are named Table n. If it goes down, the last tables are removed.	Settes tallet opp, får de nye bordene navnet Bord n. Settes det ned, fjernes de siste bordene.
+6343	Bord %s	Table %s	Bord %s
+6344	Bordplaner	Floor plans	Bordplaner
+6345	Antal bordplaner	Number of floor plans	Antall bordplaner
+6346	Sættes tallet ned, fjernes de sidste bordplaner i bordplanlæggeren.	If the number goes down, the last floor plans in the floor planner are removed.	Settes tallet ned, fjernes de siste bordplanene i bordplanleggeren.
+6347	Bordplan %s	Floor plan %s	Bordplan %s
+6348	Bordplanlægger	Floor planner	Bordplanlegger
+6349	Åbn bordplanlæggeren	Open the floor planner	Åpne bordplanleggeren
+6350	Borde og deres placering på hver bordplan tegnes i bordplanlæggeren.	Tables and their position on each floor plan are drawn in the floor planner.	Bord og plasseringen deres på hver bordplan tegnes i bordplanleggeren.
+6351	Farver efter ventetid	Colours by waiting time	Farger etter ventetid
+6352	Efter minutter	After minutes	Etter minutter
+6353	Fra dette antal minutter får ordren farven på køkkenskærmen. Rækker uden minutter eller farve fjernes.	From this many minutes the order gets the colour on the kitchen screen. Rows without minutes or colour are removed.	Fra dette antallet minutter får ordren fargen på kjøkkenskjermen. Rader uten minutter eller farge fjernes.
+6354	Farve %s	Colour %s	Farge %s
+6355	Print terminalkvittering fra Saldi (Flatpay)	Print terminal receipt from Saldi (Flatpay)	Skriv ut terminalkvittering fra Saldi (Flatpay)
+6356	Til: Saldi printer terminalens kvittering på bonprinteren. Fra: terminalen printer den selv.	On: Saldi prints the terminal receipt on the receipt printer. Off: the terminal prints it itself.	På: Saldi skriver ut terminalens kvittering på bongskriveren. Av: terminalen skriver den ut selv.
+6357	Betalingsmåden går via betalingsterminalen (kun med integreret terminal)	The payment method goes through the payment terminal (only with an integrated terminal)	Betalingsmåten går via betalingsterminalen (bare med integrert terminal)
+6358	Vises på kasseskærmen. Inaktive kort bruges kun til genkendelse fra terminal og webshop.	Shown on the till screen. Inactive cards are only used for recognition from the terminal and webshop.	Vises på kasseskjermen. Inaktive kort brukes bare til gjenkjenning fra terminal og nettbutikk.
+6359	Konto for kort, som terminalen melder, men som ikke er oprettet ovenfor. Bruges kun når en kasse har en terminal-IP.	Account for cards the terminal reports that are not set up above. Only used when a till has a terminal IP.	Konto for kort som terminalen melder, men som ikke er opprettet ovenfor. Brukes bare når en kasse har en terminal-IP.
+6360	Inaktivt	Inactive	Inaktivt
+6361	Farven skal angives som #rrggbb	The colour must be given as #rrggbb	Fargen må angis som #rrggbb
+6362	Rækkefølgen på kasseskærmen	The order on the till screen	Rekkefølgen på kasseskjermen
+6363	Kassen viser kortet et trin tidligere	The till shows the card one step earlier	Kassen viser kortet ett trinn tidligere
+6364	Kassen viser kortet et trin senere	The till shows the card one step later	Kassen viser kortet ett trinn senere
+6365	Terminal	Terminal	Terminal

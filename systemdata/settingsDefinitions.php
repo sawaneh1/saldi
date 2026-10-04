@@ -21,6 +21,9 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261004 Sawaneh G10 batch B: Cards (one drawer per payment card, 'per' => 'card'), Tables & floor plans ('per' => 'table',
+//                  'per' => 'floor_plan' on table_pages rows), currencies per till, Move3500 login per till, KDS colours by
+//                  waiting time, Flatpay receipt print; the old PoS-valg page is retired.
 // 20261004 Sawaneh G10.1 Tills: list section with one drawer per till ('per' => 'till'), lists joined by tab with 'list',
 //                  Cash counting form section; 'decimal_comma', 'seed' for a joined settings row.
 // 20261004 Sawaneh G10 POS batch A: G10.2 receipt, G10.6 kitchen, G10.7 screen (shop-wide); 'fiscal' grupper storage.
@@ -92,7 +95,7 @@ if (!function_exists('getSettingsSections')) {
 				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
 			),
-			// ---- G10 POS, batch A: the shop-wide options (per-till lists stay on PoS-valg until batch B)
+			// ---- G10 POS: Tills, Cards, Cash, Receipt, Kitchen, Screen, Tables (the old PoS-valg page is retired)
 			'pos.tills' => array(
 				'group' => 'pos', 'section' => 'tills', 'number' => 'G10.1', 'label' => 6275, 'icon' => 'bx-store-alt', 'module' => 'pos', 'kind' => 'list',
 				'lead' => 6276, 'items_from' => 'tills', 'add_action' => 'pos.tills.add', 'empty_text' => 6307,
@@ -108,6 +111,14 @@ if (!function_exists('getSettingsSections')) {
 				'context' => array('debitor/kasseoptaelling.php'),
 				'keywords' => array('kasseoptælling', 'cash count', 'kassebeholdning', 'byttepenge', 'float', 'rabatvare', 'discount item'),
 			),
+			'pos.cards' => array(
+				'group' => 'pos', 'section' => 'cards', 'number' => 'G10.3', 'label' => 6312, 'icon' => 'bx-credit-card', 'module' => 'pos', 'kind' => 'list',
+				'lead' => 6313, 'items_from' => 'cards', 'add_action' => 'pos.cards.add', 'empty_text' => 6332,
+				'subsections' => array('general' => 6324, 'cards' => 567),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/pos_ordre.php'),
+				'keywords' => array('betalingskort', 'kort', 'cards', 'payment cards', 'dankort', 'mobilepay', 'gavekort', 'gift card', 'tilgodebevis', 'voucher', 'terminal', 'kortkonto'),
+			),
 			'pos.receipt' => array(
 				'group' => 'pos', 'section' => 'receipt', 'number' => 'G10.2', 'label' => 6253, 'icon' => 'bx-receipt', 'module' => 'pos',
 				'subsections' => array('receipt' => 6253), 'sub_help' => array('receipt' => 6272),
@@ -117,10 +128,17 @@ if (!function_exists('getSettingsSections')) {
 			),
 			'pos.kitchen' => array(
 				'group' => 'pos', 'section' => 'kitchen', 'number' => 'G10.6', 'label' => 6258, 'icon' => 'bx-dish', 'module' => 'pos',
-				'subsections' => array('kds' => 6259, 'print' => 6260),
+				'subsections' => array('kds' => 6259, 'colours' => 6351, 'print' => 6260),
 				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
 				'context' => array('debitor/kds/show_items.php'),
 				'keywords' => array('kds', 'køkken', 'kitchen', 'køkkenskærm', 'køkkenprint', 'kitchen print'),
+			),
+			'pos.tables' => array(
+				'group' => 'pos', 'section' => 'tables', 'number' => 'G10.5', 'label' => 6340, 'icon' => 'bx-grid-alt', 'module' => 'pos',
+				'subsections' => array('tables' => 674, 'plans' => 6344), 'sub_help' => array('tables' => 6341),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/pos_ordre.php', 'bordplaner/planner/index.php'),
+				'keywords' => array('borde', 'tables', 'bordplan', 'bordplaner', 'floor plan', 'bordplanlægger', 'restaurant'),
 			),
 			'pos.screen' => array(
 				'group' => 'pos', 'section' => 'screen', 'number' => 'G10.7', 'label' => 6254, 'icon' => 'bx-desktop', 'module' => 'pos',
@@ -516,10 +534,14 @@ if (!function_exists('getSettingsSections')) {
 			'pos.tills.difference_account' => array('sub' => 'tills', 'type' => 'account', 'label' => 6282, 'help' => 6283, 'per' => 'till', 'group_label' => array(6300, ''),
 				'storage' => array('grupper', 'POS', 2, 'box9', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
 			'pos.tills.printer_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 704, 'help' => 6284, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => 'localhost',
-				'storage' => array('grupper', 'POS', 2, 'box3', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+				'storage' => array('grupper', 'POS', 2, 'box3', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos, 'on_save' => 'pos_printer_changed'),
 			'pos.tills.terminal_type' => array('sub' => 'tills', 'type' => 'select', 'label' => 2312, 'help' => 2313, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => '', 'scope' => 'pos',
 				'options' => array('' => 6171, 'Ip baseret' => 'Ip baseret', 'Flatpay' => 'Flatpay', 'Move3500' => 'Move3500', 'Lane3000' => 'Lane3000', 'Vibrant' => 'Vibrant'), 'options_mixed' => true,
 				'storage' => array('settings', 'POS', 'terminal_type', 'raw'), 'legacy' => $pos),
+			'pos.tills.move3500_user' => array('sub' => 'tills', 'type' => 'text', 'label' => 6333, 'help' => 6335, 'per' => 'till', 'group_label' => array(6301, ''), 'scope' => 'pos',
+				'storage' => array('settings', 'move3500', 'username', 'raw'), 'legacy' => $pos, 'visible_if' => array('setting_in', 'pos.tills.terminal_type', array('Move3500'))),
+			'pos.tills.move3500_password' => array('sub' => 'tills', 'type' => 'secret', 'label' => 6334, 'help' => 6335, 'per' => 'till', 'group_label' => array(6301, ''), 'scope' => 'pos',
+				'storage' => array('settings', 'move3500', 'password', 'raw'), 'legacy' => $pos, 'visible_if' => array('setting_in', 'pos.tills.terminal_type', array('Move3500'))),
 			'pos.tills.terminal_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 6285, 'help' => 6286, 'per' => 'till', 'group_label' => array(6301, ''),
 				'storage' => array('grupper', 'POS', 2, 'box4', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
 			'pos.tills.kitchen_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 6287, 'help' => 6288, 'per' => 'till', 'group_label' => array(6301, ''),
@@ -538,6 +560,43 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'POS', 'omv_menu', 'onOff'), 'legacy' => $pos),
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
+
+			// ---------------------------------------------------------------- G10.3 / G10.4 Payment cards (one drawer per card; the lists are tab-joined per fiscal year, R7)
+			'pos.cards.providers' => array('sub' => 'general', 'item' => 'general', 'type' => 'info', 'label' => 6329, 'info' => 'pos_providers', 'audit' => false),
+			'pos.cards.integrations' => array('sub' => 'general', 'item' => 'general', 'type' => 'link', 'label' => 6330, 'href' => 'settingsSection.php?s=integrations.connections', 'button' => 6331, 'audit' => false),
+			'pos.cards.other_cards_account' => array('sub' => 'general', 'item' => 'general', 'type' => 'account', 'label' => 712, 'help' => 6359,
+				'storage' => array('grupper', 'POS', 2, 'box6', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.cards.change_card_value' => array('sub' => 'general', 'item' => 'general', 'type' => 'bool', 'label' => 6325, 'help' => 6326, 'default' => false,
+				'storage' => array('settings', 'Paycards', 'change_cardvalue', 'onEmpty'), 'legacy' => $pos),
+			'pos.cards.add' => array('sub' => 'cards', 'type' => 'action', 'label' => 6318, 'help' => 6315, 'confirm_title' => 6318, 'confirm' => 6315, 'run' => 'card_add'),
+			'pos.cards.name' => array('sub' => 'cards', 'type' => 'text', 'label' => 6314, 'help' => 6315, 'per' => 'card', 'validate' => array('required'),
+				'storage' => array('grupper', 'POS', 1, 'box5', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.cards.account' => array('sub' => 'cards', 'type' => 'account', 'label' => 284, 'help' => 282, 'per' => 'card',
+				'storage' => array('grupper', 'POS', 1, 'box6', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.cards.terminal_card' => array('sub' => 'cards', 'type' => 'bool', 'label' => 710, 'help' => 6357, 'per' => 'card', 'default' => false,
+				'storage' => array('grupper', 'POS', 2, 'box5', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.cards.active' => array('sub' => 'cards', 'type' => 'bool', 'label' => 860, 'help' => 6358, 'per' => 'card', 'default' => true,
+				'storage' => array('settings', 'Paycards', 'card_enabled', 'onEmpty', 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.cards.voucher' => array('sub' => 'cards', 'type' => 'bool', 'label' => 2272, 'help' => 855, 'per' => 'card', 'default' => false,
+				'storage' => array('grupper', 'POS', 3, 'box4', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.cards.voucher_item' => array('sub' => 'cards', 'type' => 'item', 'item_as' => 'id', 'label' => 6327, 'help' => 6328, 'per' => 'card',
+				'storage' => array('settings', 'Paycards', 'voucherItems', 'raw', 'join' => "\t", 'list' => true), 'legacy' => $pos, 'visible_if' => array('setting', 'pos.cards.voucher', true)),
+			'pos.cards.up' => array('sub' => 'cards', 'type' => 'action', 'label' => 6319, 'help' => 6363, 'per' => 'card', 'confirm_title' => 6319, 'confirm' => 6363, 'run' => 'card_up'),
+			'pos.cards.down' => array('sub' => 'cards', 'type' => 'action', 'label' => 6320, 'help' => 6364, 'per' => 'card', 'confirm_title' => 6320, 'confirm' => 6364, 'run' => 'card_down'),
+			'pos.cards.remove' => array('sub' => 'cards', 'type' => 'action', 'label' => 6321, 'help' => 6322, 'per' => 'card', 'danger' => true,
+				'confirm_title' => 6323, 'confirm' => 6322, 'run' => 'card_remove'),
+
+			// ---------------------------------------------------------------- G10.5 Tables & floor plans
+			'pos.tables.count' => array('sub' => 'tables', 'type' => 'int', 'label' => 674, 'help' => 6342, 'default' => 0,
+				'storage' => array('virtual', 'table_count'), 'legacy' => $pos, 'validate' => array('range', 0, 200), 'keywords' => array('borde', 'tables', 'antal borde')),
+			'pos.tables.name' => array('sub' => 'tables', 'type' => 'text', 'label' => 676, 'per' => 'table', 'validate' => array('required'),
+				'storage' => array('grupper', 'POS', 2, 'box7', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tables.plan_count' => array('sub' => 'plans', 'type' => 'int', 'label' => 6345, 'help' => 6346, 'default' => 0,
+				'storage' => array('virtual', 'floor_plan_count'), 'legacy' => $pos, 'validate' => array('range', 0, 50), 'keywords' => array('bordplaner', 'floor plans')),
+			'pos.tables.plan_name' => array('sub' => 'plans', 'type' => 'text', 'label' => 138, 'per' => 'floor_plan',
+				'storage' => array('dbrow', 'table_pages', 'name'), 'legacy' => $pos),
+			'pos.tables.open_planner' => array('sub' => 'plans', 'type' => 'link', 'label' => 6348, 'help' => 6350, 'href' => '../bordplaner/planner/', 'button' => 6349, 'blank' => true, 'audit' => false,
+				'keywords' => array('bordplanlægger', 'floor planner')),
 
 			'pos.cash.opening_float' => array('sub' => 'cash', 'type' => 'int', 'label' => 6304, 'help' => 701, 'unit' => 'kr', 'default' => 0,
 				'storage' => array('grupper', 'POS', 2, 'box1', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
@@ -559,6 +618,8 @@ if (!function_exists('getSettingsSections')) {
 			'pos.receipt.timeout' => array('sub' => 'receipt', 'type' => 'int', 'label' => 463, 'help' => 462, 'unit' => 6270, 'default' => 0,
 				'storage' => array('grupper', 'POS', 1, 'box13', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos, 'validate' => array('range', 0, 3600),
 				'keywords' => array('tidsfrist', 'timeout', 'ny ordre')),
+			'pos.receipt.flatpay_print' => array('sub' => 'receipt', 'type' => 'bool', 'label' => 6355, 'help' => 6356, 'default' => false,
+				'storage' => array('settings', 'POS', 'flatpay_print', 'oneZero'), 'legacy' => $pos, 'keywords' => array('flatpay', 'terminalkvittering', 'terminal receipt')),
 
 			'pos.kitchen.kds_active' => array('sub' => 'kds', 'type' => 'bool', 'label' => 6261, 'help' => 6262, 'default' => false,
 				'storage' => array('settings', 'KDS', 'activated', 'onOff'), 'legacy' => $pos, 'keywords' => array('kds', 'køkkenskærm')),
@@ -864,6 +925,25 @@ if (!function_exists('getSettingsSections')) {
 				'keywords' => array('lokal printer', 'local printer')),
 		);
 
+		$sprog = isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1;
+		// G10.1: interim and difference account per till for each currency the till accepts (VK box5/box6; box4 is the
+		// "used in the till" flag of valuta.php, so the till account column of the old page is not offered).
+		foreach (settings_pos_currencies() as $kodenr => $code) {
+			$defs['pos.tills.currency_interim_' . $kodenr] = array('sub' => 'tills', 'type' => 'account', 'label' => 6280, 'help' => 6337, 'per' => 'till', 'group_label' => array(6336, $code),
+				'storage' => array('grupper', 'VK', (string) $kodenr, 'box5', 'raw', 'row_name' => $code, 'join' => "\t", 'list' => true), 'legacy' => $pos);
+			$defs['pos.tills.currency_difference_' . $kodenr] = array('sub' => 'tills', 'type' => 'account', 'label' => 6282, 'help' => 6338, 'per' => 'till', 'group_label' => array(6336, $code),
+				'storage' => array('grupper', 'VK', (string) $kodenr, 'box6', 'raw', 'row_name' => $code, 'join' => "\t", 'list' => true), 'legacy' => $pos);
+		}
+		// G10.6: KDS colours by waiting time, one settings row color_<n> = "<minutes>-<#rrggbb>" per colour, plus one empty slot.
+		foreach (settings_kds_colour_slots() as $i) {
+			$defs['pos.kitchen.colour_after_' . $i] = array('sub' => 'colours', 'type' => 'int', 'label' => 6352, 'help' => 6353, 'group_label' => array(6354, $i), 'default' => '', 'empty_ok' => true,
+				'storage' => array('settings', 'KDS', 'color_' . $i, 'raw', 'join' => '-', 'index' => 0, 'list' => true), 'legacy' => $pos, 'on_save' => 'kds_colours',
+				'validate' => array('range', 0, 1440), 'visible_if' => array('setting', 'pos.kitchen.kds_active', true));
+			$defs['pos.kitchen.colour_' . $i] = array('sub' => 'colours', 'type' => 'color', 'label' => 1786, 'group_label' => array(6354, $i), 'default' => '',
+				'storage' => array('settings', 'KDS', 'color_' . $i, 'raw', 'join' => '-', 'index' => 1, 'list' => true), 'legacy' => $pos, 'on_save' => 'kds_colours',
+				'visible_if' => array('setting', 'pos.kitchen.kds_active', true));
+		}
+
 		$groups = getSettingsGroups();
 		$sections = getSettingsSections();
 		$expanded = array();
@@ -903,13 +983,44 @@ if (!function_exists('getSettingsSections')) {
 					if (isset($d['storage']['join'])) {
 						$d['storage']['index'] = $n - 1;
 					}
-					if (is_array($d['visible_if']) && isset($d['visible_if'][1]) && strpos((string) $d['visible_if'][1], 'pos.tills.') === 0) {
-						$d['visible_if'][1] .= '.' . $n;
-					}
 					if ($key === 'pos.tills.post_each_sale') {
 						$d['default'] = settings_post_each_sale_default();
 					}
+					$expanded[$key . '.' . $n] = settings_expand_visible_if($d, $def, $n);
+				}
+				unset($defs[$key]);
+				continue;
+			}
+			if (isset($def['per']) && $def['per'] === 'card') {
+				// One field per payment card: the card's place in the tab-joined lists (POS/1-3 and settings Paycards).
+				$cards = settings_card_count();
+				for ($n = 1; $n <= $cards; $n++) {
+					$d = array('label_suffix' => sprintf(findtekst('6316|Kort %s', $sprog), $n), 'per_key' => $key, 'item' => 'card_' . $n, 'scope_id' => $n) + $def;
+					if (isset($d['storage']['join'])) {
+						$d['storage']['index'] = $n - 1;
+					}
+					$expanded[$key . '.' . $n] = settings_expand_visible_if($d, $def, $n);
+				}
+				unset($defs[$key]);
+				continue;
+			}
+			if (isset($def['per']) && $def['per'] === 'table') {
+				// One field per table name in POS/2 box7.
+				$tables = settings_table_count();
+				for ($n = 1; $n <= $tables; $n++) {
+					$d = array('label_suffix' => sprintf(findtekst('6343|Bord %s', $sprog), $n), 'per_key' => $key, 'scope_id' => $n) + $def;
+					if (isset($d['storage']['join'])) {
+						$d['storage']['index'] = $n - 1;
+					}
 					$expanded[$key . '.' . $n] = $d;
+				}
+				unset($defs[$key]);
+				continue;
+			}
+			if (isset($def['per']) && $def['per'] === 'floor_plan') {
+				// One field per floor plan (table_pages row).
+				foreach (settings_floor_plans() as $rowId => $rowName) {
+					$expanded[$key . '.' . $rowId] = array('scope' => 'row', 'scope_id' => (int) $rowId, 'label_suffix' => sprintf(findtekst('6347|Bordplan %s', $sprog), $rowId), 'per_key' => $key) + $def;
 				}
 				unset($defs[$key]);
 				continue;
@@ -1003,7 +1114,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array($d, 170), 'to' => array(array('finance', 'finance.cash_journal', null))),
 			array('old' => array(2732), 'to' => array(array('finance', 'finance.cash_journal', null))),
 			array('old' => array($d, 200), 'to' => array(array('sales', 'sales.orders', null))),
-			array('old' => array($d, 271), 'to' => array(array('pos', null, 'diverse.php?sektion=posOptions'))),
+			array('old' => array($d, 271), 'to' => array(array('pos', 'pos.tills', null), array('pos', 'pos.cards', null), array('pos', 'pos.tables', null))),
 			array('old' => array($d, 801), 'to' => array(array('personal', null, 'personalSettings.php'), array('company', null, 'diverse.php?sektion=sprog'))),
 			array('old' => array($d, 802), 'to' => array(array('import_export', null, 'diverse.php?sektion=div_io'))),
 		);
@@ -1090,6 +1201,96 @@ if (!function_exists('getSettingsSections')) {
 			}
 		}
 		return $rows;
+	}
+
+	/**
+	 * A 'visible_if' rule inside an expanded field follows the expanded parent of the same card / till.
+	 */
+	function settings_expand_visible_if(array $d, array $def, int $n): array
+	{
+		$prefix = $def['group'] . '.' . $def['section'] . '.';
+		if (is_array($d['visible_if']) && isset($d['visible_if'][1]) && strpos((string) $d['visible_if'][1], $prefix) === 0) {
+			$d['visible_if'][1] .= '.' . $n;
+		}
+		return $d;
+	}
+
+	/**
+	 * The current fiscal year's POS row (kodenr 1-3), or null.
+	 */
+	function settings_pos_row(int $kodenr): ?array
+	{
+		global $regnaar;
+		$r = db_fetch_array(db_select("select * from grupper where art = 'POS' and kodenr = '" . (int) $kodenr . "' order by (coalesce(fiscal_year, 0) = " . (int) $regnaar . ") desc, id limit 1", __FILE__ . " linje " . __LINE__));
+		return $r ? $r : null;
+	}
+
+	/**
+	 * Number of payment cards: the names in POS/1 box5 of the current fiscal year.
+	 */
+	function settings_card_count(): int
+	{
+		static $n = null;
+		if ($n === null || !empty($GLOBALS['settings_cards_changed'])) {
+			unset($GLOBALS['settings_cards_changed']);
+			$r = settings_pos_row(1);
+			$n = ($r && trim((string) $r['box5']) !== '') ? count(explode("\t", (string) $r['box5'])) : 0;
+		}
+		return $n;
+	}
+
+	/**
+	 * Number of tables: the names in POS/2 box7 of the current fiscal year.
+	 */
+	function settings_table_count(): int
+	{
+		$r = settings_pos_row(2);
+		return ($r && trim((string) $r['box7']) !== '') ? count(explode("\t", (string) $r['box7'])) : 0;
+	}
+
+	/**
+	 * Floor plans of the floor planner (table_pages): id => name.
+	 */
+	function settings_floor_plans(): array
+	{
+		$out = array();
+		if (!db_fetch_array(db_select("select table_name from information_schema.tables where table_name = 'table_pages'", __FILE__ . " linje " . __LINE__))) {
+			return $out;
+		}
+		$q = db_select("select id, name from table_pages order by id", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$out[(int) $r['id']] = trim((string) $r['name']);
+		}
+		return $out;
+	}
+
+	/**
+	 * Currencies the till accepts (grupper VK rows flagged in valuta.php): kodenr => code.
+	 */
+	function settings_pos_currencies(): array
+	{
+		static $out = null;
+		if ($out === null) {
+			$out = array();
+			$q = db_select("select kodenr, box1 from grupper where art = 'VK' and box4 = '1' order by box1", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$out[(int) $r['kodenr']] = trim((string) $r['box1']);
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Slot numbers of the KDS colours: one per stored colour plus an empty one to fill in.
+	 */
+	function settings_kds_colour_slots(): array
+	{
+		static $slots = null;
+		if ($slots === null) {
+			$r = db_fetch_array(db_select("select count(*) as n from settings where var_grp = 'KDS' and var_name like 'color%'", __FILE__ . " linje " . __LINE__));
+			$slots = range(1, ($r ? (int) $r['n'] : 0) + 1);
+		}
+		return $slots;
 	}
 
 	/**

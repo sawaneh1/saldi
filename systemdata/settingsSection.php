@@ -28,6 +28,7 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261004 Sawaneh settings_after_section_save() runs once after all fields of a save (KDS colours).
 // 20261004 Sawaneh Access follows the section's permission key only, not the old Indstillinger bit (decision 16).
 // 20261004 Sawaneh A stored secret shows when it was set ("sat 12/9-2026") on form sections too.
 // 20261004 Sawaneh G4.3: list items from the database ('items_from'), a one-off flash kept in the session.
@@ -55,7 +56,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261002b";
+$css = "../css/unified-components.css?v=20261004";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -129,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$target = $backUrl;
 		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
 			// Till and price-list row actions write their own entry with before/after.
-			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete'), true)) {
+			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove'), true)) {
 				audit_log('setting.action', '', 'indstilling', $key);
 			}
 			$target = settings_run_action($defs[$key], $backUrl);
@@ -221,6 +222,7 @@ function settings_section_save(string $sectionId, array $defs, array $post): arr
 				settings_after_save($defs[$key], $raw);
 			}
 		}
+		settings_after_section_save();
 	}
 	return array('errors' => $errors, 'posted' => $posted, 'conflict' => $conflict, 'flash' => array());
 }
@@ -539,7 +541,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=6"></script>
+<script src="../javascript/settingsSection.js?v=7"></script>
 	<?php
 }
 

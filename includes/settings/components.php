@@ -36,6 +36,7 @@
 // 20261003 Sawaneh G3.4 Reminders: type 'creditor' (lookup, stored as adresser id), options from the user list, a group
 //                  label above a run of fields ("Rykker 1"), a help line under a card heading.
 // 20261003 Sawaneh G6.3 E-mail: type 'textarea', a label suffix (the form language of a sender field), mixed select labels.
+// 20261004 Sawaneh G10.6: 'color' type, a #rrggbb text with a colour swatch beside it (empty allowed).
 // 20261002 Sawaneh Phase 4b batch 2 (G9): write-only 'secret' control (masked, Skift), 'info', 'link' and 'mini' rows,
 //                  computed select options, rule 'setting_set', lock 'ht_keys:<var>' for keys the installation manages.
 
@@ -291,6 +292,12 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 		case 'select':
 			if (!isset(st_options($def)[$value])) {
 				$raw = (string) $def['default'];
+			}
+			break;
+		case 'color':
+			$raw = strtolower($value);
+			if ($raw !== '' && !preg_match('/^#[0-9a-f]{6}$/', $raw)) {
+				$error = 6361;
 			}
 			break;
 		case 'text':
@@ -695,6 +702,11 @@ function st_render_field(array $def, array $state): void
     <span class="st-info"><?= function_exists('settings_integration_info') ? settings_integration_info($def) : '' ?></span>
 	<?php } elseif ($def['type'] === 'link') { ?>
     <a class="st-btn" href="<?= st_h($def['href']) ?>"<?= !empty($def['blank']) ? ' target="_blank" rel="noopener"' : '' ?>><?= st_t($def['button']) ?><?php if (!empty($def['blank'])) { ?> <i class='bx bx-link-external' aria-hidden="true"></i><?php } ?></a>
+	<?php } elseif ($def['type'] === 'color') { ?>
+    <span class="st-color">
+      <input class="st-input st-input-short" type="text" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>" placeholder="#rrggbb" maxlength="7" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>>
+      <input type="color" class="st-swatch" value="<?= preg_match('/^#[0-9a-f]{6}$/i', $value) ? st_h($value) : '#ffffff' ?>" data-swatch-for="<?= $id ?>" aria-label="<?= st_t(1786) ?>" tabindex="-1"<?= $disabled ? ' disabled' : '' ?>>
+    </span>
 	<?php } elseif ($def['type'] === 'mini') {
 		if (function_exists('settings_integration_mini')) {
 			settings_integration_mini($def, $disabled);

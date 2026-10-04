@@ -25,6 +25,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261004 Sawaneh G10.5: storage 'dbrow' = a column of any table's row (table_pages), scope 'row' = its id.
 // 20261004 Sawaneh G10.1: a joined list ('join' + 'index') may also live in a settings row (postEachSale); scope 'pos' takes its
 //                  id from the definition like 'group' and 'row'.
 // 20261004 Sawaneh G10 (risk review R2): grupper rows kept per fiscal year ('fiscal') are read from the current year and
@@ -53,6 +54,7 @@ class SettingsService
 	private static $fees = null;
 	/** @var array<string, array<int, array<string, mixed>>> grupper rows by art and id, for storage 'grupper_row' */
 	private static $rows = array();
+	private static $dbrows = array();
 	/** @var bool|null */
 	private static $auditColumns = null;
 	private static $auditObjekt = false;
@@ -90,6 +92,9 @@ class SettingsService
 		}
 		if ($s[0] === 'virtual') {
 			return $out + array('table' => 'virtual', 'name' => (string) $s[1], 'encoding' => 'raw');
+		}
+		if ($s[0] === 'dbrow') {
+			return $out + array('table' => 'dbrow', 'dbtable' => (string) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
 		}
 		if ($s[0] === 'formularer') {
 			return $out + array('table' => 'formularer', 'formular' => (int) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
@@ -135,6 +140,14 @@ class SettingsService
 					$q = db_select("select * from grupper where art = '" . db_escape_string($st['art']) . "' order by id", __FILE__ . " linje " . __LINE__);
 					while ($r = db_fetch_array($q)) {
 						self::$rows[$st['art']][(int) $r['id']] = $r;
+					}
+				}
+			} elseif ($st['table'] === 'dbrow') {
+				if (!isset(self::$dbrows[$st['dbtable']])) {
+					self::$dbrows[$st['dbtable']] = array();
+					$q = db_select("select * from " . $st['dbtable'] . " order by id", __FILE__ . " linje " . __LINE__);
+					while ($r = db_fetch_array($q)) {
+						self::$dbrows[$st['dbtable']][(int) $r['id']] = $r;
 					}
 				}
 			} elseif ($st['table'] === 'settings') {
@@ -203,6 +216,12 @@ class SettingsService
 			}
 			$row = isset(self::$rows[$st['art']][(int) $scopeId]) ? self::$rows[$st['art']][(int) $scopeId] : null;
 			$value = ($row && isset($row[$st['column']])) ? (string) $row[$st['column']] : '';
+		} elseif ($st['table'] === 'dbrow') {
+			if (!isset(self::$dbrows[$st['dbtable']])) {
+				self::preload(array($key));
+			}
+			$row = isset(self::$dbrows[$st['dbtable']][(int) $scopeId]) ? self::$dbrows[$st['dbtable']][(int) $scopeId] : null;
+			$value = ($row && isset($row[$st['column']])) ? (string) $row[$st['column']] : '';
 		} else {
 			if (!array_key_exists($st['var_name'], self::$settings)) {
 				self::preload(array($key));
@@ -266,6 +285,9 @@ class SettingsService
 		}
 		if ($st['table'] === 'grupper_row') {
 			return isset(self::$rows[$st['art']][(int) $scopeId]);
+		}
+		if ($st['table'] === 'dbrow') {
+			return isset(self::$dbrows[$st['dbtable']][(int) $scopeId]);
 		}
 		foreach (self::$settings[$st['var_name']] as $r) {
 			if (self::rowInScope($r, $def, $st, $scopeId)) {
@@ -411,6 +433,12 @@ class SettingsService
 			}
 			db_modify("update grupper set " . $st['column'] . " = '$esc' where id = " . (int) $scopeId . " and art = '" . db_escape_string($st['art']) . "'", __FILE__ . " linje " . __LINE__);
 			unset(self::$rows[$st['art']]);
+		} elseif ($st['table'] === 'dbrow') {
+			if ((int) $scopeId <= 0 || !isset(self::$dbrows[$st['dbtable']][(int) $scopeId])) {
+				return false;
+			}
+			db_modify("update " . $st['dbtable'] . " set " . $st['column'] . " = '$esc' where id = " . (int) $scopeId, __FILE__ . " linje " . __LINE__);
+			unset(self::$dbrows[$st['dbtable']]);
 		} else {
 			$where = "var_name = '" . db_escape_string($st['var_name']) . "'";
 			if ($st['var_grp'] !== null) {
@@ -643,6 +671,7 @@ class SettingsService
 
 	public static function reset(): void
 	{
+		self::$dbrows = array();
 		self::$grupper = array();
 		self::$settings = array();
 		self::$company = null;

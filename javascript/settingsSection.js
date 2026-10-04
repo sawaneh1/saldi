@@ -126,6 +126,19 @@
 	form.addEventListener('keydown', function (e) {
 		if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('st-switch')) { e.preventDefault(); }
 	});
+	// A colour swatch writes into its #rrggbb text field, and follows it.
+	form.addEventListener('input', function (e) {
+		var sw = e.target.closest('[data-swatch-for]');
+		if (sw) {
+			var txt = document.getElementById(sw.getAttribute('data-swatch-for'));
+			if (txt && !txt.readOnly) { txt.value = sw.value; }
+			return;
+		}
+		if (e.target.matches('.st-color [data-control]') && /^#[0-9a-f]{6}$/i.test(e.target.value)) {
+			var swatch = e.target.parentNode.querySelector('[data-swatch-for]');
+			if (swatch) { swatch.value = e.target.value.toLowerCase(); }
+		}
+	});
 	form.addEventListener('input', refresh);
 	form.addEventListener('change', refresh);
 	form.addEventListener('submit', function () {

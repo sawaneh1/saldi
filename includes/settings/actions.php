@@ -17,6 +17,8 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261004 Sawaneh G10 batch B: payment card rows (add, move, remove across the seven tab-joined lists), KDS colour
+//                  compaction after the section is saved, printer cookies cleared as the old page did.
 // 20261002 Sawaneh Settings redesign phase 4b: the actions a generated section can run (spec P4), each after a
 //                  confirmation on the page. Called from systemdata/settingsSection.php.
 // 20261004 Sawaneh G10.1: add a till, remove the last one.
@@ -204,6 +206,11 @@ function settings_run_action(array $def, string $selfUrl): string
 			}
 			$_SESSION['settings_flash'] = array('ok', st_txt(6249) . ': ' . $name);
 			return 'settingsSection.php?s=purchase.pricelists';
+		case 'card_add':
+		case 'card_up':
+		case 'card_down':
+		case 'card_remove':
+			return settings_card_action($def['run'], (int) (isset($def['scope_id']) ? $def['scope_id'] : 0), $def['key']);
 		case 'mobilepay_qr':
 			$res = settings_mobilepay_create_qr();
 			if ($res['error'] !== '') {
@@ -215,10 +222,173 @@ function settings_run_action(array $def, string $selfUrl): string
 }
 
 /**
+ * The payment cards as rows: every tab-joined card list of the current fiscal year, one entry per card
+ * (G10.3). Lists shorter than the names are padded, so the columns stay aligned.
+ *
+ * @return array<int, array<string, string>>
+ */
+function settings_card_rows(): array
+{
+	$lists = array(
+		'name' => array('pos', 1, 'box5'), 'account' => array('pos', 1, 'box6'), 'terminal' => array('pos', 2, 'box5'),
+		'voucher' => array('pos', 3, 'box4'), 'voucher_text' => array('pos', 3, 'box5'),
+		'enabled' => array('settings', 'card_enabled'), 'voucher_item' => array('settings', 'voucherItems'),
+	);
+	$values = array();
+	foreach ($lists as $col => $src) {
+		if ($src[0] === 'pos') {
+			$r = settings_pos_row($src[1]);
+			$values[$col] = $r ? (string) $r[$src[2]] : '';
+		} else {
+			// Read by name alone, as the till does (includes/posmenufunc.php).
+			$r = db_fetch_array(db_select("select var_value from settings where var_name = '" . $src[1] . "' order by id desc limit 1", __FILE__ . " linje " . __LINE__));
+			$values[$col] = $r ? (string) $r['var_value'] : '';
+		}
+	}
+	$n = trim($values['name']) !== '' ? count(explode("\t", $values['name'])) : 0;
+	$rows = array();
+	for ($i = 0; $i < $n; $i++) {
+		$row = array();
+		foreach ($lists as $col => $src) {
+			$parts = $values[$col] === '' ? array() : explode("\t", $values[$col]);
+			$row[$col] = isset($parts[$i]) ? $parts[$i] : ($col === 'enabled' ? 'on' : '');
+		}
+		$rows[] = $row;
+	}
+	return $rows;
+}
+
+/**
+ * Write the card rows back: the POS rows of every fiscal year (R2), the Paycards settings rows and the count in POS/1 box4.
+ *
+ * @param array<int, array<string, string>> $rows
+ */
+function settings_card_rows_write(array $rows): void
+{
+	$join = function (string $col) use ($rows): string {
+		$out = array();
+		foreach ($rows as $row) {
+			$out[] = str_replace("\t", ' ', $row[$col]);
+		}
+		return db_escape_string(implode("\t", $out));
+	};
+	global $regnaar;
+	foreach (array(1 => 'POS_valg', 2 => 'Pos valg', 3 => 'Pos valg') as $kodenr => $name) {
+		if (!db_fetch_array(db_select("select id from grupper where art = 'POS' and kodenr = '$kodenr'", __FILE__ . " linje " . __LINE__))) {
+			db_modify("insert into grupper (beskrivelse, kodenr, art, kode, fiscal_year) values ('$name', '$kodenr', 'POS', '', " . (int) $regnaar . ")", __FILE__ . " linje " . __LINE__);
+		}
+	}
+	db_modify("update grupper set box4 = '" . count($rows) . "', box5 = '" . $join('name') . "', box6 = '" . $join('account') . "' where art = 'POS' and kodenr = '1'", __FILE__ . " linje " . __LINE__);
+	db_modify("update grupper set box5 = '" . $join('terminal') . "' where art = 'POS' and kodenr = '2'", __FILE__ . " linje " . __LINE__);
+	db_modify("update grupper set box4 = '" . $join('voucher') . "', box5 = '" . $join('voucher_text') . "' where art = 'POS' and kodenr = '3'", __FILE__ . " linje " . __LINE__);
+	foreach (array('card_enabled' => 'enabled', 'voucherItems' => 'voucher_item') as $name => $col) {
+		if (db_fetch_array(db_select("select id from settings where var_name = '$name'", __FILE__ . " linje " . __LINE__))) {
+			db_modify("update settings set var_value = '" . $join($col) . "' where var_name = '$name'", __FILE__ . " linje " . __LINE__);
+		} else {
+			db_modify("insert into settings (var_name, var_grp, var_value, var_description, user_id) values ('$name', 'Paycards', '" . $join($col) . "', 'pos.cards', 0)", __FILE__ . " linje " . __LINE__);
+		}
+	}
+	SettingsService::reset();
+	$GLOBALS['settings_cards_changed'] = true;
+}
+
+/**
+ * Add, move or remove a payment card (G10.3). $n is the card's number (1-based), 0 for add.
+ */
+function settings_card_action(string $run, int $n, string $key): string
+{
+	$rows = settings_card_rows();
+	$i = $n - 1;
+	$target = 'settingsSection.php?s=pos.cards';
+	if ($run === 'card_add') {
+		$rows[] = array('name' => st_txt(6317), 'account' => '', 'terminal' => '', 'voucher' => '', 'voucher_text' => '', 'enabled' => 'on', 'voucher_item' => '0');
+		settings_card_rows_write($rows);
+		if (function_exists('audit_log')) {
+			audit_log('setting.row_created', json_encode(array('before' => null, 'after' => st_txt(6317)), JSON_UNESCAPED_UNICODE), 'indstilling', 'pos.cards#' . count($rows));
+		}
+		return $target . '&item=card_' . count($rows);
+	}
+	if (!isset($rows[$i])) {
+		return $target;
+	}
+	if ($run === 'card_remove') {
+		$name = $rows[$i]['name'];
+		array_splice($rows, $i, 1);
+		settings_card_rows_write($rows);
+		if (function_exists('audit_log')) {
+			audit_log('setting.row_deleted', json_encode(array('before' => $name, 'after' => null), JSON_UNESCAPED_UNICODE), 'indstilling', 'pos.cards#' . $n);
+		}
+		$_SESSION['settings_flash'] = array('ok', st_txt(6321) . ': ' . $name);
+		return $target;
+	}
+	$j = ($run === 'card_up') ? $i - 1 : $i + 1;
+	if (!isset($rows[$j])) {
+		return $target . '&item=card_' . $n;
+	}
+	$tmp = $rows[$i];
+	$rows[$i] = $rows[$j];
+	$rows[$j] = $tmp;
+	settings_card_rows_write($rows);
+	if (function_exists('audit_log')) {
+		audit_log('setting.action', json_encode(array('before' => $n, 'after' => $j + 1)), 'indstilling', $key);
+	}
+	return $target . '&item=card_' . ($j + 1);
+}
+
+/**
+ * KDS colours: drop slots without minutes or colour and number the rest color_1.. in order of minutes
+ * (debitor/kds/show_items.php casts the minutes, so a row without them would stop the kitchen screen).
+ */
+function settings_kds_colours_compact(): void
+{
+	$keep = array();
+	$q = db_select("select id, var_value from settings where var_grp = 'KDS' and var_name like 'color%' order by id", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$p = explode('-', (string) $r['var_value'], 2);
+		if (count($p) === 2 && preg_match('/^[0-9]+$/', $p[0]) && preg_match('/^#[0-9a-f]{6}$/i', $p[1])) {
+			$keep[] = array('id' => (int) $r['id'], 'min' => (int) $p[0], 'value' => $p[0] . '-' . strtolower($p[1]));
+		} else {
+			db_modify("delete from settings where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+		}
+	}
+	usort($keep, function ($a, $b) {
+		return ($a['min'] <=> $b['min']) ?: ($a['id'] <=> $b['id']);
+	});
+	foreach ($keep as $i => $row) {
+		db_modify("update settings set var_name = 'colortmp_" . ($i + 1) . "', var_value = '" . $row['value'] . "' where id = " . $row['id'], __FILE__ . " linje " . __LINE__);
+	}
+	foreach ($keep as $i => $row) {
+		db_modify("update settings set var_name = 'color_" . ($i + 1) . "' where id = " . $row['id'], __FILE__ . " linje " . __LINE__);
+	}
+}
+
+/**
+ * Follow-ups that run once after every field of a section is stored.
+ */
+function settings_after_section_save(): void
+{
+	if (!empty($GLOBALS['settings_deferred']['kds_colours'])) {
+		settings_kds_colours_compact();
+	}
+	$GLOBALS['settings_deferred'] = array();
+}
+
+/**
  * Follow-ups after a value is stored ('on_save' in a definition).
  */
 function settings_after_save(array $def, string $raw): void
 {
+	if ($def['on_save'] === 'kds_colours') {
+		$GLOBALS['settings_deferred']['kds_colours'] = true;
+	}
+	if ($def['on_save'] === 'pos_printer_changed') {
+		// As the old page: the till re-reads its print server and terminal when the printer address changes.
+		foreach (array('saldi_pfs', 'saldi_printserver', 'salditerm') as $cookie) {
+			if (isset($_COOKIE[$cookie])) {
+				setcookie($cookie, '', time() - 60, '/');
+			}
+		}
+	}
 	if ($def['on_save'] === 'pricelist_group_name') {
 		// The old page kept the item group's name next to its number (box8); debitor/_varerInsert.php reads the name.
 		$r = db_fetch_array(db_select("select beskrivelse from grupper where art = 'VG' and kodenr = '" . db_escape_string($raw) . "' order by fiscal_year desc limit 1", __FILE__ . " linje " . __LINE__));
