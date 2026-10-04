@@ -5877,3 +5877,5 @@
 6270	Sekunder	Seconds	Sekunder
 6271	Gælder alle kasser og alle regnskabsår	Applies to all tills and all fiscal years	Gjelder alle kasser og alle regnskapsår
 6272	Gælder alle kasser. Kasser, konti, betalingskort og per-kasse-valg findes stadig under PoS-valg	Applies to all tills. Tills, accounts, payment cards and per-till options are still under PoS-valg	Gjelder alle kasser. Kasser, kontoer, betalingskort og valg per kasse finnes fortsatt under PoS-valg
+6273	Bonen udskrives automatisk efter hver handel. Fra: bonen udskrives manuelt	The receipt is printed automatically after each sale. Off: the receipt is printed manually	Kvitteringen skrives ut automatisk etter hvert salg. Av: kvitteringen skrives ut manuelt
+6274	Giver en særlig pris på en gruppe varer. Varerne samles på bonen uden enkeltpriser, og sætprisen vises under dem	Gives a special price for a group of items. The items are grouped on the receipt without single prices, and the set price is shown below them	Gir en spesialpris på en gruppe varer. Varene samles på kvitteringen uten enkeltpriser, og settprisen vises under dem

@@ -486,7 +486,7 @@ if (!function_exists('getSettingsSections')) {
 
 			// ---------------------------------------------------------------- G10.2 / G10.6 / G10.7 POS shop-wide options
 			// POS/1-3 rows exist per fiscal year (spec R2): read from the current year, written to every year.
-			'pos.receipt.print_receipt' => array('sub' => 'receipt', 'type' => 'bool', 'label' => 6267, 'help' => 456, 'default' => false,
+			'pos.receipt.print_receipt' => array('sub' => 'receipt', 'type' => 'bool', 'label' => 6267, 'help' => 6273, 'default' => false,
 				'storage' => array('grupper', 'POS', 1, 'box10', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos,
 				'keywords' => array('udskriv bon', 'print receipt')),
 			'pos.receipt.disable_print' => array('sub' => 'receipt', 'type' => 'bool', 'label' => 1730, 'help' => 1731, 'default' => false,
@@ -513,7 +513,7 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('grupper', 'POS', 1, 'box11', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos),
 			'pos.screen.deposit_button' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 465, 'help' => 464, 'default' => false,
 				'storage' => array('grupper', 'POS', 1, 'box14', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos),
-			'pos.screen.set_button' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 735, 'help' => 734, 'default' => false,
+			'pos.screen.set_button' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 735, 'help' => 6274, 'default' => false,
 				'storage' => array('grupper', 'POS', 2, 'box12', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
 			'pos.screen.set_item' => array('sub' => 'buttons', 'type' => 'item', 'item_as' => 'id', 'label' => 6268, 'help' => 6269,
 				'storage' => array('grupper', 'POS', 2, 'box11', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos,
