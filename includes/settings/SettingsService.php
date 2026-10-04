@@ -25,6 +25,10 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261003 Sawaneh G3.4 Reminders: storage 'formularer' (the GEBYR row of a reminder form per language: xb fee item, yb interest
+//                  item, str rate), kept where debitor/ny_rykker.php and includes/formfunk.php read it (spec R20).
+// 20261003 Sawaneh G6.3 E-mail: storage 'adresser' (a felt_ column of the company's own address row) and scope 'group'
+//                  (settings.group_id, the form language of a sender address).
 // 20261002 Sawaneh Phase 4b batch 2: lastChanged() for the 'sat <date>' note next to a write-only secret.
 // 20261002 Sawaneh Settings changes in audit_log carry objekt_type 'indstilling' and the key as objekt_id (settings redesign §11.2).
 
@@ -36,6 +40,10 @@ class SettingsService
 	private static $grupper = array();
 	/** @var array<string, array<int, array<string, mixed>>> settings rows, keyed "var_grp|var_name" */
 	private static $settings = array();
+	/** @var array<string, mixed>|false|null the company's own address row (art S), for storage 'adresser' */
+	private static $company = null;
+	/** @var array<int, array<string, mixed>>|null the GEBYR rows of the reminder forms, for storage 'formularer' */
+	private static $fees = null;
 	/** @var bool|null */
 	private static $auditColumns = null;
 	private static $auditObjekt = false;
@@ -65,6 +73,12 @@ class SettingsService
 		if ($s[0] === 'grupper') {
 			return $out + array('table' => 'grupper', 'art' => (string) $s[1], 'kodenr' => (string) $s[2], 'box' => (string) $s[3], 'encoding' => isset($s[4]) ? $s[4] : 'raw');
 		}
+		if ($s[0] === 'adresser') {
+			return $out + array('table' => 'adresser', 'column' => (string) $s[1], 'encoding' => isset($s[2]) ? $s[2] : 'raw');
+		}
+		if ($s[0] === 'formularer') {
+			return $out + array('table' => 'formularer', 'formular' => (int) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
+		}
 		return $out + array('table' => 'settings', 'var_grp' => $s[1], 'var_name' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
 	}
 
@@ -87,6 +101,19 @@ class SettingsService
 			$st = self::storage($def);
 			if ($st['table'] === 'grupper') {
 				$gr[$st['art'] . '|' . $st['kodenr']] = "(art = '" . db_escape_string($st['art']) . "' and kodenr = '" . db_escape_string($st['kodenr']) . "')";
+			} elseif ($st['table'] === 'adresser') {
+				if (self::$company === null) {
+					$r = db_fetch_array(db_select("select * from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
+					self::$company = $r ? $r : false;
+				}
+			} elseif ($st['table'] === 'formularer') {
+				if (self::$fees === null) {
+					self::$fees = array();
+					$q = db_select("select id, formular, sprog, xb, yb, str from formularer where beskrivelse = 'GEBYR' and art = 2 order by id", __FILE__ . " linje " . __LINE__);
+					while ($r = db_fetch_array($q)) {
+						self::$fees[] = $r;
+					}
+				}
 			} else {
 				$names[$st['var_name']] = "'" . db_escape_string($st['var_name']) . "'";
 			}
@@ -105,7 +132,7 @@ class SettingsService
 			}
 		}
 		if ($names) {
-			$q = db_select("select id, var_grp, var_name, var_value, user_id, pos_id from settings where var_name in (" . implode(',', $names) . ") order by id", __FILE__ . " linje " . __LINE__);
+			$q = db_select("select id, var_grp, var_name, var_value, user_id, pos_id, group_id from settings where var_name in (" . implode(',', $names) . ") order by id", __FILE__ . " linje " . __LINE__);
 			$loaded = array();
 			while ($r = db_fetch_array($q)) {
 				$loaded[(string) $r['var_name']][] = $r;
@@ -126,6 +153,7 @@ class SettingsService
 			return '';
 		}
 		$st = self::storage($def);
+		$scopeId = self::scopeId($def, $scopeId);
 		if ($st['table'] === 'grupper') {
 			$ck = $st['art'] . '|' . $st['kodenr'];
 			if (!array_key_exists($ck, self::$grupper)) {
@@ -133,6 +161,14 @@ class SettingsService
 			}
 			$row = self::$grupper[$ck];
 			$value = ($row && isset($row[$st['box']])) ? (string) $row[$st['box']] : '';
+		} elseif ($st['table'] === 'adresser') {
+			if (self::$company === null) {
+				self::preload(array($key));
+			}
+			$value = (self::$company && isset(self::$company[$st['column']])) ? (string) self::$company[$st['column']] : '';
+		} elseif ($st['table'] === 'formularer') {
+			$row = self::feeRow($key, $st, $scopeId);
+			$value = $row ? (string) $row[$st['column']] : '';
 		} else {
 			if (!array_key_exists($st['var_name'], self::$settings)) {
 				self::preload(array($key));
@@ -180,9 +216,16 @@ class SettingsService
 			return false;
 		}
 		$st = self::storage($def);
+		$scopeId = self::scopeId($def, $scopeId);
 		self::raw($key, $scopeId);
 		if ($st['table'] === 'grupper') {
 			return (bool) self::$grupper[$st['art'] . '|' . $st['kodenr']];
+		}
+		if ($st['table'] === 'adresser') {
+			return (bool) self::$company;
+		}
+		if ($st['table'] === 'formularer') {
+			return (bool) self::feeRow($key, $st, $scopeId);
 		}
 		foreach (self::$settings[$st['var_name']] as $r) {
 			if (self::rowInScope($r, $def, $st, $scopeId)) {
@@ -253,6 +296,7 @@ class SettingsService
 			return false;
 		}
 		$scope = isset($def['scope']) ? $def['scope'] : 'company';
+		$scopeId = self::scopeId($def, $scopeId);
 		if ($scope === 'user' && (int) $scopeId <= 0) {
 			return false;
 		}
@@ -297,6 +341,21 @@ class SettingsService
 				db_modify("insert into grupper (beskrivelse, kodenr, art, " . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', '$stored')", __FILE__ . " linje " . __LINE__);
 			}
 			unset(self::$grupper[$ck]);
+		} elseif ($st['table'] === 'adresser') {
+			if (!self::$company) {
+				return false;
+			}
+			db_modify("update adresser set " . $st['column'] . " = '$esc' where id = " . (int) self::$company['id'], __FILE__ . " linje " . __LINE__);
+			self::$company = null;
+		} elseif ($st['table'] === 'formularer') {
+			$row = self::feeRow($key, $st, $scopeId);
+			if ($row) {
+				db_modify("update formularer set " . $st['column'] . " = '$esc' where id = " . (int) $row['id'], __FILE__ . " linje " . __LINE__);
+			} else {
+				$lang = db_escape_string(self::formLanguageName($scopeId));
+				db_modify("insert into formularer (beskrivelse, formular, art, " . $st['column'] . ", sprog) values ('GEBYR', " . (int) $st['formular'] . ", 2, '$esc', '$lang')", __FILE__ . " linje " . __LINE__);
+			}
+			self::$fees = null;
 		} else {
 			$where = "var_name = '" . db_escape_string($st['var_name']) . "'";
 			if ($st['var_grp'] !== null) {
@@ -306,6 +365,8 @@ class SettingsService
 				$where .= " and user_id = " . (int) $scopeId;
 			} elseif ($scope === 'pos') {
 				$where .= " and pos_id = " . (int) $scopeId;
+			} elseif ($scope === 'group') {
+				$where .= " and (user_id is null or user_id = 0) and coalesce(group_id, 0) = " . (int) $scopeId;
 			} else {
 				$where .= " and (user_id is null or user_id = 0)";
 			}
@@ -318,6 +379,9 @@ class SettingsService
 				$vals = "'" . db_escape_string($st['var_name']) . "', '" . db_escape_string((string) $st['var_grp']) . "', '$esc', '" . db_escape_string($key) . "', $userId";
 				if ($scope === 'pos') {
 					$cols .= ", pos_id";
+					$vals .= ", " . (int) $scopeId;
+				} elseif ($scope === 'group') {
+					$cols .= ", group_id";
 					$vals .= ", " . (int) $scopeId;
 				}
 				db_modify("insert into settings ($cols) values ($vals)", __FILE__ . " linje " . __LINE__);
@@ -473,6 +537,9 @@ class SettingsService
 		if ($scope === 'pos') {
 			return (int) $row['pos_id'] === (int) $scopeId;
 		}
+		if ($scope === 'group') {
+			return (int) $row['group_id'] === (int) $scopeId && (int) $row['user_id'] === 0;
+		}
 		return (int) $row['user_id'] === 0;
 	}
 
@@ -480,6 +547,43 @@ class SettingsService
 	{
 		self::$grupper = array();
 		self::$settings = array();
+		self::$company = null;
+		self::$fees = null;
+	}
+
+	/**
+	 * The GEBYR row of a reminder form in one language (null when none). The forms page writes the language name as
+	 * typed, the readers compare lower-case, so this does too.
+	 */
+	private static function feeRow(string $key, array $st, $scopeId): ?array
+	{
+		if (self::$fees === null) {
+			self::preload(array($key));
+		}
+		$lang = mb_strtolower(self::formLanguageName($scopeId));
+		foreach (self::$fees as $r) {
+			if ((int) $r['formular'] === (int) $st['formular'] && mb_strtolower(trim((string) $r['sprog'])) === $lang) {
+				return $r;
+			}
+		}
+		return null;
+	}
+
+	private static function formLanguageName($langId): string
+	{
+		return function_exists('settings_form_language_name') ? settings_form_language_name((int) $langId) : 'Dansk';
+	}
+
+	/**
+	 * The scope id to use: the one given, or the definition's own for a 'group' scoped key (a sender address
+	 * carries its form language in the definition).
+	 */
+	private static function scopeId(array $def, $scopeId)
+	{
+		if ($scopeId === null && isset($def['scope']) && $def['scope'] === 'group' && isset($def['scope_id'])) {
+			return (int) $def['scope_id'];
+		}
+		return $scopeId;
 	}
 }
 

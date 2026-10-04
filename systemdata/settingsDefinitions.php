@@ -21,6 +21,9 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261003 Sawaneh G3.4 Reminders: storage 'formularer', type 'creditor', 'options_from' users, 'group_label' and 'sub_help'.
+// 20261003 Sawaneh G6.3 E-mail: storage 'adresser', 'per' => 'language' fields expanded per form language (scope 'group'),
+//                  type 'textarea', a section-level 'permission'.
 // 20261002 Sawaneh Phase 4b batch 2: G9 Integrations as a list section ('kind' list, 'items', 'sub_module'); types secret,
 //                  info, link and mini; 'options_from', 'options_literal', 'locked_if' ht_keys:, rule 'setting_set'.
 // 20261002 Sawaneh Merge of master: its new batchExpiryEnabled setting (was on the removed Varerelaterede valg page) is
@@ -123,6 +126,23 @@ if (!function_exists('getSettingsSections')) {
 				'context' => array('finans/provisionsrapport.php', 'lager/varekort.php'),
 				'keywords' => array('provision', 'commission', 'provisionsrapport', 'commission report', 'kundeansvarlig', 'referenceperson', 'skæringsdato', 'cut-off'),
 			),
+			'sales.reminders' => array(
+				'group' => 'sales', 'section' => 'reminders', 'number' => 'G3.4', 'label' => 6190, 'icon' => 'bx-bell',
+				'subsections' => array('responsible' => 6186, 'deadlines' => 6187, 'collection' => 6188, 'fees' => 6189),
+				'sub_help' => array('deadlines' => 6202),
+				'legacy' => array(array(782, 793), array(780)),
+				'old' => array('rykker_valg' => array(782, 793)),
+				'context' => array('debitor/rykker.php', 'debitor/ny_rykker.php'),
+				'keywords' => array('rykker', 'rykkere', 'reminder', 'reminders', 'påmindelse', 'inkasso', 'collection', 'rykkergebyr', 'rente', 'interest', 'betalingsbetingelser', 'payment terms'),
+			),
+			'documents.email' => array(
+				'group' => 'documents', 'section' => 'email', 'number' => 'G6.3', 'label' => 6166, 'icon' => 'bx-envelope', 'permission' => 'settings.email',
+				'subsections' => array('server' => 6167, 'sender' => 6168, 'texts' => 6169),
+				'legacy' => array(array(782, 783)),
+				'old' => array('smtp' => array(782, 783), 'email_settings' => array(573, 6166), 'mailTxt' => array(606, 6169)),
+				'context' => array('includes/formFuncIncludes/sendMail.php', 'debitor/mail_modtagere.php'),
+				'keywords' => array('e-mail', 'email', 'mail', 'smtp', 'afsender', 'sender', 'mailtekst', 'mail text', 'emne', 'subject', 'mit salg', 'mysale', 'afregning', 'kryptering', 'ssl', 'tls'),
+			),
 			// ---- phase 4b batch 2: a list of integrations, each with a drawer (hand-over 2 Oct, mock-ups 07/08)
 			'integrations.connections' => array(
 				'group' => 'integrations', 'section' => 'connections', 'number' => 'G9', 'label' => 5537, 'icon' => 'bx-plug', 'kind' => 'list',
@@ -168,6 +188,8 @@ if (!function_exists('getSettingsSections')) {
 		$prov = array(782, 784);
 		$ore = array(782, 170);
 		$api = array(782, 790);
+		$konto = array(782, 783);
+		$rykker = array(782, 793);
 
 		$defs = array(
 			// ---------------------------------------------------------------- G3.2 Debtor card
@@ -415,6 +437,81 @@ if (!function_exists('getSettingsSections')) {
 			'organisation.commission.show_on_item_card' => array('sub' => 'card', 'type' => 'bool', 'label' => 5999, 'help' => 6000, 'default' => false,
 				'storage' => array('settings', 'items', 'showProvision', 'onEmpty'), 'legacy' => $vare),
 
+			// ---------------------------------------------------------------- G3.4 Payment terms & reminders
+			'sales.reminders.responsible_user' => array('sub' => 'responsible', 'type' => 'select', 'label' => 225, 'help' => 6191, 'default' => '',
+				'options_from' => 'users', 'options_mixed' => true,
+				'storage' => array('grupper', 'DIV', 4, 'box1', 'raw', 'row_name' => 'Div_valg (Rykker)'), 'legacy' => $rykker,
+				'keywords' => array('rykkeransvarlig', 'reminder manager', 'bruger', 'user')),
+			'sales.reminders.responsible_mail' => array('sub' => 'responsible', 'type' => 'email', 'label' => 227, 'help' => 6192,
+				'storage' => array('grupper', 'DIV', 4, 'box2', 'raw', 'row_name' => 'Div_valg (Rykker)'), 'legacy' => $rykker,
+				'keywords' => array('rykkeransvarlig', 'mailadresse', 'e-mail')),
+			'sales.reminders.days_1' => array('sub' => 'deadlines', 'type' => 'int', 'label' => 233, 'help' => 232, 'unit' => 1332, 'empty_ok' => true,
+				'storage' => array('grupper', 'DIV', 4, 'box5', 'raw', 'row_name' => 'Div_valg (Rykker)'), 'legacy' => $rykker, 'validate' => array('range', 0, 365),
+				'keywords' => array('rykker 1', 'reminder 1', 'frist', 'dage', 'days')),
+			'sales.reminders.days_2' => array('sub' => 'deadlines', 'type' => 'int', 'label' => 235, 'help' => 234, 'unit' => 1332, 'empty_ok' => true,
+				'storage' => array('grupper', 'DIV', 4, 'box6', 'raw', 'row_name' => 'Div_valg (Rykker)'), 'legacy' => $rykker, 'validate' => array('range', 0, 365),
+				'keywords' => array('rykker 2', 'reminder 2', 'frist', 'dage', 'days')),
+			'sales.reminders.days_3' => array('sub' => 'deadlines', 'type' => 'int', 'label' => 237, 'help' => 236, 'unit' => 1332, 'empty_ok' => true,
+				'storage' => array('grupper', 'DIV', 4, 'box7', 'raw', 'row_name' => 'Div_valg (Rykker)'), 'legacy' => $rykker, 'validate' => array('range', 0, 365),
+				'keywords' => array('rykker 3', 'reminder 3', 'frist', 'dage', 'days')),
+			'sales.reminders.collection_lawyer' => array('sub' => 'collection', 'type' => 'creditor', 'creditor_as' => 'id', 'label' => 6193, 'help' => 6194,
+				'storage' => array('grupper', 'DIV', 4, 'box9', 'raw', 'row_name' => 'Div_valg (Rykker)'), 'legacy' => $rykker,
+				'keywords' => array('inkasso', 'inkassoadvokat', 'debt collection', 'kreditor', 'creditor')),
+			'sales.reminders.fee_item_1' => array('sub' => 'fees', 'type' => 'item', 'item_as' => 'id', 'label' => 6196, 'help' => 6197, 'per' => 'language', 'group_label' => array(6195, 1),
+				'storage' => array('formularer', 6, 'xb', 'raw'), 'legacy' => array(780), 'keywords' => array('rykkergebyr', 'reminder fee', 'gebyr', 'rykker 1')),
+			'sales.reminders.interest_item_1' => array('sub' => 'fees', 'type' => 'item', 'item_as' => 'id', 'label' => 6198, 'help' => 6199, 'per' => 'language', 'group_label' => array(6195, 1),
+				'storage' => array('formularer', 6, 'yb', 'raw'), 'legacy' => array(780), 'keywords' => array('rentevare', 'interest item', 'rykker 1')),
+			'sales.reminders.interest_rate_1' => array('sub' => 'fees', 'type' => 'decimal', 'label' => 6200, 'help' => 6201, 'unit' => '%', 'per' => 'language', 'group_label' => array(6195, 1),
+				'storage' => array('formularer', 6, 'str', 'raw'), 'legacy' => array(780), 'keywords' => array('rentesats', 'interest rate', 'rykker 1')),
+			'sales.reminders.fee_item_2' => array('sub' => 'fees', 'type' => 'item', 'item_as' => 'id', 'label' => 6196, 'help' => 6197, 'per' => 'language', 'group_label' => array(6195, 2),
+				'storage' => array('formularer', 7, 'xb', 'raw'), 'legacy' => array(780), 'keywords' => array('rykkergebyr', 'reminder fee', 'gebyr', 'rykker 2')),
+			'sales.reminders.interest_item_2' => array('sub' => 'fees', 'type' => 'item', 'item_as' => 'id', 'label' => 6198, 'help' => 6199, 'per' => 'language', 'group_label' => array(6195, 2),
+				'storage' => array('formularer', 7, 'yb', 'raw'), 'legacy' => array(780), 'keywords' => array('rentevare', 'interest item', 'rykker 2')),
+			'sales.reminders.interest_rate_2' => array('sub' => 'fees', 'type' => 'decimal', 'label' => 6200, 'help' => 6201, 'unit' => '%', 'per' => 'language', 'group_label' => array(6195, 2),
+				'storage' => array('formularer', 7, 'str', 'raw'), 'legacy' => array(780), 'keywords' => array('rentesats', 'interest rate', 'rykker 2')),
+			'sales.reminders.fee_item_3' => array('sub' => 'fees', 'type' => 'item', 'item_as' => 'id', 'label' => 6196, 'help' => 6197, 'per' => 'language', 'group_label' => array(6195, 3),
+				'storage' => array('formularer', 8, 'xb', 'raw'), 'legacy' => array(780), 'keywords' => array('rykkergebyr', 'reminder fee', 'gebyr', 'rykker 3')),
+			'sales.reminders.interest_item_3' => array('sub' => 'fees', 'type' => 'item', 'item_as' => 'id', 'label' => 6198, 'help' => 6199, 'per' => 'language', 'group_label' => array(6195, 3),
+				'storage' => array('formularer', 8, 'yb', 'raw'), 'legacy' => array(780), 'keywords' => array('rentevare', 'interest item', 'rykker 3')),
+			'sales.reminders.interest_rate_3' => array('sub' => 'fees', 'type' => 'decimal', 'label' => 6200, 'help' => 6201, 'unit' => '%', 'per' => 'language', 'group_label' => array(6195, 3),
+				'storage' => array('formularer', 8, 'str', 'raw'), 'legacy' => array(780), 'keywords' => array('rentesats', 'interest rate', 'rykker 3')),
+
+			// ---------------------------------------------------------------- G6.3 E-mail
+			'documents.email.smtp_host' => array('sub' => 'server', 'type' => 'text', 'label' => 6170, 'help' => 6184,
+				'storage' => array('adresser', 'felt_1', 'raw'), 'legacy' => $konto, 'on_save' => 'smtp_changed',
+				'keywords' => array('smtp', 'mailserver', 'mail server', 'port')),
+			'documents.email.smtp_user' => array('sub' => 'server', 'type' => 'text', 'label' => 225, 'help' => 749,
+				'storage' => array('adresser', 'felt_2', 'raw'), 'legacy' => $konto, 'on_save' => 'smtp_changed',
+				'keywords' => array('smtp', 'brugernavn', 'username')),
+			'documents.email.smtp_password' => array('sub' => 'server', 'type' => 'secret', 'label' => 324, 'help' => 750,
+				'storage' => array('adresser', 'felt_3', 'raw'), 'legacy' => $konto, 'on_save' => 'smtp_changed',
+				'keywords' => array('smtp', 'adgangskode', 'password')),
+			'documents.email.smtp_encryption' => array('sub' => 'server', 'type' => 'select', 'label' => 748, 'help' => 751, 'default' => '',
+				'options' => array('' => 6171, 'ssl' => 'SSL', 'tls' => 'TLS'), 'options_mixed' => true,
+				'storage' => array('adresser', 'felt_4', 'raw'), 'legacy' => $konto, 'on_save' => 'smtp_changed',
+				'keywords' => array('smtp', 'kryptering', 'encryption', 'ssl', 'tls')),
+			'documents.email.sender_email' => array('sub' => 'sender', 'type' => 'email', 'label' => 6172, 'help' => 6173, 'per' => 'language', 'per_default_label' => 6183,
+				'storage' => array('settings', 'email_settings', 'sender_email', 'raw'), 'legacy' => array(573, 6166),
+				'keywords' => array('afsender', 'sender', 'afsender e-mail', 'sender e-mail', 'from')),
+			'documents.email.sender_name' => array('sub' => 'sender', 'type' => 'text', 'label' => 6174, 'help' => 6175, 'per' => 'language', 'per_default_label' => 6183,
+				'storage' => array('settings', 'email_settings', 'sender_name', 'raw'), 'legacy' => array(573, 6166),
+				'keywords' => array('afsender', 'sender', 'afsendernavn', 'sender name')),
+			'documents.email.customer_subject' => array('sub' => 'texts', 'type' => 'text', 'label' => 6176, 'help' => 1150,
+				'storage' => array('settings', 'debitor', 'mailSubject', 'raw'), 'legacy' => array(606, 6169),
+				'keywords' => array('mailtekst', 'mail text', 'emne', 'subject', 'kunder', 'customers')),
+			'documents.email.customer_text' => array('sub' => 'texts', 'type' => 'textarea', 'label' => 6177, 'help' => 1151,
+				'storage' => array('settings', 'debitor', 'mailText', 'raw'), 'legacy' => array(606, 6169),
+				'keywords' => array('mailtekst', 'mail text', 'kunder', 'customers', '$kunde')),
+			'documents.email.mysale_subject' => array('sub' => 'texts', 'type' => 'text', 'label' => 6178, 'help' => 1152,
+				'storage' => array('settings', 'mySale', 'mailSubject', 'raw'), 'legacy' => array(606, 6169),
+				'keywords' => array('mit salg', 'mysale', 'invitation', 'emne', 'subject')),
+			'documents.email.mysale_text' => array('sub' => 'texts', 'type' => 'textarea', 'label' => 6179, 'help' => 6185,
+				'storage' => array('settings', 'mySale', 'mailText', 'raw'), 'legacy' => array(606, 6169),
+				'keywords' => array('mit salg', 'mysale', 'invitation', '$link')),
+			'documents.email.paylist_text' => array('sub' => 'texts', 'type' => 'textarea', 'label' => 6180, 'help' => 6181,
+				'storage' => array('settings', 'paylist', 'mailText', 'raw'),
+				'keywords' => array('afregning', 'settlement', 'betalingsliste', 'payment list', 'kommission', 'commission')),
+
 			// ---------------------------------------------------------------- G9 Integrations (list + drawer)
 			'integrations.rest_api.key' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'api', 'item' => 'rest_api', 'type' => 'secret', 'label' => 819, 'help' => 820,
 				'storage' => array('grupper', 'API', 1, 'box1', 'raw', 'row_name' => 'API valg'), 'legacy' => $api,
@@ -550,6 +647,9 @@ if (!function_exists('getSettingsSections')) {
 		);
 
 		$groups = getSettingsGroups();
+		$sections = getSettingsSections();
+		$expanded = array();
+		$order = array_keys($defs);
 		foreach ($defs as $key => $def) {
 			if (!isset($def['group'])) {
 				$parts = explode('.', $key);
@@ -558,9 +658,54 @@ if (!function_exists('getSettingsSections')) {
 			}
 			$def += array('scope' => 'company', 'audit' => true, 'visible_if' => null, 'validate' => null, 'keywords' => array(), 'on_save' => null);
 			if (!isset($def['permission'])) {
-				$def['permission'] = isset($groups[$def['group']]) ? $groups[$def['group']]['permission'] : 'system.indstillinger';
+				$sectionId = $def['group'] . '.' . $def['section'];
+				if (isset($sections[$sectionId]['permission'])) {
+					$def['permission'] = $sections[$sectionId]['permission'];
+				} else {
+					$def['permission'] = isset($groups[$def['group']]) ? $groups[$def['group']]['permission'] : 'system.indstillinger';
+				}
+			}
+			if (isset($def['per']) && $def['per'] === 'language') {
+				// One field per form language (settings.group_id): the languages are the company's own rows.
+				foreach (settings_form_languages() as $langId => $langName) {
+					if ($langId === 0 && isset($def['per_default_label'])) {
+						$langName = findtekst((string) $def['per_default_label'], isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1);
+					}
+					$expanded[$key . '.' . $langId] = array('scope' => 'group', 'scope_id' => (int) $langId, 'label_suffix' => $langName, 'per_key' => $key) + $def;
+				}
+				unset($defs[$key]);
+				continue;
 			}
 			$defs[$key] = $def;
+		}
+		if ($expanded) {
+			// The expanded fields go where the first 'per' field of their card was, grouped by language, so the form
+			// shows every field of one language together.
+			$slots = array();
+			foreach ($expanded as $key => $def) {
+				$slot = $def['group'] . '.' . $def['section'] . '.' . $def['sub'];
+				$slots[$slot][$def['scope_id']][$key] = $def;
+			}
+			$out = array();
+			$placed = array();
+			foreach ($order as $key) {
+				if (isset($defs[$key])) {
+					$out[$key] = $defs[$key];
+					continue;
+				}
+				$def = $expanded[$key . '.0'];
+				$slot = $def['group'] . '.' . $def['section'] . '.' . $def['sub'];
+				if (isset($placed[$slot])) {
+					continue;
+				}
+				$placed[$slot] = true;
+				foreach ($slots[$slot] as $langDefs) {
+					foreach ($langDefs as $k => $d) {
+						$out[$k] = $d;
+					}
+				}
+			}
+			$defs = $out;
 		}
 		return $defs;
 	}
@@ -588,7 +733,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(779), 'to' => array(array('company', null, 'stamkort.php'))),
 			array('old' => array(780), 'to' => array(array('documents', null, 'formularkort.php?valg=formularer'))),
 			array('old' => array(781), 'to' => array(array('items', null, 'enheder.php'))),
-			array('old' => array($d, 783), 'to' => array(array('company', null, 'diverse.php?sektion=kontoindstillinger'))),
+			array('old' => array($d, 783), 'to' => array(array('company', null, 'diverse.php?sektion=kontoindstillinger'), array('documents', 'documents.email', null))),
 			array('old' => array($d, 784), 'to' => array(array('organisation', 'organisation.commission', null))),
 			array('old' => array($d, 786), 'to' => array(array('sales', 'sales.orders', null), array('sales', 'sales.debtor_card', null), array('purchase', 'purchase.orders', null), array('items', 'items.stock', null), array('personal', null, 'personalSettings.php'))),
 			array('old' => array($d, 787), 'to' => array(array('items', 'items.stock', null), array('items', 'items.consignment', null), array('items', 'items.packaging', null))),
@@ -596,7 +741,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array($d, 790), 'to' => array(array('integrations', 'integrations.connections', null))),
 			array('old' => array($d, 791), 'to' => array(array('items', null, 'diverse.php?sektion=labels'))),
 			array('old' => array($d, 792), 'to' => array(array('purchase', null, 'diverse.php?sektion=pricelists'))),
-			array('old' => array($d, 793), 'to' => array(array('sales', null, 'diverse.php?sektion=rykker_valg'))),
+			array('old' => array($d, 793), 'to' => array(array('sales', 'sales.reminders', null))),
 			array('old' => array($d, 794), 'to' => array(array('sales', 'sales.debtor_card', null), array('finance', 'finance.cash_journal', null), array('sales', 'sales.mysale', null), array('documents', 'documents.print', null), array('company', null, 'diverse.php?sektion=div_valg'), array('integrations', 'integrations.connections', null))),
 			array('old' => array($d, 796), 'to' => array(array('organisation', null, 'diverse.php?sektion=tjekliste'))),
 			array('old' => array($d, 797), 'to' => array(array('finance', null, 'diverse.php?sektion=bilag'))),
@@ -665,6 +810,33 @@ if (!function_exists('getSettingsSections')) {
 			$parts[] = findtekst((string) $id, $sprogId);
 		}
 		return implode(' → ', $parts);
+	}
+
+	/**
+	 * The form languages of the company: 0 is the default (Danish and languages without their own row), then the
+	 * VSPR rows the forms editor keeps. This is what includes/formFuncIncludes/sendMail.php looks the sender up by.
+	 *
+	 * @return array<int, string>
+	 */
+	function settings_form_language_name(int $langId): string
+	{
+		$languages = settings_form_languages();
+		return ($langId > 0 && isset($languages[$langId])) ? $languages[$langId] : 'Dansk';
+	}
+
+	function settings_form_languages(): array
+	{
+		static $languages = null;
+		if ($languages === null) {
+			$languages = array(0 => 'Dansk');
+			$q = db_select("select kodenr, box1 from grupper where art = 'VSPR' order by kodenr", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				if ((int) $r['kodenr'] > 0) {
+					$languages[(int) $r['kodenr']] = trim((string) $r['box1']);
+				}
+			}
+		}
+		return $languages;
 	}
 
 	/**

@@ -97,4 +97,8 @@ function settings_after_save(array $def, string $raw): void
 		include_once(__DIR__ . '/../emballage_schema.php');
 		ensure_emballage_schema();
 	}
+	if ($def['on_save'] === 'smtp_changed' && function_exists('audit_log')) {
+		// The roles spec names this event (settings redesign §11.2); the value itself is in the setting's own audit row.
+		audit_log('integration.smtp_changed', $def['key']);
+	}
 }

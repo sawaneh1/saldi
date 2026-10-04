@@ -879,7 +879,10 @@ function audit_log(string $handling, string $detaljer = '', string $objektType =
 /**
  * The same, in the argument order the document-pool work uses (SD-724). One table, one implementation.
  */
-function audit_log_write(string $handling, string $objektType = '', string $objektId = '', string $detaljer = '', string $kilde = 'ui'): void
-{
-	audit_log($handling, $detaljer, $objektType, $objektId, $kilde);
+if (!function_exists('audit_log_write')) {
+	// SD-724 ships the same function on master (includes/auditLog.php) until this branch lands; one of them wins.
+	function audit_log_write(string $handling, string $objektType = '', string $objektId = '', string $detaljer = '', string $kilde = 'ui'): void
+	{
+		audit_log($handling, $detaljer, $objektType, $objektId, $kilde);
+	}
 }

@@ -828,6 +828,14 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-lookup-list li.on, .st-lookup-list li[role="option"]:hover { background: var(--st-surface-2); }
 .st-lookup-none { color: var(--st-text-2); cursor: default; }
 
+.st-textarea { width: 100%; min-width: 320px; height: auto; min-height: 120px; padding: 10px 12px; line-height: 1.5; resize: vertical; font: inherit; font-size: 13.5px; }
+.st-type-textarea { flex-wrap: wrap; }
+.st-type-textarea .st-tx { flex-basis: 100%; }
+.st-type-textarea .st-ctl { flex-basis: 100%; }
+.st-label-suffix { font-weight: 400; color: var(--st-text-2); }
+.st-grouphead { padding: 14px 20px 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--st-text-2); border-top: 1px solid var(--st-grid); }
+.st-card > .st-grouphead:first-child { border-top: 0; }
+.st-card > .st-grouphead + .st-field { border-top: 0; }
 .st-invalid .st-input { border-color: var(--st-bad); }
 .st-error, .st-locked { display: inline-flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 13px; }
 .st-error { color: var(--st-bad); font-weight: 500; }

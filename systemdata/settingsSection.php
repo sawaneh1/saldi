@@ -28,6 +28,8 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261003 Sawaneh G3.4: a run of fields may carry a heading ('group_label'), a card a help line ('sub_help').
+// 20261003 Sawaneh G6.3: a section may carry its own permission key (settings.email).
 // 20261002 Sawaneh Phase 4b batch 2 (G9): a section of 'kind' list renders includes/settings/listView.php - rows with a drawer
 //                  per integration, each drawer its own form; an empty secret leaves the stored value (P8); item kept over redirects.
 
@@ -76,7 +78,7 @@ if (!empty($section['module']) && !settings_has_module($section['module'])) {
 	exit;
 }
 $groups = getSettingsGroups();
-$permission = $groups[$section['group']]['permission'];
+$permission = isset($section['permission']) ? (string) $section['permission'] : $groups[$section['group']]['permission'];
 require_permission($permission, 'read');
 $canWrite = perm_can($permission, 'write');
 
@@ -404,9 +406,23 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 			?>
       <section class="st-sect" id="sub-<?= st_h($sub) ?>"<?= $anyVisible ? '' : ' hidden' ?>>
         <h2><?= st_t($subLabel) ?></h2>
+			<?php if (isset($section['sub_help'][$sub])) { ?>
+        <p><?= st_t($section['sub_help'][$sub]) ?></p>
+			<?php } ?>
         <div class="st-card">
-			<?php foreach ($fields as $key => $def) {
+			<?php $lastGroup = null; foreach ($fields as $key => $def) {
+				// A run of fields can carry a heading ("Rykker 1"), repeated per language when the fields are.
+				$groupHeading = '';
+				if (isset($def['group_label'])) {
+					$g = sprintf(st_txt($def['group_label'][0]), $def['group_label'][1]) . (isset($def['label_suffix']) ? ' · ' . $def['label_suffix'] : '');
+					if ($g !== $lastGroup) {
+						$groupHeading = $g;
+						$lastGroup = $g;
+					}
+				}
 				st_render_field($def, array(
+					'group_heading' => $groupHeading,
+					'in_group'      => isset($def['group_label']),
 					'value'    => $values[$key],
 					'original' => $originals[$key],
 					'error'    => isset($state['errors'][$key]) ? $state['errors'][$key] : null,

@@ -56,13 +56,13 @@ $begin = if_isset($_GET['start']);
 $end = if_isset($_GET['slut']);
 
 if ($mailtekst) {
-	$qtxt = "select id from settings where var_name = 'mailtext' and var_grp = 'paylist' and coalesce(user_id, 0) = 0";
+	$qtxt = "select id from settings where var_name = 'mailText' and var_grp = 'paylist' and coalesce(user_id, 0) = 0";
 	$r=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
 	if ($r['id']) $qtxt = "update settings set var_value = '". db_escape_string($mailtekst) ."' where id =  '$r[id]'";
 	else {
 		$qtxt = "insert into settings (var_name, var_grp, var_value, user_id, var_description) ";
 		$qtxt.= " values ";
-		$qtxt.= "('mailtext','paylist','". db_escape_string($mailtekst) ."','0',";
+		$qtxt.= "('mailText','paylist','". db_escape_string($mailtekst) ."','0',";
 		$qtxt.= "'text for mails to commission customers when transferring from paylist')";
 	}	
 	db_modify($qtxt,__FILE__ . " linje " . __LINE__);

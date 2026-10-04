@@ -25,7 +25,8 @@
 	print "</tbody></table></td>\n";
 	print "<td width=5% $top_bund><a accesskey=V href=debitorvisning.php?valg=$valg>".findtekst('813|Visning', $sprog_id)."</a></td>\n";
 	print "<td width=5%  $top_bund>";
-	if ($valg=='kommission' ||$valg=='historik') print "<a href=mailTxt.php?valg=$valg&returside=debitor.php>".findtekst('218|Mailtekst', $sprog_id)."</a></td>\n";
+	$mailTxtField = ($valg == 'historik') ? 'documents.email.customer_text' : 'documents.email.mysale_text'; // 20261003 Sawaneh G6.3: mail texts live in Settings
+	if ($valg=='kommission' ||$valg=='historik') print "<a href=../systemdata/settingsSection.php?s=documents.email&field=$mailTxtField>".findtekst('218|Mailtekst', $sprog_id)."</a></td>\n";
 	else print "<a href=debitorkort.php?returside=debitor.php>".findtekst('39|Ny', $sprog_id)."</a></td>\n";
 	print "</td><td></td></tr>\n";
 	print "</tbody></table>";

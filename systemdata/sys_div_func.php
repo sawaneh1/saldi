@@ -131,6 +131,8 @@
 //                  The four debtor-card rows (Debitorkort section since 4a) are gone from it too.
 // 20261002 Sawaneh Phase 4b batch 2: GLS, Danske Fragtmænd, QuickPay, Flatpay, Vibrant, MobilePay and Copayone left div_valg()
 //                  for Indstillinger » Integrationer (pick-up addresses stay); api_valg() only runs the shop sync.
+// 20261003 Sawaneh G6.3: the SMTP form left kontoindstillinger() for Indstillinger » Dokumenter & e-mail » E-mail.
+// 20261003 Sawaneh G3.4: rykker_valg() removed (generated section Salg » Betalingsbetingelser & rykkere).
 include_once("../includes/connect.php"); 
 
 function kontoindstillinger($regnskab, $skiftnavn)
@@ -219,32 +221,6 @@ function kontoindstillinger($regnskab, $skiftnavn)
 		$text = findtekst('898|Opdatér', $sprog_id) . " " . findtekst('1236|Tidszone', $sprog_id);
 		print "<td></td><td><input class='button gray medium' style='width:200px' type='submit' value='$text' name='opdat_tidszone'><!--tekst 436--></td></tr>\n";
 		print "</form>";
-		print "<tr><td colspan='6'><hr></td></tr>\n";
-		print "<form name=diverse action='diverse.php?sektion=smtp' method='post'>\n";
-		$tekst1 = findtekst('434|Her kan skrives en alternativ SMTP-server til brug for udsendelse af ordrer mm. Den angivne server skal tillade videresendelse af mails fra ssl.saldi.dk. Hvis serveren bruger anden port 25 skrives denne efter STMP navnet adskilt af :. F.eks. smtp.gmail.com:465', $sprog_id);
-		$tekst2 = findtekst('435|Alternativ SMTP-server: port', $sprog_id);
-		print "<tr><td title='$tekst1'><!--tekst 434-->$tekst2<!--tekst 435--></td>";
-		print "<td title='$tekst1'><input class='inputbox' type='text' style='width:200px' name='smtp' value='$r[felt_1]'></td></tr>";
-		$tekst1 = findtekst('749|Brugernavn til SMTP serveren, hvis krævet', $sprog_id);
-		$tekst2 = findtekst('225|Brugernavn', $sprog_id);
-		print "<tr><td title='$tekst1'><!--tekst 749-->$tekst2<!--tekst 225--></td>";
-		print "<td title='$tekst1'><input class='inputbox' type='text' style='width:200px' name='smtpuser' value='$r[felt_2]'></td></tr>";
-		$tekst1 = findtekst('750|Adgangskode til SMTP serveren, hvis krævet', $sprog_id);
-		$tekst2 = findtekst('324|Adgangskode', $sprog_id);
-		print "<tr><td title='$tekst1'><!--tekst 750-->$tekst2<!--tekst 324--></td>";
-		print "<td title='$tekst1'><input class='inputbox' type='text' style='width:200px' name='smtppass' value='$r[felt_3]'></td></tr>";
-		$tekst1 = findtekst('751|Krypteringsmetode til SMTP serveren, hvis krævet', $sprog_id);
-		$tekst2 = findtekst('748|Kryptering', $sprog_id);
-		print "<tr><td title='$tekst1'><!--tekst 751-->$tekst2<!--tekst 748--></td>";
-		print "<td title='$tekst1'><select class='inputbox' style='width:200px' name='smtpcrypt'>";
-		print "<option value='$r[felt_4]'>$r[felt_4]</option>";
-		if ($r['felt_4']) print "<option value=''></option>";
-		if ($r['felt_4'] != 'ssl') print "<option value='ssl'>ssl</option>";
-		if ($r['felt_4'] != 'tls') print "<option value='tls'>tls</option>";
-		print "</select></td></tr>";
-		$tekst1 = findtekst('436|Skift', $sprog_id);
-		print "<td></td><td><input class='button gray medium' style='width:200px' type='submit' value='$tekst1' name='submit'><!--tekst 436--></td></tr>\n";
-		print "</form>\n";
 		print "<tr><td colspan='6'><hr></td></tr>\n";
 		print "<tr><td colspan='6'><br></td></tr>\n";
 		print "<form name='nulstil_regnskab' action='diverse.php?sektion=kontoindstillinger' method='post'>\n"; #20170731 ->
@@ -2199,102 +2175,6 @@ function prislister()
 	print "</form>\n\n";
 } # endfunc prislister
 
-function rykker_valg()
-{
-	global $sprog_id;
-	global $bgcolor;
-	global $bgcolor5;
-
-	$box1 = $box2 = $box3 = $box4 = $box5 = $box6 = $box7 = $box8 = $box9 = NULL;
-
-	$r    = db_fetch_array(db_select("select * from grupper where art = 'DIV' and kodenr = '4'", __FILE__ . " linje " . __LINE__));
-	$id   = $r['id'];
-	$box1 = $r['box1'];
-	$box2 = $r['box2'];
-	if ($r['box3']) $box3 = $r['box3'] * 1;
-	$box4 = $r['box4'];
-	if ($r['box5']) $box5 = $r['box5'] * 1;
-	if ($r['box6']) $box6 = $r['box6'] * 1;
-	if ($r['box7']) $box7 = $r['box7'] * 1;
-	#	$box8=$r['box8']; Box 8 bruger til resistrering af sidst sendte reminder.
-	$box9 = $r['box9']; # Inkasso.
-	if ($box9) {
-		$qtxt = "select kontonr from adresser where id='$box9'";
-		$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-		$box9 = $r['kontonr'];
-	}
-	#	$box10=$r['box10'];
-
-	$x = 0;
-	$q = db_select("select id,brugernavn from brugere order by brugernavn", __FILE__ . " linje " . __LINE__);
-	while ($r = db_fetch_array($q)) {
-		$x++;
-		$br_id[$x]   = $r['id'];
-		$br_navn[$x] = $r['brugernavn'];
-		if ($box1 == $br_id[$x]) $box1 = $br_navn[$x];
-	}
-	$br_antal = $x;
-	/*
-	if ($box3 || $box4) {
-		if ($r=db_fetch_array(db_select("select beskrivelse from varer where varenr = '$box4'",__FILE__ . " linje " . __LINE__))) {
-			$varetekst=htmlentities($r['beskrivelse']);
-		} else print "<BODY onLoad=\"JavaScript:alert('Varenummer ikke gyldigt')\">";
-	}
-*/
-	$help_icon = '<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="20px" fill="#114691"><path d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>';
-
-	print "<form name='diverse action=diverse.php?sektion=rykker_valg' method='post'>\n";
-	print "<tr bgcolor='$bgcolor5'><td colspan='6'><b>".findtekst('793|Rykkerrelaterede valg', $sprog_id)."</b></td></tr>\n";
-	print "<input type='hidden' name=id value='$id'>\n";
-	#Box1 Brugernavn for "rykkeransvarlig - Naar bruger logger ind adviseres hvis der skal rykkes - Hvis navn ikke angives adviseres alle..
-	$title = ""; # HERTIL
-	$txt1  = "<i>".findtekst('3342|Disse indstillinger styrer påmindelser til den rykkeransvarlige om at sende rykkere. Vær opmærksom på at rykkere ikke sendes automatisk af systemet.', $sprog_id)."<i>";
-	$txt2  = "<i>".sprintf(findtekst('3350|Hold musen over %s-ikonerne for uddybende forklaringer', $sprog_id), $help_icon).".<i>";
-	print "<tr><td colspan='6' style='padding:4px 0px 0px 0px;font-size:0.9em;color:#555;'>$txt1</td></tr>\n";
-	print "<tr><td colspan='6' style='padding:0px 0px 12px 0px;font-size:0.9em;color:#555;'>$txt2</td></tr>\n";
-	
-	print "<tr><td title='".findtekst('224|Brugernavn for rykkeransvarlig - Når brugeren logger ind, adviseres denne, hvis der skal rykkes - Hvis navn ikke angives adviseres alle.', $sprog_id)."'>".findtekst('225|Brugernavn', $sprog_id)."$help_icon</td>\n"; #20210713
-	print "<td title='".findtekst('224|Brugernavn for rykkeransvarlig - Når brugeren logger ind, adviseres denne, hvis der skal rykkes - Hvis navn ikke angives adviseres alle.', $sprog_id)."'><select class='inputbox' name='box1' style='width:80px'>\n";
-	if ($box1) print "    <option>$box1</option>\n";
-	print "<option value=''>- ".findtekst('2498|Alle', $sprog_id)." -</option>\n";
-	for ($x = 1; $x <= $br_antal; $x++) {
-		if ($br_navn[$x] != $box1) print "<option>$br_navn[$x]</option>\n";
-	}
-	print "</select></td></tr>\n";
-	#Box2 Mailadresse for rykkeransvarlig hvis angivet sendes email naar der skal rykkes. (Naar nogen logger ind - uanset hvem)
-	print "<tr><td title='".findtekst('226|Mailadresse for rykkeransvarlig. Hvis angivet sendes email fra denne adresse, når der skal rykkes. (Når nogen logger ind - uanset hvem)', $sprog_id)."'>".findtekst('227|Mailadresse', $sprog_id)."$help_icon</td>\n";
-	print "<td title='".findtekst('226|Mailadresse for rykkeransvarlig. Hvis angivet sendes email fra denne adresse, når der skal rykkes. (Når nogen logger ind - uanset hvem)', $sprog_id)."'><input class='inputbox' type='text' size='30' name='box2' value='$box2'></td></tr>\n"; # 20150625
-	#Box4 Varenummer for rente
-#	print "<tr><td title='".findtekst(230, $sprog_id)."'>".findtekst(231, $sprog_id)."</td><td><input class='inputbox' type=text size=15 name=box4 value='$box4'></td></tr>";
-	#Box3 Rentesats % pr paabegyndt md.
-#	print "<tr><td title='".findtekst('228|Rentesats i % pr. påbegyndt måned', $sprog_id)."'>".findtekst(229, $sprog_id)."</td><td><input class='inputbox' type=text style='text-align:right' size=1 name=box3 value='$box3'> %</td></tr>";
-	#Box5 Dage betalingsfrist skal vaere overskredet foer der rykkes.
-	print "<tr><td title='".findtekst('232|Antal dage betalingsfristen skal være overskredet, før der påmindes om 1. rykker', $sprog_id)."'>".findtekst('233|Frist for rykker 1', $sprog_id)."$help_icon</td>\n";
-	print "<td><input class='inputbox' type='text' style='text-align:right' size='3' name='box5' value='$box5'> ".lcfirst(findtekst('1332|Dage', $sprog_id))."</td></tr>\n";
-	#Box6 Dage fra rykker 1 til rykker 2
-	print "<tr><td title='".findtekst('234|Antal dage betalingsfristen for rykker 1 skal være overskredet, før der påmindes om 2. rykker', $sprog_id)."'>".findtekst('235|Frist for rykker 2', $sprog_id)."$help_icon</td>\n";
-	print "<td><input class='inputbox' type='text' style='text-align:right' size='3' name='box6' value='$box6'> ".lcfirst(findtekst('1332|Dage', $sprog_id))."</td></tr>\n";
-	#Box7 Dage fra rykker 2 til rykker 3
-	print "<tr><td title='".findtekst('236|Antal dage betalingsfristen for rykker 2 skal være overskredet, før der påmindes om 3. rykker', $sprog_id)."'>".findtekst('237|Frist for rykker 3', $sprog_id)."$help_icon</td>\n";
-	print "<td><input class='inputbox' type='text' style='text-align:right' size='3' name='box7' value='$box7'> ".lcfirst(findtekst('1332|Dage', $sprog_id))."</td></tr>\n";
-	print "<td colspan='3'>&nbsp;</td>\n";
-	if (!strpos(findtekst('833|Kontonr for inkassoadvokat.', $sprog_id), 'inkasso')) db_modify("delete from tekster where tekst_id='833' and sprog_id='$sprog_id'", __FILE__ . " linje " . __LINE__); #20211019
-	if (!strpos(findtekst('834|Ved at udfylde dette felt med kontonummer for din inkassoadvokat (kreditor)', $sprog_id),'udfylde')) db_modify("delete from tekster where tekst_id='834' and sprog_id='$sprog_id'", __FILE__ . " linje " . __LINE__);
-	print "<tr><td title='".findtekst('834|Ved at udfylde dette felt med kontonummer for din inkassoadvokat (kreditor)', $sprog_id)."'>".findtekst('833|Kontonr for inkassoadvokat.', $sprog_id)." </td>\n";
-	print "<td><input class='inputbox' type='text' style='text-align:right;width=20px;' name='box9' value='$box9'></td></tr>\n";
-	print "<td colspan='3'>&nbsp;</td>\n";
-	print "<td align='center'><input class='button green medium' type='submit' accesskey='g' value='".findtekst('471|Gem/opdatér', $sprog_id)."' name='submit'></td>\n";
-
-	$title = findtekst('3347|Åbner Formularer i ny fane', $sprog_id); #Åbner 'Formularer' i en ny fane
-	$ltxt  = findtekst('573|Formularkort', $sprog_id);
-	$link  = "<a href='formularkort.php?valg=formularer' target='_blank' title='$title'>".lcfirst($ltxt)."</a>";
-	$txt1  = findtekst('3348|Rykkergebyr og rente tilføjes under rykkernes', $sprog_id)." $link."; #Rykkergebyr og rente tilføjes under rykkernes formularkort
-	$txt2  = findtekst('3349|System > Indstillinger > Formularer > vælg Rykker', $sprog_id);       #System > Indstillinger > Formularer > vælg 'Rykker'
-	print "<tr><td colspan='6' style='padding:0px 0px 0px 0px;'>$txt1</td></tr>\n";
-	print "<tr><td colspan='6' style='padding:4px 0px 0px 0px;font-size:0.9em;color:#555;'><i>$txt2<i></td></tr>\n";
-	
-	print "</form>\n";
-} # endfunc rykker_valg
 
 
 function tjekliste() {

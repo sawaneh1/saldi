@@ -226,6 +226,9 @@ if ($search !== '' && function_exists('getSettingDefinitions')) {
 		}
 		$sectionId = $def['group'] . '.' . $def['section'];
 		$label = findtekst((string) $def['label'], $sprog_id);
+		if (isset($def['label_suffix'])) {
+			$label .= ' · ' . $def['label_suffix']; // 20261003 Sawaneh G6.3: a sender field carries its form language
+		}
 		$labelLc = mb_strtolower($label);
 		// Every part matches in every language Saldi ships: people search for the name they remember.
 		$legacy = !empty($def['legacy']) ? settings_legacy_text($def['legacy'], $sprog_id) : '';

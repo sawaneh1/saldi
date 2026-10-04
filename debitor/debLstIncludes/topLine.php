@@ -111,7 +111,8 @@ if ($valg != 'jobkort') {
 
 if ($valg == 'kommission' || $valg == 'historik') {
 	print "<td width=5% style='$buttonStyle'>";
-	print "<a href=mailTxt.php?valg=$valg&returside=debitor.php>";
+	$mailTxtField = ($valg == 'historik') ? 'documents.email.customer_text' : 'documents.email.mysale_text'; // 20261003 Sawaneh G6.3: mail texts live in Settings
+	print "<a href=../systemdata/settingsSection.php?s=documents.email&field=$mailTxtField>";
 	print "<button class='center-btn' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 	print "$icon_mail ".findtekst('218|Mailtekst', $sprog_id)."</button></a></td>\n";
 } else {

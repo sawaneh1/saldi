@@ -216,38 +216,6 @@ if (isset($_POST) && $_POST) {
 		print "<BODY onLoad=\"javascript:alert('Logo, tekster og Streger er flyttet $op mm $otext og $hojre mm til $htext')\">";
 		$linjeantal=0; #
 	}
-	if ($submit=='Opdater' && $form_nr>=6 && $form_nr<=8 && $art_nr==2 && $gebyr) { #Rykkergebyr
-		$tmp=strtoupper($gebyr);
-		if ($r1=db_fetch_array(db_select("select id,varenr from varer where upper(varenr) = '$tmp'",__FILE__ . " linje " . __LINE__))) { 
-			$gebyr = $r1['varenr'];
-			$qtxt  = "select id from formularer where beskrivelse ='GEBYR' and formular='$form_nr' and art=2 and sprog='$formularsprog'";
-			if ($r2=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__))) {
-				db_modify("update formularer set xb='$r1[id]' where id = $r2[id]",__FILE__ . " linje " . __LINE__);
-			}	else {
-				$qtxt = "insert into formularer (beskrivelse, formular, art, xb, sprog) values ";
-				$qtxt.= "('GEBYR', '$form_nr', '2', '$r1[id]', '$formularsprog')";
-					db_modify($qtxt,__FILE__ . " linje " . __LINE__);
-				}
-		} else print "<BODY onLoad=\"javascript:alert('Varenummeret $gebyr findes ikke i varelisten')\">";
-	} elseif (($submit=='Opdater')&&($form_nr>=6)&&($form_nr<=8)&&($art_nr==2)&&(!$gebyr)) db_modify("delete from formularer where beskrivelse = 'GEBYR' and formular='$form_nr' and sprog='$formularsprog'",__FILE__ . " linje " . __LINE__); #20140902
-	if ($submit=='Opdater' && $form_nr>=6 && $form_nr<=8 && $art_nr==2 && $rentevnr) { #Rykkerrenter
-		$tmp       = strtoupper($rentevnr);
-		$rentesats = usdecimal($rentesats);
-		if ($r1=db_fetch_array(db_select("select id, varenr from varer where upper(varenr) = '$tmp'",__FILE__ . " linje " . __LINE__))) { 
-			$rentevnr=$r['varenr'];
-			$qtxt = "select id from formularer where beskrivelse ='GEBYR' and formular='$form_nr' and art=2 and sprog='$formularsprog'";
-			if ($r2=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__))) {
-				db_modify("update formularer set yb='$r1[id]', str='$rentesats' where id = $r2[id]",__FILE__ . " linje " . __LINE__);
-			}	else {
-					$qtxt = "insert into formularer (beskrivelse, formular, art, yb, str, sprog) values ";
-					$qtxt.= "('GEBYR', '$form_nr', '2', '$r1[id]', '$rentesats', '$formularsprog')";
-					db_modify($qtxt,__FILE__ . " linje " . __LINE__);
-				}
-		} else print "<BODY onLoad=\"javascript:alert('Varenummeret $gebyr findes ikke i varelisten')\">";
-	} elseif (($submit=='Opdater')&&($form_nr==6)&&($art_nr==2)&&(!$gebyr)) {
-		$qtxt="delete from formularer where beskrivelse = 'GEBYR' and formular='$form_nr' and sprog='$formularsprog'";
-		db_modify($qtxt,__FILE__ . " linje " . __LINE__); #20140902
-	}
 	if (isset($_POST['streger']) && $_POST['streger']){
 		transaktion('begin');
 		for ($x=0; $x<=$linjeantal; $x++) {
@@ -336,7 +304,7 @@ if ($menu=='T') {  # 20150331 start
     print "<a title=\"$fe_title\" class='button green small left' href=\"$fe_link\">$fe_label</a> &nbsp;";
     print "<a class='button blue small' class=\"button red small left\" href=\"formular_indlaes_std.php\">".findtekst('572|Genindlæs standardformularer', $sprog_id)."</a> &nbsp;";
     print "<a title=\"".findtekst('1779|Opret eller nedlæg sprog', $sprog_id)."\" class='button blue small' class=\"button red small left\" href=\"formularkort.php?nyt_sprog=yes\" accesskey=\"s\">Bg.".findtekst('646|Navn', $sprog_id)."</a> &nbsp;";
-    print "<a title=\"Email indstillinger for sprog\" class='button blue small' href=\"email_settings.php\" accesskey=\"e\">Email</a></div>\n";
+    print "<a title=\"Email indstillinger for sprog\" class='button blue small' href=\"settingsSection.php?s=documents.email\" accesskey=\"e\">Email</a></div>\n";
 	print "<span class=\"headerTxt\"></span>\n";     
 	print "<div class=\"headerbtnRght\"><a title=\"".findtekst('1780|Indlæs eller fjern baggrundsfil', $sprog_id)."\" class='button blue small' href=logoupload.php?upload=yes accesskey=\"u\">".findtekst('571|Baggrund', $sprog_id)."</a></div>";    
 	print "</div><!-- end of header -->";
@@ -366,7 +334,7 @@ if ($menu=='T') {  # 20150331 start
 	print "<td width='6%'><span title='".findtekst('1779|Opret eller nedlæg sprog', $sprog_id)."'><a href=formularkort.php?nyt_sprog=yes accesskey='s'>";
 	print "<button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">Bg.".findtekst('646|Navn', $sprog_id)."</button></a></span></td>\n";
 
-	print "<td width='6%'><span title='Email indstillinger for sprog'><a href=email_settings.php accesskey='e'>";
+	print "<td width='6%'><span title='Email indstillinger for sprog'><a href=settingsSection.php?s=documents.email accesskey='e'>";
 	print "<button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">Email</button></a></span></td>\n";
 
 	print "<td width='6%'><span title='".findtekst('1781|Indlæs eller fjern fil', $sprog_id)."'><a href=logoupload.php?upload=yes accesskey='u'>";
@@ -406,22 +374,6 @@ if ($menu=='T') {  # 20150331 start
 	print "</tbody></table></td></tr>\n";
 }
 
-if ($form_nr >= 6 && $form_nr <= 8 && $art_nr == 2) {
-	$ltxt  = findtekst('1232|Opret', $sprog_id);
-	$title = "Åbner ny varekort i en ny fane";
-	$link  = "<a href='../lager/varekort.php?returside=../systemdata/formularkort.php' target='_blank' title='$title'>$ltxt</a>";
-	$txt1  = findtekst('3343|Rykkergebyr', $sprog_id);
-	$txt2  = findtekst('3344|Rentegebyr' , $sprog_id);
-	$txt3  = $link." ".findtekst('3345|en vare til rykkergebyret og angiv varenummeret her.', $sprog_id);
-	$txt4  = $link." ".findtekst('3346|en vare med salgspris 0 kr. og angiv varenummeret her. Rentesatsen (%) angives i feltet ved siden af.', $sprog_id);
-
-	print "<tr><td colspan=6 style='text-align:center;padding-right:0%;padding-top:20px;font-size:1em;color:#555;'>";
-	print "<div style='display:inline-block;text-align:left;'>";
-	print "<table cellspacing=0 cellpadding=2>";
-	print "<tr><td style='padding-right:5px;'><b>$txt1:</b></td><td>$txt3</td></tr>"; #Rykkergebyr:	Opret en vare til rykkergebyret og angiv varenummeret her.
-	print "<tr><td style='padding-right:5px;'><b>$txt2:</b></td><td>$txt4</td></tr>";  #Rentegebyr:	Opret en vare med salgspris 0 kr. og angiv varenummeret her. Rentesatsen (%) angives i feltet ved siden af.
-	print "</table></div></td></tr>\n";
-}
 if ($nyt_sprog) sprog($nyt_sprog,$skabelon,$handling);
 
 print "<tr><td align=center width=100%><table align=\"center\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>\n";
@@ -541,18 +493,9 @@ if ($art_nr==1) {
 	}	 
 	$linjeantal=$x;
 } elseif ($art_nr==2) {
-	if ($form_nr>=6 && $form_nr<=9) {
-		$help_icon = '<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="20px" fill="#114691"><path d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>';
-		$gebyr     = '';$rentevnr='';
-		$r         = db_fetch_array(db_select("select xb,yb,str from formularer where beskrivelse ='GEBYR' and formular='$form_nr' and art='$art_nr' and sprog='$formularsprog'",__FILE__ . " linje " . __LINE__));
-		$gebyr     = $r['xb']*1;$rentevnr=$r['yb']*1;$rentesats=dkdecimal($r['str'],2);
-		$r         = db_fetch_array(db_select("select varenr from varer where id ='$gebyr'",__FILE__ . " linje " . __LINE__));
-		$gebyr     = $r['varenr'];
-		print "<tr><td colspan=11 align=center style='padding:0px 0px 2px 0px;font-size:0.8em;color:#555;'><i>".sprintf(findtekst('3350|Hold musen over %s-ikonerne for uddybende forklaringer', $sprog_id), $help_icon).".</i></td></tr>";
-		print "<tr><td colspan=11 align=center title='".findtekst('1782|Skriv det varenummer der skal bruges til rykkergebyr.', $sprog_id)."'>$help_icon".findtekst('1783|Varenummer for rykkergebyr', $sprog_id)." <input class='inputbox' type='text' size=15 name=gebyr value=$gebyr></td></tr>";
-		$r         = db_fetch_array(db_select("select varenr from varer where id ='$rentevnr'",__FILE__ . " linje " . __LINE__)); 
-		$rentevnr  = $r['varenr'];
-		print "<tr><td colspan=11 align=center title='".findtekst('1784|Skriv det varenummer og rentesatsen som bruges ved renteberegning. Rentesatsen gælder pr påbegyndt måned', $sprog_id)."'>$help_icon".findtekst('1785|Varenummer/sats for rente', $sprog_id)." <input class='inputbox' type='text' size=15 name=rentevnr value=$rentevnr><input class='inputbox' type='text' size=1 name=rentesats value=$rentesats></td></tr>";
+	if ($form_nr>=6 && $form_nr<=8) {
+		// 20261003 Sawaneh G3.4: fee and interest are set in Settings (same GEBYR rows), not on the form card.
+		print "<tr><td colspan=11 align=center style='padding:6px 0;font-size:0.9em;color:#555;'><a href='settingsSection.php?s=sales.reminders#sub-fees'>".findtekst('6203|Rykkergebyr og rente sættes under Indstillinger » Salg » Betalingsbetingelser & rykkere', $sprog_id)."</a></td></tr>";
 		print "<tr><td colspan=11><hr></td></tr>";
 	}
 

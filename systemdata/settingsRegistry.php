@@ -95,8 +95,7 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'diverse_overview',      'group' => '', 'url' => 'diverse.php',                              'category' => 'diverse', 'textId' => 782,
 				'keywords' => array('miscellaneous settings','other settings','diverse indstillinger')),
 			array('key' => 'kontoindstillinger',    'group' => 'company', 'url' => 'diverse.php?sektion=kontoindstillinger',   'category' => 'diverse', 'textId' => 783,
-				'keywords' => array('account settings','company settings','system settings','rename account','rename company','company name change','base currency','system currency','timezone','time zone','max users','user limit','number of users','reset account data','wipe all data','delete account','close account','terminate account','smtp settings','mail server settings','email server settings','regnskabsnavn','tidszone','nulstil regnskab','slet regnskab','antal brugere','kontoinnstillinger',
-					'sort by phone number','postings last 12 months','alternative smtp server','smtp port','smtp username','smtp password','smtp encryption','keep customers and suppliers on reset','keep products on reset','reset account confirmation','backup before reset warning','5 year backup retention','bookkeeping law backup')),
+				'keywords' => array('account settings','company settings','system settings','rename account','rename company','company name change','base currency','system currency','timezone','time zone','max users','user limit','number of users','reset account data','wipe all data','delete account','close account','terminate account','regnskabsnavn','tidszone','nulstil regnskab','slet regnskab','antal brugere','kontoinnstillinger','sort by phone number','postings last 12 months','keep customers and suppliers on reset','keep products on reset','reset account confirmation','backup before reset warning','5 year backup retention','bookkeeping law backup')),
 			array('key' => 'provision',             'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.commission', 'section' => 'organisation.commission', 'category' => 'diverse', 'textId' => 657,
 				'keywords' => array('commission report settings','commission calculation','sales commission','provisionsrapport','provision','provisjonsberegning','provisjon',
 					'commission basis','invoiced or paid commission','commission source person','customer responsible person commission','reference person commission','cost price source for commission','purchase price commission','product card cost price commission','cutoff date commission calculation', 'default commission rate', 'show commission on item card', 'standard provisionssats')),
@@ -129,7 +128,7 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'pricelists',            'group' => 'purchase', 'url' => 'diverse.php?sektion=pricelists',           'category' => 'pricing', 'textId' => 792,
 				'keywords' => array('price list import','supplier price list','vendor price list','csv price list','csv delimiter','csv encoding','vendor price feed','product price import','price file url','purchase price list','add pricelist url','supplier group pricelist','product group pricelist','prisliste import','prisfil',
 					'price list file type','price list discount','supplier discount','vvs price list','plumbing price list','solar vvs','active price list toggle','delete price list reference')),
-			array('key' => 'rykker_valg',           'group' => 'sales', 'url' => 'diverse.php?sektion=rykker_valg',          'category' => 'invoicing', 'textId' => 793,
+			array('key' => 'rykker_valg',           'group' => 'sales', 'url' => 'settingsSection.php?s=sales.reminders', 'section' => 'sales.reminders', 'category' => 'invoicing', 'textId' => 6190,
 				'keywords' => array('reminder settings','dunning settings','debt collection','collection agency','debt collector','inkasso','reminder responsible user','person responsible for reminders','rykkerrelaterede valg','rykker','påminnelsesrelaterte valg','påminnelse',
 					'reminder responsible email','interest rate per month reminder','reminder 1 deadline days','reminder 2 deadline days','reminder 3 deadline days','collection lawyer account number','collection attorney')),
 			array('key' => 'div_valg',               'group' => 'company', 'url' => 'diverse.php?sektion=div_valg',             'category' => 'diverse', 'textId' => 794,
@@ -172,7 +171,7 @@ if (!function_exists('getSettingsRegistry')) {
 			// -- Scattered elsewhere in the app --
 			array('key' => 'admin_settings',    'group' => 'company', 'url' => '../admin/admin_settings.php',      'category' => 'system',  'textId' => 5668, 'requiresReseller' => true, 'visibilityRule' => 'masterDb',
 				'keywords' => array('pdf conversion tools','weasyprint','pdftk','ps2pdf','ftp tool path','database dump tool','backup tool path','zip unzip tar path','system alert text','dashboard news snippet','system tools')),
-			array('key' => 'email_settings',    'group' => 'documents', 'url' => 'email_settings.php',                'category' => 'documents', 'labelDa' => 'Email Indstillinger', 'labelEn' => 'Email settings', 'labelNo' => 'E-postinnstillinger',
+			array('key' => 'email_settings',    'group' => 'documents', 'url' => 'settingsSection.php?s=documents.email', 'section' => 'documents.email', 'category' => 'documents', 'textId' => 6166,
 				'keywords' => array('sender email','sender name','email from address','invoice email sender','background specific email settings','afsender email','afsender navn')),
 			array('key' => 'rental_settings',   'group' => 'sales', 'url' => '../rental/settings.php',            'category' => 'rental', 'labelDa' => 'Udlejningsindstillinger', 'labelEn' => 'Rental settings', 'labelNo' => 'Utleieinnstillinger',
 				'keywords' => array('rental booking settings','booking format','date or timeslot booking','customer search fields','move in day','move out day','delete confirmation popup','combine consecutive bookings','automatic order creation','rental invoice date','password protect settings','week helper date picker')),
@@ -262,7 +261,7 @@ if (!function_exists('settings_optional_modules')) {
 			$sender = db_fetch_array(db_select("select id from settings where var_grp = 'email_settings' and var_name = 'sender_email' and coalesce(var_value, '') <> '' limit 1", __FILE__ . " linje " . __LINE__));
 			$own = db_fetch_array(db_select("select email from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
 			if (!$sender && (!$own || trim((string) $own['email']) === '')) {
-				$out['documents'] = array('kind' => 'warn', 'title' => findtekst('6025|Afsender-e-mail mangler', $sprogId), 'sub' => findtekst('5671|Dokumenter & e-mail', $sprogId), 'button' => findtekst('6026|Tilføj afsender', $sprogId), 'url' => 'email_settings.php');
+				$out['documents'] = array('kind' => 'warn', 'title' => findtekst('6025|Afsender-e-mail mangler', $sprogId), 'sub' => findtekst('5671|Dokumenter & e-mail', $sprogId), 'button' => findtekst('6026|Tilføj afsender', $sprogId), 'url' => 'settingsSection.php?s=documents.email&field=documents.email.sender_email.0');
 			}
 		}
 		if (isset($groups['users']) && function_exists('perm_review_pending')) {

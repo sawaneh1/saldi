@@ -29,6 +29,9 @@
 // 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
 //                  dependent fields indented; actions are rows too.
+// 20261003 Sawaneh G3.4 Reminders: type 'creditor' (lookup, stored as adresser id), options from the user list, a group
+//                  label above a run of fields ("Rykker 1"), a help line under a card heading.
+// 20261003 Sawaneh G6.3 E-mail: type 'textarea', a label suffix (the form language of a sender field), mixed select labels.
 // 20261002 Sawaneh Phase 4b batch 2 (G9): write-only 'secret' control (masked, Skift), 'info', 'link' and 'mini' rows,
 //                  computed select options, rule 'setting_set', lock 'ht_keys:<var>' for keys the installation manages.
 
@@ -152,6 +155,24 @@ function st_item_by_varenr(string $varenr): ?array
 	return $r ? array('id' => (string) $r['id'], 'name' => (string) $r['beskrivelse']) : null;
 }
 
+function st_creditor_kontonr(string $id): string
+{
+	if ((int) $id <= 0) {
+		return '';
+	}
+	$r = db_fetch_array(db_select("select kontonr from adresser where id = " . (int) $id . " and art = 'K'", __FILE__ . " linje " . __LINE__));
+	return $r ? (string) $r['kontonr'] : '';
+}
+
+/**
+ * @return array{id: string, name: string}|null
+ */
+function st_creditor_by_kontonr(string $kontonr): ?array
+{
+	$r = db_fetch_array(db_select("select id, firmanavn from adresser where art = 'K' and kontonr = '" . db_escape_string($kontonr) . "' order by id limit 1", __FILE__ . " linje " . __LINE__));
+	return $r ? array('id' => (string) $r['id'], 'name' => (string) $r['firmanavn']) : null;
+}
+
 function st_account_name(string $kontonr): ?string
 {
 	global $regnaar;
@@ -177,6 +198,9 @@ function st_form_value(array $def, string $raw): string
 	}
 	if ($def['type'] === 'item' && isset($def['item_as']) && $def['item_as'] === 'id') {
 		return st_item_varenr($raw);
+	}
+	if ($def['type'] === 'creditor' && isset($def['creditor_as']) && $def['creditor_as'] === 'id') {
+		return st_creditor_kontonr($raw);
 	}
 	if ($def['type'] === 'date') {
 		return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $m) ? $m[3] . '-' . $m[2] . '-' . $m[1] : $raw;
@@ -252,6 +276,18 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 				$error = 5734;
 			}
 			break;
+		case 'creditor':
+			if ($value === '') {
+				$raw = (isset($def['creditor_as']) && $def['creditor_as'] === 'id') ? '' : '';
+			} else {
+				$creditor = st_creditor_by_kontonr($value);
+				if (!$creditor) {
+					$error = 6204;
+				} elseif (isset($def['creditor_as']) && $def['creditor_as'] === 'id') {
+					$raw = $creditor['id'];
+				}
+			}
+			break;
 		case 'item':
 			if ($value === '') {
 				$raw = (isset($def['item_as']) && $def['item_as'] === 'id') ? '0' : '';
@@ -291,13 +327,19 @@ function st_display_value(array $def, string $raw): string
 			return SettingsService::decode($def, $raw) ? st_txt(5715) : st_txt(5716);
 		case 'select':
 			$options = st_options($def);
-			return isset($options[$raw]) ? (!empty($def['options_literal']) ? (string) $options[$raw] : st_txt($options[$raw])) : $raw;
+			return isset($options[$raw]) ? html_entity_decode(st_option_label($def, $options[$raw]), ENT_QUOTES, st_charset()) : $raw;
+		case 'textarea':
+			$raw = trim(preg_replace('/\s+/', ' ', $raw));
+			return $raw === '' ? '—' : (mb_strlen($raw) > 60 ? mb_substr($raw, 0, 57) . '…' : $raw);
 		case 'secret':
 			return st_txt(5713);
 		case 'date':
 			return $raw === '' ? '—' : st_form_value($def, $raw);
 		case 'item':
 			$v = (isset($def['item_as']) && $def['item_as'] === 'id') ? st_item_varenr($raw) : $raw;
+			return $v === '' ? '—' : $v;
+		case 'creditor':
+			$v = (isset($def['creditor_as']) && $def['creditor_as'] === 'id') ? st_creditor_kontonr($raw) : $raw;
 			return $v === '' ? '—' : $v;
 		default:
 			if ($raw === '') {
@@ -326,6 +368,12 @@ function st_options(array $def): array
 			while ($r = db_fetch_array($q)) {
 				$cache[$from][(string) $r['kodenr']] = $r['kodenr'] . ' : ' . $r['beskrivelse'];
 			}
+		} elseif ($from === 'users') {
+			$cache[$from] = array('' => 2498);
+			$q = db_select("select id, brugernavn from brugere order by brugernavn", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$cache[$from][(string) $r['id']] = (string) $r['brugernavn'];
+			}
 		}
 	}
 	return $cache[$from];
@@ -337,6 +385,20 @@ function st_options(array $def): array
 function st_label($label): string
 {
 	return is_int($label) || ctype_digit((string) $label) ? st_t($label) : st_h($label);
+}
+
+/**
+ * An option's label: a text id, or the literal text ('options_literal' for all, 'options_mixed' per option).
+ */
+function st_option_label(array $def, $label): string
+{
+	if (!empty($def['options_literal'])) {
+		return st_h($label);
+	}
+	if (!empty($def['options_mixed'])) {
+		return st_label($label);
+	}
+	return st_t($label);
 }
 
 function st_unit(array $def, string $prefix = ''): string
@@ -481,13 +543,17 @@ function st_render_field(array $def, array $state): void
 	$nameAttr = $disabled ? '' : ' name="f[' . st_h($key) . ']"';
 	$invalid = !empty($state['error']) ? ' aria-invalid="true" aria-describedby="e-' . $id . '"' : '';
 	?>
+<?php if (!empty($state['group_heading'])) { ?>
+<div class="st-grouphead"><?= st_h($state['group_heading']) ?></div>
+<?php } ?>
 <div class="<?= $classes ?>" id="<?= st_h($key) ?>" data-key="<?= st_h($key) ?>" data-default="<?= st_h($defaultForm) ?>"<?= $clientRule !== '' ? ' data-visible-if="' . st_h($clientRule) . '"' : '' ?><?= empty($state['visible']) ? ' hidden' : '' ?>>
   <div class="st-tx">
     <span class="st-labelrow">
+	<?php $labelText = st_t($def['label']) . ((isset($def['label_suffix']) && empty($state['in_group'])) ? ' <span class="st-label-suffix">· ' . st_h($def['label_suffix']) . '</span>' : ''); ?>
 	<?php if ($def['type'] === 'bool') { ?>
-      <span class="st-label" id="l-<?= $id ?>"><?= st_t($def['label']) ?></span>
+      <span class="st-label" id="l-<?= $id ?>"><?= $labelText ?></span>
 	<?php } else { ?>
-      <label class="st-label" for="<?= $id ?>"><?= st_t($def['label']) ?></label>
+      <label class="st-label" for="<?= $id ?>"><?= $labelText ?></label>
 	<?php } ?>
       <i class="st-chg" aria-hidden="true"></i>
       <button type="button" class="st-copy" data-copy title="<?= st_t(5741) ?>" aria-label="<?= st_t(5741) ?>"><i class='bx bx-link'></i></button>
@@ -509,14 +575,17 @@ function st_render_field(array $def, array $state): void
 	<?php } elseif ($def['type'] === 'select') { ?>
     <select class="st-input st-select" id="<?= $id ?>"<?= $nameAttr ?> data-control<?= $disabled ? ' disabled' : '' ?><?= $invalid ?>>
 		<?php foreach (st_options($def) as $optValue => $optLabel) { ?>
-      <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= !empty($def['options_literal']) ? st_h($optLabel) : st_t($optLabel) ?></option>
+      <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= st_option_label($def, $optLabel) ?></option>
 		<?php } ?>
     </select>
-	<?php } elseif ($def['type'] === 'account' || $def['type'] === 'item') {
+	<?php } elseif ($def['type'] === 'account' || $def['type'] === 'item' || $def['type'] === 'creditor') {
 		$resolved = '';
 		if ($value !== '') {
 			if ($def['type'] === 'account') {
 				$resolved = (string) st_account_name($value);
+			} elseif ($def['type'] === 'creditor') {
+				$creditor = st_creditor_by_kontonr($value);
+				$resolved = $creditor ? $creditor['name'] : '';
 			} else {
 				$item = st_item_by_varenr($value);
 				$resolved = $item ? $item['name'] : '';
@@ -541,6 +610,8 @@ function st_render_field(array $def, array $state): void
 	<?php } ?>
       <input class="st-input" type="password" id="<?= $id ?>"<?= $nameAttr ?> value="" autocomplete="new-password" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?><?= $isSet ? ' hidden' : '' ?>>
     </div>
+	<?php } elseif ($def['type'] === 'textarea') { ?>
+    <textarea class="st-input st-textarea" id="<?= $id ?>"<?= $nameAttr ?> rows="6" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>><?= st_h($value) ?></textarea>
 	<?php } elseif ($def['type'] === 'info') { ?>
     <span class="st-info"><?= function_exists('settings_integration_info') ? settings_integration_info($def) : '' ?></span>
 	<?php } elseif ($def['type'] === 'link') { ?>

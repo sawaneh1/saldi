@@ -167,6 +167,8 @@ $landedSections = array(
 	'productOptions' => 'settingsSection.php?s=items.stock&moved=productOptions',
 	'orediff'        => 'settingsSection.php?s=finance.cash_journal&moved=orediff#sub-rounding',
 	'api_valg'       => 'settingsSection.php?s=integrations.connections&moved=api_valg',
+	'smtp'           => 'settingsSection.php?s=documents.email&moved=smtp#sub-server',
+	'rykker_valg'    => 'settingsSection.php?s=sales.reminders&moved=rykker_valg',
 );
 if (isset($landedSections[$sektion]) && !($sektion == 'api_valg' && !empty($_GET['varesync']))) {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
@@ -190,6 +192,8 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 //                  save code is gone); div_valg no longer saves mySale, print, payment lists, payment days or voucher dates.
 // 20261002 Sawaneh Phase 4b batch 2: api_valg landed in Integrationer (only the shop sync still runs here); div_valg no longer
 //                  saves GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay, Vibrant or Copayone.
+// 20261003 Sawaneh G6.3: the SMTP save and the dead 'email' (MAIL/1) save are gone; smtp redirects to Dokumenter & e-mail » E-mail.
+// 20261003 Sawaneh G3.4: rykker_valg landed in Salg » Betalingsbetingelser & rykkere; its save code is gone.
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
 // them; a role only gets them when an administrator grants them explicitly.
 $dangerousSections = array(
@@ -712,34 +716,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 		}
 	#######################################################################################
-	} elseif ($sektion == 'rykker_valg') {
-		$id   = if_isset($_POST['id']);
-		$box1 = if_isset($_POST['box1']);
-		$box2 = if_isset($_POST['box2']);
-		$box3 = if_isset($_POST['box3']);
-		$box4 = if_isset($_POST['box4']);
-		$box5 = if_isset($_POST['box5']);
-		$box6 = if_isset($_POST['box6']);
-		$box7 = if_isset($_POST['box7']);
-		# $box8 er reserveret til dato for sidst afsendte mail.
-		$box9 = if_isset($_POST['box9']); #Inkasso
-		if ($box1) {
-			$r    = db_fetch_array(db_select("select id from brugere WHERE brugernavn = '$box1'", __FILE__ . " linje " . __LINE__));
-			$box1 = $r['id'];
-		}
-		if ($box9) {
-			$qtxt = "select id from adresser WHERE kontonr='$box9'";
-			$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-			$box9 = $r['id'];
-		}
-		if (($id == 0) && ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'DIV' and kodenr='4'", __FILE__ . " linje " . __LINE__))))
-			$id = $r['id'];
-		elseif ($id == 0) {
-			db_modify("insert into grupper (beskrivelse,kodenr,art,box1,box2,box3,box4,box5,box6,box7,box8,box9,box10) values ('Div_valg (Rykker)','4','DIV','$box1','$box2','$box3','$box4','$box5','$box6','$box7','','$box9','')", __FILE__ . " linje " . __LINE__);
-		} elseif ($id > 0) {
-			db_modify("update grupper set  box1='$box1',box2='$box2',box3='$box3',box4='$box4',box5='$box5',box6='$box6',box7='$box7',box9='$box9' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
-		}
-	#######################################################################################
 	} elseif ($sektion == 'posOptions') {
 		$id1            = (int) if_isset($_POST, 0, ['id1']);
 		$box1           = if_isset($_POST['kasseantal']) * 1;
@@ -1217,27 +1193,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 			include("../includes/online.php");
 		}
 		#######################################################################################
-	} elseif ($sektion == 'email') {
-		$id    = $_POST['id'];
-		$box1  = db_escape_string($_POST['box1']);
-		$box2  = db_escape_string($_POST['box2']);
-		$box3  = db_escape_string($_POST['box3']);
-		$box4  = db_escape_string($_POST['box4']);
-		$box5  = db_escape_string($_POST['box5']);
-		$box6  = db_escape_string($_POST['box6']);
-		$box7  = db_escape_string($_POST['box7']);
-		$box8  = db_escape_string($_POST['box8']);
-		$box9  = db_escape_string($_POST['box9']);
-		$box10 = db_escape_string($_POST['box10']);
-
-		if ((!$id) && ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'MAIL' and kodenr = '1'", __FILE__ . " linje " . __LINE__))))
-			$id = $r['id'];
-		elseif (!$id) {
-			db_modify("insert into grupper (beskrivelse,kodenr,art,box1,box2,box3,box4,box5,box6,box7,box8,box9,box10) values ('e-mail tekster','1','MAIL','$box1','$box2','$box3','$box4','$box5','$box6','$box7','$box8','$box9','$box10')", __FILE__ . " linje " . __LINE__);
-		} elseif ($id > 0) {
-			db_modify("update grupper set  box1='$box1',box2='$box2',box3='$box3',box4='$box4',box5='$box5',box6='$box6',box7='$box7',box8='$box8',box9='$box9',box10='$box10' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
-		}
-		#######################################################################################
 	} elseif ($sektion == 'massefakt') {
 		$id         = if_isset($_POST['id']);
 		$brug_mfakt = if_isset($_POST['brug_mfakt']);
@@ -1420,13 +1375,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 				alert("$alert $tekst1: $regnskab");
 			}
 		}
-	} elseif ($sektion == 'smtp') {
-		$smtp      = trim(db_escape_string($_POST['smtp']));
-		$smtpuser  = trim(db_escape_string($_POST['smtpuser']));
-		$smtppass  = trim(db_escape_string($_POST['smtppass']));
-		$smtpcrypt = trim(db_escape_string($_POST['smtpcrypt']));
-		db_modify("update adresser set felt_1 = '$smtp',felt_2 = '$smtpuser',felt_3 = '$smtppass',felt_4 = '$smtpcrypt' WHERE art='S'", __FILE__ . " linje " . __LINE__);
-		$sektion = 'kontoindstillinger';
 	} elseif ($sektion == 'tjekliste') {
 		$id            = if_isset($_POST['id']);
 		$tjekantal     = if_isset($_POST['tjekantal']);
@@ -1501,7 +1449,6 @@ if ($sektion == "pricelists") {
 	include("diverseIncludes/pricelists.php");
 	pricelists();
 }
-if ($sektion == "rykker_valg") rykker_valg();
 if ($sektion == "div_valg") div_valg(); # Kalder sys_div_valg.php
 if ($sektion == "bilag") bilag();
 if ($sektion == "bank_integration") include('diverseIncludes/bank_integration.php');

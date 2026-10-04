@@ -5770,3 +5770,42 @@
 6163	QR-koder til kasserne	QR codes for the tills	QR-koder for kassene
 6164	Nøglen vises kun her, mens den er ny. Gem den i din API-klient med det samme	The key is only shown here while it is new. Store it in your API client right away	Nøkkelen vises bare her mens den er ny. Lagre den i API-klienten din med en gang
 6165	Afhentningsadresser redigeres under Diverse valg, indtil de får deres egen liste	Pick-up addresses are edited under Diverse valg until they get their own list	Hentesteder redigeres under Diverse valg til de får sin egen liste
+6166	E-mail	E-mail	E-post
+6167	Udgående server	Outgoing server	Utgående server
+6168	Afsender pr. sprog	Sender per language	Avsender per språk
+6169	Mailtekster	Mail texts	E-posttekster
+6170	SMTP-server	SMTP server	SMTP-server
+6171	Ingen	None	Ingen
+6172	Afsender-e-mail	Sender e-mail	Avsender-e-post
+6173	Bruges som afsender på dokumenter i dette sprog. Tom: virksomhedens e-mail fra Stamdata	Used as the sender on documents in this language. Empty: the company e-mail from master data	Brukes som avsender på dokumenter på dette språket. Tom: virksomhetens e-post fra stamdata
+6174	Afsendernavn	Sender name	Avsendernavn
+6175	Navnet modtageren ser som afsender. Tom: virksomhedens navn	The name the recipient sees as sender. Empty: the company name	Navnet mottakeren ser som avsender. Tomt: virksomhetens navn
+6176	Emne – mail til kunder	Subject – mail to customers	Emne – e-post til kunder
+6177	Tekst – mail til kunder	Text – mail to customers	Tekst – e-post til kunder
+6178	Emne – invitation til Mit Salg	Subject – invitation to My Sales	Emne – invitasjon til Mitt salg
+6179	Tekst – invitation til Mit Salg	Text – invitation to My Sales	Tekst – invitasjon til Mitt salg
+6180	Tekst – afregning til kommissionskunder	Text – settlement to commission customers	Tekst – avregning til kommisjonskunder
+6181	Sendes fra betalingslisten. $navn, $kontonr, $sum, $antal, $start og $slut erstattes. Tom: Saldis standardtekst	Sent from the payment list. $navn, $kontonr, $sum, $antal, $start and $slut are replaced. Empty: Saldi's standard text	Sendes fra betalingslisten. $navn, $kontonr, $sum, $antal, $start og $slut erstattes. Tom: Saldis standardtekst
+6182	Tom: Saldis standardtekst bruges	Empty: Saldi's standard text is used	Tom: Saldis standardtekst brukes
+6183	Standard (dansk og sprog uden egen afsender)	Default (Danish and languages without their own sender)	Standard (dansk og språk uten egen avsender)
+6184	Serverens adresse, evt. med port efter kolon, fx smtp.gmail.com:465. Tom: Saldis egen mailserver	The server's address, port after a colon if needed, e.g. smtp.gmail.com:465. Empty: Saldi's own mail server	Serverens adresse, eventuelt med port etter kolon, f.eks. smtp.gmail.com:465. Tom: Saldis egen e-postserver
+6185	Teksterne $kunde og $link erstattes af kundens navn og linket til kundens salg. HTML kan bruges	The texts $kunde and $link are replaced by the customer's name and the link to the customer's sales. HTML can be used	Tekstene $kunde og $link erstattes av kundens navn og lenken til kundens salg. HTML kan brukes
+6186	Rykkeransvarlig	Reminder manager	Purreansvarlig
+6187	Påmindelser	Notifications	Påminnelser
+6188	Inkasso	Debt collection	Inkasso
+6189	Rykkergebyr og rente	Reminder fee and interest	Purregebyr og rente
+6190	Betalingsbetingelser & rykkere	Payment terms & reminders	Betalingsbetingelser og purringer
+6191	Brugeren adviseres ved login, når der er fakturaer at rykke for. Alle: alle brugere adviseres	The user is notified at login when invoices need a reminder. All: every user is notified	Brukeren varsles ved innlogging når det er fakturaer å purre på. Alle: alle brukere varsles
+6192	Er adressen udfyldt, sendes der en mail hertil, når der er fakturaer at rykke for (når nogen logger ind)	When filled in, a mail is sent here when invoices need a reminder (when anyone logs in)	Er adressen fylt ut, sendes en e-post hit når det er fakturaer å purre på (når noen logger inn)
+6193	Inkassoadvokat	Debt collection lawyer	Inkassoadvokat
+6194	Kreditoren der sendes til, når en rykker overgives til inkasso	The creditor sent to when a reminder is handed over for collection	Kreditoren det sendes til når en purring overleveres til inkasso
+6195	Rykker %s	Reminder %s	Purring %s
+6196	Gebyrvare	Fee item	Gebyrvare
+6197	Varen, hvis salgspris lægges på som rykkergebyr	The item whose sales price is added as the reminder fee	Varen hvis salgspris legges til som purregebyr
+6198	Rentevare	Interest item	Rentevare
+6199	En vare med salgspris 0, som rentebeløbet bogføres på	An item with sales price 0 that the interest amount is posted on	En vare med salgspris 0 som rentebeløpet bokføres på
+6200	Rentesats	Interest rate	Rentesats
+6201	Procent pr. påbegyndt måned	Percent per month or part of a month	Prosent per påbegynt måned
+6202	Rykkere sendes ikke automatisk. Påmindelserne går til den rykkeransvarlige	Reminders are not sent automatically. The notifications go to the reminder manager	Purringer sendes ikke automatisk. Påminnelsene går til den purreansvarlige
+6203	Rykkergebyr og rente sættes under Indstillinger » Salg » Betalingsbetingelser & rykkere	Reminder fee and interest are set under Settings » Sales » Payment terms & reminders	Purregebyr og rente settes under Innstillinger » Salg » Betalingsbetingelser og purringer
+6204	Ukendt kreditor	Unknown creditor	Ukjent kreditor
