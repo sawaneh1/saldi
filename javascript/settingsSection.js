@@ -5,6 +5,7 @@
 // 20260930 Sawaneh Field links open inside the shell and use ?field= (spec §8.11).
 // 20261002 Sawaneh Hand-over 2 Oct (8.0): the save bar shows only while something is unsaved and counts the changes;
 //                  a changed field is marked; a sub-section whose fields are all hidden is hidden too.
+// 20261004 Sawaneh Skift on a stored secret opens its empty input (it did nothing on form sections).
 (function () {
 	'use strict';
 	var cfg = window.SALDI_SETTINGS || {};
@@ -100,6 +101,14 @@
 			var field = reset.closest('.st-field');
 			setValue(field, field.dataset.default);
 			refresh();
+			return;
+		}
+		var change = e.target.closest('[data-secret-change]');
+		if (change) {
+			// A stored secret is never sent to the page: Skift opens an empty field, and empty means unchanged.
+			var input = document.getElementById(change.getAttribute('aria-controls'));
+			change.hidden = true;
+			if (input) { input.hidden = false; input.focus(); }
 			return;
 		}
 		var copy = e.target.closest('[data-copy]');

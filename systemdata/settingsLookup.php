@@ -19,19 +19,21 @@
 // ----------------------------------------------------------------------
 // 20260929 Sawaneh Settings redesign phase 4a (spec §8.1): type-ahead for the account and item
 //                  lookup fields of a generated settings section. Read-only, JSON.
+// 20261004 Sawaneh Open to users with read on any settings group (no longer the Indstillinger bit); nothing for others.
 
 ob_start();
 @session_start();
 $s_id = session_id();
 $title = "settingsLookup";
 $webservice = true;
-$modulnr = 1;
-$permission_key = 'system.indstillinger';
+$modulnr = 0;
+$permission_key = 'any';
 $permission_post_read = true;
 
 include(__DIR__ . "/../includes/connect.php");
 include(__DIR__ . "/../includes/online.php");
 include(__DIR__ . "/../includes/std_func.php");
+include_once(__DIR__ . "/settingsRegistry.php");
 
 ob_end_clean();
 header('Content-Type: application/json; charset=utf-8');
@@ -41,7 +43,7 @@ $q = isset($_GET['q']) ? trim((string) $_GET['q']) : '';
 $results = array();
 $charset = (isset($db_encode) && $db_encode !== 'UTF8') ? 'ISO-8859-1' : 'UTF-8';
 
-if ($q !== '' && mb_strlen($q) <= 60) {
+if ($q !== '' && mb_strlen($q) <= 60 && settings_accessible_groups()) {
 	$like = db_escape_string(str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), mb_strtolower($q)));
 	if ($type === 'account') {
 		$qtxt = "select kontonr, beskrivelse from kontoplan where regnskabsaar = '" . (int) $regnaar . "' and kontotype in ('D', 'S') ";

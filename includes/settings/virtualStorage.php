@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261004 Sawaneh G10.1: seed_post_each_sale, the starting value of the per-till postEachSale list.
 // 20261004 Sawaneh Settings redesign: a setting whose value is derived from several stored fields (storage
 //                  'virtual'). Read and written here, audited like any other setting by SettingsService.
 
@@ -25,6 +26,12 @@
  */
 function settings_virtual_get(string $name): string
 {
+	if ($name === 'seed_post_each_sale') {
+		// G10.1: without a postEachSale list every till follows POS/1 box9 (includes/ordrefunc.php).
+		$on = function_exists('settings_post_each_sale_default') && settings_post_each_sale_default();
+		$tills = function_exists('settings_till_count') ? settings_till_count() : 0;
+		return $tills > 0 ? implode("\t", array_fill(0, $tills, $on ? 'on' : '')) : '';
+	}
 	if ($name === 'document_storage') {
 		// G2.6: internal storage is box6 'on'; own FTP is box6 empty with a server; otherwise none.
 		$r = db_fetch_array(db_select("select box1, box2, box6 from grupper where art = 'bilag' order by id limit 1", __FILE__ . " linje " . __LINE__));

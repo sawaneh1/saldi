@@ -28,6 +28,8 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261004 Sawaneh Access follows the section's permission key only, not the old Indstillinger bit (decision 16).
+// 20261004 Sawaneh A stored secret shows when it was set ("sat 12/9-2026") on form sections too.
 // 20261004 Sawaneh G4.3: list items from the database ('items_from'), a one-off flash kept in the session.
 // 20261004 Sawaneh G2.6: FTP test result flash.
 // 20261003 Sawaneh G3.4: a run of fields may carry a heading ('group_label'), a card a help line ('sub_help').
@@ -54,8 +56,8 @@ $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
 $css = "../css/unified-components.css?v=20261002b";
-$modulnr = 1;
-$permission_key = 'system.indstillinger';
+$modulnr = 0; // the section's own permission key is required below
+$permission_key = 'any';
 $permission_post_read = false;
 
 include(__DIR__ . "/../includes/connect.php");
@@ -115,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if ($action === 'revert') {
 		$entry = SettingsService::historyEntry(isset($_POST['entry']) ? (int) $_POST['entry'] : 0);
 		if ($entry && $entry['section'] === $sectionId && isset($defs[$entry['setting_key']]) && $defs[$entry['setting_key']]['type'] !== 'secret') {
-			SettingsService::saveRaw($entry['setting_key'], (string) $entry['old_value']);
+			SettingsService::saveRaw($entry['setting_key'], (string) $entry['old_value'], null, 'setting.reverted');
 		}
 		ob_end_clean();
 		header('Location: ' . $backUrl . '&reverted=1#' . ($entry ? rawurlencode((string) $entry['setting_key']) : ''));
@@ -126,7 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$key = isset($_POST['key']) ? (string) $_POST['key'] : '';
 		$target = $backUrl;
 		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
-			audit_log('setting.action', $key);
+			// Till and price-list row actions write their own entry with before/after.
+			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete'), true)) {
+				audit_log('setting.action', '', 'indstilling', $key);
+			}
 			$target = settings_run_action($defs[$key], $backUrl);
 		}
 		ob_end_clean();
@@ -309,6 +314,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 
 	$tabs = settings_section_tabs($section['group'], $sprogId);
 	$history = SettingsService::history($sectionId, 20);
+	$setAt = SettingsService::lastChanged($sectionId);
 	$version = SettingsService::version($sectionId);
 	$config = array(
 		'unsavedN' => st_txt(6043), 'unsaved1' => st_txt(6044),
@@ -434,6 +440,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 				st_render_field($def, array(
 					'group_heading' => $groupHeading,
 					'in_group'      => isset($def['group_label']),
+					'set_at'        => isset($setAt[$key]) ? $setAt[$key] : '',
 					'value'    => isset($values[$key]) ? $values[$key] : '',
 					'original' => isset($originals[$key]) ? $originals[$key] : '',
 					'error'    => isset($state['errors'][$key]) ? $state['errors'][$key] : null,
@@ -532,7 +539,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=5"></script>
+<script src="../javascript/settingsSection.js?v=6"></script>
 	<?php
 }
 

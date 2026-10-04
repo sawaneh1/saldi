@@ -33,6 +33,9 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 	if (!empty($def['soon'])) {
 		return array('kind' => 'soon', 'text' => st_txt(6140), 'button' => 0);
 	}
+	if (strpos($item, 'till_') === 0) {
+		return array('kind' => 'plain', 'text' => (string) $def['status_text'], 'button' => 6122);
+	}
 	if (strpos($item, 'pl_') === 0) {
 		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(6233), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6234), 'button' => 6122);
 	}
@@ -93,6 +96,20 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 function settings_list_dynamic_items(string $from): array
 {
 	$items = array();
+	if ($from === 'tills') {
+		$tills = settings_till_count();
+		$departments = st_options(array('options_from' => 'departments'));
+		for ($n = 1; $n <= $tills; $n++) {
+			$department = SettingsService::raw('pos.tills.department.' . $n);
+			$terminal = SettingsService::raw('pos.tills.terminal_type.' . $n);
+			$items['till_' . $n] = array(
+				'sub' => 'tills', 'abbr' => (string) $n, 'literal' => true,
+				'label' => sprintf(st_txt(6278), $n) . (isset($departments[$department]) && $departments[$department] !== '' ? ' · ' . $departments[$department] : ''),
+				'desc' => SettingsService::raw('pos.tills.cash_account.' . $n) !== '' ? st_txt(6279) . ' ' . SettingsService::raw('pos.tills.cash_account.' . $n) : '',
+				'status_text' => $terminal,
+			);
+		}
+	}
 	if ($from === 'pricelists') {
 		$q = db_select("select id, beskrivelse, box2, box12 from grupper where art = 'PL' order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {

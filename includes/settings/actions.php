@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------
 // 20261002 Sawaneh Settings redesign phase 4b: the actions a generated section can run (spec P4), each after a
 //                  confirmation on the page. Called from systemdata/settingsSection.php.
+// 20261004 Sawaneh G10.1: add a till, remove the last one.
 // 20261004 Sawaneh G4.3: price lists - add, use (one active list), test the file (fetched only here, with a timeout), delete.
 // 20261004 Sawaneh G2.6: FTP connection test for document storage.
 // 20261002 Sawaneh Phase 4b batch 2 (G9): new API key, shop sync, MobilePay webhook and QR codes (includes/settings/integrations.php).
@@ -158,10 +159,31 @@ function settings_run_action(array $def, string $selfUrl): string
 			return 'sys_div_func_includes/setup_mobilepay_webhook.php';
 		case 'ftp_test':
 			return $selfUrl . '&ftp=' . (settings_ftp_test() ? 'ok' : 'fail');
+		case 'till_add':
+		case 'till_remove':
+			// Every fiscal year's POS/1 row (risk review R2). The per-till lists keep their entries; removing the
+			// last till only stops it, adding it again brings its setup back.
+			$before = settings_till_count();
+			$tills = $before + ($def['run'] === 'till_add' ? 1 : -1);
+			if ($tills >= 0) {
+				if (!db_fetch_array(db_select("select id from grupper where art = 'POS' and kodenr = '1'", __FILE__ . " linje " . __LINE__))) {
+					global $regnaar;
+					db_modify("insert into grupper (beskrivelse, kode, kodenr, art, box1, fiscal_year) values ('POS_valg', '', '1', 'POS', '$tills', " . (int) $regnaar . ")", __FILE__ . " linje " . __LINE__);
+				} else {
+					db_modify("update grupper set box1 = '$tills' where art = 'POS' and kodenr = '1'", __FILE__ . " linje " . __LINE__);
+				}
+				if (function_exists('audit_log')) {
+					audit_log('setting.action', json_encode(array('before' => $before, 'after' => $tills)), 'indstilling', $def['key']);
+				}
+			}
+			return 'settingsSection.php?s=pos.tills' . ($def['run'] === 'till_add' ? '&item=till_' . $tills : '');
 		case 'pricelist_create':
 			$name = db_escape_string(st_txt(6222));
 			db_modify("insert into grupper (beskrivelse, kodenr, art, box2, box10, box11) values ('$name', '0', 'PL', '', ';', 'utf-8')", __FILE__ . " linje " . __LINE__);
 			$r = db_fetch_array(db_select("select max(id) as id from grupper where art = 'PL'", __FILE__ . " linje " . __LINE__));
+			if (function_exists('audit_log')) {
+				audit_log('setting.row_created', json_encode(array('before' => null, 'after' => st_txt(6222)), JSON_UNESCAPED_UNICODE), 'indstilling', 'purchase.pricelists#' . (int) $r['id']);
+			}
 			return 'settingsSection.php?s=purchase.pricelists&item=pl_' . (int) $r['id'];
 		case 'pricelist_use':
 			$id = (int) $def['scope_id'];
@@ -178,7 +200,7 @@ function settings_run_action(array $def, string $selfUrl): string
 			$name = settings_pricelist_name($id);
 			db_modify("delete from grupper where art = 'PL' and id = $id", __FILE__ . " linje " . __LINE__);
 			if (function_exists('audit_log')) {
-				audit_log('setting.row_deleted', $name, 'indstilling', 'purchase.pricelists#' . $id);
+				audit_log('setting.row_deleted', json_encode(array('before' => $name, 'after' => null), JSON_UNESCAPED_UNICODE), 'indstilling', 'purchase.pricelists#' . $id);
 			}
 			$_SESSION['settings_flash'] = array('ok', st_txt(6249) . ': ' . $name);
 			return 'settingsSection.php?s=purchase.pricelists';
@@ -197,10 +219,6 @@ function settings_run_action(array $def, string $selfUrl): string
  */
 function settings_after_save(array $def, string $raw): void
 {
-	if ($def['on_save'] === 'ensure_emballage_schema' && $raw === 'on') {
-		include_once(__DIR__ . '/../emballage_schema.php');
-		ensure_emballage_schema();
-	}
 	if ($def['on_save'] === 'pricelist_group_name') {
 		// The old page kept the item group's name next to its number (box8); debitor/_varerInsert.php reads the name.
 		$r = db_fetch_array(db_select("select beskrivelse from grupper where art = 'VG' and kodenr = '" . db_escape_string($raw) . "' order by fiscal_year desc limit 1", __FILE__ . " linje " . __LINE__));

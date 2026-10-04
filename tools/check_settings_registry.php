@@ -4,6 +4,8 @@
 // line (php tools/check_settings_registry.php). Exit code 1 when an entry is incomplete:
 // label/help text ids missing in any of the three languages, unknown permission key, no old-menu
 // ('legacy') path, unknown section or sub-section, or a section without 'context' pages.
+// 20261004 Sawaneh Runs without a database again: stand-in db functions answer one sample row for the per-till,
+//                  per-price-list and per-language expansions.
 
 if (php_sapi_name() !== 'cli') {
 	exit;
@@ -19,6 +21,20 @@ while (($line = fgets($fp)) !== false) {
 }
 fclose($fp);
 function findtekst($id, $sprog = 1) { return (string) $id; }
+// No database here: the registry expands some fields per till, price list and form language from the company's rows,
+// so every query answers one sample row and every expanded field is still checked once.
+if (!function_exists('db_select')) {
+	function db_select($q, $f = '') { static $n = 0; return 'r' . (++$n); }
+	function db_fetch_array($r) {
+		static $done = array();
+		if (isset($done[$r])) {
+			return false;
+		}
+		$done[$r] = true;
+		return array('id' => 1, 'box1' => '1', 'box9' => '', 'beskrivelse' => 'sample', 'kodenr' => '1', 0 => '1');
+	}
+	function db_escape_string($s) { return addslashes((string) $s); }
+}
 function perm_can($k, $l = 'read') { return true; }
 require $root . '/includes/permissionRegistry.php';
 require $root . '/systemdata/settingsRegistry.php';

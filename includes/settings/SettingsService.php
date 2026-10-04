@@ -25,6 +25,8 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261004 Sawaneh G10.1: a joined list ('join' + 'index') may also live in a settings row (postEachSale); scope 'pos' takes its
+//                  id from the definition like 'group' and 'row'.
 // 20261004 Sawaneh G10 (risk review R2): grupper rows kept per fiscal year ('fiscal') are read from the current year and
 //                  written to every year, as before; a missing row is created for the current year.
 // 20261004 Sawaneh G4.3: storage 'grupper_row' (one column of one grupper row, the row id is the scope; price lists).
@@ -76,7 +78,7 @@ class SettingsService
 	public static function storage(array $def): array
 	{
 		$s = $def['storage'];
-		$out = array('join' => isset($s['join']) ? $s['join'] : null, 'index' => isset($s['index']) ? (int) $s['index'] : 0);
+		$out = array('join' => isset($s['join']) ? $s['join'] : null, 'index' => isset($s['index']) ? (int) $s['index'] : 0, 'list' => !empty($s['list']));
 		if ($s[0] === 'grupper') {
 			return $out + array('table' => 'grupper', 'art' => (string) $s[1], 'kodenr' => (string) $s[2], 'box' => (string) $s[3], 'encoding' => isset($s[4]) ? $s[4] : 'raw', 'fiscal' => !empty($s['fiscal']));
 		}
@@ -214,7 +216,7 @@ class SettingsService
 			}
 		}
 		if ($st['join'] !== null) {
-			$parts = self::splitComposite($value, $st['join']);
+			$parts = self::splitComposite($value, $st['join'], $st['list']);
 			$value = isset($parts[$st['index']]) ? $parts[$st['index']] : '';
 		}
 		return $value;
@@ -327,7 +329,7 @@ class SettingsService
 	/**
 	 * Write a stored string as is (also used by "Gendan" in the change history).
 	 */
-	public static function saveRaw(string $key, string $raw, $scopeId = null): bool
+	public static function saveRaw(string $key, string $raw, $scopeId = null, string $handling = 'setting.changed'): bool
 	{
 		$def = self::definition($key);
 		if (!$def || empty($def['storage'])) {
@@ -360,7 +362,7 @@ class SettingsService
 			$row = self::$grupper[$ck];
 			$stored = $esc;
 			if ($st['join'] !== null) {
-				$parts = self::splitComposite($row ? (string) $row[$st['box']] : '', $st['join']);
+				$parts = self::splitComposite($row ? (string) $row[$st['box']] : '', $st['join'], $st['list']);
 				$parts[$st['index']] = $raw;
 				for ($i = 0; $i <= max(array_keys($parts)); $i++) {
 					if (!isset($parts[$i])) {
@@ -423,6 +425,37 @@ class SettingsService
 			} else {
 				$where .= " and (user_id is null or user_id = 0)";
 			}
+			if ($st['join'] !== null) {
+				// One part of a joined list: the other parts stay as they are.
+				$whole = '';
+				foreach (self::$settings[$st['var_name']] as $r) {
+					if (self::rowInScope($r, $def, $st, $scopeId)) {
+						$whole = (string) $r['var_value'];
+						break;
+					}
+				}
+				if ($whole === '' && !empty($def['storage']['seed'])) {
+					// A list that does not exist yet starts from what the readers fall back to, so the other parts keep their meaning.
+					include_once(__DIR__ . '/virtualStorage.php');
+					$whole = settings_virtual_get('seed_' . $def['storage']['seed']);
+				}
+				$parts = self::splitComposite($whole, $st['join'], $st['list']);
+				$parts[$st['index']] = $raw;
+				for ($i = 0; $i <= max(array_keys($parts)); $i++) {
+					if (!isset($parts[$i])) {
+						$parts[$i] = '';
+					}
+				}
+				ksort($parts);
+				$esc = db_escape_string(implode($st['join'], $parts));
+				$had = false;
+				foreach (self::$settings[$st['var_name']] as $r) {
+					if (self::rowInScope($r, $def, $st, $scopeId)) {
+						$had = true;
+						break;
+					}
+				}
+			}
 			if ($had) {
 				db_modify("update settings set var_value = '$esc' where $where", __FILE__ . " linje " . __LINE__);
 			} else {
@@ -442,7 +475,7 @@ class SettingsService
 			unset(self::$settings[$st['var_name']]);
 		}
 		if (!isset($def['audit']) || $def['audit']) {
-			self::audit($def, $old, $raw);
+			self::audit($def, $old, $raw, $handling);
 		}
 		return true;
 	}
@@ -480,14 +513,22 @@ class SettingsService
 		return self::$auditColumns;
 	}
 
-	private static function audit(array $def, string $old, string $new): void
+	/** Settings history rows; 'setting.change' is the name used before the roles spec's event names. */
+	const HISTORY_HANDLINGS = "'setting.changed', 'setting.reverted', 'setting.change'";
+
+	private static function audit(array $def, string $old, string $new, string $handling): void
 	{
 		global $bruger_id, $brugernavn;
 		$secret = ($def['type'] === 'secret');
 		$section = $def['group'] . '.' . $def['section'];
+		// detaljer as the roles spec defines it: {before, after}, a secret only as "ændret" (settings redesign §8.12).
+		$detaljer = json_encode($secret ? array('before' => 'ændret', 'after' => 'ændret') : array('before' => $old, 'after' => $new), JSON_UNESCAPED_UNICODE);
+		if ($detaljer === false) {
+			$detaljer = json_encode($secret ? array('before' => 'ændret', 'after' => 'ændret') : array('before' => mb_convert_encoding($old, 'UTF-8', 'ISO-8859-1'), 'after' => mb_convert_encoding($new, 'UTF-8', 'ISO-8859-1')), JSON_UNESCAPED_UNICODE);
+		}
 		if (!self::auditColumns()) {
 			if (function_exists('audit_log')) {
-				audit_log('setting.change', $def['key'] . ($secret ? '' : ': ' . $old . ' -> ' . $new));
+				audit_log($handling, (string) $detaljer, 'indstilling', $def['key']);
 			}
 			return;
 		}
@@ -496,7 +537,7 @@ class SettingsService
 		$objekt = self::$auditObjekt ? ", objekt_type, objekt_id, kilde" : "";
 		$objektValues = self::$auditObjekt ? ", 'indstilling', '" . db_escape_string(substr($def['key'], 0, 60)) . "', 'ui'" : "";
 		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, setting_key, section, old_value, new_value$objekt) values (";
-		$qtxt .= (int) $bruger_id . ", '" . db_escape_string(isset($GLOBALS['brugernavn_raw']) ? (string) $GLOBALS['brugernavn_raw'] : (string) $brugernavn) . "', 'setting.change', '" . db_escape_string($def['key']) . "', '$ip', ";
+		$qtxt .= (int) $bruger_id . ", '" . db_escape_string(isset($GLOBALS['brugernavn_raw']) ? (string) $GLOBALS['brugernavn_raw'] : (string) $brugernavn) . "', '" . db_escape_string($handling) . "', '" . db_escape_string((string) $detaljer) . "', '$ip', ";
 		$qtxt .= "'" . db_escape_string($def['key']) . "', '" . db_escape_string($section) . "', ";
 		$qtxt .= "'" . db_escape_string($secret ? '' : $old) . "', '" . db_escape_string($secret ? '' : $new) . "'$objektValues)";
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
@@ -525,7 +566,7 @@ class SettingsService
 			return $rows;
 		}
 		$qtxt = "select id, bruger_id, brugernavn, tidspunkt, setting_key, old_value, new_value from audit_log ";
-		$qtxt .= "where section = '" . db_escape_string($section) . "' and handling = 'setting.change' and id > " . (int) $afterId . " order by id desc limit " . (int) $limit;
+		$qtxt .= "where section = '" . db_escape_string($section) . "' and handling in (" . self::HISTORY_HANDLINGS . ") and id > " . (int) $afterId . " order by id desc limit " . (int) $limit;
 		$q = db_select($qtxt, __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
 			$rows[] = $r;
@@ -557,7 +598,7 @@ class SettingsService
 		if (!self::auditColumns()) {
 			return null;
 		}
-		$r = db_fetch_array(db_select("select id, brugernavn, tidspunkt, setting_key, section, old_value, new_value from audit_log where id = " . (int) $id . " and handling = 'setting.change'", __FILE__ . " linje " . __LINE__));
+		$r = db_fetch_array(db_select("select id, brugernavn, tidspunkt, setting_key, section, old_value, new_value from audit_log where id = " . (int) $id . " and handling in (" . self::HISTORY_HANDLINGS . ")", __FILE__ . " linje " . __LINE__));
 		return $r ?: null;
 	}
 
@@ -566,10 +607,14 @@ class SettingsService
 	/**
 	 * @return array<int, string>
 	 */
-	private static function splitComposite(string $value, string $sep): array
+	private static function splitComposite(string $value, string $sep, bool $list = false): array
 	{
 		if ($value === '') {
 			return array();
+		}
+		if ($list && strpos($value, $sep) === false) {
+			// A per-till list with one entry belongs to till 1 only.
+			return array(0 => $value);
 		}
 		if (strpos($value, $sep) === false) {
 			// A box written before it became composite holds one value meant for every part.
@@ -634,7 +679,7 @@ class SettingsService
 	 */
 	private static function scopeId(array $def, $scopeId)
 	{
-		if ($scopeId === null && isset($def['scope']) && in_array($def['scope'], array('group', 'row'), true) && isset($def['scope_id'])) {
+		if ($scopeId === null && isset($def['scope']) && in_array($def['scope'], array('group', 'row', 'pos'), true) && isset($def['scope_id'])) {
 			return (int) $def['scope_id'];
 		}
 		return $scopeId;

@@ -30,6 +30,7 @@
 // 20261002 Sawaneh Hand-over 2 Oct (A1, settings redesign §8.0): groups as rows in three labelled lists instead of tiles,
 //                  "Kræver opmærksomhed" above them, status as a dot plus text, search results in a dropdown, no Back
 //                  button (the shell shows the breadcrumb). Optional modules are shown inside their group, not here.
+// 20261004 Sawaneh Open to anyone with read on a settings group, not only the old Indstillinger bit (decision 16).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -44,7 +45,7 @@ $s_id = session_id();
 
 $title = "Indstillinger";
 $css = "../css/settingsHub.css?v=20261002b";
-$modulnr = 1;
+$modulnr = 0; // access is per settings group (settings_require_any_access below), not the old Indstillinger bit
 $permission_key = 'any';
 
 include(__DIR__ . "/../includes/connect.php");
@@ -53,6 +54,7 @@ include(__DIR__ . "/../includes/std_func.php");
 include_once(__DIR__ . "/settingsRegistry.php");
 include_once(__DIR__ . "/../includes/settings/components.php");
 
+settings_require_any_access();
 if (!isset($_SESSION['csrf_token'])) {
 	$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }

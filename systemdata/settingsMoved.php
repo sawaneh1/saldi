@@ -20,6 +20,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §8.10): "Hvor er...?" - the old menu next to
 //                  where each item lives now, searchable. Generated from getSettingsMovedMap().
 // 20261002 Sawaneh Hand-over 2 Oct (§8.0): page head with the filter on the right, no Back button, list in one card.
+// 20261004 Sawaneh No longer gated by the Indstillinger bit; the list is filtered by the user's settings groups.
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -31,7 +32,7 @@ $s_id = session_id();
 
 $title = "Indstillinger";
 $css = "../css/unified-components.css?v=20261002";
-$modulnr = 1;
+$modulnr = 0;
 $permission_key = 'any';
 
 include(__DIR__ . "/../includes/connect.php");

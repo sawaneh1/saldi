@@ -5879,3 +5879,40 @@
 6272	Gælder alle kasser. Kasser, konti, betalingskort og per-kasse-valg findes stadig under PoS-valg	Applies to all tills. Tills, accounts, payment cards and per-till options are still under PoS-valg	Gjelder alle kasser. Kasser, kontoer, betalingskort og valg per kasse finnes fortsatt under PoS-valg
 6273	Bonen udskrives automatisk efter hver handel. Fra: bonen udskrives manuelt	The receipt is printed automatically after each sale. Off: the receipt is printed manually	Kvitteringen skrives ut automatisk etter hvert salg. Av: kvitteringen skrives ut manuelt
 6274	Giver en særlig pris på en gruppe varer. Varerne samles på bonen uden enkeltpriser, og sætprisen vises under dem	Gives a special price for a group of items. The items are grouped on the receipt without single prices, and the set price is shown below them	Gir en spesialpris på en gruppe varer. Varene samles på kvitteringen uten enkeltpriser, og settprisen vises under dem
+6275	Kasser & konti	Tills & accounts	Kasser og kontoer
+6276	Hver kasse med afdeling, konti, printer og betalingsterminal	Each till with department, accounts, printer and payment terminal	Hver kasse med avdeling, kontoer, skriver og betalingsterminal
+6277	Tilføj kasse	Add till	Legg til kasse
+6278	Kasse %s	Till %s	Kasse %s
+6279	Kontantkonto	Cash account	Kontantkonto
+6280	Mellemkonto	Interim account	Mellomkonto
+6281	Konto for beløb, der tages ud af kassen ved dagsafslutning	Account for amounts taken out of the till at day end	Konto for beløp som tas ut av kassen ved dagsavslutning
+6282	Differencekonto	Difference account	Differansekonto
+6283	Konto for kassedifferencer ved dagsafslutning	Account for cash differences at day end	Konto for kassedifferanser ved dagsavslutning
+6284	IP-adresse til printserveren, hvis bonprinteren ikke er sluttet direkte til kassen	IP address of the print server, if the receipt printer is not connected to the till directly	IP-adresse til printserveren, hvis kvitteringsskriveren ikke er koblet direkte til kassen
+6285	Terminal-IP eller -ID	Terminal IP or ID	Terminal-IP eller -ID
+6286	IP-adresse eller ID på den integrerede betalingsterminal	IP address or ID of the integrated payment terminal	IP-adresse eller ID på den integrerte betalingsterminalen
+6287	Køkkenprinter-IP	Kitchen printer IP	Kjøkkenskriver-IP
+6288	IP-adressen på køkkenprinteren, hvis der bruges en	IP address of the kitchen printer, if one is used	IP-adressen til kjøkkenskriveren, hvis en brukes
+6289	Standardbord	Default table	Standardbord
+6290	Bordet vælges, når der ikke er valgt andet bord	This table is selected when no other table is chosen	Bordet velges når ikke noe annet bord er valgt
+6291	Skriftstørrelse	Font size	Skriftstørrelse
+6292	Bogfør hvert salg straks	Post each sale immediately	Bokfør hvert salg med en gang
+6293	Mobil kasse	Mobile till	Mobil kasse
+6294	Skærmbredde	Screen width	Skjermbredde
+6295	Byt hoved- og undermenu	Swap main and sub menu	Bytt hoved- og undermeny
+6296	Fjern denne kasse	Remove this till	Fjern denne kassen
+6297	Kun den sidste kasse kan fjernes. Dens opsætning bliver gemt, hvis den tilføjes igen	Only the last till can be removed. Its setup is kept if it is added again	Bare den siste kassen kan fjernes. Oppsettet beholdes hvis den legges til igjen
+6298	Fjern kassen?	Remove the till?	Fjerne kassen?
+6299	Kassen kan ikke længere bruges til salg	The till can no longer be used for sales	Kassen kan ikke lenger brukes til salg
+6300	Konti	Accounts	Kontoer
+6301	Udstyr	Equipment	Utstyr
+6302	Kassen	The till	Kassen
+6303	Kasseoptælling	Cash counting	Kassetelling
+6304	Kassebeholdning ved dagens start	Opening cash float	Kassebeholdning ved dagens start
+6305	Hjælp til optælling	Counting assistance	Hjelp til telling
+6306	Optællingen viser felter for antal mønter og sedler	The count shows fields for the number of coins and notes	Tellingen viser felter for antall mynter og sedler
+6307	Ingen kasser endnu	No tills yet	Ingen kasser ennå
+6308	Kasser, rabatvare og kasseoptælling	Tills, discount item and cash counting	Kasser, rabattvare og kassetelling
+6309	Indstilling gendannet	Setting restored	Innstilling gjenopprettet
+6310	Indstillingsrække oprettet	Setting row created	Innstillingsrad opprettet
+6311	Indstillingsrække slettet	Setting row deleted	Innstillingsrad slettet

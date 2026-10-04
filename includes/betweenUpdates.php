@@ -915,11 +915,10 @@ db_modify("update settings set var_name = 'mailText' where var_grp = 'paylist' a
 
 // 20261002 Sawaneh Settings 4b (G5.7): the packaging tables are created here when the module is on, not when a page
 // renders (spec P5). G2.5: paymentDays was written under 'payment' but only read under 'payment_list'; copied once.
-$r = db_fetch_array(db_select("select var_value from settings where var_grp = 'items' and var_name = 'packagingModuleEnabled'", __FILE__ . " linje " . __LINE__));
-if ($r && trim((string) $r['var_value']) === 'on') {
-	include_once(__DIR__ . "/emballage_schema.php");
-	ensure_emballage_schema();
-}
+// 20261004 Sawaneh The packaging tables are created for every company (idempotent), so switching the module on in
+// settings only sets the flag (spec §7.5: no DDL in save handlers) and works before the next login.
+include_once(__DIR__ . "/emballage_schema.php");
+ensure_emballage_schema();
 if (!db_fetch_array(db_select("select id from settings where var_grp = 'payment_list' and var_name = 'paymentDays'", __FILE__ . " linje " . __LINE__))) {
 	$r = db_fetch_array(db_select("select var_value from settings where var_grp = 'payment' and var_name = 'paymentDays' and coalesce(var_value, '') <> ''", __FILE__ . " linje " . __LINE__));
 	if ($r) {

@@ -21,6 +21,7 @@
 //                  Rows inside one card per sub-section - badge, title and one line, computed status, one button - and a
 //                  drawer per integration with its own form, actions and change history. Rendered by
 //                  systemdata/settingsSection.php; behaviour in javascript/settingsList.js.
+// 20261004 Sawaneh G10.1: group headings inside a drawer, a status without a dot ('plain').
 // 20261004 Sawaneh G4.3: rows from the database (names shown as typed), an empty state and a page-level add button.
 
 include_once(__DIR__ . '/integrations.php');
@@ -76,7 +77,7 @@ function settings_list_render(array $c): void
 	foreach (array('discardTitle', 'discardBody', 'discardVerb', 'wait', 'close', 'doneFlatpay', 'doneVibrant') as $k) {
 		$config[$k] = mb_convert_encoding($config[$k], 'UTF-8', $charset);
 	}
-	$dots = array('ok' => 'st-dot-ok', 'err' => 'st-dot-err', 'off' => '', 'soon' => '');
+	$dots = array('ok' => 'st-dot-ok', 'err' => 'st-dot-err', 'off' => '', 'soon' => '', 'plain' => '');
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(st_txt($section['label']), 'UTF-8', $charset)) ?>;</script>
@@ -150,7 +151,7 @@ function settings_list_render(array $c): void
           <div class="st-irow st-irow-<?= st_h($st['kind']) ?>" data-item="<?= st_h($id) ?>">
             <span class="st-ibadge" aria-hidden="true"><?= st_h($it['abbr']) ?></span>
             <div class="st-tx"><b><?= !empty($it['literal']) ? st_h($it['label']) : st_label($it['label']) ?></b><span><?= !empty($it['literal']) ? st_h($it['desc']) : st_t($it['desc']) ?></span></div>
-            <span class="st-imeta st-imeta-<?= st_h($st['kind']) ?>"><?php if ($st['kind'] !== 'soon') { ?><i class="st-dotw <?= $dots[$st['kind']] ?>" aria-hidden="true"></i><?php } ?><?= st_h($st['text']) ?></span>
+            <span class="st-imeta st-imeta-<?= st_h($st['kind']) ?>"><?php if ($st['kind'] !== 'soon' && $st['kind'] !== 'plain') { ?><i class="st-dotw <?= $dots[$st['kind']] ?>" aria-hidden="true"></i><?php } ?><?= st_h($st['text']) ?></span>
 				<?php if ($st['kind'] === 'soon') { ?>
             <span class="st-ibtn-space"></span>
 				<?php } else { ?>
@@ -217,8 +218,18 @@ function settings_list_render(array $c): void
 			<?php } ?>
 			<?php if ($fields) { ?>
         <div class="st-card st-card-flat">
-				<?php foreach ($fields as $key => $def) {
+				<?php $lastGroup = null; foreach ($fields as $key => $def) {
+					$groupHeading = '';
+					if (isset($def['group_label'])) {
+						$g = sprintf(st_txt($def['group_label'][0]), $def['group_label'][1]);
+						if ($g !== $lastGroup) {
+							$groupHeading = $g;
+							$lastGroup = $g;
+						}
+					}
 					st_render_field($def, array(
+						'group_heading' => $groupHeading,
+						'in_group' => isset($def['group_label']),
 						'value'    => isset($c['values'][$key]) ? $c['values'][$key] : '',
 						'original' => isset($c['originals'][$key]) ? $c['originals'][$key] : '',
 						'error'    => isset($state['errors'][$key]) ? $state['errors'][$key] : null,

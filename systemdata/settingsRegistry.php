@@ -56,6 +56,8 @@
 // 20261002 Sawaneh Hand-over 2 Oct (A3, A4): breadcrumb trail for the shell's topbar; backup is an entry under Import & eksport
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
+// 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261004 Sawaneh Projekter opens projekter.php (syssetup.php?valg=projekter shows no projects, spec C7).
 
 if (!function_exists('getSettingsRegistry')) {
 	function getSettingsRegistry() {
@@ -67,7 +69,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('debtor','creditor','customer groups','supplier groups','vendor groups','vat group','collective account','summary account','samlekonto','counter account','offset account','modkonto','commission percentage','b2b price','reverse charge liability','invoice language','kreditorgrupper','debitorgrupper')),
 			array('key' => 'afdelinger',       'group' => 'organisation', 'url' => 'syssetup.php?valg=afdelinger', 'category' => 'org',     'textId' => 772,
 				'keywords' => array('department','departments','cost center','branch','store location','afdeling','afdelinger','formularnote','avdeling','avdelinger')),
-			array('key' => 'projekter',        'group' => 'organisation', 'url' => 'syssetup.php?valg=projekter',  'category' => 'org',     'textId' => 773,
+			array('key' => 'projekter',        'group' => 'organisation', 'url' => 'projekter.php',               'category' => 'org',     'textId' => 773,
 				'keywords' => array('project','projects','project number','project code','job code','projektnummer','projekter','prosjekt','prosjekter')),
 			array('key' => 'lagre',            'group' => 'items', 'url' => 'syssetup.php?valg=lagre',      'category' => 'stock',   'textId' => 608,
 				'keywords' => array('warehouse','warehouses','stock location','storage location','inventory location','lager','lagre','lagerlokation')),
@@ -165,6 +167,10 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('stock control','cost price','fifo','negative stock','low stock warning','minimum stock','stock status email','lagerstyring','kostpris','negativt lager','minimumsbeholdning','lagerstatus mail')),
 			array('key' => 'kreditorgrupper',   'group' => 'purchase', 'url' => 'syssetup.php?valg=debitor', 'category' => 'groups',   'textId' => 2458,
 				'keywords' => array('creditor groups','supplier groups','vendor groups','kreditorgrupper','leverandørgrupper')),
+			array('key' => 'pos_tills',         'group' => 'pos',        'url' => 'settingsSection.php?s=pos.tills', 'section' => 'pos.tills', 'category' => 'pos', 'textId' => 6275, 'visibilityRule' => 'posModule',
+				'keywords' => array('kasser', 'tills', 'kassekonti')),
+			array('key' => 'pos_cash',          'group' => 'pos',        'url' => 'settingsSection.php?s=pos.cash', 'section' => 'pos.cash', 'category' => 'pos', 'textId' => 6303, 'visibilityRule' => 'posModule',
+				'keywords' => array('kasseoptælling', 'cash count')),
 			array('key' => 'pos_receipt',       'group' => 'pos',        'url' => 'settingsSection.php?s=pos.receipt', 'section' => 'pos.receipt', 'category' => 'pos', 'textId' => 6253, 'visibilityRule' => 'posModule',
 				'keywords' => array('bon', 'kvittering', 'receipt')),
 			array('key' => 'pos_screen',        'group' => 'pos',        'url' => 'settingsSection.php?s=pos.screen', 'section' => 'pos.screen', 'category' => 'pos', 'textId' => 6254, 'visibilityRule' => 'posModule',
@@ -197,6 +203,20 @@ if (!function_exists('settings_has_module')) {
 			include_once(__DIR__ . '/../includes/settings/SettingsService.php');
 		}
 		return SettingsService::hasModule($module);
+	}
+}
+
+if (!function_exists('settings_require_any_access')) {
+	/**
+	 * The settings pages are open to anyone holding read on at least one settings group, not only to the old
+	 * Indstillinger bit (decision 16: a user with only settings.backup sees the landing page with just backup).
+	 * Everyone else is refused as before.
+	 */
+	function settings_require_any_access(): void
+	{
+		if (!settings_accessible_groups()) {
+			require_permission('system.indstillinger', 'read');
+		}
 	}
 }
 

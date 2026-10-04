@@ -24,6 +24,7 @@
 // ----------------------------------------------------------------------
 // 2019.02.25 MSC - Rettet topmenu design til og isset fejl
 // 2021.02.11 PHR	- Some cleanup
+// 20261004 Sawaneh Security 4.0 (A12e): enh_id/mat_id from the URL cast to integers before SQL and HTML.
 
 	@session_start();
 	$s_id=session_id();
@@ -68,8 +69,8 @@
 	}
 	else {$returside="kreditor.php";}
 
-	$enh_ret_id = $_GET['enh_id'];
-	$mat_ret_id = $_GET['mat_id'];
+	$enh_ret_id = (int) $_GET['enh_id'];
+	$mat_ret_id = (int) $_GET['mat_id'];
 
 	if ($_POST['enheder']){
 		$enh_id          = (int) $_POST['enh_id'];

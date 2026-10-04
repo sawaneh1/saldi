@@ -31,7 +31,7 @@ $title = "settingsSearch";
 $webservice = true;
 
 include("../includes/connect.php");
-$permission_key = 'system.indstillinger';
+$permission_key = 'any';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("settingsRegistry.php");

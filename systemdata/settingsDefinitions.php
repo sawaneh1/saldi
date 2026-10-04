@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261004 Sawaneh G10.1 Tills: list section with one drawer per till ('per' => 'till'), lists joined by tab with 'list',
+//                  Cash counting form section; 'decimal_comma', 'seed' for a joined settings row.
 // 20261004 Sawaneh G10 POS batch A: G10.2 receipt, G10.6 kitchen, G10.7 screen (shop-wide); 'fiscal' grupper storage.
 // 20261004 Sawaneh G4.3 Price lists: a list section whose items come from the database ('items_from'), 'per' => 'pricelist'
 //                  fields on storage 'grupper_row', 'value_map', rules 'required' and 'csv_url', a page-level 'add_action'.
@@ -91,6 +93,21 @@ if (!function_exists('getSettingsSections')) {
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
 			),
 			// ---- G10 POS, batch A: the shop-wide options (per-till lists stay on PoS-valg until batch B)
+			'pos.tills' => array(
+				'group' => 'pos', 'section' => 'tills', 'number' => 'G10.1', 'label' => 6275, 'icon' => 'bx-store-alt', 'module' => 'pos', 'kind' => 'list',
+				'lead' => 6276, 'items_from' => 'tills', 'add_action' => 'pos.tills.add', 'empty_text' => 6307,
+				'subsections' => array('tills' => 6275),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/pos_ordre.php'),
+				'keywords' => array('kasse', 'kasser', 'till', 'tills', 'afdeling', 'momsgruppe', 'kontantkonto', 'mellemkonto', 'differencekonto', 'printer', 'terminal', 'køkkenprinter', 'mobil kasse'),
+			),
+			'pos.cash' => array(
+				'group' => 'pos', 'section' => 'cash', 'number' => 'G10.1', 'label' => 6303, 'icon' => 'bx-calculator', 'module' => 'pos',
+				'subsections' => array('cash' => 6303, 'discount' => 287),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/kasseoptaelling.php'),
+				'keywords' => array('kasseoptælling', 'cash count', 'kassebeholdning', 'byttepenge', 'float', 'rabatvare', 'discount item'),
+			),
 			'pos.receipt' => array(
 				'group' => 'pos', 'section' => 'receipt', 'number' => 'G10.2', 'label' => 6253, 'icon' => 'bx-receipt', 'module' => 'pos',
 				'subsections' => array('receipt' => 6253), 'sub_help' => array('receipt' => 6272),
@@ -455,7 +472,7 @@ if (!function_exists('getSettingsSections')) {
 
 			// ---------------------------------------------------------------- G5.7 Packaging
 			'items.packaging.enabled' => array('sub' => 'packaging', 'type' => 'bool', 'label' => 5995, 'help' => 5996, 'default' => false,
-				'storage' => array('settings', 'items', 'packagingModuleEnabled', 'onEmpty'), 'legacy' => $vare, 'on_save' => 'ensure_emballage_schema',
+				'storage' => array('settings', 'items', 'packagingModuleEnabled', 'onEmpty'), 'legacy' => $vare,
 				'keywords' => array('emballage', 'packaging', 'producentansvar')),
 
 			// ---------------------------------------------------------------- G6.4 Print
@@ -483,6 +500,53 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'items', 'defaultProvision', 'raw'), 'legacy' => $vare),
 			'organisation.commission.show_on_item_card' => array('sub' => 'card', 'type' => 'bool', 'label' => 5999, 'help' => 6000, 'default' => false,
 				'storage' => array('settings', 'items', 'showProvision', 'onEmpty'), 'legacy' => $vare),
+
+			// ---------------------------------------------------------------- G10.1 Tills (one drawer per till; the lists are tab-joined per fiscal year, R7)
+			'pos.tills.add' => array('sub' => 'tills', 'type' => 'action', 'label' => 6277, 'help' => 6276, 'confirm_title' => 6277, 'confirm' => 6276, 'run' => 'till_add'),
+			'pos.tills.department' => array('sub' => 'tills', 'type' => 'select', 'label' => 274, 'help' => 273, 'per' => 'till', 'group_label' => array(6302, ''), 'default' => '0',
+				'options_from' => 'departments', 'options_literal' => true, 'storage' => array('grupper', 'POS', 1, 'box3', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.vat_group' => array('sub' => 'tills', 'type' => 'select', 'label' => 286, 'help' => 285, 'per' => 'till', 'group_label' => array(6302, ''), 'default' => '0',
+				'options_from' => 'vat_sales', 'options_literal' => true, 'storage' => array('grupper', 'POS', 1, 'box7', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.post_each_sale' => array('sub' => 'tills', 'type' => 'bool', 'label' => 6292, 'help' => 1728, 'per' => 'till', 'group_label' => array(6302, ''), 'default' => false,
+				'storage' => array('settings', 'POS', 'postEachSale', 'onEmpty', 'join' => "\t", 'list' => true, 'seed' => 'post_each_sale'), 'legacy' => $pos),
+			'pos.tills.cash_account' => array('sub' => 'tills', 'type' => 'account', 'label' => 6279, 'help' => 275, 'per' => 'till', 'group_label' => array(6300, ''),
+				'storage' => array('grupper', 'POS', 1, 'box2', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.interim_account' => array('sub' => 'tills', 'type' => 'account', 'label' => 6280, 'help' => 6281, 'per' => 'till', 'group_label' => array(6300, ''),
+				'storage' => array('grupper', 'POS', 2, 'box8', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.difference_account' => array('sub' => 'tills', 'type' => 'account', 'label' => 6282, 'help' => 6283, 'per' => 'till', 'group_label' => array(6300, ''),
+				'storage' => array('grupper', 'POS', 2, 'box9', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.printer_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 704, 'help' => 6284, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => 'localhost',
+				'storage' => array('grupper', 'POS', 2, 'box3', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.terminal_type' => array('sub' => 'tills', 'type' => 'select', 'label' => 2312, 'help' => 2313, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => '', 'scope' => 'pos',
+				'options' => array('' => 6171, 'Ip baseret' => 'Ip baseret', 'Flatpay' => 'Flatpay', 'Move3500' => 'Move3500', 'Lane3000' => 'Lane3000', 'Vibrant' => 'Vibrant'), 'options_mixed' => true,
+				'storage' => array('settings', 'POS', 'terminal_type', 'raw'), 'legacy' => $pos),
+			'pos.tills.terminal_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 6285, 'help' => 6286, 'per' => 'till', 'group_label' => array(6301, ''),
+				'storage' => array('grupper', 'POS', 2, 'box4', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.kitchen_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 6287, 'help' => 6288, 'per' => 'till', 'group_label' => array(6301, ''),
+				'storage' => array('grupper', 'POS', 2, 'box10', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.default_table' => array('sub' => 'tills', 'type' => 'select', 'label' => 6289, 'help' => 6290, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => '',
+				'options_from' => 'tables', 'options_literal' => true, 'storage' => array('grupper', 'POS', 2, 'box13', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.font_size' => array('sub' => 'tills', 'type' => 'int', 'label' => 6291, 'help' => 766, 'unit' => 'px', 'per' => 'till', 'group_label' => array(6293, ''), 'default' => 10,
+				'storage' => array('grupper', 'POS', 3, 'box2', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos, 'validate' => array('range', 6, 60)),
+			'pos.tills.mobile' => array('sub' => 'tills', 'type' => 'bool', 'label' => 6293, 'help' => 2410, 'per' => 'till', 'group_label' => array(6293, ''), 'default' => false, 'scope' => 'pos',
+				'storage' => array('settings', 'POS', 'mobilepos', 'onOff'), 'legacy' => $pos),
+			'pos.tills.mobile_width' => array('sub' => 'tills', 'type' => 'int', 'label' => 6294, 'help' => 2412, 'unit' => 'px', 'per' => 'till', 'group_label' => array(6293, ''), 'default' => 510, 'scope' => 'pos',
+				'storage' => array('settings', 'POS', 'mobilwidth', 'raw'), 'legacy' => $pos, 'visible_if' => array('setting', 'pos.tills.mobile', true)),
+			'pos.tills.mobile_zoom' => array('sub' => 'tills', 'type' => 'decimal', 'decimal_comma' => true, 'label' => 2413, 'help' => 2414, 'per' => 'till', 'group_label' => array(6293, ''), 'default' => '1,0', 'scope' => 'pos',
+				'storage' => array('settings', 'POS', 'mobilzoom', 'raw'), 'legacy' => $pos, 'visible_if' => array('setting', 'pos.tills.mobile', true)),
+			'pos.tills.swap_menus' => array('sub' => 'tills', 'type' => 'bool', 'label' => 6295, 'help' => 2416, 'per' => 'till', 'group_label' => array(6293, ''), 'default' => false, 'scope' => 'pos',
+				'storage' => array('settings', 'POS', 'omv_menu', 'onOff'), 'legacy' => $pos),
+			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
+				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
+
+			'pos.cash.opening_float' => array('sub' => 'cash', 'type' => 'int', 'label' => 6304, 'help' => 701, 'unit' => 'kr', 'default' => 0,
+				'storage' => array('grupper', 'POS', 2, 'box1', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.cash.count_assist' => array('sub' => 'cash', 'type' => 'bool', 'label' => 6305, 'help' => 6306, 'default' => false,
+				'storage' => array('grupper', 'POS', 2, 'box2', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.cash.withdraw_zero' => array('sub' => 'cash', 'type' => 'bool', 'label' => 838, 'help' => 837, 'default' => false,
+				'storage' => array('grupper', 'POS', 2, 'box14', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.cash.discount_item' => array('sub' => 'discount', 'type' => 'item', 'item_as' => 'id', 'label' => 287, 'help' => 288,
+				'storage' => array('grupper', 'POS', 1, 'box8', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos),
 
 			// ---------------------------------------------------------------- G10.2 / G10.6 / G10.7 POS shop-wide options
 			// POS/1-3 rows exist per fiscal year (spec R2): read from the current year, written to every year.
@@ -830,6 +894,26 @@ if (!function_exists('getSettingsSections')) {
 				unset($defs[$key]);
 				continue;
 			}
+			if (isset($def['per']) && ($def['per'] === 'till' || $def['per'] === 'till_last')) {
+				// One field per till: the till's place in a tab-joined list, or its pos_id for per-till settings rows.
+				$tills = settings_till_count();
+				$from = ($def['per'] === 'till_last') ? $tills : 1;
+				for ($n = $from; $n <= $tills; $n++) {
+					$d = array('label_suffix' => sprintf(findtekst('6278|Kasse %s', isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1), $n), 'per_key' => $key, 'item' => 'till_' . $n, 'scope_id' => $n) + $def;
+					if (isset($d['storage']['join'])) {
+						$d['storage']['index'] = $n - 1;
+					}
+					if (is_array($d['visible_if']) && isset($d['visible_if'][1]) && strpos((string) $d['visible_if'][1], 'pos.tills.') === 0) {
+						$d['visible_if'][1] .= '.' . $n;
+					}
+					if ($key === 'pos.tills.post_each_sale') {
+						$d['default'] = settings_post_each_sale_default();
+					}
+					$expanded[$key . '.' . $n] = $d;
+				}
+				unset($defs[$key]);
+				continue;
+			}
 			if (isset($def['per']) && $def['per'] === 'pricelist') {
 				// One field per price list (grupper art PL); the drawer of the list is item pl_<id>.
 				foreach (settings_pricelist_rows() as $rowId => $rowName) {
@@ -1006,6 +1090,36 @@ if (!function_exists('getSettingsSections')) {
 			}
 		}
 		return $rows;
+	}
+
+	/**
+	 * Number of tills (POS/1 box1 of the current fiscal year).
+	 */
+	function settings_till_count(): int
+	{
+		static $n = null;
+		if ($n === null || !empty($GLOBALS['settings_tills_changed'])) {
+			unset($GLOBALS['settings_tills_changed']);
+			global $regnaar;
+			$r = db_fetch_array(db_select("select box1 from grupper where art = 'POS' and kodenr = '1' order by (coalesce(fiscal_year, 0) = " . (int) $regnaar . ") desc, id limit 1", __FILE__ . " linje " . __LINE__));
+			$n = $r ? max(0, (int) $r['box1']) : 0;
+		}
+		return $n;
+	}
+
+	/**
+	 * Until the postEachSale list exists the till uses the old 'post each sale' flag (POS/1 box9) for every till
+	 * (includes/ordrefunc.php), so that flag is what the form shows.
+	 */
+	function settings_post_each_sale_default(): bool
+	{
+		static $on = null;
+		if ($on === null) {
+			global $regnaar;
+			$r = db_fetch_array(db_select("select box9 from grupper where art = 'POS' and kodenr = '1' order by (coalesce(fiscal_year, 0) = " . (int) $regnaar . ") desc, id limit 1", __FILE__ . " linje " . __LINE__));
+			$on = ($r && trim((string) $r['box9']) !== '');
+		}
+		return $on;
 	}
 
 	function settings_form_language_name(int $langId): string

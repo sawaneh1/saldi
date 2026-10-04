@@ -29,6 +29,7 @@
 // 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
 //                  dependent fields indented; actions are rows too.
+// 20261004 Sawaneh G10.1: 'decimal_comma', options from departments, sales VAT groups and table names.
 // 20261004 Sawaneh st_current_form_value(): a setting without a stored row shows its registry default.
 // 20261004 Sawaneh G4.3: 'value_map' (form value <-> stored value, e.g. tab), rules 'required' and 'csv_url', supplier names.
 // 20261004 Sawaneh G2.6: a secret stored URL-encoded ('urlencode'), 'ensure_suffix' on text fields.
@@ -265,6 +266,9 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 		case 'decimal':
 			if ($value !== '' && !preg_match('/^-?[0-9]+([.,][0-9]+)?$/', $value)) {
 				$error = 5732;
+			} elseif (!empty($def['decimal_comma'])) {
+				// Read back through usdecimal() by its reader, so it keeps the Danish comma.
+				$raw = str_replace('.', ',', $value);
 			} else {
 				// Stored with a dot, as the old pages did through usdecimal().
 				$raw = str_replace(',', '.', $value);
@@ -412,6 +416,27 @@ function st_options(array $def): array
 			$q = db_select("select kodenr, beskrivelse from grupper where art = 'VG' order by kodenr", __FILE__ . " linje " . __LINE__);
 			while ($r = db_fetch_array($q)) {
 				$cache[$from][(string) $r['kodenr']] = $r['kodenr'] . ' : ' . $r['beskrivelse'];
+			}
+		} elseif ($from === 'departments') {
+			$cache[$from] = array('0' => '');
+			$q = db_select("select kodenr, beskrivelse from grupper where art = 'AFD' order by kodenr", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$cache[$from][(string) $r['kodenr']] = (string) $r['beskrivelse'];
+			}
+		} elseif ($from === 'vat_sales') {
+			global $regnaar;
+			$cache[$from] = array('0' => '');
+			$q = db_select("select kodenr, beskrivelse from grupper where art = 'SM' and fiscal_year = '" . (int) $regnaar . "' order by kodenr", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$cache[$from][(string) $r['kodenr']] = (string) $r['beskrivelse'];
+			}
+		} elseif ($from === 'tables') {
+			// POS/2 box7 holds the table names; a till stores the table's place in that list.
+			global $regnaar;
+			$r = db_fetch_array(db_select("select box7 from grupper where art = 'POS' and kodenr = '2' order by (coalesce(fiscal_year, 0) = " . (int) $regnaar . ") desc, id limit 1", __FILE__ . " linje " . __LINE__));
+			$names = ($r && trim((string) $r['box7']) !== '') ? explode("\t", (string) $r['box7']) : array();
+			foreach ($names as $i => $name) {
+				$cache[$from][(string) $i] = ($i + 1) . ' ' . trim($name);
 			}
 		} elseif ($from === 'creditor_names') {
 			// Stored by name, as the old price-list page did (grupper PL box9).

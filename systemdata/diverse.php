@@ -171,6 +171,7 @@ $landedSections = array(
 	'rykker_valg'    => 'settingsSection.php?s=sales.reminders&moved=rykker_valg',
 	'bilag'          => 'settingsSection.php?s=finance.document_storage&moved=bilag',
 	'pricelists'     => 'settingsSection.php?s=purchase.pricelists&moved=pricelists',
+	'barcodescan'    => 'settingsSection.php?s=integrations.connections&item=app',
 );
 if (isset($landedSections[$sektion]) && !($sektion == 'api_valg' && !empty($_GET['varesync']))) {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
@@ -198,6 +199,8 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20261004 Sawaneh G5.8: labels - valg limited to box1/box2, new labels only from the six shipped templates and with an allowed name
 //                  (a forged template name could copy any readable file into a label).
 // 20261004 Sawaneh G4.3: pricelists landed in Køb » Leverandørprislister (diverseIncludes/pricelists.php is no longer reached).
+// 20261004 Sawaneh The old App Barcode link opens the App row in Integrationer instead of barcodescan.php.
+// 20261004 Sawaneh div_valg save keeps DIV/2 box6 (old DocuBizz data, removed in 4f) and escapes the values kept from the stored row.
 // 20261004 Sawaneh G2.6: bilag landed in Finans » Bilagsopbevaring; its save code is gone.
 // 20261003 Sawaneh G3.4: rykker_valg landed in Salg » Betalingsbetingelser & rykkere; its save code is gone.
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
@@ -239,7 +242,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		$box3        = $_POST['box3'];    #extra_ansat
 		$box4        = '';                #kept from the stored row below (Finans → Kassekladde & betalinger)
 		$box5        = '';                #kept from the stored row below
-		$box6        = '';                #was DocuBizz - integration removed 20260928, column kept until the 4f cleanup
+		$box6        = '';                #was DocuBizz - kept from the stored row below until the 4f cleanup
 		$box7        = '';                #kept from the stored row below
 //		$box8        = $_POST['box8'];    #ebconnect
 		$box8        = '';                #kept from the stored row below
@@ -277,9 +280,9 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		// }
 		if (($id == 0) && ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'DIV' and kodenr='2'", __FILE__ . " linje " . __LINE__))))
 			$id = $r['id'];
-		if ($keep = db_fetch_array(db_select("select box1, box2, box4, box5, box7, box8, box10 from grupper where art = 'DIV' and kodenr = '2'", __FILE__ . " linje " . __LINE__))) {
-			foreach (array('box1', 'box2', 'box4', 'box5', 'box7', 'box8', 'box10') as $kept) {
-				$$kept = $keep[$kept];
+		if ($keep = db_fetch_array(db_select("select box1, box2, box4, box5, box6, box7, box8, box10 from grupper where art = 'DIV' and kodenr = '2'", __FILE__ . " linje " . __LINE__))) {
+			foreach (array('box1', 'box2', 'box4', 'box5', 'box6', 'box7', 'box8', 'box10') as $kept) {
+				$$kept = db_escape_string((string) $keep[$kept]);
 			}
 		}
 		if ($id == 0) {
@@ -1412,10 +1415,6 @@ if ($sektion == "massefakt") massefakt();
 if ($sektion == "posOptions") {
 	include("diverseIncludes/posOptions.php");
 	posOptions();
-}
-if ($sektion == "barcodescan") {
-	header("Location: ../systemdata/barcodescan.php");
-	exit;
 }
 
 if ($sektion == "sprog") {
