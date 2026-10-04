@@ -29,6 +29,7 @@
 // 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
 //                  dependent fields indented; actions are rows too.
+// 20261004 Sawaneh st_current_form_value(): a setting without a stored row shows its registry default.
 // 20261004 Sawaneh G4.3: 'value_map' (form value <-> stored value, e.g. tab), rules 'required' and 'csv_url', supplier names.
 // 20261004 Sawaneh G2.6: a secret stored URL-encoded ('urlencode'), 'ensure_suffix' on text fields.
 // 20261003 Sawaneh G3.4 Reminders: type 'creditor' (lookup, stored as adresser id), options from the user list, a group
@@ -217,6 +218,21 @@ function st_form_value(array $def, string $raw): string
 }
 
 /**
+ * What the form control holds for a setting as it is stored now. A setting without a stored row is shown with its
+ * registry default, which is what the readers use (a switch whose default is on must not show as off).
+ */
+function st_current_form_value(array $def): string
+{
+	$key = (string) $def['key'];
+	$raw = SettingsService::raw($key);
+	if ($raw === '' && array_key_exists('default', $def) && $def['default'] !== '' && $def['default'] !== null && $def['default'] !== false
+		&& !in_array($def['type'], array('secret', 'action', 'info', 'link', 'mini'), true) && !SettingsService::exists($key)) {
+		return st_form_value($def, st_default_raw($def));
+	}
+	return st_form_value($def, $raw);
+}
+
+/**
  * The stored string for a posted value, or an error text id when the value is not valid.
  *
  * @param array<string, string> $posted every posted field of the form, for 'requires' rules
@@ -337,7 +353,7 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 		$other = isset($posted[$def['validate'][1]]) ? trim($posted[$def['validate'][1]]) : null;
 		if ($other === null) {
 			$otherDef = SettingsService::definition($def['validate'][1]);
-			$other = $otherDef ? st_form_value($otherDef, SettingsService::raw($def['validate'][1])) : '';
+			$other = $otherDef ? st_current_form_value($otherDef + array('key' => $def['validate'][1])) : '';
 		}
 		if ($other === '' || $other === '0') {
 			$error = (int) $def['validate'][2];
@@ -480,7 +496,7 @@ function st_visible(array $def, array $values): bool
 	if (isset($values[$parent]) && !($pdef && $pdef['type'] === 'secret')) {
 		$v = $values[$parent];
 	} else {
-		$v = $pdef ? st_form_value($pdef, SettingsService::raw($parent)) : '';
+		$v = $pdef ? st_current_form_value($pdef + array('key' => $parent)) : '';
 	}
 	if ($rule[0] === 'setting') {
 		return ($v === '1') === (bool) $rule[2];

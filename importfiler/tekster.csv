@@ -5857,3 +5857,23 @@
 6250	Ingen prislister endnu	No price lists yet	Ingen prislister ennå
 6251	Test prisfilen	Test the price file	Test prisfilen
 6252	Skal udfyldes	Required	Må fylles ut
+6253	Kvittering & print	Receipt & print	Kvittering og utskrift
+6254	Skærm & mobil	Screen & mobile	Skjerm og mobil
+6255	Knapper i kassen	Buttons at the till	Knapper i kassen
+6256	Ekspedition	Serving	Ekspedisjon
+6257	Visning	Display	Visning
+6258	Køkken (KDS)	Kitchen (KDS)	Kjøkken (KDS)
+6259	Køkkenskærm	Kitchen screen	Kjøkkenskjerm
+6260	Køkkenprint	Kitchen print	Kjøkkenutskrift
+6261	Køkkenskærm (KDS) aktiveret	Kitchen screen (KDS) activated	Kjøkkenskjerm (KDS) aktivert
+6262	Ordrer fra kassen vises på køkkenskærmen	Orders from the till are shown on the kitchen screen	Ordrer fra kassen vises på kjøkkenskjermen
+6263	Køkkenprint aktiveret	Kitchen print activated	Kjøkkenutskrift aktivert
+6264	Ordrer fra kassen udskrives på køkkenprinteren	Orders from the till are printed on the kitchen printer	Ordrer fra kassen skrives ut på kjøkkenskriveren
+6265	Antal kolonner på køkkenskærmen	Number of columns on the kitchen screen	Antall kolonner på kjøkkenskjermen
+6266	Linjehøjde på køkkenskærmen	Line height on the kitchen screen	Linjehøyde på kjøkkenskjermen
+6267	Udskriv bon automatisk	Print receipt automatically	Skriv ut kvittering automatisk
+6268	Varenummer for sæt	Item number for sets	Varenummer for sett
+6269	Den vare, sætprisen bogføres på	The item the set price is posted on	Varen settprisen bokføres på
+6270	Sekunder	Seconds	Sekunder
+6271	Gælder alle kasser og alle regnskabsår	Applies to all tills and all fiscal years	Gjelder alle kasser og alle regnskapsår
+6272	Gælder alle kasser. Kasser, konti, betalingskort og per-kasse-valg findes stadig under PoS-valg	Applies to all tills. Tills, accounts, payment cards and per-till options are still under PoS-valg	Gjelder alle kasser. Kasser, kontoer, betalingskort og valg per kasse finnes fortsatt under PoS-valg

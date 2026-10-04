@@ -25,6 +25,8 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261004 Sawaneh G10 (risk review R2): grupper rows kept per fiscal year ('fiscal') are read from the current year and
+//                  written to every year, as before; a missing row is created for the current year.
 // 20261004 Sawaneh G4.3: storage 'grupper_row' (one column of one grupper row, the row id is the scope; price lists).
 // 20261004 Sawaneh G2.6: storage 'virtual' (a value derived from several fields, includes/settings/virtualStorage.php).
 // 20261004 Sawaneh Audit rows store the raw user name (the global from online.php is already escaped).
@@ -76,7 +78,7 @@ class SettingsService
 		$s = $def['storage'];
 		$out = array('join' => isset($s['join']) ? $s['join'] : null, 'index' => isset($s['index']) ? (int) $s['index'] : 0);
 		if ($s[0] === 'grupper') {
-			return $out + array('table' => 'grupper', 'art' => (string) $s[1], 'kodenr' => (string) $s[2], 'box' => (string) $s[3], 'encoding' => isset($s[4]) ? $s[4] : 'raw');
+			return $out + array('table' => 'grupper', 'art' => (string) $s[1], 'kodenr' => (string) $s[2], 'box' => (string) $s[3], 'encoding' => isset($s[4]) ? $s[4] : 'raw', 'fiscal' => !empty($s['fiscal']));
 		}
 		if ($s[0] === 'adresser') {
 			return $out + array('table' => 'adresser', 'column' => (string) $s[1], 'encoding' => isset($s[2]) ? $s[2] : 'raw');
@@ -142,7 +144,9 @@ class SettingsService
 			foreach (array_keys($gr) as $k) {
 				self::$grupper[$k] = false;
 			}
-			$q = db_select("select * from grupper where " . implode(' or ', $gr) . " order by id", __FILE__ . " linje " . __LINE__);
+			// The current fiscal year's row first, for arts that keep a row per year (POS, OreDif).
+			global $regnaar;
+			$q = db_select("select * from grupper where " . implode(' or ', $gr) . " order by (coalesce(fiscal_year, 0) = " . (int) $regnaar . ") desc, id", __FILE__ . " linje " . __LINE__);
 			while ($r = db_fetch_array($q)) {
 				$k = $r['art'] . '|' . $r['kodenr'];
 				if (self::$grupper[$k] === false) {
@@ -372,7 +376,12 @@ class SettingsService
 				db_modify("update grupper set " . $st['box'] . " = '$stored' where $where", __FILE__ . " linje " . __LINE__);
 			} else {
 				$name = db_escape_string(isset($def['storage']['row_name']) ? (string) $def['storage']['row_name'] : 'Indstillinger');
-				db_modify("insert into grupper (beskrivelse, kodenr, art, " . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', '$stored')", __FILE__ . " linje " . __LINE__);
+				if ($st['fiscal']) {
+					global $regnaar;
+					db_modify("insert into grupper (beskrivelse, kodenr, art, kode, fiscal_year, " . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', '', " . (int) $regnaar . ", '$stored')", __FILE__ . " linje " . __LINE__);
+				} else {
+					db_modify("insert into grupper (beskrivelse, kodenr, art, " . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', '$stored')", __FILE__ . " linje " . __LINE__);
+				}
 			}
 			unset(self::$grupper[$ck]);
 		} elseif ($st['table'] === 'adresser') {

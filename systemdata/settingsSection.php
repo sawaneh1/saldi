@@ -178,8 +178,7 @@ function settings_section_save(string $sectionId, array $defs, array $post): arr
 			continue;
 		}
 		$res = st_posted_to_raw($def, $posted[$key], $posted);
-		$current = SettingsService::raw($key);
-		$unchanged = (st_form_value($def, $current) === trim($posted[$key]));
+		$unchanged = (st_current_form_value($def) === trim($posted[$key]));
 		if ($res['error'] !== null) {
 			// A value that was already stored and is left untouched is not this user's error.
 			if (!$unchanged || (is_array($def['validate']) && $def['validate'][0] === 'requires')) {
@@ -245,7 +244,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 		if (in_array($def['type'], array('action', 'info', 'link', 'mini'), true)) {
 			continue;
 		}
-		$stored = st_form_value($def, SettingsService::raw($key));
+		$stored = st_current_form_value($def);
 		$values[$key] = $stored;
 		$originals[$key] = $stored;
 		if ($state['conflict']) {

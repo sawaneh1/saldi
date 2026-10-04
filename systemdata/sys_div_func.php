@@ -132,6 +132,7 @@
 // 20261002 Sawaneh Phase 4b batch 2: GLS, Danske Fragtmænd, QuickPay, Flatpay, Vibrant, MobilePay and Copayone left div_valg()
 //                  for Indstillinger » Integrationer (pick-up addresses stay); api_valg() only runs the shop sync.
 // 20261003 Sawaneh G6.3: the SMTP form left kontoindstillinger() for Indstillinger » Dokumenter & e-mail » E-mail.
+// 20261004 Sawaneh G5.8 (B-L1): labels() escapes the label name and the custom text lines, and accepts only valg box1/box2.
 // 20261004 Sawaneh G2.6: bilag() and testftp() removed (generated section Finans » Bilagsopbevaring).
 // 20261003 Sawaneh G3.4: rykker_valg() removed (generated section Salg » Betalingsbetingelser & rykkere).
 include_once("../includes/connect.php"); 
@@ -1312,6 +1313,9 @@ function labels($valg) {
         $labelName = if_isset($_POST['labelName']);
         if (isset($_POST['newLabelName'])) $labelName = $_POST['newLabelName'];
     }
+    // B-L1: valg comes from the address bar and the label name from the user; neither reaches the page unescaped.
+    if ($valg !== 'box1' && $valg !== 'box2') $valg = '';
+    $labelNameHtml = htmlspecialchars((string) $labelName, ENT_QUOTES);
     ($valg == 'box1') ? $txt = 'Vare' : $txt = 'Adresse';
     
     // Check if user wants to edit raw HTML
@@ -1348,7 +1352,7 @@ function labels($valg) {
             $x++;
         }
         if (!$labelName) $labelName = 'Standard';
-        $txt .= " - $labelName";
+        $txt .= " - " . htmlspecialchars((string) $labelName, ENT_QUOTES);
         print "<tr bgcolor='$bgcolor5'><td colspan='4' title='".findtekst('737|Her indsættes html kode til formatering af labelprint i varekort. Du kan finde eksempler på <a href=http://forum.saldi.dk/viewtopic.php?f=17&t=1159>Saldi forum</a> under tips och tricks.', $sprog_id)."'><!--tekst 737-->";
         print "<b><u>".findtekst('736|Labelprint', $sprog_id)."<!--tekst 736--> ($txt)</u></b></td></tr>";
         
@@ -1439,13 +1443,14 @@ Pris $pris<br>
                 print ">";
                 for ($x = 0; $x < count($labelNames); $x++) {
                     $selected = ($labelName == $labelNames[$x]) ? ' selected' : '';
-                    print "<option value='{$labelNames[$x]}'$selected>{$labelNames[$x]}</option>";
+                    $optionName = htmlspecialchars((string) $labelNames[$x], ENT_QUOTES);
+                    print "<option value='$optionName'$selected>$optionName</option>";
                 }
                 print "</select>";
                 
                 // Add a hidden field to ensure form submission still works when dropdown is disabled
                 if (!$hasMultipleOptions) {
-                    print "<input type='hidden' name='labelName' value='$labelName'>";
+                    print "<input type='hidden' name='labelName' value='" . htmlspecialchars((string) $labelName, ENT_QUOTES) . "'>";
                 }
                 
                 print "<br>";
@@ -1454,7 +1459,7 @@ Pris $pris<br>
         }
         
 		print "<form name='diverse' action='diverse.php?sektion=labels&valg=$valg' method='post'>";
-		print "<input type='hidden' name='labelName' value='$labelName'>";
+		print "<input type='hidden' name='labelName' value='" . htmlspecialchars((string) $labelName, ENT_QUOTES) . "'>";
 		
 		if ($editRawHTML) {
 			// Raw HTML editing mode
@@ -1486,7 +1491,7 @@ Pris $pris<br>
 			print "&nbsp;<input type='submit' style='width:150px' value='".findtekst('39|Ny', $sprog_id)." Label' name='newLabel'>";
 			if ($labelName != 'Standard') {
 				$txt = "Er du sikker på du vil slette label $labelName ?";
-				print "&nbsp;<input type='submit' style='width:150px' value='Slet Label' name='deleteLabel' onclick=\"return confirm('$txt')\">";
+				print "&nbsp;<input type='submit' style='width:150px' value='Slet Label' name='deleteLabel' onclick=\"return confirm(" . htmlspecialchars(json_encode($txt), ENT_QUOTES) . ")\">";
 			}
 			}
 			print "</td></tr>";
@@ -1552,7 +1557,7 @@ Pris $pris<br>
 			$fontSize  = isset($parsedLabel["custom_text_{$i}_size"]) ? $parsedLabel["custom_text_{$i}_size"] : $parsedLabel['font_size'];
 			print "<div style='margin-bottom: 10px; border: 1px solid #ccc; padding: 8px;'>";
 			print "<label><strong>Linje $i:</strong></label><br>";
-			print "<input type='text' name='custom_text_$i' value='$textValue' placeholder='Brugerdefineret tekst' style='width:150px; margin-bottom: 5px;'><br>";
+			print "<input type='text' name='custom_text_$i' value='" . htmlspecialchars((string) $textValue, ENT_QUOTES) . "' placeholder='Brugerdefineret tekst' style='width:150px; margin-bottom: 5px;'><br>";
 			print "<label>".findtekst('765|Skriftstørrelse', $sprog_id).":</label>";
 			print "<input type='number' name='custom_text_{$i}_size' value='$fontSize' style='width:60px;' min='6' max='72'> px";
 			print "</div>";
@@ -1574,7 +1579,7 @@ Pris $pris<br>
 			print "&nbsp;<input type='submit' style='width:150px' accesskey='n' value='".findtekst('39|Ny', $sprog_id)." Label' name='newLabel'>";
 			if ($labelName != 'Standard') {
 				$txt = "Er du sikker på du vil slette label $labelName ?";
-				print "&nbsp;<input type='submit' style='width:150px' value='Slet Label' name='deleteLabel' onclick=\"return confirm('$txt')\">";
+				print "&nbsp;<input type='submit' style='width:150px' value='Slet Label' name='deleteLabel' onclick=\"return confirm(" . htmlspecialchars(json_encode($txt), ENT_QUOTES) . ")\">";
 			}
 			}
 			print "</td></tr>";

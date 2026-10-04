@@ -165,6 +165,12 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('stock control','cost price','fifo','negative stock','low stock warning','minimum stock','stock status email','lagerstyring','kostpris','negativt lager','minimumsbeholdning','lagerstatus mail')),
 			array('key' => 'kreditorgrupper',   'group' => 'purchase', 'url' => 'syssetup.php?valg=debitor', 'category' => 'groups',   'textId' => 2458,
 				'keywords' => array('creditor groups','supplier groups','vendor groups','kreditorgrupper','leverandørgrupper')),
+			array('key' => 'pos_receipt',       'group' => 'pos',        'url' => 'settingsSection.php?s=pos.receipt', 'section' => 'pos.receipt', 'category' => 'pos', 'textId' => 6253, 'visibilityRule' => 'posModule',
+				'keywords' => array('bon', 'kvittering', 'receipt')),
+			array('key' => 'pos_screen',        'group' => 'pos',        'url' => 'settingsSection.php?s=pos.screen', 'section' => 'pos.screen', 'category' => 'pos', 'textId' => 6254, 'visibilityRule' => 'posModule',
+				'keywords' => array('kasse knapper', 'pos buttons', 'kundedisplay')),
+			array('key' => 'pos_kitchen',       'group' => 'pos',        'url' => 'settingsSection.php?s=pos.kitchen', 'section' => 'pos.kitchen', 'category' => 'pos', 'textId' => 6258, 'visibilityRule' => 'posModule',
+				'keywords' => array('kds', 'køkken', 'kitchen')),
 			array('key' => 'posmenuer',         'group' => 'pos',        'url' => 'posmenuer.php',             'category' => 'pos',      'textId' => 1940, 'visibilityRule' => 'posModule',
 				'keywords' => array('pos menus','cash register menus','buttons on register','kassemenuer','pos-menuer')),
 

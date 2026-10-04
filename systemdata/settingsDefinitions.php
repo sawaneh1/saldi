@@ -21,6 +21,7 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261004 Sawaneh G10 POS batch A: G10.2 receipt, G10.6 kitchen, G10.7 screen (shop-wide); 'fiscal' grupper storage.
 // 20261004 Sawaneh G4.3 Price lists: a list section whose items come from the database ('items_from'), 'per' => 'pricelist'
 //                  fields on storage 'grupper_row', 'value_map', rules 'required' and 'csv_url', a page-level 'add_action'.
 // 20261004 Sawaneh G2.6 Document storage: storage 'virtual', encoding 'urlencode' for a secret, 'ensure_suffix'.
@@ -88,6 +89,28 @@ if (!function_exists('getSettingsSections')) {
 				'old' => array('div_valg' => array(782, 794), 'orediff' => array(782, 170), 'betalinger' => array(2732)),
 				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
+			),
+			// ---- G10 POS, batch A: the shop-wide options (per-till lists stay on PoS-valg until batch B)
+			'pos.receipt' => array(
+				'group' => 'pos', 'section' => 'receipt', 'number' => 'G10.2', 'label' => 6253, 'icon' => 'bx-receipt', 'module' => 'pos',
+				'subsections' => array('receipt' => 6253), 'sub_help' => array('receipt' => 6272),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/pos_ordre.php'),
+				'keywords' => array('bon', 'kvittering', 'receipt', 'bonprint', 'udskrift', 'print', 'kasse', 'pos'),
+			),
+			'pos.kitchen' => array(
+				'group' => 'pos', 'section' => 'kitchen', 'number' => 'G10.6', 'label' => 6258, 'icon' => 'bx-dish', 'module' => 'pos',
+				'subsections' => array('kds' => 6259, 'print' => 6260),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/kds/show_items.php'),
+				'keywords' => array('kds', 'køkken', 'kitchen', 'køkkenskærm', 'køkkenprint', 'kitchen print'),
+			),
+			'pos.screen' => array(
+				'group' => 'pos', 'section' => 'screen', 'number' => 'G10.7', 'label' => 6254, 'icon' => 'bx-desktop', 'module' => 'pos',
+				'subsections' => array('buttons' => 6255, 'sale' => 6256, 'display' => 6257), 'sub_help' => array('buttons' => 6272),
+				'legacy' => array(array(782, 271)), 'old' => array('posOptions' => array(782, 271)),
+				'context' => array('debitor/pos_ordre.php'),
+				'keywords' => array('kasse', 'pos', 'knapper', 'buttons', 'kontoopslag', 'indbetaling', 'sæt', 'kundedisplay', 'lagerbeholdning', 'stor sum'),
 			),
 			'purchase.pricelists' => array(
 				'group' => 'purchase', 'section' => 'pricelists', 'number' => 'G4.3', 'label' => 6219, 'icon' => 'bx-spreadsheet', 'kind' => 'list',
@@ -213,6 +236,7 @@ if (!function_exists('getSettingsSections')) {
 		$rykker = array(782, 793);
 		$bilag = array(782, 797);
 		$prisliste = array(782, 792);
+		$pos = array(782, 271);
 
 		$defs = array(
 			// ---------------------------------------------------------------- G3.2 Debtor card
@@ -459,6 +483,51 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'items', 'defaultProvision', 'raw'), 'legacy' => $vare),
 			'organisation.commission.show_on_item_card' => array('sub' => 'card', 'type' => 'bool', 'label' => 5999, 'help' => 6000, 'default' => false,
 				'storage' => array('settings', 'items', 'showProvision', 'onEmpty'), 'legacy' => $vare),
+
+			// ---------------------------------------------------------------- G10.2 / G10.6 / G10.7 POS shop-wide options
+			// POS/1-3 rows exist per fiscal year (spec R2): read from the current year, written to every year.
+			'pos.receipt.print_receipt' => array('sub' => 'receipt', 'type' => 'bool', 'label' => 6267, 'help' => 456, 'default' => false,
+				'storage' => array('grupper', 'POS', 1, 'box10', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos,
+				'keywords' => array('udskriv bon', 'print receipt')),
+			'pos.receipt.disable_print' => array('sub' => 'receipt', 'type' => 'bool', 'label' => 1730, 'help' => 1731, 'default' => false,
+				'storage' => array('settings', 'globals', 'deactivateBonprint', 'onEmpty'), 'legacy' => $pos,
+				'keywords' => array('deaktiver bonprint', 'disable receipt')),
+			'pos.receipt.timeout' => array('sub' => 'receipt', 'type' => 'int', 'label' => 463, 'help' => 462, 'unit' => 6270, 'default' => 0,
+				'storage' => array('grupper', 'POS', 1, 'box13', 'raw', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos, 'validate' => array('range', 0, 3600),
+				'keywords' => array('tidsfrist', 'timeout', 'ny ordre')),
+
+			'pos.kitchen.kds_active' => array('sub' => 'kds', 'type' => 'bool', 'label' => 6261, 'help' => 6262, 'default' => false,
+				'storage' => array('settings', 'KDS', 'activated', 'onOff'), 'legacy' => $pos, 'keywords' => array('kds', 'køkkenskærm')),
+			'pos.kitchen.kds_columns' => array('sub' => 'kds', 'type' => 'int', 'label' => 6265, 'default' => 5,
+				'storage' => array('settings', 'KDS', 'columns', 'raw'), 'legacy' => $pos, 'validate' => array('range', 1, 20),
+				'visible_if' => array('setting', 'pos.kitchen.kds_active', true), 'keywords' => array('kds', 'kolonner', 'columns')),
+			'pos.kitchen.kds_height' => array('sub' => 'kds', 'type' => 'int', 'label' => 6266, 'unit' => 'px', 'default' => 20,
+				'storage' => array('settings', 'KDS', 'height', 'raw'), 'legacy' => $pos, 'validate' => array('range', 8, 200),
+				'visible_if' => array('setting', 'pos.kitchen.kds_active', true), 'keywords' => array('kds', 'linjehøjde', 'line height')),
+			'pos.kitchen.print_active' => array('sub' => 'print', 'type' => 'bool', 'label' => 6263, 'help' => 6264, 'default' => true,
+				'storage' => array('settings', 'kitchen-print', 'activated', 'onOff'), 'legacy' => $pos, 'keywords' => array('køkkenprint', 'kitchen print')),
+
+			'pos.screen.cash_button' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 459, 'help' => 458, 'default' => false,
+				'storage' => array('grupper', 'POS', 1, 'box12', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.screen.account_lookup' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 461, 'help' => 460, 'default' => false,
+				'storage' => array('grupper', 'POS', 1, 'box11', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.screen.deposit_button' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 465, 'help' => 464, 'default' => false,
+				'storage' => array('grupper', 'POS', 1, 'box14', 'onEmpty', 'row_name' => 'POS_valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.screen.set_button' => array('sub' => 'buttons', 'type' => 'bool', 'label' => 735, 'help' => 734, 'default' => false,
+				'storage' => array('grupper', 'POS', 2, 'box12', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.screen.set_item' => array('sub' => 'buttons', 'type' => 'item', 'item_as' => 'id', 'label' => 6268, 'help' => 6269,
+				'storage' => array('grupper', 'POS', 2, 'box11', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos,
+				'visible_if' => array('setting', 'pos.screen.set_button', true)),
+			'pos.screen.forced_user' => array('sub' => 'sale', 'type' => 'bool', 'label' => 840, 'help' => 839, 'default' => false,
+				'storage' => array('grupper', 'POS', 3, 'box1', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.screen.jump_to_price' => array('sub' => 'sale', 'type' => 'bool', 'label' => 1962, 'help' => 1961, 'default' => false,
+				'storage' => array('settings', 'globals', 'jump2price', 'onEmpty'), 'legacy' => $pos),
+			'pos.screen.customer_display' => array('sub' => 'display', 'type' => 'bool', 'label' => 847, 'help' => 848, 'default' => false,
+				'storage' => array('grupper', 'POS', 3, 'box3', 'onEmpty', 'row_name' => 'Pos valg', 'fiscal' => true), 'legacy' => $pos),
+			'pos.screen.show_stock' => array('sub' => 'display', 'type' => 'bool', 'label' => 2367, 'help' => 2368, 'default' => false,
+				'storage' => array('settings', 'POS', 'show_stock', 'onOff'), 'legacy' => $pos),
+			'pos.screen.big_total' => array('sub' => 'display', 'type' => 'bool', 'label' => 2407, 'help' => 2408, 'default' => false,
+				'storage' => array('settings', 'POS', 'show_big_sum', 'onOff'), 'legacy' => $pos),
 
 			// ---------------------------------------------------------------- G4.3 Supplier price lists (one drawer per grupper PL row)
 			'purchase.pricelists.create' => array('sub' => 'lists', 'type' => 'action', 'label' => 6221, 'help' => 6220,

@@ -195,6 +195,8 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20261002 Sawaneh Phase 4b batch 2: api_valg landed in Integrationer (only the shop sync still runs here); div_valg no longer
 //                  saves GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay, Vibrant or Copayone.
 // 20261003 Sawaneh G6.3: the SMTP save and the dead 'email' (MAIL/1) save are gone; smtp redirects to Dokumenter & e-mail » E-mail.
+// 20261004 Sawaneh G5.8: labels - valg limited to box1/box2, new labels only from the six shipped templates and with an allowed name
+//                  (a forged template name could copy any readable file into a label).
 // 20261004 Sawaneh G4.3: pricelists landed in Køb » Leverandørprislister (diverseIncludes/pricelists.php is no longer reached).
 // 20261004 Sawaneh G2.6: bilag landed in Finans » Bilagsopbevaring; its save code is gone.
 // 20261003 Sawaneh G3.4: rykker_valg landed in Salg » Betalingsbetingelser & rykkere; its save code is gone.
@@ -629,6 +631,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 	} elseif ($sektion == 'labels') {
 		// Generate template from form data
 		$valg           = if_isset($_GET['valg']);
+		if ($valg !== 'box1' && $valg !== 'box2') $valg = '';
     	$labelName      = if_isset($_POST['labelName']);
     	$newLabelName   = if_isset($_POST['newLabelName']);
     	$labelTemplate  = if_isset($_POST['labelTemplate']);
@@ -642,6 +645,11 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
         $labelName = if_isset($_GET['labelName'], 'Standard');
     }
 	
+    // Only the shipped templates, and only names the create form allows (the form's pattern is not a guard).
+    $labelTemplates = array('A4Label38x21_ens.txt', 'A4Label38x21.txt', 'BrotherLabel22606.txt', 'BrotherLabel22606MS.txt', 'DymoLabelArt11354.txt', 'DymoLabelArt11354MS.txt');
+    if ($createNewLabel && (!in_array($labelTemplate, $labelTemplates, true) || !preg_match('/^[a-zA-Z0-9+.-]+$/', (string) $newLabelName))) {
+        $createNewLabel = null;
+    }
     if ($createNewLabel && $newLabelName && $labelTemplate) {
         // Create new label from template
         $templateFile = "../importfiler/$labelTemplate";
