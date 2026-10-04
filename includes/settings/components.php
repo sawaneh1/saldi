@@ -29,6 +29,8 @@
 // 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
 //                  dependent fields indented; actions are rows too.
+// 20261004 Sawaneh G4.3: 'value_map' (form value <-> stored value, e.g. tab), rules 'required' and 'csv_url', supplier names.
+// 20261004 Sawaneh G2.6: a secret stored URL-encoded ('urlencode'), 'ensure_suffix' on text fields.
 // 20261003 Sawaneh G3.4 Reminders: type 'creditor' (lookup, stored as adresser id), options from the user list, a group
 //                  label above a run of fields ("Rykker 1"), a help line under a card heading.
 // 20261003 Sawaneh G6.3 E-mail: type 'textarea', a label suffix (the form language of a sender field), mixed select labels.
@@ -193,6 +195,12 @@ function st_form_value(array $def, string $raw): string
 	if ($def['type'] === 'secret') {
 		return '';
 	}
+	if (isset($def['value_map'])) {
+		$form = array_search($raw, $def['value_map'], true);
+		if ($form !== false) {
+			return (string) $form;
+		}
+	}
 	if ($def['type'] === 'bool') {
 		return SettingsService::decode($def, $raw) ? '1' : '0';
 	}
@@ -220,6 +228,12 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 	$error = null;
 	$raw = $value;
 	switch ($def['type']) {
+		case 'secret':
+			// The readers of some secrets expect them URL-encoded (an ftp://user:password@host address).
+			if (isset($def['storage'][4]) && $def['storage'][0] === 'grupper' && $def['storage'][4] === 'urlencode') {
+				$raw = urlencode($value);
+			}
+			break;
 		case 'bool':
 			$raw = SettingsService::encode($def, $value === '1');
 			break;
@@ -260,6 +274,9 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 			}
 			break;
 		case 'text':
+			if (!empty($def['ensure_suffix']) && $value !== '' && substr($value, -strlen($def['ensure_suffix'])) !== $def['ensure_suffix']) {
+				$raw = $value . $def['ensure_suffix'];
+			}
 			if (is_array($def['validate']) && $def['validate'][0] === 'ip_list' && $value !== '') {
 				foreach (explode(',', $value) as $ip) {
 					$ip = trim($ip);
@@ -300,6 +317,18 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 				}
 			}
 			break;
+	}
+	if ($error === null && is_array($def['validate']) && $def['validate'][0] === 'required' && $value === '') {
+		$error = 6252;
+	}
+	if ($error === null && is_array($def['validate']) && $def['validate'][0] === 'csv_url' && $value !== '') {
+		$path = (string) parse_url($value, PHP_URL_PATH);
+		if (!filter_var($value, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $value) || strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'csv') {
+			$error = 6248;
+		}
+	}
+	if ($error === null && isset($def['value_map'][$raw])) {
+		$raw = $def['value_map'][$raw];
 	}
 	if ($error === null && $value !== '' && is_array($def['validate']) && $def['validate'][0] === 'range' && ((int) $value < (int) $def['validate'][1] || (int) $value > (int) $def['validate'][2])) {
 		$error = 5732;
@@ -367,6 +396,15 @@ function st_options(array $def): array
 			$q = db_select("select kodenr, beskrivelse from grupper where art = 'VG' order by kodenr", __FILE__ . " linje " . __LINE__);
 			while ($r = db_fetch_array($q)) {
 				$cache[$from][(string) $r['kodenr']] = $r['kodenr'] . ' : ' . $r['beskrivelse'];
+			}
+		} elseif ($from === 'creditor_names') {
+			// Stored by name, as the old price-list page did (grupper PL box9).
+			$q = db_select("select firmanavn from adresser where art = 'K' and (lukket is null or lukket != 'on') order by firmanavn", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$name = trim((string) $r['firmanavn']);
+				if ($name !== '') {
+					$cache[$from][$name] = $name;
+				}
 			}
 		} elseif ($from === 'users') {
 			$cache[$from] = array('' => 2498);

@@ -25,6 +25,9 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261004 Sawaneh G4.3: storage 'grupper_row' (one column of one grupper row, the row id is the scope; price lists).
+// 20261004 Sawaneh G2.6: storage 'virtual' (a value derived from several fields, includes/settings/virtualStorage.php).
+// 20261004 Sawaneh Audit rows store the raw user name (the global from online.php is already escaped).
 // 20261003 Sawaneh G3.4 Reminders: storage 'formularer' (the GEBYR row of a reminder form per language: xb fee item, yb interest
 //                  item, str rate), kept where debitor/ny_rykker.php and includes/formfunk.php read it (spec R20).
 // 20261003 Sawaneh G6.3 E-mail: storage 'adresser' (a felt_ column of the company's own address row) and scope 'group'
@@ -44,6 +47,8 @@ class SettingsService
 	private static $company = null;
 	/** @var array<int, array<string, mixed>>|null the GEBYR rows of the reminder forms, for storage 'formularer' */
 	private static $fees = null;
+	/** @var array<string, array<int, array<string, mixed>>> grupper rows by art and id, for storage 'grupper_row' */
+	private static $rows = array();
 	/** @var bool|null */
 	private static $auditColumns = null;
 	private static $auditObjekt = false;
@@ -75,6 +80,12 @@ class SettingsService
 		}
 		if ($s[0] === 'adresser') {
 			return $out + array('table' => 'adresser', 'column' => (string) $s[1], 'encoding' => isset($s[2]) ? $s[2] : 'raw');
+		}
+		if ($s[0] === 'grupper_row') {
+			return $out + array('table' => 'grupper_row', 'art' => (string) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
+		}
+		if ($s[0] === 'virtual') {
+			return $out + array('table' => 'virtual', 'name' => (string) $s[1], 'encoding' => 'raw');
 		}
 		if ($s[0] === 'formularer') {
 			return $out + array('table' => 'formularer', 'formular' => (int) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
@@ -114,7 +125,15 @@ class SettingsService
 						self::$fees[] = $r;
 					}
 				}
-			} else {
+			} elseif ($st['table'] === 'grupper_row') {
+				if (!isset(self::$rows[$st['art']])) {
+					self::$rows[$st['art']] = array();
+					$q = db_select("select * from grupper where art = '" . db_escape_string($st['art']) . "' order by id", __FILE__ . " linje " . __LINE__);
+					while ($r = db_fetch_array($q)) {
+						self::$rows[$st['art']][(int) $r['id']] = $r;
+					}
+				}
+			} elseif ($st['table'] === 'settings') {
 				$names[$st['var_name']] = "'" . db_escape_string($st['var_name']) . "'";
 			}
 		}
@@ -169,6 +188,15 @@ class SettingsService
 		} elseif ($st['table'] === 'formularer') {
 			$row = self::feeRow($key, $st, $scopeId);
 			$value = $row ? (string) $row[$st['column']] : '';
+		} elseif ($st['table'] === 'virtual') {
+			include_once(__DIR__ . '/virtualStorage.php');
+			$value = settings_virtual_get($st['name']);
+		} elseif ($st['table'] === 'grupper_row') {
+			if (!isset(self::$rows[$st['art']])) {
+				self::preload(array($key));
+			}
+			$row = isset(self::$rows[$st['art']][(int) $scopeId]) ? self::$rows[$st['art']][(int) $scopeId] : null;
+			$value = ($row && isset($row[$st['column']])) ? (string) $row[$st['column']] : '';
 		} else {
 			if (!array_key_exists($st['var_name'], self::$settings)) {
 				self::preload(array($key));
@@ -226,6 +254,12 @@ class SettingsService
 		}
 		if ($st['table'] === 'formularer') {
 			return (bool) self::feeRow($key, $st, $scopeId);
+		}
+		if ($st['table'] === 'virtual') {
+			return true;
+		}
+		if ($st['table'] === 'grupper_row') {
+			return isset(self::$rows[$st['art']][(int) $scopeId]);
 		}
 		foreach (self::$settings[$st['var_name']] as $r) {
 			if (self::rowInScope($r, $def, $st, $scopeId)) {
@@ -356,6 +390,16 @@ class SettingsService
 				db_modify("insert into formularer (beskrivelse, formular, art, " . $st['column'] . ", sprog) values ('GEBYR', " . (int) $st['formular'] . ", 2, '$esc', '$lang')", __FILE__ . " linje " . __LINE__);
 			}
 			self::$fees = null;
+		} elseif ($st['table'] === 'virtual') {
+			include_once(__DIR__ . '/virtualStorage.php');
+			settings_virtual_set($st['name'], $raw);
+			self::$grupper = array();
+		} elseif ($st['table'] === 'grupper_row') {
+			if ((int) $scopeId <= 0 || !isset(self::$rows[$st['art']][(int) $scopeId])) {
+				return false;
+			}
+			db_modify("update grupper set " . $st['column'] . " = '$esc' where id = " . (int) $scopeId . " and art = '" . db_escape_string($st['art']) . "'", __FILE__ . " linje " . __LINE__);
+			unset(self::$rows[$st['art']]);
 		} else {
 			$where = "var_name = '" . db_escape_string($st['var_name']) . "'";
 			if ($st['var_grp'] !== null) {
@@ -443,7 +487,7 @@ class SettingsService
 		$objekt = self::$auditObjekt ? ", objekt_type, objekt_id, kilde" : "";
 		$objektValues = self::$auditObjekt ? ", 'indstilling', '" . db_escape_string(substr($def['key'], 0, 60)) . "', 'ui'" : "";
 		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, setting_key, section, old_value, new_value$objekt) values (";
-		$qtxt .= (int) $bruger_id . ", '" . db_escape_string((string) $brugernavn) . "', 'setting.change', '" . db_escape_string($def['key']) . "', '$ip', ";
+		$qtxt .= (int) $bruger_id . ", '" . db_escape_string(isset($GLOBALS['brugernavn_raw']) ? (string) $GLOBALS['brugernavn_raw'] : (string) $brugernavn) . "', 'setting.change', '" . db_escape_string($def['key']) . "', '$ip', ";
 		$qtxt .= "'" . db_escape_string($def['key']) . "', '" . db_escape_string($section) . "', ";
 		$qtxt .= "'" . db_escape_string($secret ? '' : $old) . "', '" . db_escape_string($secret ? '' : $new) . "'$objektValues)";
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
@@ -549,6 +593,7 @@ class SettingsService
 		self::$settings = array();
 		self::$company = null;
 		self::$fees = null;
+		self::$rows = array();
 	}
 
 	/**
@@ -580,7 +625,7 @@ class SettingsService
 	 */
 	private static function scopeId(array $def, $scopeId)
 	{
-		if ($scopeId === null && isset($def['scope']) && $def['scope'] === 'group' && isset($def['scope_id'])) {
+		if ($scopeId === null && isset($def['scope']) && in_array($def['scope'], array('group', 'row'), true) && isset($def['scope_id'])) {
 			return (int) $def['scope_id'];
 		}
 		return $scopeId;

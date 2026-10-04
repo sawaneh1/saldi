@@ -169,6 +169,8 @@ $landedSections = array(
 	'api_valg'       => 'settingsSection.php?s=integrations.connections&moved=api_valg',
 	'smtp'           => 'settingsSection.php?s=documents.email&moved=smtp#sub-server',
 	'rykker_valg'    => 'settingsSection.php?s=sales.reminders&moved=rykker_valg',
+	'bilag'          => 'settingsSection.php?s=finance.document_storage&moved=bilag',
+	'pricelists'     => 'settingsSection.php?s=purchase.pricelists&moved=pricelists',
 );
 if (isset($landedSections[$sektion]) && !($sektion == 'api_valg' && !empty($_GET['varesync']))) {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
@@ -193,6 +195,8 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20261002 Sawaneh Phase 4b batch 2: api_valg landed in Integrationer (only the shop sync still runs here); div_valg no longer
 //                  saves GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay, Vibrant or Copayone.
 // 20261003 Sawaneh G6.3: the SMTP save and the dead 'email' (MAIL/1) save are gone; smtp redirects to Dokumenter & e-mail » E-mail.
+// 20261004 Sawaneh G4.3: pricelists landed in Køb » Leverandørprislister (diverseIncludes/pricelists.php is no longer reached).
+// 20261004 Sawaneh G2.6: bilag landed in Finans » Bilagsopbevaring; its save code is gone.
 // 20261003 Sawaneh G3.4: rykker_valg landed in Salg » Betalingsbetingelser & rykkere; its save code is gone.
 // Users without a role inherit these from the Indstillinger bit, so nothing changes for
 // them; a role only gets them when an administrator grants them explicitly.
@@ -1137,62 +1141,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 
 		#######################################################################################
-	} elseif ($sektion == 'bilag') {
-		$id   = (int) if_isset($_POST['id']);
-		$box1 = if_isset($_POST['box1']);
-		$box2 = if_isset($_POST['box2']);
-		$box3 = if_isset($_POST['box3']);
-		if ($box3 && $box3 != '********')
-			$box3 = urlencode($box3);
-		$box4 = if_isset($_POST['box4']);
-		$box5 = if_isset($_POST['box5']);
-		$storageType = if_isset($_POST['storageType']);
-		($storageType == 'internFTP') ? $box6 = 'on' : $box6 = NULL;
-		$box7 = if_isset($_POST['box7']);
-		#		if ($box6) {
-		#			include("../includes/connect.php");
-		#			$r=db_fetch_array(db_select("select * from diverse WHERE beskrivelse='FTP' and nr='1'"));
-		#			$box1=$r['box1'];
-		#			$box2=$r['box2'];
-		#			$box3=$r['box3'];
-		#			$box4=$r['box4'];
-		#			$box5=$r['box5'];
-		#			include("../includes/online.php");
-		#		}
-		if ($box1 && substr($box1, -1) != "/")
-			$box1 .= "/";
-		if ($box6 && $box1 && !strpos($_SERVER['SERVER_NAME'], $box1))
-			$box1 .= $_SERVER['SERVER_NAME'] . "/";
-		if ($box6 && $box1 && !strpos($db, $box1))
-			$box1 .= $db . "/";
-		if ($box3 == '********') {
-			$r = db_fetch_array(db_select("select box3 from grupper WHERE art = 'bilag'", __FILE__ . " linje " . __LINE__));
-			$box3 = $r['box3'];
-		}
-		if (!$box6 && $box1 && $box2 && $box4 && $box5)
-			testftp($box1, $box2, $box3, $box4, $box5, $box6);
-		if ((!$id) && ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'bilag'", __FILE__ . " linje " . __LINE__))))
-			$id = $r['id'];
-		elseif (!$id) {
-			db_modify("insert into grupper (beskrivelse,kodenr,art,box1,box2,box3,box4,box5,box6,box7) values ('Bilag og dokumenter','1','bilag','$box1','$box2','$box3','$box4','$box5','$box6','$box7')", __FILE__ . " linje " . __LINE__);
-		} elseif ($id > 0) {
-			if ($box6) {
-				db_modify("update grupper set box6='$box6',box7='$box7' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
-			} else {
-				db_modify("update grupper set box1='$box1',box2='$box2',box4='$box4',box5='$box5',box6='$box6' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
-				include("../includes/connect.php");
-				db_modify("update regnskab set bilag='0' WHERE id = '$db_id'", __FILE__ . " linje " . __LINE__);
-				include("../includes/online.php");
-				if ($box3 != '********')
-					db_modify("update grupper set  box3='$box3' WHERE id = '$id'", __FILE__ . " linje " . __LINE__);
-			}
-		}
-		if ($box6) {
-			include("../includes/connect.php");
-			db_modify("update regnskab set bilag='1' WHERE id = '$db_id'", __FILE__ . " linje " . __LINE__);
-			include("../includes/online.php");
-		}
-		#######################################################################################
 	} elseif ($sektion == 'massefakt') {
 		$id         = if_isset($_POST['id']);
 		$brug_mfakt = if_isset($_POST['brug_mfakt']);
@@ -1450,7 +1398,6 @@ if ($sektion == "pricelists") {
 	pricelists();
 }
 if ($sektion == "div_valg") div_valg(); # Kalder sys_div_valg.php
-if ($sektion == "bilag") bilag();
 if ($sektion == "bank_integration") include('diverseIncludes/bank_integration.php');
 //if ($sektion=="barcodescan") barcodescan();
 if ($sektion == "massefakt") massefakt();

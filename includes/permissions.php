@@ -846,8 +846,23 @@ function perm_review_done(int $brugerId): void
 }
 
 // ------------------------------------------------------------------ audit log
+// 20261004 Sawaneh The user name in audit rows is read raw (audit_user_name()); the escaped global was escaped twice.
 // 20261003 Sawaneh Roles spec §3 alignment for SD-724: handling up to 60 chars, detaljer no longer cut at 2000 chars,
 //                  audit_log_write() with the document-pool argument order.
+
+/**
+ * The current user's name unescaped. online.php keeps $brugernavn SQL-escaped, so escaping that global again for an
+ * insert stored O'Brien as O''Brien; online.php now also keeps the raw name.
+ */
+function audit_user_name(): string
+{
+	global $brugernavn, $brugernavn_raw;
+	if (isset($brugernavn_raw)) {
+		return (string) $brugernavn_raw;
+	}
+	// No online.php in this request (login form, API, cron): the global, if any, is not escaped.
+	return isset($brugernavn) ? (string) $brugernavn : '';
+}
 
 /**
  * Record who did what (spec R7). Never throws: an install without the table just skips.
@@ -863,7 +878,7 @@ function audit_log(string $handling, string $detaljer = '', string $objektType =
 		$extended = (bool) db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'audit_log' and column_name = 'objekt_type'", __FILE__ . " linje " . __LINE__));
 	}
 	$id = isset($bruger_id) ? (int) $bruger_id : 0;
-	$navn = db_escape_string(isset($brugernavn) ? (string) $brugernavn : '');
+	$navn = db_escape_string(audit_user_name());
 	$ip = db_escape_string(isset($_SERVER['REMOTE_ADDR']) ? substr((string) $_SERVER['REMOTE_ADDR'], 0, 45) : '');
 	$handling = db_escape_string(substr($handling, 0, 60));
 	$detaljer = db_escape_string($detaljer);

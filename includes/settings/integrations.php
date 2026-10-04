@@ -33,6 +33,9 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 	if (!empty($def['soon'])) {
 		return array('kind' => 'soon', 'text' => st_txt(6140), 'button' => 0);
 	}
+	if (strpos($item, 'pl_') === 0) {
+		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(6233), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6234), 'button' => 6122);
+	}
 	$set = function (string $key): bool {
 		return trim(SettingsService::raw($key)) !== '';
 	};
@@ -83,6 +86,28 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 }
 
 /**
+ * The rows of a list section whose items come from the database ('items_from').
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function settings_list_dynamic_items(string $from): array
+{
+	$items = array();
+	if ($from === 'pricelists') {
+		$q = db_select("select id, beskrivelse, box2, box12 from grupper where art = 'PL' order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$items['pl_' . (int) $r['id']] = array(
+				'sub' => 'lists', 'abbr' => 'CSV', 'literal' => true,
+				'label' => trim((string) $r['beskrivelse']) !== '' ? trim((string) $r['beskrivelse']) : '—',
+				'desc' => trim((string) $r['box2']),
+				'active' => ($r['box12'] === 'Yes'),
+			);
+		}
+	}
+	return $items;
+}
+
+/**
  * A settings row that has no registry key of its own ('' when unset).
  */
 function settings_setting_value(string $name, string $grp, int $posId = 0): string
@@ -113,6 +138,9 @@ function settings_integration_info(array $def): string
 			$parts = explode('/', isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '', 3);
 			$folder = isset($parts[1]) ? $parts[1] : '';
 			return st_h((!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') . '/' . $folder . '/api');
+		case 'document_mail':
+			$address = 'bilag_' . $db . '@' . (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '');
+			return '<a href="mailto:' . st_h($address) . '">' . st_h($address) . '</a>';
 		case 'mobilepay_qr':
 			$codes = settings_mobilepay_qr_codes();
 			if (!$codes) {

@@ -132,6 +132,7 @@
 // 20261002 Sawaneh Phase 4b batch 2: GLS, Danske Fragtmænd, QuickPay, Flatpay, Vibrant, MobilePay and Copayone left div_valg()
 //                  for Indstillinger » Integrationer (pick-up addresses stay); api_valg() only runs the shop sync.
 // 20261003 Sawaneh G6.3: the SMTP form left kontoindstillinger() for Indstillinger » Dokumenter & e-mail » E-mail.
+// 20261004 Sawaneh G2.6: bilag() and testftp() removed (generated section Finans » Bilagsopbevaring).
 // 20261003 Sawaneh G3.4: rykker_valg() removed (generated section Salg » Betalingsbetingelser & rykkere).
 include_once("../includes/connect.php"); 
 
@@ -2269,109 +2270,6 @@ function tjekliste() {
 	print "</form>\n";
 } # endfunc tjeklister
 
-function bilag()
-{
-	global $bgcolor, $bgcolor5, $db, $s_id, $sprog_id;
-	$ftp_bilag_mappe = $ftp_dokument_mappe = $id        = $internFTP   = null; #20211019
-	$onclick         = $internFTP          = $internFTP = $google_docs = null;
-?>
-	<script Language="JavaScript">
-		<!--
-		function Form1_Validator(ftp) {
-			if (ftp.box3.value != ftp.pw2.value) {
-				$alert = findtekst('1345|Begge adgangskoder skal være ens', $sprog_id).".";
-				alert($alert);
-				ftp.box3.focus();
-				return (false);
-			}
-		}
-		//
-		-->
-	</script>
-
-<?php
-	$externFTP   = NULL;
-	$storageType = if_isset($_POST['storageType']);
-
-	$r = db_fetch_array(db_select("select * from grupper where art = 'bilag'", __FILE__ . " linje " . __LINE__));
-	if ($r) {	 #20211019 This checks whether $r is true before assigning values to the variables ..it prevents Trying to access array offset on value of type bool in..error.
-		$id       = $r['id'];
-		$ftpsted  = $r['box1'];
-		$ftplogin = $r['box2'];
-		$ftpkode  = '********';
-		$ftp_bilag_mappe = $r['box4'];
-		$ftp_dokument_mappe = $r['box5'];
-		if ($r['box6'] == 'on') {
-			$internFTP = 'checked';
-		} else {
-			$internFTP = NULL;
-			if (!$ftpsted && !$ftplogin) {
-				$ftpsted            = NULL;
-				$ftplogin           = NULL;
-				$ftp_bilag_mappe    = NULL;
-				$ftp_dokument_mappe = NULL;
-				$externFTP          = NULL;
-			} else $externFTP = 'checked';
-		}
-
-		if ($storageType == 'externFTP') $externFTP = 'checked';
-		if (!isset($sprog_id)) $sprog_id = null;
-		if (!isset($onclick)) $onclick   = null;
-		if (!$ftp_bilag_mappe) $ftp_bilag_mappe = 'bilag';
-		if (!$ftp_dokument_mappe) $ftp_dokument_mappe = 'dokumenter';
-		($r['box7']) ? $google_docs = 'checked' : $google_docs = NULL;
-	}
-		print "<tr bgcolor='$bgcolor5'><td colspan='6'><b>".findtekst('797|Bilagshåndtering', $sprog_id)."</b></td></tr>\n";
-		print "<tr><td colspan='6'><br>".findtekst('1335|Denne sektion indeholder de informationer, som er nødvendige for at kunne håndtere scannede bilag', $sprog_id)."</td></tr>\n";
-#		print "<tr><td colspan='6'>".findtekst('1336|Du kan vælge at lade os opbevare dine scannede bilag for kr. 75,- pr. måned pr. GB,', $sprog_id)."</td></tr>\n";
-		print "<tr><td colspan='6'></td></tr>\n";
-		print "<tr><td colspan='6'>".findtekst('1337|hvilket ligeledes giver mulighed for at sende indscannede bilag pr. e-mail til serveren', $sprog_id)."</td></tr>\n";
-		print "<tr><td colspan='6'>".findtekst('1338|og efterfølgende importere dem i kassekladden.', $sprog_id)."</td></tr>\n";
-		print "<tr><td colspan='6'>".findtekst('1339|Bilag sendes til', $sprog_id)." ";
-		print "<a href='mailto:bilag_".$db."@".$_SERVER['SERVER_NAME']."'>";
-		print "bilag_".$db."@".$_SERVER['SERVER_NAME']."</a>.</td></tr>\n";
-		print "<tr><td colspan='6'>".findtekst('1340|Du kan også vælge selv at sætte en ftp-server op til formålet eller benytte en eksisterende. Det koster ikke noget.', $sprog_id)."</td></tr>\n";
-		print "<tr><td colspan='6'>&nbsp;</td></tr>\n\n";
-		print "<form name='ftp' action='diverse.php?sektion=bilag' method='post' onsubmit=\"return Form1_Validator(this)\">\n";
-		print "<input type='hidden' name='id' value='$id'>\n";
-		print "<tr><td>".findtekst('1341|Opbevaring af bilag.', $sprog_id)."</td><td><select name=\"storageType\">";
-		if ($internFTP) print "<option value=\"internFTP\">".findtekst('1342|Intern opbevaring', $sprog_id)."</option>";
-		elseif ($externFTP) print "<option value=\"externFTP\">".findtekst('1343|Egen FTP server', $sprog_id)."</option>";
-		else print "<option value=\"\">".findtekst('1344|Ingen opbevaring', $sprog_id)."</option>";
-		if (!$internFTP) print "<option value=\"internFTP\">".findtekst('1342|Intern opbevaring', $sprog_id)."</option>";
-		if (!$externFTP) print "<option value=\"externFTP\">".findtekst('1343|Egen FTP server', $sprog_id)."</option>";
-		if ($internFTP || $externFTP) print "<option value=\"\">".findtekst('1344|Ingen opbevaring', $sprog_id)."</option>";
-		print "</select></td></tr>";
-	/*
-		if ($internFTP) $onclick=NULL;
-		else $onclick="onclick=\"return confirm('Intern bilagsopbevaring koster kr. 30,- pr. md. pr. GB.')\"";
-		print "<tr>\n<td title='".findtekst(212, $sprog_id)."'>".findtekst(211, $sprog_id)."</td>\n";
-		print "<td colspan='2' title='".findtekst(212, $sprog_id)."'>";
-		print "<input $onclick class='inputbox' type='checkbox' name='box6' $internFTP></td>\n</tr>\n";
-	*/
-		print "<tr>\n<td title='".findtekst('720|Afmærk her hvis du har en google konto. Så vil du kunne se næsten alle dokumentformater. Eller kan du kun se de formater din browser understøtter.', $sprog_id)."'>".findtekst('719|Brug Google Docs viewer', $sprog_id)."</td>\n";
-		print "<td colspan='2' title='".findtekst('720|Afmærk her hvis du har en google konto. Så vil du kunne se næsten alle dokumentformater. Eller kan du kun se de formater din browser understøtter.', $sprog_id)."'>";
-		print "<input $onclick class='inputbox' type='checkbox' name='box7' $google_docs></td>\n</tr>\n";
-
-	if ($externFTP) {
-		print "<tr>\n<td>".findtekst('1346|Navn eller IP-nummer på ftp-server', $sprog_id)."</td>\n";
-		print "<td colspan='2'><input class='inputbox' type='text' name='box1' size='25' value='$ftpsted'></td>\n</tr>\n";
-		print "<tr>\n<td>".findtekst('1347|Brugernavn på ftpserver', $sprog_id)."</td>\n";
-		print "<td colspan='2'><input class='inputbox' type='text' name='box2' size='25' value='$ftplogin'></td>\n</tr>\n";
-		print "<tr>\n<td>".findtekst('1348|Adgangskode til ftpserver', $sprog_id)."</td>\n";
-		print "<td colspan='2'><input class='inputbox' type='password' name='box3' size='25' value='$ftpkode'></td>\n</tr>\n";
-		print "<tr>\n<td>".findtekst('1349|Gentag adgangskode', $sprog_id)."</td>\n";
-		print "<td colspan='2'><input class='inputbox' type='password' name='pw2' size='25' value='$ftpkode'></td>\n</tr>\n";
-		print "<tr>\n<td>".findtekst('1350|Mappe til bilag på ftpserver', $sprog_id)."</td>";
-		print "<td colspan='2'><input class='inputbox' type='text' name='box4' size='25' value='$ftp_bilag_mappe'></td>\n</tr>\n";
-		print "<tr>\n<td>".findtekst('1351|Mappe til dokumenter på ftpserver', $sprog_id)."</td>\n";
-		print "<td colspan='2'><input class='inputbox' type='text' name='box5' size='25' value='$ftp_dokument_mappe'></td>\n</tr>\n";
-		print "<tr><td>&nbsp;</td></tr>\n";
-	}
-	print "<tr>\n<td colspan='3'>&nbsp;</td>\n";
-	print "<td align='center'><input class='button green medium' style='width:8em' type='submit' accesskey='g' value='".findtekst('471|Gem/opdatér', $sprog_id)."' name='submit'></td>\n<tr>\n";
-	print "</form>\n\n";
-} # endfunc bilag
 
 
 function massefakt() {
@@ -2405,47 +2303,6 @@ function massefakt() {
 	print "</form>\n\n";
 } # endfunc massefakt
 #####################################################
-function testftp($box1, $box2, $box3, $box4, $box5, $box6)
-{
-	// 20260928 Sawaneh Security 4.0 (A2): PHP ftp_* instead of a shell script for ncftp built from the posted values.
-	global $db, $sprog_id;
-	$ok = false;
-	$tmp = $box6 ? str_replace(array($_SERVER['SERVER_NAME'] . "/", $db . "/"), '', $box1) : $box1;
-	$parts = parse_url((strpos($tmp, '://') === false ? 'ftp://' : '') . rtrim($tmp, '/'));
-	$host = isset($parts['host']) ? $parts['host'] : '';
-	$port = isset($parts['port']) ? (int) $parts['port'] : 21;
-	$path = isset($parts['path']) ? trim($parts['path'], '/') : '';
-	$conn = ($host !== '' && function_exists('ftp_connect')) ? @ftp_connect($host, $port, 10) : false;
-	if ($conn && @ftp_login($conn, $box2, $box3)) {
-		@ftp_pasv($conn, true);
-		if ($box6) {
-			@ftp_mkdir($conn, $_SERVER['SERVER_NAME']);
-			@ftp_chdir($conn, $_SERVER['SERVER_NAME']);
-			@ftp_mkdir($conn, $db);
-			@ftp_chdir($conn, $db);
-		} elseif ($path !== '') {
-			@ftp_chdir($conn, $path);
-		}
-		@ftp_mkdir($conn, $box4);
-		@ftp_mkdir($conn, $box5);
-		if (@ftp_chdir($conn, $box4)) {
-			$local = "../temp/$db/testfil.txt";
-			file_put_contents($local, "testfil fra saldi\n");
-			if (@ftp_put($conn, 'testfil.txt', $local, FTP_ASCII)) {
-				@unlink($local);
-				$ok = @ftp_get($conn, $local, 'testfil.txt', FTP_ASCII);
-				@ftp_delete($conn, 'testfil.txt');
-			}
-			@unlink($local);
-		}
-	}
-	if ($conn) ftp_close($conn);
-	($box6) ? $tmp = "Dokumentserver" : $tmp = "FTP";
-	$alert  = findtekst('1733|tilgængelig', $sprog_id);
-	$alert1 = findtekst('1734|ikke', $sprog_id);
-	if ($ok) print "<BODY onLoad=\"JavaScript:alert('$tmp $alert')\">";
-	else print "<BODY onLoad=\"JavaScript:alert('$tmp $alert1 $alert')\">";
-}
 
 
 

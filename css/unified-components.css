@@ -944,6 +944,7 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-irow .st-btn-quiet { color: var(--st-link); font-weight: 600; }
 .st-irow .st-btn-quiet:hover { background: var(--st-surface-2); }
 .st-ibtn-space { min-width: 84px; }
+.st-list-empty { padding: 20px; }
 
 /* the drawer */
 .st-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(11, 26, 58, .28); }

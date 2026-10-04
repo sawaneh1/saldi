@@ -21,6 +21,7 @@
 //                  Rows inside one card per sub-section - badge, title and one line, computed status, one button - and a
 //                  drawer per integration with its own form, actions and change history. Rendered by
 //                  systemdata/settingsSection.php; behaviour in javascript/settingsList.js.
+// 20261004 Sawaneh G4.3: rows from the database (names shown as typed), an empty state and a page-level add button.
 
 include_once(__DIR__ . '/integrations.php');
 
@@ -87,6 +88,14 @@ function settings_list_render(array $c): void
       <h1><?= st_t($section['label']) ?></h1>
       <p class="st-lead"><?= st_t($section['lead']) ?>. <?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
     </div>
+	<?php if (!empty($section['add_action']) && $canWrite) { ?>
+    <form method="post" action="<?= st_h($c['selfUrl']) ?>">
+      <input type="hidden" name="csrf_token" value="<?= st_h($c['csrfToken']) ?>">
+      <input type="hidden" name="action" value="run">
+      <input type="hidden" name="key" value="<?= st_h($section['add_action']) ?>">
+      <button type="submit" class="st-btn st-btn-primary"><i class='bx bx-plus' aria-hidden="true"></i><?= st_t($defs[$section['add_action']]['label']) ?></button>
+    </form>
+	<?php } ?>
   </section>
 
 	<?php if ($c['movedText'] !== '' || $c['flash']) { ?>
@@ -131,15 +140,16 @@ function settings_list_render(array $c): void
       <section class="st-sect" id="sub-<?= st_h($sub) ?>">
         <h2><?= st_t($label) ?></h2>
         <div class="st-card">
-			<?php foreach ($section['items'] as $id => $it) {
+			<?php $shownInSub = 0; foreach ($section['items'] as $id => $it) {
 				if ($it['sub'] !== $sub) {
 					continue;
 				}
+				$shownInSub++;
 				$st = $status[$id];
 				?>
           <div class="st-irow st-irow-<?= st_h($st['kind']) ?>" data-item="<?= st_h($id) ?>">
             <span class="st-ibadge" aria-hidden="true"><?= st_h($it['abbr']) ?></span>
-            <div class="st-tx"><b><?= st_label($it['label']) ?></b><span><?= st_t($it['desc']) ?></span></div>
+            <div class="st-tx"><b><?= !empty($it['literal']) ? st_h($it['label']) : st_label($it['label']) ?></b><span><?= !empty($it['literal']) ? st_h($it['desc']) : st_t($it['desc']) ?></span></div>
             <span class="st-imeta st-imeta-<?= st_h($st['kind']) ?>"><?php if ($st['kind'] !== 'soon') { ?><i class="st-dotw <?= $dots[$st['kind']] ?>" aria-hidden="true"></i><?php } ?><?= st_h($st['text']) ?></span>
 				<?php if ($st['kind'] === 'soon') { ?>
             <span class="st-ibtn-space"></span>
@@ -147,6 +157,9 @@ function settings_list_render(array $c): void
             <button type="button" class="st-btn<?= $st['kind'] === 'ok' ? ' st-btn-quiet' : '' ?>" data-open="<?= st_h($id) ?>" aria-haspopup="dialog"><?= $canWrite ? st_t($st['button']) : st_t(6143) ?></button>
 				<?php } ?>
           </div>
+			<?php } ?>
+			<?php if (!$shownInSub && isset($section['empty_text'])) { ?>
+          <p class="st-h-empty st-list-empty"><?= st_t($section['empty_text']) ?></p>
 			<?php } ?>
         </div>
       </section>
@@ -189,7 +202,7 @@ function settings_list_render(array $c): void
       <input type="hidden" name="item" value="<?= st_h($id) ?>">
       <header class="st-dhead">
         <div>
-          <h2 id="dwt-<?= st_h($id) ?>"><?= st_label($it['label']) ?></h2>
+          <h2 id="dwt-<?= st_h($id) ?>"><?= !empty($it['literal']) ? st_h($it['label']) : st_label($it['label']) ?></h2>
           <p><?= st_t(6125) ?>.</p>
         </div>
         <button type="button" class="st-iconbtn" data-close aria-label="<?= st_t(6128) ?>"><i class='bx bx-x' aria-hidden="true"></i></button>

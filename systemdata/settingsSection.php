@@ -28,6 +28,8 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261004 Sawaneh G4.3: list items from the database ('items_from'), a one-off flash kept in the session.
+// 20261004 Sawaneh G2.6: FTP test result flash.
 // 20261003 Sawaneh G3.4: a run of fields may carry a heading ('group_label'), a card a help line ('sub_help').
 // 20261003 Sawaneh G6.3: a section may carry its own permission key (settings.email).
 // 20261002 Sawaneh Phase 4b batch 2 (G9): a section of 'kind' list renders includes/settings/listView.php - rows with a drawer
@@ -86,6 +88,9 @@ $defs = settings_section_definitions($sectionId);
 SettingsService::preload(array_keys($defs));
 $selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId);
 $isList = (!empty($section['kind']) && $section['kind'] === 'list');
+if ($isList && !empty($section['items_from'])) {
+	$section['items'] = settings_list_dynamic_items((string) $section['items_from']);
+}
 $item = '';
 if ($isList) {
 	$item = isset($_POST['item']) ? (string) $_POST['item'] : (isset($_GET['item']) ? (string) $_GET['item'] : '');
@@ -274,11 +279,18 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 		$flash[] = array('key', $_SESSION['settings_newkey']);
 		unset($_SESSION['settings_newkey']);
 	}
+	if (isset($_GET['ftp'])) {
+		$flash[] = ($_GET['ftp'] === 'ok') ? array('ok', st_txt(6212)) : array('err', st_txt(6213));
+	}
 	if (isset($_GET['qr'])) {
 		$flash[] = array('ok', sprintf(st_txt(6133), (int) $_GET['qr']));
 	}
 	if (isset($_GET['webhook'])) {
 		$flash[] = ($_GET['webhook'] === 'ok') ? array('ok', st_txt(6131)) : array('err', st_txt(6132));
+	}
+	if (!empty($_SESSION['settings_flash']) && is_array($_SESSION['settings_flash'])) {
+		$flash[] = $_SESSION['settings_flash'];
+		unset($_SESSION['settings_flash']);
 	}
 	if (!empty($_SESSION['settings_error'])) {
 		$flash[] = array('err', (string) $_SESSION['settings_error']);
@@ -423,8 +435,8 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 				st_render_field($def, array(
 					'group_heading' => $groupHeading,
 					'in_group'      => isset($def['group_label']),
-					'value'    => $values[$key],
-					'original' => $originals[$key],
+					'value'    => isset($values[$key]) ? $values[$key] : '',
+					'original' => isset($originals[$key]) ? $originals[$key] : '',
 					'error'    => isset($state['errors'][$key]) ? $state['errors'][$key] : null,
 					'readonly' => !$canWrite,
 					'locked'   => st_locked($def),

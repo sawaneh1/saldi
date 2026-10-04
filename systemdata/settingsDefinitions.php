@@ -21,6 +21,9 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261004 Sawaneh G4.3 Price lists: a list section whose items come from the database ('items_from'), 'per' => 'pricelist'
+//                  fields on storage 'grupper_row', 'value_map', rules 'required' and 'csv_url', a page-level 'add_action'.
+// 20261004 Sawaneh G2.6 Document storage: storage 'virtual', encoding 'urlencode' for a secret, 'ensure_suffix'.
 // 20261003 Sawaneh G3.4 Reminders: storage 'formularer', type 'creditor', 'options_from' users, 'group_label' and 'sub_help'.
 // 20261003 Sawaneh G6.3 E-mail: storage 'adresser', 'per' => 'language' fields expanded per form language (scope 'group'),
 //                  type 'textarea', a section-level 'permission'.
@@ -85,6 +88,24 @@ if (!function_exists('getSettingsSections')) {
 				'old' => array('div_valg' => array(782, 794), 'orediff' => array(782, 170), 'betalinger' => array(2732)),
 				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
+			),
+			'purchase.pricelists' => array(
+				'group' => 'purchase', 'section' => 'pricelists', 'number' => 'G4.3', 'label' => 6219, 'icon' => 'bx-spreadsheet', 'kind' => 'list',
+				'lead' => 6220, 'items_from' => 'pricelists', 'add_action' => 'purchase.pricelists.create', 'empty_text' => 6250,
+				'subsections' => array('lists' => 6219),
+				'legacy' => array(array(782, 792)),
+				'old' => array('pricelists' => array(782, 792)),
+				'context' => array('debitor/ordre.php', 'debitor/_varerInsert.php'),
+				'keywords' => array('prisliste', 'prislister', 'price list', 'price lists', 'leverandør', 'supplier', 'csv', 'prisfil', 'price file'),
+			),
+			'finance.document_storage' => array(
+				'group' => 'finance', 'section' => 'document_storage', 'number' => 'G2.6', 'label' => 6205, 'icon' => 'bx-folder',
+				'subsections' => array('storage' => 6206, 'ftp' => 1343, 'viewer' => 6207),
+				'sub_help' => array('ftp' => 1340),
+				'legacy' => array(array(782, 797)),
+				'old' => array('bilag' => array(782, 797)),
+				'context' => array('includes/bilag.php', 'includes/vis_bilag.php', 'finans/kassekladde.php'),
+				'keywords' => array('bilag', 'bilagsopbevaring', 'bilagshåndtering', 'document storage', 'documents', 'ftp', 'scanning', 'scannede bilag', 'bilagspulje', 'google docs'),
 			),
 			'sales.mysale' => array(
 				'group' => 'sales', 'section' => 'mysale', 'number' => 'G3.6', 'label' => 5986, 'icon' => 'bx-store',
@@ -190,6 +211,8 @@ if (!function_exists('getSettingsSections')) {
 		$api = array(782, 790);
 		$konto = array(782, 783);
 		$rykker = array(782, 793);
+		$bilag = array(782, 797);
+		$prisliste = array(782, 792);
 
 		$defs = array(
 			// ---------------------------------------------------------------- G3.2 Debtor card
@@ -437,6 +460,68 @@ if (!function_exists('getSettingsSections')) {
 			'organisation.commission.show_on_item_card' => array('sub' => 'card', 'type' => 'bool', 'label' => 5999, 'help' => 6000, 'default' => false,
 				'storage' => array('settings', 'items', 'showProvision', 'onEmpty'), 'legacy' => $vare),
 
+			// ---------------------------------------------------------------- G4.3 Supplier price lists (one drawer per grupper PL row)
+			'purchase.pricelists.create' => array('sub' => 'lists', 'type' => 'action', 'label' => 6221, 'help' => 6220,
+				'confirm_title' => 6221, 'confirm' => 6220, 'run' => 'pricelist_create', 'audit' => false),
+			'purchase.pricelists.description' => array('sub' => 'lists', 'type' => 'text', 'label' => 914, 'per' => 'pricelist', 'validate' => array('required'),
+				'storage' => array('grupper_row', 'PL', 'beskrivelse'), 'legacy' => $prisliste, 'keywords' => array('prisliste', 'beskrivelse', 'description')),
+			'purchase.pricelists.url' => array('sub' => 'lists', 'type' => 'text', 'label' => 6223, 'help' => 6224, 'per' => 'pricelist', 'validate' => array('csv_url'),
+				'storage' => array('grupper_row', 'PL', 'box2'), 'legacy' => $prisliste, 'keywords' => array('prisfil', 'url', 'csv', 'price file')),
+			'purchase.pricelists.delimiter' => array('sub' => 'lists', 'type' => 'select', 'label' => 6225, 'per' => 'pricelist', 'default' => ';',
+				'options' => array(';' => 6227, ',' => 6226, 'tab' => 6228), 'value_map' => array('tab' => "\t"),
+				'storage' => array('grupper_row', 'PL', 'box10'), 'legacy' => $prisliste, 'keywords' => array('skilletegn', 'delimiter', 'separator')),
+			'purchase.pricelists.encoding' => array('sub' => 'lists', 'type' => 'select', 'label' => 6229, 'per' => 'pricelist', 'default' => 'utf-8',
+				'options' => array('utf-8' => 'UTF-8', 'iso-8859' => 'ISO-8859-1'), 'options_literal' => true,
+				'storage' => array('grupper_row', 'PL', 'box11'), 'legacy' => $prisliste, 'keywords' => array('tegnsæt', 'encoding', 'charset')),
+			'purchase.pricelists.item_group' => array('sub' => 'lists', 'type' => 'select', 'label' => 6230, 'help' => 6231, 'per' => 'pricelist', 'default' => '',
+				'options_from' => 'item_groups', 'options_literal' => true, 'on_save' => 'pricelist_group_name',
+				'storage' => array('grupper_row', 'PL', 'kodenr'), 'legacy' => $prisliste, 'keywords' => array('varegruppe', 'item group')),
+			'purchase.pricelists.supplier' => array('sub' => 'lists', 'type' => 'select', 'label' => 6232, 'per' => 'pricelist', 'default' => '',
+				'options_from' => 'creditor_names', 'options_literal' => true,
+				'storage' => array('grupper_row', 'PL', 'box9'), 'legacy' => $prisliste, 'keywords' => array('leverandør', 'supplier', 'kreditor')),
+			'purchase.pricelists.use' => array('sub' => 'lists', 'type' => 'action', 'label' => 6235, 'help' => 6236, 'per' => 'pricelist',
+				'confirm_title' => 6237, 'confirm' => 6238, 'run' => 'pricelist_use', 'legacy' => $prisliste),
+			'purchase.pricelists.test' => array('sub' => 'lists', 'type' => 'action', 'label' => 6251, 'help' => 6239, 'per' => 'pricelist',
+				'confirm_title' => 6240, 'confirm' => 6241, 'run' => 'pricelist_test', 'legacy' => $prisliste),
+			'purchase.pricelists.delete' => array('sub' => 'lists', 'type' => 'action', 'label' => 6242, 'help' => 6243, 'per' => 'pricelist', 'danger' => true,
+				'confirm_title' => 6244, 'confirm' => 6245, 'run' => 'pricelist_delete', 'legacy' => $prisliste),
+
+			// ---------------------------------------------------------------- G2.6 Document storage
+			'finance.document_storage.type' => array('sub' => 'storage', 'type' => 'select', 'label' => 1341, 'help' => 6214, 'default' => '',
+				'options' => array('internFTP' => 1342, 'externFTP' => 1343, '' => 1344),
+				'storage' => array('virtual', 'document_storage'), 'legacy' => $bilag,
+				'keywords' => array('opbevaring', 'storage', 'intern opbevaring', 'internal storage', 'ftp', 'ingen opbevaring')),
+			'finance.document_storage.mail_address' => array('sub' => 'storage', 'type' => 'info', 'label' => 6216, 'help' => 6217, 'info' => 'document_mail', 'audit' => false,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('internFTP')),
+				'keywords' => array('bilag mail', 'scan to mail', 'bilag_')),
+			'finance.document_storage.ftp_server' => array('sub' => 'ftp', 'type' => 'text', 'label' => 1346, 'help' => 6215, 'ensure_suffix' => '/',
+				'storage' => array('grupper', 'bilag', 1, 'box1', 'raw', 'row_name' => 'Bilag og dokumenter'), 'legacy' => $bilag,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('externFTP')),
+				'keywords' => array('ftp server', 'ftp-server', 'host')),
+			'finance.document_storage.ftp_user' => array('sub' => 'ftp', 'type' => 'text', 'label' => 1347,
+				'storage' => array('grupper', 'bilag', 1, 'box2', 'raw', 'row_name' => 'Bilag og dokumenter'), 'legacy' => $bilag,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('externFTP')),
+				'keywords' => array('ftp', 'brugernavn', 'username')),
+			'finance.document_storage.ftp_password' => array('sub' => 'ftp', 'type' => 'secret', 'label' => 1348,
+				'storage' => array('grupper', 'bilag', 1, 'box3', 'urlencode', 'row_name' => 'Bilag og dokumenter'), 'legacy' => $bilag,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('externFTP')),
+				'keywords' => array('ftp', 'adgangskode', 'password')),
+			'finance.document_storage.ftp_folder_vouchers' => array('sub' => 'ftp', 'type' => 'text', 'label' => 1350, 'help' => 6218, 'default' => 'bilag',
+				'storage' => array('grupper', 'bilag', 1, 'box4', 'raw', 'row_name' => 'Bilag og dokumenter'), 'legacy' => $bilag,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('externFTP')),
+				'keywords' => array('ftp', 'mappe', 'folder', 'bilag')),
+			'finance.document_storage.ftp_folder_documents' => array('sub' => 'ftp', 'type' => 'text', 'label' => 1351, 'help' => 6218, 'default' => 'dokumenter',
+				'storage' => array('grupper', 'bilag', 1, 'box5', 'raw', 'row_name' => 'Bilag og dokumenter'), 'legacy' => $bilag,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('externFTP')),
+				'keywords' => array('ftp', 'mappe', 'folder', 'dokumenter')),
+			'finance.document_storage.ftp_test' => array('sub' => 'ftp', 'type' => 'action', 'label' => 6208, 'help' => 6209,
+				'confirm_title' => 6210, 'confirm' => 6211, 'run' => 'ftp_test', 'legacy' => $bilag,
+				'visible_if' => array('setting_in', 'finance.document_storage.type', array('externFTP')),
+				'keywords' => array('ftp test', 'test forbindelse', 'test connection')),
+			'finance.document_storage.google_docs' => array('sub' => 'viewer', 'type' => 'bool', 'label' => 719, 'help' => 720, 'default' => false,
+				'storage' => array('grupper', 'bilag', 1, 'box7', 'onEmpty', 'row_name' => 'Bilag og dokumenter'), 'legacy' => $bilag,
+				'keywords' => array('google docs', 'viewer', 'visning')),
+
 			// ---------------------------------------------------------------- G3.4 Payment terms & reminders
 			'sales.reminders.responsible_user' => array('sub' => 'responsible', 'type' => 'select', 'label' => 225, 'help' => 6191, 'default' => '',
 				'options_from' => 'users', 'options_mixed' => true,
@@ -676,6 +761,14 @@ if (!function_exists('getSettingsSections')) {
 				unset($defs[$key]);
 				continue;
 			}
+			if (isset($def['per']) && $def['per'] === 'pricelist') {
+				// One field per price list (grupper art PL); the drawer of the list is item pl_<id>.
+				foreach (settings_pricelist_rows() as $rowId => $rowName) {
+					$expanded[$key . '.' . $rowId] = array('scope' => 'row', 'scope_id' => (int) $rowId, 'label_suffix' => $rowName, 'per_key' => $key, 'item' => 'pl_' . $rowId) + $def;
+				}
+				unset($defs[$key]);
+				continue;
+			}
 			$defs[$key] = $def;
 		}
 		if ($expanded) {
@@ -693,7 +786,16 @@ if (!function_exists('getSettingsSections')) {
 					$out[$key] = $defs[$key];
 					continue;
 				}
-				$def = $expanded[$key . '.0'];
+				$def = null;
+				foreach ($expanded as $k => $d) {
+					if ($d['per_key'] === $key) {
+						$def = $d;
+						break;
+					}
+				}
+				if ($def === null) {
+					continue;
+				}
 				$slot = $def['group'] . '.' . $def['section'] . '.' . $def['sub'];
 				if (isset($placed[$slot])) {
 					continue;
@@ -740,11 +842,11 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array($d, 788), 'to' => array(array('items', null, 'diverse.php?sektion=variant_valg'))),
 			array('old' => array($d, 790), 'to' => array(array('integrations', 'integrations.connections', null))),
 			array('old' => array($d, 791), 'to' => array(array('items', null, 'diverse.php?sektion=labels'))),
-			array('old' => array($d, 792), 'to' => array(array('purchase', null, 'diverse.php?sektion=pricelists'))),
+			array('old' => array($d, 792), 'to' => array(array('purchase', 'purchase.pricelists', null))),
 			array('old' => array($d, 793), 'to' => array(array('sales', 'sales.reminders', null))),
 			array('old' => array($d, 794), 'to' => array(array('sales', 'sales.debtor_card', null), array('finance', 'finance.cash_journal', null), array('sales', 'sales.mysale', null), array('documents', 'documents.print', null), array('company', null, 'diverse.php?sektion=div_valg'), array('integrations', 'integrations.connections', null))),
 			array('old' => array($d, 796), 'to' => array(array('organisation', null, 'diverse.php?sektion=tjekliste'))),
-			array('old' => array($d, 797), 'to' => array(array('finance', null, 'diverse.php?sektion=bilag'))),
+			array('old' => array($d, 797), 'to' => array(array('finance', 'finance.document_storage', null))),
 			array('old' => array($d, 170), 'to' => array(array('finance', 'finance.cash_journal', null))),
 			array('old' => array(2732), 'to' => array(array('finance', 'finance.cash_journal', null))),
 			array('old' => array($d, 200), 'to' => array(array('sales', 'sales.orders', null))),
@@ -818,6 +920,25 @@ if (!function_exists('getSettingsSections')) {
 	 *
 	 * @return array<int, string>
 	 */
+	/**
+	 * The supplier price lists (grupper art PL): id => description.
+	 *
+	 * @return array<int, string>
+	 */
+	function settings_pricelist_rows(): array
+	{
+		static $rows = null;
+		if ($rows === null || !empty($GLOBALS['settings_pricelists_changed'])) {
+			$rows = array();
+			unset($GLOBALS['settings_pricelists_changed']);
+			$q = db_select("select id, beskrivelse from grupper where art = 'PL' order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$rows[(int) $r['id']] = trim((string) $r['beskrivelse']);
+			}
+		}
+		return $rows;
+	}
+
 	function settings_form_language_name(int $langId): string
 	{
 		$languages = settings_form_languages();

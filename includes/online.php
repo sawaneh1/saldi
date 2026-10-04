@@ -69,6 +69,7 @@
 //                  fallback); auditor sessions get the Revisor role once enforcement is 'deny'.
 // 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 // 20261002 Sawaneh Same for the USET row in grupper (unique index on the settings arts of grupper).
+// 20261004 Sawaneh $brugernavn_raw holds the user name unescaped; $brugernavn stays escaped as before.
 
 #include("../includes/connect.php"); #20211001
 if (!isset($buttonColor))    $buttonColor = '#114691';
@@ -142,6 +143,7 @@ if ($r = db_fetch_array($q)) {
 	$db = trim(if_isset($r['db'], ''));
 	$regnaar = trim(if_isset($r['regnskabsaar'], ''));
 	$brugernavn = db_escape_string($r['brugernavn']);
+	$brugernavn_raw = (string) $r['brugernavn']; // unescaped, for values that are escaped again later (audit_log)
 	$rettigheder = $r['rettigheder'];
 	$superUserPermission = $rettigheder;
 	$revisor = $r['revisor'];

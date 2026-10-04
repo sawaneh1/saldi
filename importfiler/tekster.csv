@@ -5809,3 +5809,51 @@
 6202	Rykkere sendes ikke automatisk. Påmindelserne går til den rykkeransvarlige	Reminders are not sent automatically. The notifications go to the reminder manager	Purringer sendes ikke automatisk. Påminnelsene går til den purreansvarlige
 6203	Rykkergebyr og rente sættes under Indstillinger » Salg » Betalingsbetingelser & rykkere	Reminder fee and interest are set under Settings » Sales » Payment terms & reminders	Purregebyr og rente settes under Innstillinger » Salg » Betalingsbetingelser og purringer
 6204	Ukendt kreditor	Unknown creditor	Ukjent kreditor
+6205	Bilagsopbevaring	Document storage	Bilagsoppbevaring
+6206	Opbevaring	Storage	Oppbevaring
+6207	Visning	Viewing	Visning
+6208	Test forbindelsen	Test the connection	Test tilkoblingen
+6209	Logger ind med de gemte oplysninger, opretter mapperne og skriver og læser en testfil	Logs in with the stored details, creates the folders and writes and reads a test file	Logger inn med de lagrede opplysningene, oppretter mappene og skriver og leser en testfil
+6210	Test FTP-forbindelsen?	Test the FTP connection?	Teste FTP-tilkoblingen?
+6211	Saldi forbinder til jeres FTP-server med de gemte oplysninger. Gem først, hvis du har ændret noget	Saldi connects to your FTP server with the stored details. Save first if you changed anything	Saldi kobler til FTP-serveren deres med de lagrede opplysningene. Lagre først hvis du har endret noe
+6212	FTP-serveren svarer, og testfilen kunne skrives og læses	The FTP server answers, and the test file could be written and read	FTP-serveren svarer, og testfilen kunne skrives og leses
+6213	FTP-serveren kunne ikke nås, eller testfilen kunne ikke skrives	The FTP server could not be reached, or the test file could not be written	FTP-serveren kunne ikke nås, eller testfilen kunne ikke skrives
+6214	Intern: Saldi opbevarer bilagene, og scannede bilag kan mailes ind. Egen FTP: bilagene lægges på jeres egen server	Internal: Saldi stores the documents, and scanned documents can be mailed in. Own FTP: the documents go to your own server	Intern: Saldi oppbevarer bilagene, og skannede bilag kan sendes inn på e-post. Egen FTP: bilagene legges på deres egen server
+6215	Fx ftp.example.dk eller ftp.example.dk:2121/sti	E.g. ftp.example.dk or ftp.example.dk:2121/path	F.eks. ftp.example.dk eller ftp.example.dk:2121/sti
+6216	Mail-adresse til bilag	Mail address for documents	E-postadresse for bilag
+6217	Scannede bilag, der mailes hertil, lander i bilagspuljen	Scanned documents mailed here land in the document pool	Skannede bilag som sendes hit, havner i bilagspuljen
+6218	Mappe på FTP-serveren. Oprettes, hvis den mangler	Folder on the FTP server. Created if missing	Mappe på FTP-serveren. Opprettes hvis den mangler
+6219	Leverandørprislister	Supplier price lists	Leverandørprislister
+6220	Prisfiler fra jeres leverandører, som varer kan hentes fra i ordren	Price files from your suppliers that items can be fetched from in the order	Prisfiler fra leverandørene deres som varer kan hentes fra i ordren
+6221	Tilføj prisliste	Add price list	Legg til prisliste
+6222	Ny prisliste	New price list	Ny prisliste
+6223	Prisfil (URL)	Price file (URL)	Prisfil (URL)
+6224	Fuld adresse til en CSV-fil, fx https://leverandor.dk/varer.csv	Full address of a CSV file, e.g. https://supplier.dk/items.csv	Full adresse til en CSV-fil, f.eks. https://leverandor.no/varer.csv
+6225	Skilletegn	Delimiter	Skilletegn
+6226	Komma	Comma	Komma
+6227	Semikolon	Semicolon	Semikolon
+6228	Tabulator	Tab	Tabulator
+6229	Tegnsæt	Character set	Tegnsett
+6230	Varegruppe	Item group	Varegruppe
+6231	Varer fra listen oprettes i denne gruppe	Items from the list are created in this group	Varer fra listen opprettes i denne gruppen
+6232	Leverandør	Supplier	Leverandør
+6233	I brug	In use	I bruk
+6234	Ikke i brug	Not in use	Ikke i bruk
+6235	Brug denne prisliste	Use this price list	Bruk denne prislisten
+6236	Ordren henter varer fra denne liste. Kun én liste er i brug ad gangen	The order fetches items from this list. Only one list is in use at a time	Ordren henter varer fra denne listen. Bare én liste er i bruk om gangen
+6237	Brug denne prisliste?	Use this price list?	Bruke denne prislisten?
+6238	Den liste, der er i brug nu, stopper med at blive brugt i ordren	The list in use now stops being used in the order	Listen som er i bruk nå, slutter å bli brukt i ordren
+6239	Hent prisfilen og vis kolonnerne og antal linjer. Intet gemmes	Fetch the price file and show its columns and number of lines. Nothing is saved	Hent prisfilen og vis kolonnene og antall linjer. Ingenting lagres
+6240	Test prisfilen?	Test the price file?	Teste prisfilen?
+6241	Saldi henter filen fra den gemte adresse. Gem først, hvis du har ændret noget	Saldi fetches the file from the stored address. Save first if you changed anything	Saldi henter filen fra den lagrede adressen. Lagre først hvis du har endret noe
+6242	Slet prislisten	Delete the price list	Slett prislisten
+6243	Listen fjernes. Varer, der allerede er hentet ind, bliver	The list is removed. Items already fetched stay	Listen fjernes. Varer som allerede er hentet inn, blir
+6244	Slet prislisten?	Delete the price list?	Slette prislisten?
+6245	Prislisten slettes og kan ikke hentes tilbage	The price list is deleted and cannot be restored	Prislisten slettes og kan ikke hentes tilbake
+6246	Prisfilen kunne hentes: %s linjer. Kolonner: %s	The price file could be fetched: %s lines. Columns: %s	Prisfilen kunne hentes: %s linjer. Kolonner: %s
+6247	Prisfilen kunne ikke hentes fra adressen	The price file could not be fetched from the address	Prisfilen kunne ikke hentes fra adressen
+6248	Skriv en fuld adresse, der starter med http:// eller https:// og ender på .csv	Enter a full address starting with http:// or https:// and ending in .csv	Skriv en full adresse som starter med http:// eller https:// og slutter på .csv
+6249	Prislisten er slettet	The price list was deleted	Prislisten er slettet
+6250	Ingen prislister endnu	No price lists yet	Ingen prislister ennå
+6251	Test prisfilen	Test the price file	Test prisfilen
+6252	Skal udfyldes	Required	Må fylles ut
