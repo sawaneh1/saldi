@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261004 Sawaneh G9.2: pickup addresses added and deleted here (the old page deleted every address missing from its form, B-D17).
 // 20261004 Sawaneh G10 batch B: payment card rows (add, move, remove across the seven tab-joined lists), KDS colour
 //                  compaction after the section is saved, printer cookies cleared as the old page did.
 // 20261002 Sawaneh Settings redesign phase 4b: the actions a generated section can run (spec P4), each after a
@@ -206,6 +207,26 @@ function settings_run_action(array $def, string $selfUrl): string
 			}
 			$_SESSION['settings_flash'] = array('ok', st_txt(6249) . ': ' . $name);
 			return 'settingsSection.php?s=purchase.pricelists';
+		case 'pickup_add':
+			$r = db_fetch_array(db_select("select coalesce(max(group_id), 0) + 1 as next_id from settings where var_grp = 'DFM_Pickup'", __FILE__ . " linje " . __LINE__));
+			$gid = (int) $r['next_id'];
+			$name = db_escape_string(st_txt(6382));
+			db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id, group_id) values ('DFM_Pickup', 'dfm_pickup_addr', '1', 'integrations.pickup', 0, $gid), ('DFM_Pickup', 'dfm_pickup_name1', '$name', 'integrations.pickup.name1', 0, $gid)", __FILE__ . " linje " . __LINE__);
+			if (function_exists('audit_log')) {
+				audit_log('setting.row_created', json_encode(array('before' => null, 'after' => st_txt(6382)), JSON_UNESCAPED_UNICODE), 'indstilling', 'integrations.pickup#' . $gid);
+			}
+			$GLOBALS['settings_pickups_changed'] = true;
+			return 'settingsSection.php?s=integrations.pickup&item=pickup_' . $gid;
+		case 'pickup_delete':
+			$gid = (int) $def['scope_id'];
+			$rows = settings_pickup_rows();
+			$name = isset($rows[$gid]) ? $rows[$gid] : (string) $gid;
+			db_modify("delete from settings where var_grp = 'DFM_Pickup' and group_id = $gid", __FILE__ . " linje " . __LINE__);
+			if (function_exists('audit_log')) {
+				audit_log('setting.row_deleted', json_encode(array('before' => $name, 'after' => null), JSON_UNESCAPED_UNICODE), 'indstilling', 'integrations.pickup#' . $gid);
+			}
+			$_SESSION['settings_flash'] = array('ok', st_txt(6383) . ': ' . $name);
+			return 'settingsSection.php?s=integrations.pickup';
 		case 'card_add':
 		case 'card_up':
 		case 'card_down':

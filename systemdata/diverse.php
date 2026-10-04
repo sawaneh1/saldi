@@ -200,6 +200,8 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20261004 Sawaneh G5.8: labels - valg limited to box1/box2, new labels only from the six shipped templates and with an allowed name
 //                  (a forged template name could copy any readable file into a label).
 // 20261004 Sawaneh G4.3: pricelists landed in Køb » Leverandørprislister (diverseIncludes/pricelists.php is no longer reached).
+// 20261004 Sawaneh Pick-up addresses landed in Integrationer » Afhentningsadresser; their save code is gone (it deleted every
+//                  address missing from the form, B-D17). Stripe only opens in the operator ledger (G9.6).
 // 20261004 Sawaneh G10: PoS-valg landed in Kasse » Kasser, Betalingskort, Kasseoptælling, Kvittering, Køkken, Skærm og Borde; its save code is gone.
 // 20261004 Sawaneh The old App Barcode link opens the App row in Integrationer instead of barcodescan.php.
 // 20261004 Sawaneh div_valg save keeps DIV/2 box6 (old DocuBizz data, removed in 4f) and escapes the values kept from the stored row.
@@ -251,31 +253,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		$box9        = $_POST['box9'];    #ledig
 		$box10       = '';                #kept from the stored row below
 		$box12       = $_POST['box12'];
-		// GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay and Vibrant are saved by Indstillinger » Integrationer (phase 4b);
-		// only the pick-up addresses are still posted here.
-		// Multiple pickup addresses - now handled as arrays
-		$dfm_pickup_group_ids   = isset($_POST['dfm_pickup_group_id'])   && is_array($_POST['dfm_pickup_group_id'])   ? $_POST['dfm_pickup_group_id']   : array();
-		$dfm_pickup_addrs       = isset($_POST['dfm_pickup_addr'])       && is_array($_POST['dfm_pickup_addr'])       ? $_POST['dfm_pickup_addr']       : array();
-		$dfm_pickup_name1s      = isset($_POST['dfm_pickup_name1'])      && is_array($_POST['dfm_pickup_name1'])      ? $_POST['dfm_pickup_name1']      : array();
-		$dfm_pickup_name2s      = isset($_POST['dfm_pickup_name2'])      && is_array($_POST['dfm_pickup_name2'])      ? $_POST['dfm_pickup_name2']      : array();
-		$dfm_pickup_street1s    = isset($_POST['dfm_pickup_street1'])    && is_array($_POST['dfm_pickup_street1'])    ? $_POST['dfm_pickup_street1']    : array();
-		$dfm_pickup_street2s    = isset($_POST['dfm_pickup_street2'])    && is_array($_POST['dfm_pickup_street2'])    ? $_POST['dfm_pickup_street2']    : array();
-		$dfm_pickup_towns       = isset($_POST['dfm_pickup_town'])       && is_array($_POST['dfm_pickup_town'])       ? $_POST['dfm_pickup_town']       : array();
-		$dfm_pickup_zipcodes    = isset($_POST['dfm_pickup_zipcode'])    && is_array($_POST['dfm_pickup_zipcode'])    ? $_POST['dfm_pickup_zipcode']    : array();
-		$dfm_pickup_buttonnames = isset($_POST['dfm_pickup_buttonname']) && is_array($_POST['dfm_pickup_buttonname']) ? $_POST['dfm_pickup_buttonname'] : array();
-		
-		$dfm_pickup_ids         = isset($_POST['dfm_pickup_id'])         && is_array($_POST['dfm_pickup_id'])         ? $_POST['dfm_pickup_id']         : array();
-		$dfm_pickup_users       = isset($_POST['dfm_pickup_user'])       && is_array($_POST['dfm_pickup_user'])       ? $_POST['dfm_pickup_user']       : array();
-		$dfm_pickup_passes      = isset($_POST['dfm_pickup_pass'])       && is_array($_POST['dfm_pickup_pass'])       ? $_POST['dfm_pickup_pass']       : array();
-		$dfm_pickup_agrees      = isset($_POST['dfm_pickup_agree'])      && is_array($_POST['dfm_pickup_agree'])      ? $_POST['dfm_pickup_agree']      : array();
-		$dfm_pickup_urls        = isset($_POST['dfm_pickup_url'])        && is_array($_POST['dfm_pickup_url'])        ? $_POST['dfm_pickup_url']        : array();
-		$dfm_pickup_hubs        = isset($_POST['dfm_pickup_hub'])        && is_array($_POST['dfm_pickup_hub'])        ? $_POST['dfm_pickup_hub']        : array();
-		$dfm_pickup_ships       = isset($_POST['dfm_pickup_ship'])       && is_array($_POST['dfm_pickup_ship'])       ? $_POST['dfm_pickup_ship']       : array();
-		$dfm_pickup_goods       = isset($_POST['dfm_pickup_good'])       && is_array($_POST['dfm_pickup_good'])       ? $_POST['dfm_pickup_good']       : array();
-		$dfm_pickup_gooddess    = isset($_POST['dfm_pickup_gooddes'])    && is_array($_POST['dfm_pickup_gooddes'])    ? $_POST['dfm_pickup_gooddes']    : array();
-		$dfm_pickup_pays        = isset($_POST['dfm_pickup_pay'])        && is_array($_POST['dfm_pickup_pay'])        ? $_POST['dfm_pickup_pay']        : array();
-		$dfm_pickup_sercodes    = isset($_POST['dfm_pickup_sercode'])    && is_array($_POST['dfm_pickup_sercode'])    ? $_POST['dfm_pickup_sercode']    : array();
-		
+		// GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay, Vibrant and the pick-up addresses are saved by Indstillinger » Integrationer (phase 4b).
 		// if ($box8) {
 		// 	ftptest($_POST['oiourl'], $_POST['oiobruger'], $_POST['oiokode']);
 		// 	$box8 = $_POST['oiourl'] . chr(9) . $_POST['oiobruger'] . chr(9) . $_POST['oiokode'];
@@ -298,81 +276,6 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 		}
 		
-		// Handle multiple DFM pickup addresses
-		// First, get all existing group_ids from DFM_Pickup to know which to delete
-		$existing_group_ids = array();
-		$qtxt = "select distinct group_id from settings where var_grp='DFM_Pickup'";
-		$q    = db_select($qtxt, __FILE__ . " linje " . __LINE__);
-		while ($r = db_fetch_array($q)) {
-			$existing_group_ids[] = $r['group_id'];
-		}
-		
-		// Track which group_ids we're keeping/updating
-		$updated_group_ids = array();
-		
-		// Process each submitted pickup address
-		if (is_array($dfm_pickup_group_ids)) {
-			foreach ($dfm_pickup_group_ids as $idx => $group_id) {
-				// Skip if no name1 provided (empty entry)
-				if (empty($dfm_pickup_name1s[$idx])) continue;
-				
-				// Determine the actual group_id to use
-				if (strpos((string)$group_id, 'new_') === 0) {
-					// New address - find the next available group_id
-					$qtxt = "select coalesce(max(group_id), 0) + 1 as next_id from settings where var_grp='DFM_Pickup'";
-					$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-					$actual_group_id = $r['next_id'];
-				} else {
-					$actual_group_id = intval($group_id);
-				}
-				
-				$updated_group_ids[] = $actual_group_id;
-				
-				// Pickup address fields to save
-				$pickup_fields = array(
-					'dfm_pickup_addr'       => isset($dfm_pickup_addrs[$idx])       ? $dfm_pickup_addrs[$idx]       : '1',
-					'dfm_pickup_name1'      => isset($dfm_pickup_name1s[$idx])      ? $dfm_pickup_name1s[$idx]      : '',
-					'dfm_pickup_name2'      => isset($dfm_pickup_name2s[$idx])      ? $dfm_pickup_name2s[$idx]      : '',
-					'dfm_pickup_street1'    => isset($dfm_pickup_street1s[$idx])    ? $dfm_pickup_street1s[$idx]    : '',
-					'dfm_pickup_street2'    => isset($dfm_pickup_street2s[$idx])    ? $dfm_pickup_street2s[$idx]    : '',
-					'dfm_pickup_town'       => isset($dfm_pickup_towns[$idx])       ? $dfm_pickup_towns[$idx]       : '',
-					'dfm_pickup_zipcode'    => isset($dfm_pickup_zipcodes[$idx])    ? $dfm_pickup_zipcodes[$idx]    : '',
-					'dfm_pickup_buttonname' => isset($dfm_pickup_buttonnames[$idx]) ? $dfm_pickup_buttonnames[$idx] : '',
-					'dfm_id'                => isset($dfm_pickup_ids[$idx])         ? $dfm_pickup_ids[$idx]         : '',
-					'dfm_user'              => isset($dfm_pickup_users[$idx])       ? $dfm_pickup_users[$idx]       : '',
-					'dfm_pass'              => isset($dfm_pickup_passes[$idx])      ? $dfm_pickup_passes[$idx]      : '',
-					'dfm_agree'             => isset($dfm_pickup_agrees[$idx])      ? $dfm_pickup_agrees[$idx]      : '',
-					'dfm_url'               => isset($dfm_pickup_urls[$idx])        ? $dfm_pickup_urls[$idx]        : '',
-					'dfm_hub'               => isset($dfm_pickup_hubs[$idx])        ? $dfm_pickup_hubs[$idx]        : '',
-					'dfm_ship'              => isset($dfm_pickup_ships[$idx])       ? $dfm_pickup_ships[$idx]       : '',
-					'dfm_good'              => isset($dfm_pickup_goods[$idx])       ? $dfm_pickup_goods[$idx]       : '',
-					'dfm_gooddes'           => isset($dfm_pickup_gooddess[$idx])    ? $dfm_pickup_gooddess[$idx]    : '',
-					'dfm_pay'               => isset($dfm_pickup_pays[$idx])        ? $dfm_pickup_pays[$idx]        : '',
-					'dfm_sercode'           => isset($dfm_pickup_sercodes[$idx])    ? $dfm_pickup_sercodes[$idx]    : ''
-				);
-				
-				foreach ($pickup_fields as $field_name => $field_value) {
-					$escaped_value = db_escape_string($field_value);
-					$qtxt = "select id from settings where var_grp='DFM_Pickup' and var_name='$field_name' and group_id='$actual_group_id'";
-					if ($r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
-						$qtxt = "update settings set var_value='$escaped_value' where id='$r[id]'";
-						db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-					} else {
-						$qtxt = "insert into settings (var_grp, var_name, var_value, var_description, group_id) values ";
-						$qtxt .= "('DFM_Pickup', '$field_name', '$escaped_value', 'DFM pickup address field', '$actual_group_id')";
-						db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-					}
-				}
-			}
-		}
-		
-		// Delete pickup addresses that were removed (not in updated list)
-		foreach ($existing_group_ids as $old_group_id) {
-			if (!in_array($old_group_id, $updated_group_ids)) {
-				$qtxt = "delete from settings where var_grp='DFM_Pickup' and group_id='$old_group_id'";
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-			}
-		}
 		#######################################################################################
 	} elseif ($sektion == 'ordre_valg') {
 		$vatPrivateCustomers  = if_isset($_POST['vatPrivateCustomers']);
@@ -629,7 +532,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 // 			db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 // 		#######################################################################################
 // 	} 
-	elseif ($sektion == 'stripe_valg') {
+	elseif ($sektion == 'stripe_valg' && $db == $sqdb) {
 		include_once(__DIR__ . '/diverseIncludes/stripeValg.php');
 		stripeValgSave();
 		#######################################################################################
@@ -981,6 +884,11 @@ if ($sektion == "variant_valg") variant_valg();
 // if ($sektion == "shop_valg") shop_valg();
 if ($sektion == "api_valg") api_valg();
 if ($sektion == "stripe_valg") {
+	// Subscriptions (Stripe) belong to the operator ledger only (settings redesign G9.6).
+	if ($db != $sqdb) {
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=settings.php\">";
+		exit;
+	}
 	include_once(__DIR__ . '/diverseIncludes/stripeValg.php');
 	stripeValg();
 }

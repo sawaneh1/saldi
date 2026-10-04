@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261004 Sawaneh G9.2 pickup address items, G9.4 NemHandel status.
 // 20261004 Sawaneh G10.3: card list items from the POS card lists, their status, the payment providers' state.
 // 20261002 Sawaneh Settings redesign phase 4b batch 2 (G9, hand-over 2 Oct): what the Integrations list needs beyond
 //                  the registry - the computed status of each integration (never stored, §8.13), the read-only info
@@ -39,6 +40,9 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 	}
 	if ($item === 'general') {
 		return array('kind' => 'plain', 'text' => '', 'button' => 6122);
+	}
+	if (strpos($item, 'pickup_') === 0) {
+		return array('kind' => 'plain', 'text' => (string) $def['status_text'], 'button' => 6122);
 	}
 	if (strpos($item, 'card_') === 0) {
 		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(860), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6360), 'button' => 6122);
@@ -129,6 +133,22 @@ function settings_list_dynamic_items(string $from): array
 			);
 		}
 	}
+	if ($from === 'pickups') {
+		$q = db_select("select group_id, var_name, var_value from settings where var_grp = 'DFM_Pickup' order by group_id", __FILE__ . " linje " . __LINE__);
+		$rows = array();
+		while ($r = db_fetch_array($q)) {
+			$rows[(int) $r['group_id']][str_replace('dfm_pickup_', '', (string) $r['var_name'])] = trim((string) $r['var_value']);
+		}
+		foreach ($rows as $gid => $a) {
+			$a += array('name1' => '', 'buttonname' => '', 'street1' => '', 'zipcode' => '', 'town' => '', 'dfm_user' => '');
+			$items['pickup_' . $gid] = array(
+				'sub' => 'addresses', 'abbr' => (string) $gid, 'literal' => true,
+				'label' => $a['name1'] !== '' ? $a['name1'] : ($a['buttonname'] !== '' ? $a['buttonname'] : '—'),
+				'desc' => trim($a['street1'] . ($a['street1'] !== '' && ($a['zipcode'] . $a['town']) !== '' ? ', ' : '') . trim($a['zipcode'] . ' ' . $a['town'])),
+				'status_text' => $a['dfm_user'] !== '' ? st_txt(6387) : '',
+			);
+		}
+	}
 	if ($from === 'pricelists') {
 		$q = db_select("select id, beskrivelse, box2, box12 from grupper where art = 'PL' order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
@@ -168,6 +188,9 @@ function settings_integration_info(array $def): string
 {
 	global $db;
 	switch ($def['info']) {
+		case 'nemhandel':
+			// G9.4: the company is created in NemHandel the first time an invoice goes out digitally (debitor/api.php stores the companyID).
+			return st_h(trim(SettingsService::raw('integrations.easyubl.company_id')) !== '' ? st_txt(6375) : st_txt(6376));
 		case 'pos_providers':
 			// G10.3 (decision 4): the payment providers' state, the keys themselves live under Integrations.
 			$sections = getSettingsSections();

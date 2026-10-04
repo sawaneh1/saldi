@@ -623,7 +623,8 @@ function st_render_field(array $def, array $state): void
 	if ($def['type'] === 'bool') {
 		$hasDefault = array_key_exists('default', $def);
 	} elseif ($def['type'] === 'select') {
-		$hasDefault = array_key_exists('default', $def) && (string) $def['default'] !== '';
+		// A default whose option has no name (the empty "none" choice) is no default to show or reset to.
+		$hasDefault = array_key_exists('default', $def) && (string) $def['default'] !== '' && st_display_value($def, st_default_raw($def)) !== '';
 	}
 	$defaultText = $hasDefault ? st_txt(5714) . ' ' . st_display_value($def, st_default_raw($def)) . '.' : '';
 	$nameAttr = $disabled ? '' : ' name="f[' . st_h($key) . ']"';

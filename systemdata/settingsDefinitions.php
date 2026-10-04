@@ -21,6 +21,10 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261004 Sawaneh 4b gaps: discount decimals (G3.3), payment link per till, link to confirm-stock-change from G4.2,
+//                  PDF command (G6.4), NemHandel status (G9.4), DFM settings in their own group (B-D5), pickup
+//                  addresses as a list section ('per' => 'pickup', settings group_id), bank item behind its feature,
+//                  bank status in the cash journal as a personal setting (G2.7).
 // 20261004 Sawaneh G10 batch B: Cards (one drawer per payment card, 'per' => 'card'), Tables & floor plans ('per' => 'table',
 //                  'per' => 'floor_plan' on table_pages rows), currencies per till, Move3500 login per till, KDS colours by
 //                  waiting time, Flatpay receipt print; the old PoS-valg page is retired.
@@ -94,6 +98,14 @@ if (!function_exists('getSettingsSections')) {
 				'old' => array('div_valg' => array(782, 794), 'orediff' => array(782, 170), 'betalinger' => array(2732)),
 				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
+			),
+			'integrations.pickup' => array(
+				'group' => 'integrations', 'section' => 'pickup', 'number' => 'G9.2', 'label' => 6379, 'icon' => 'bx-map-pin', 'kind' => 'list',
+				'lead' => 6380, 'items_from' => 'pickups', 'add_action' => 'integrations.pickup.add', 'empty_text' => 6386,
+				'subsections' => array('addresses' => 6379),
+				'legacy' => array(array(782, 794)), 'old' => array('div_valg' => array(782, 794)),
+				'context' => array('debitor/ordre.php'),
+				'keywords' => array('afhentningsadresse', 'afhentningsadresser', 'pickup address', 'pick-up', 'danske fragtmænd', 'dfm'),
 			),
 			// ---- G10 POS: Tills, Cards, Cash, Receipt, Kitchen, Screen, Tables (the old PoS-valg page is retired)
 			'pos.tills' => array(
@@ -239,7 +251,7 @@ if (!function_exists('getSettingsSections')) {
 					'mobilepay' => array('sub' => 'payments', 'abbr' => 'MP',  'label' => 'MobilePay',       'desc' => 6096),
 					'flatpay'   => array('sub' => 'payments', 'abbr' => 'FP',  'label' => 'Flatpay',         'desc' => 6112),
 					'vibrant'   => array('sub' => 'payments', 'abbr' => 'VB',  'label' => 'Vibrant',         'desc' => 6117),
-					'bank'      => array('sub' => 'payments', 'abbr' => 'BK',  'label' => 6141,              'desc' => 6142, 'soon' => true),
+					'bank'      => array('sub' => 'payments', 'abbr' => 'BK',  'label' => 6141,              'desc' => 6142, 'soon' => true, 'feature' => 'bank'),
 				),
 				'legacy' => array(array(782, 790), array(782, 794)),
 				'old' => array('api_valg' => array(782, 790), 'div_valg' => array(782, 794)),
@@ -297,6 +309,9 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'ordre', 'vatBusinessCustomers', 'onEmpty'), 'legacy' => $ordre,
 				'keywords' => array('moms', 'vat', 'mva', 'erhvervskunder', 'b2b')),
 
+			'sales.orders.discount_decimals' => array('sub' => 'prices', 'type' => 'int', 'label' => 6366, 'help' => 6367, 'default' => 2,
+				'storage' => array('settings', 'ordre', 'rabatdecimal', 'raw'), 'legacy' => $ordre, 'validate' => array('range', 0, 4),
+				'keywords' => array('rabat', 'decimaler', 'discount decimals')),
 			'sales.orders.quick_invoice' => array('sub' => 'invoicing', 'type' => 'bool', 'label' => 165, 'help' => 190, 'default' => false,
 				'storage' => array('grupper', 'DIV', 3, 'box4', 'onEmpty', 'row_name' => 'Div_valg (Ordrer)'), 'legacy' => $ordre,
 				'locked_if' => 'batch_control', 'locked_text' => 5736,
@@ -377,6 +392,8 @@ if (!function_exists('getSettingsSections')) {
 			'purchase.orders.post_immediately' => array('sub' => 'posting', 'type' => 'bool', 'label' => 213, 'help' => 214, 'default' => false,
 				'storage' => array('grupper', 'DIV', 3, 'box5', 'onEmpty', 'join' => ';', 'index' => 1, 'row_name' => 'Div_valg (Ordrer)'), 'legacy' => $ordre,
 				'keywords' => array('straksbogføring', 'immediate posting', 'købsordrer')),
+			'purchase.orders.confirm_stock_change' => array('sub' => 'posting', 'type' => 'link', 'label' => 1277, 'help' => 6370, 'href' => 'settingsSection.php?s=items.stock#items.stock.confirm_stock_change', 'button' => 6371, 'audit' => false,
+				'keywords' => array('bekræft lagerændring', 'confirm stock change', 'varemodtagelse', 'goods receipt')),
 
 			// ---------------------------------------------------------------- G5.5 Stock control & cost price
 			'items.stock.fifo' => array('sub' => 'stock', 'type' => 'bool', 'label' => 314, 'help' => 313, 'default' => false,
@@ -500,6 +517,9 @@ if (!function_exists('getSettingsSections')) {
 			'documents.print.html_forms' => array('sub' => 'print', 'type' => 'bool', 'label' => 818, 'help' => 817, 'default' => false,
 				'storage' => array('grupper', 'PV', 1, 'box3', 'onEmpty', 'row_name' => 'Udskrift'), 'legacy' => $divvalg,
 				'keywords' => array('html', 'css', 'postscript', 'formulargenerering')),
+			'documents.print.pdf_command' => array('sub' => 'print', 'type' => 'text', 'label' => 6372, 'help' => 6373,
+				'storage' => array('grupper', 'PV', 1, 'box2', 'raw', 'row_name' => 'Udskrift'), 'legacy' => $divvalg,
+				'keywords' => array('ps2pdf', 'pdf', 'printkommando', 'print command')),
 
 			// ---------------------------------------------------------------- G7.4 Commission
 			'organisation.commission.basis' => array('sub' => 'basis', 'type' => 'select', 'label' => 1269, 'help' => 6002, 'default' => 'fak',
@@ -544,6 +564,8 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'move3500', 'password', 'raw'), 'legacy' => $pos, 'visible_if' => array('setting_in', 'pos.tills.terminal_type', array('Move3500'))),
 			'pos.tills.terminal_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 6285, 'help' => 6286, 'per' => 'till', 'group_label' => array(6301, ''),
 				'storage' => array('grupper', 'POS', 2, 'box4', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
+			'pos.tills.payment_link' => array('sub' => 'tills', 'type' => 'bool', 'label' => 6368, 'help' => 6369, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => false, 'scope' => 'pos',
+				'storage' => array('settings', 'deb_ordre', 'showPaymentLink', 'onEmpty'), 'legacy' => $pos, 'keywords' => array('betalingslink', 'payment link')),
 			'pos.tills.kitchen_ip' => array('sub' => 'tills', 'type' => 'text', 'label' => 6287, 'help' => 6288, 'per' => 'till', 'group_label' => array(6301, ''),
 				'storage' => array('grupper', 'POS', 2, 'box10', 'raw', 'row_name' => 'Pos valg', 'fiscal' => true, 'join' => "\t", 'list' => true), 'legacy' => $pos),
 			'pos.tills.default_table' => array('sub' => 'tills', 'type' => 'select', 'label' => 6289, 'help' => 6290, 'per' => 'till', 'group_label' => array(6301, ''), 'default' => '',
@@ -560,6 +582,47 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'POS', 'omv_menu', 'onOff'), 'legacy' => $pos),
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
+
+			// ---------------------------------------------------------------- G9.2 Pickup addresses (settings DFM_Pickup, one group_id per address)
+			'integrations.pickup.add' => array('sub' => 'addresses', 'type' => 'action', 'label' => 6381, 'help' => 6380, 'confirm_title' => 6381, 'confirm' => 6380, 'run' => 'pickup_add'),
+			'integrations.pickup.name1' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1045, 'help' => 1046, 'per' => 'pickup', 'group_label' => array(6389, ''), 'validate' => array('required'),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_name1', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.name2' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1047, 'help' => 1048, 'per' => 'pickup', 'group_label' => array(6389, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_name2', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.street1' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1049, 'help' => 1050, 'per' => 'pickup', 'group_label' => array(6389, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_street1', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.street2' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1051, 'help' => 1052, 'per' => 'pickup', 'group_label' => array(6389, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_street2', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.zipcode' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1053, 'help' => 1054, 'per' => 'pickup', 'group_label' => array(6389, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_zipcode', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.town' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1055, 'help' => 1056, 'per' => 'pickup', 'group_label' => array(6389, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_town', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.button' => array('sub' => 'addresses', 'type' => 'text', 'label' => 3127, 'help' => 3128, 'per' => 'pickup', 'group_label' => array(6389, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pickup_buttonname', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.client_id' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1014, 'help' => 6388, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_id', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.user' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1016, 'help' => 1017, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_user', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.password' => array('sub' => 'addresses', 'type' => 'secret', 'label' => 1018, 'help' => 1019, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pass', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.agreement' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1020, 'help' => 1021, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_agree', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.api_url' => array('sub' => 'addresses', 'type' => 'text', 'label' => 3129, 'help' => 3130, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_url', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.hub' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1022, 'help' => 1023, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_hub', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.shipping_type' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1024, 'help' => 1025, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_ship', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.goods_type' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1026, 'help' => 1027, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_good', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.goods_description' => array('sub' => 'addresses', 'type' => 'text', 'label' => 6081, 'help' => 1039, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_gooddes', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.payment' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1028, 'help' => 1029, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_pay', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.delivery' => array('sub' => 'addresses', 'type' => 'text', 'label' => 1058, 'help' => 1059, 'per' => 'pickup', 'group_label' => array(6387, ''),
+				'storage' => array('settings', 'DFM_Pickup', 'dfm_sercode', 'raw'), 'legacy' => $divvalg),
+			'integrations.pickup.delete' => array('sub' => 'addresses', 'type' => 'action', 'label' => 6383, 'help' => 6384, 'per' => 'pickup', 'danger' => true,
+				'confirm_title' => 6385, 'confirm' => 6384, 'run' => 'pickup_delete'),
 
 			// ---------------------------------------------------------------- G10.3 / G10.4 Payment cards (one drawer per card; the lists are tab-joined per fiscal year, R7)
 			'pos.cards.providers' => array('sub' => 'general', 'item' => 'general', 'type' => 'info', 'label' => 6329, 'info' => 'pos_providers', 'audit' => false),
@@ -854,28 +917,28 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'GLS', 'gls_pass', 'raw'), 'legacy' => $divvalg, 'keywords' => array('gls', 'adgangskode', 'password')),
 
 			'integrations.dfm.agreement' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1020, 'help' => 1021,
-				'storage' => array('settings', 'GLS', 'dfm_agree', 'raw'), 'legacy' => $divvalg, 'keywords' => array('danske fragtmænd', 'dfm', 'aftalenummer', 'agreement number')),
+				'storage' => array('settings', 'DFM', 'dfm_agree', 'raw'), 'legacy' => $divvalg, 'keywords' => array('danske fragtmænd', 'dfm', 'aftalenummer', 'agreement number')),
 			'integrations.dfm.hub' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1022, 'help' => 1023,
-				'storage' => array('settings', 'GLS', 'dfm_hub', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'hub')),
+				'storage' => array('settings', 'DFM', 'dfm_hub', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'hub')),
 			'integrations.dfm.api_url' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 3129, 'help' => 3130,
-				'storage' => array('settings', 'GLS', 'dfm_url', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'api url')),
+				'storage' => array('settings', 'DFM', 'dfm_url', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'api url')),
 			'integrations.dfm.client_id' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1014, 'help' => 1015,
-				'storage' => array('settings', 'GLS', 'dfm_id', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'clientid', 'client id')),
+				'storage' => array('settings', 'DFM', 'dfm_id', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'clientid', 'client id')),
 			'integrations.dfm.user' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1016, 'help' => 1017,
-				'storage' => array('settings', 'GLS', 'dfm_user', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'brugernavn', 'username')),
+				'storage' => array('settings', 'DFM', 'dfm_user', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'brugernavn', 'username')),
 			'integrations.dfm.password' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'secret', 'label' => 1018, 'help' => 1019,
-				'storage' => array('settings', 'GLS', 'dfm_pass', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'password', 'adgangskode')),
+				'storage' => array('settings', 'DFM', 'dfm_pass', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'password', 'adgangskode')),
 			'integrations.dfm.shipping_type' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1024, 'help' => 1025,
-				'storage' => array('settings', 'GLS', 'dfm_ship', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'shippingtype', 'shipping type')),
+				'storage' => array('settings', 'DFM', 'dfm_ship', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'shippingtype', 'shipping type')),
 			'integrations.dfm.goods_type' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1026, 'help' => 1027,
-				'storage' => array('settings', 'GLS', 'dfm_good', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'godstype', 'goods type')),
+				'storage' => array('settings', 'DFM', 'dfm_good', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'godstype', 'goods type')),
 			'integrations.dfm.payment' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1028, 'help' => 1029,
-				'storage' => array('settings', 'GLS', 'dfm_pay', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'betalingsmetode', 'payment method')),
+				'storage' => array('settings', 'DFM', 'dfm_pay', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'betalingsmetode', 'payment method')),
 			'integrations.dfm.goods_description' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 6081, 'help' => 1039,
-				'storage' => array('settings', 'GLS', 'dfm_gooddes', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'godsbeskrivelse', 'goods description')),
+				'storage' => array('settings', 'DFM', 'dfm_gooddes', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'godsbeskrivelse', 'goods description')),
 			'integrations.dfm.delivery' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'text', 'label' => 1058, 'help' => 1059,
-				'storage' => array('settings', 'GLS', 'dfm_sercode', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'afleveringsmetode', 'delivery method')),
-			'integrations.dfm.pickup' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'link', 'label' => 6082, 'help' => 6165, 'href' => 'diverse.php?sektion=div_valg', 'button' => 6157, 'audit' => false,
+				'storage' => array('settings', 'DFM', 'dfm_sercode', 'raw'), 'legacy' => $divvalg, 'keywords' => array('dfm', 'afleveringsmetode', 'delivery method')),
+			'integrations.dfm.pickup' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'shipping', 'item' => 'dfm', 'type' => 'link', 'label' => 6082, 'help' => 6380, 'href' => 'settingsSection.php?s=integrations.pickup', 'button' => 6390, 'audit' => false,
 				'legacy' => $divvalg, 'keywords' => array('afhentningsadresse', 'afhentningsadresser', 'pickup address', 'pick-up address')),
 
 			'integrations.easyubl.api_key' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'einvoice', 'item' => 'easyubl', 'type' => 'secret', 'label' => 6086, 'help' => 6087,
@@ -884,6 +947,8 @@ if (!function_exists('getSettingsSections')) {
 			'integrations.easyubl.company_id' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'einvoice', 'item' => 'easyubl', 'type' => 'text', 'label' => 6089, 'help' => 6090,
 				'storage' => array('settings', 'easyUBL', 'companyID', 'raw'),
 				'keywords' => array('easyubl', 'nemhandel', 'virksomheds id', 'company id')),
+			'integrations.easyubl.nemhandel' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'einvoice', 'item' => 'easyubl', 'type' => 'info', 'label' => 6374, 'info' => 'nemhandel', 'audit' => false,
+				'keywords' => array('nemhandel', 'nemhandelsregistret', 'peppol')),
 			'integrations.app.api_key' => array('group' => 'integrations', 'section' => 'connections', 'sub' => 'einvoice', 'item' => 'app', 'type' => 'secret', 'label' => 6093, 'help' => 6094,
 				'storage' => array('settings', 'app_api', 'apikey', 'raw'), 'locked_if' => 'ht_keys:aiApiKey', 'locked_text' => 6088,
 				'keywords' => array('app', 'api nøgle', 'api key', 'bilagsgenkendelse')),
@@ -919,6 +984,10 @@ if (!function_exists('getSettingsSections')) {
 				'type' => 'bool', 'label' => 5704, 'help' => 5705, 'default' => true, 'permission' => 'any',
 				'storage' => array('settings', 'ordre', 'ordreAutocomplete', 'onEmpty'), 'legacy' => $ordre,
 				'keywords' => array('autosøgning', 'autocomplete')),
+			'personal.profile.bank_status' => array('group' => 'personal', 'section' => 'profile', 'sub' => 'profile', 'scope' => 'user',
+				'type' => 'bool', 'label' => 6377, 'help' => 6378, 'default' => false, 'permission' => 'any',
+				'storage' => array('settings', 'bank_integration', 'show_status', 'oneZero'), 'visible_if' => array('module', 'bank'),
+				'keywords' => array('bank', 'bankstatus', 'kassekladde')),
 			'personal.print.local_print' => array('group' => 'personal', 'section' => 'print', 'sub' => 'print', 'scope' => 'user',
 				'type' => 'bool', 'label' => 6007, 'help' => 6008, 'default' => false, 'permission' => 'any',
 				'storage' => array('settings', 'print', 'localPrint', 'onEmpty'), 'legacy' => $divvalg,
@@ -1013,6 +1082,18 @@ if (!function_exists('getSettingsSections')) {
 						$d['storage']['index'] = $n - 1;
 					}
 					$expanded[$key . '.' . $n] = $d;
+				}
+				unset($defs[$key]);
+				continue;
+			}
+			if (isset($def['per']) && $def['per'] === 'pickup') {
+				// One field per pickup address (settings DFM_Pickup, group_id = the address); the drawer is item pickup_<id>.
+				foreach (settings_pickup_rows() as $gid => $name) {
+					$d = array('scope' => 'group', 'scope_id' => (int) $gid, 'label_suffix' => $name, 'per_key' => $key, 'item' => 'pickup_' . $gid) + $def;
+					if (isset($d['group_label']) && $d['group_label'][0] === 6389) {
+						$d['group_label'] = array(6389, (string) $gid);
+					}
+					$expanded[$key . '.' . $gid] = $d;
 				}
 				unset($defs[$key]);
 				continue;
@@ -1291,6 +1372,27 @@ if (!function_exists('getSettingsSections')) {
 			$slots = range(1, ($r ? (int) $r['n'] : 0) + 1);
 		}
 		return $slots;
+	}
+
+	/**
+	 * Pickup addresses (settings DFM_Pickup): group_id => the name shown in the list.
+	 */
+	function settings_pickup_rows(): array
+	{
+		static $rows = null;
+		if ($rows === null || !empty($GLOBALS['settings_pickups_changed'])) {
+			unset($GLOBALS['settings_pickups_changed']);
+			$rows = array();
+			$names = array();
+			$q = db_select("select group_id, var_name, var_value from settings where var_grp = 'DFM_Pickup' and var_name in ('dfm_pickup_name1', 'dfm_pickup_buttonname') order by group_id", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$names[(int) $r['group_id']][(string) $r['var_name']] = trim((string) $r['var_value']);
+			}
+			foreach ($names as $gid => $n) {
+				$rows[$gid] = !empty($n['dfm_pickup_name1']) ? $n['dfm_pickup_name1'] : (isset($n['dfm_pickup_buttonname']) ? $n['dfm_pickup_buttonname'] : '');
+			}
+		}
+		return $rows;
 	}
 
 	/**

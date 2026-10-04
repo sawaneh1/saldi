@@ -57,6 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261004 Sawaneh Stripe only in the operator ledger (G9.6), bank only when its credentials exist (G2.7), DFM flag in its own group.
 // 20261004 Sawaneh G10 batch B: Betalingskort and Borde entries; the PoS-valg entry is gone (its keywords moved to Kasser).
 // 20261004 Sawaneh Projekter opens projekter.php (syssetup.php?valg=projekter shows no projects, spec C7).
 
@@ -122,7 +123,7 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'api_valg',              'group' => 'integrations', 'url' => 'settingsSection.php?s=integrations.connections', 'section' => 'integrations.connections', 'category' => 'integrations', 'textId' => 5537,
 				'keywords' => array('api settings','api key','api access','ip whitelist','allowed ip addresses','external integration','import file path','api bruger','api nøgle',
 					'saldi db variable','saldi url variable','api client url','api reference user','update from shop','fetch new products from shop')),
-			array('key' => 'stripe_valg',           'group' => 'integrations', 'url' => 'diverse.php?sektion=stripe_valg',          'category' => 'integrations', 'labelDa' => 'Stripe abonnement', 'labelEn' => 'Stripe subscriptions',
+			array('key' => 'stripe_valg',           'group' => 'integrations', 'url' => 'diverse.php?sektion=stripe_valg',          'category' => 'integrations', 'visibilityRule' => 'masterDb', 'labelDa' => 'Stripe abonnement', 'labelEn' => 'Stripe subscriptions',
 				'keywords' => array('stripe','subscription','subscriptions','abonnement','recurring payment','recurring billing','checkout','webhook','webhook secret','secret key','api key stripe',
 					'kortbetaling','card payment','betalingslink','payment link','tax rate','vat rate id','base url','bogholder email','bookkeeper email','stripe mode','test mode','live mode')),
 			array('key' => 'labels',                'group' => 'items', 'url' => 'diverse.php?sektion=labels',               'category' => 'documents', 'textId' => 791,
@@ -143,7 +144,7 @@ if (!function_exists('getSettingsRegistry')) {
 					'scanned receipts storage','store documents per gb per month','receipt email inbox address','own ftp server for documents','google docs viewer','ftp server name or ip','ftp username and password for documents','ftp folder for receipts','no storage option')),
 			array('key' => 'cash_journal',          'group' => 'finance', 'url' => 'settingsSection.php?s=finance.cash_journal', 'section' => 'finance.cash_journal', 'category' => 'finance', 'textId' => 5983,
 				'keywords' => array('rounding difference account','penny difference','cash rounding','rounding account','øredifferencer','øreforskjeller', 'payment terms','credit terms','payment due days','default payment days','invoice due date settings','betalingsfrist','betalingsdato', 'payment lists','betalingslister','different dates same voucher','forskellige datoer','bilagsnummer')),
-			array('key' => 'bank_integration',      'group' => 'finance', 'url' => 'diverse.php?sektion=bank_integration',     'category' => 'integrations', 'labelDa' => 'Bank Integration', 'labelEn' => 'Bank integration', 'labelNo' => 'Bankintegrasjon',
+			array('key' => 'bank_integration',      'group' => 'finance', 'url' => 'diverse.php?sektion=bank_integration',     'category' => 'integrations', 'visibilityRule' => 'bankFeature', 'labelDa' => 'Bank Integration', 'labelEn' => 'Bank integration', 'labelNo' => 'Bankintegrasjon',
 				'keywords' => array('bank feed','bank transaction import','bank statement import','show bank status','show status kassekladde','default date range bank import','date method','last quarter','this quarter','bank connection status')),
 			array('key' => 'barcodescan',           'group' => 'integrations', 'url' => 'settingsSection.php?s=integrations.connections&item=app', 'section' => 'integrations.connections', 'category' => 'pos', 'labelDa' => 'App Barcode', 'labelEn' => 'Barcode scanning app', 'labelNo' => 'App-strekkode',
 				'keywords' => array('qr code login','app login','mobile app authentication','one time access qr','saldi app login','scan to login')),
@@ -209,6 +210,24 @@ if (!function_exists('settings_has_module')) {
 	}
 }
 
+if (!function_exists('settings_feature_enabled')) {
+	/**
+	 * Features that stay hidden until they are live in the installation (spec G2.7): the bank integration is on
+	 * when its API credentials exist (bank_integration/includes/enabled.php).
+	 */
+	function settings_feature_enabled(string $feature): bool
+	{
+		if ($feature === 'bank') {
+			$file = __DIR__ . '/../bank_integration/includes/enabled.php';
+			if (!function_exists('bankIntegrationEnabled') && is_file($file)) {
+				include_once($file);
+			}
+			return function_exists('bankIntegrationEnabled') && bankIntegrationEnabled();
+		}
+		return false;
+	}
+}
+
 if (!function_exists('settings_require_any_access')) {
 	/**
 	 * The settings pages are open to anyone holding read on at least one settings group, not only to the old
@@ -234,7 +253,7 @@ if (!function_exists('settings_optional_modules')) {
 	function settings_optional_modules(): array
 	{
 		$flags = array();
-		$q = db_select("select var_grp, var_name, var_value from settings where (var_grp = 'debitor' and var_name = 'mySale') or (var_grp = 'items' and var_name in ('packagingModuleEnabled', 'useCommission')) or (var_grp = 'GLS' and var_name in ('gls_user', 'dfm_user')) or (var_grp = 'mobilepay' and var_name = 'client_id')", __FILE__ . " linje " . __LINE__);
+		$q = db_select("select var_grp, var_name, var_value from settings where (var_grp = 'debitor' and var_name = 'mySale') or (var_grp = 'items' and var_name in ('packagingModuleEnabled', 'useCommission')) or (var_grp in ('GLS', 'DFM') and var_name in ('gls_user', 'dfm_user')) or (var_grp = 'mobilepay' and var_name = 'client_id')", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
 			if (trim((string) $r['var_value']) !== '') {
 				$flags[$r['var_grp'] . '/' . $r['var_name']] = (string) $r['var_value'];
@@ -248,7 +267,7 @@ if (!function_exists('settings_optional_modules')) {
 			$modules[] = array('key' => 'consignment', 'group' => 'items', 'label' => '5975|Kommissionsvarer', 'active' => isset($flags['items/useCommission']), 'url' => 'settingsSection.php?s=items.consignment', 'activate' => true);
 		}
 		$modules[] = array('key' => 'gls', 'group' => 'integrations', 'label' => 'GLS', 'active' => isset($flags['GLS/gls_user']), 'url' => 'settingsSection.php?s=integrations.connections&item=gls', 'activate' => true);
-		$modules[] = array('key' => 'dfm', 'group' => 'integrations', 'label' => 'Danske Fragtmænd', 'active' => isset($flags['GLS/dfm_user']), 'url' => 'settingsSection.php?s=integrations.connections&item=dfm', 'activate' => true);
+		$modules[] = array('key' => 'dfm', 'group' => 'integrations', 'label' => 'Danske Fragtmænd', 'active' => isset($flags['DFM/dfm_user']) || isset($flags['GLS/dfm_user']), 'url' => 'settingsSection.php?s=integrations.connections&item=dfm', 'activate' => true);
 		$modules[] = array('key' => 'mobilepay', 'group' => 'integrations', 'label' => 'MobilePay', 'active' => isset($flags['mobilepay/client_id']), 'url' => 'settingsSection.php?s=integrations.connections&item=mobilepay', 'activate' => true);
 		return $modules;
 	}
@@ -477,6 +496,11 @@ if (!function_exists('getSettingsGroups')) {
 					// inside a company it logs the user out, so it is never listed there.
 					global $db, $sqdb;
 					if (!isset($db) || !isset($sqdb) || $db !== $sqdb) {
+						return false;
+					}
+					break;
+				case 'bankFeature':
+					if (!settings_feature_enabled('bank')) {
 						return false;
 					}
 					break;

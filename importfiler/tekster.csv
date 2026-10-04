@@ -5970,3 +5970,28 @@
 6363	Kassen viser kortet et trin tidligere	The till shows the card one step earlier	Kassen viser kortet ett trinn tidligere
 6364	Kassen viser kortet et trin senere	The till shows the card one step later	Kassen viser kortet ett trinn senere
 6365	Terminal	Terminal	Terminal
+6366	Decimaler på rabat	Discount decimals	Desimaler på rabatt
+6367	Antal decimaler i rabatfelterne på ordrelinjer	Number of decimals in the discount fields on order lines	Antall desimaler i rabattfeltene på ordrelinjer
+6368	Vis betalingslink på ordrer	Show payment link on orders	Vis betalingslenke på ordrer
+6369	Ordrer, der betales med et terminalkort, får et link til betalingsterminalen på denne kasse	Orders paid with a terminal card get a link to the payment terminal on this till	Ordrer som betales med et terminalkort får en lenke til betalingsterminalen på denne kassen
+6370	Gælder også varemodtagelse på købsordrer; indstillingen ligger under Lager	Also applies to goods receipt on purchase orders; the setting lives under Stock	Gjelder også varemottak på innkjøpsordrer; innstillingen ligger under Lager
+6371	Åbn Lagerstyring	Open Stock control	Åpne Lagerstyring
+6372	Kommando til PDF (ps2pdf)	PDF command (ps2pdf)	Kommando for PDF (ps2pdf)
+6373	Sti til programmet, der laver PDF af udskrifter, f.eks. /usr/bin/ps2pdf. Tom: serverens standard.	Path of the program that turns printouts into PDF, e.g. /usr/bin/ps2pdf. Empty: the server default.	Sti til programmet som lager PDF av utskrifter, f.eks. /usr/bin/ps2pdf. Tom: serverens standard.
+6374	NemHandel	NemHandel	NemHandel
+6375	Oprettet i NemHandel	Registered in NemHandel	Opprettet i NemHandel
+6376	Ikke oprettet endnu – sker automatisk, første gang en faktura sendes digitalt	Not registered yet – happens automatically the first time an invoice is sent digitally	Ikke opprettet ennå – skjer automatisk første gang en faktura sendes digitalt
+6377	Vis bankstatus i kassekladden	Show bank status in the cash journal	Vis bankstatus i kassekladden
+6378	Et ikon i kassekladden viser, om bankforbindelsen er aktiv	An icon in the cash journal shows whether the bank connection is active	Et ikon i kassekladden viser om bankforbindelsen er aktiv
+6379	Afhentningsadresser	Pickup addresses	Hentesteder
+6380	Adresser, Danske Fragtmænd henter gods fra. Hver adresse får en knap på ordresiden.	Addresses Danske Fragtmænd collects goods from. Each address gets a button on the order page.	Adresser Danske Fragtmænd henter gods fra. Hver adresse får en knapp på ordresiden.
+6381	Tilføj afhentningsadresse	Add pickup address	Legg til hentested
+6382	Ny afhentningsadresse	New pickup address	Nytt hentested
+6383	Slet afhentningsadresse	Delete pickup address	Slett hentested
+6384	Adressen og dens knap fjernes fra ordresiden. Afsendte forsendelser ændres ikke.	The address and its button are removed from the order page. Shipments already sent are not changed.	Adressen og knappen fjernes fra ordresiden. Sendte forsendelser endres ikke.
+6385	Slet afhentningsadressen?	Delete the pickup address?	Slette hentestedet?
+6386	Ingen afhentningsadresser endnu – hovedadressen bruges	No pickup addresses yet – the main address is used	Ingen hentesteder ennå – hovedadressen brukes
+6387	Egen DFM-aftale for denne adresse (valgfrit)	Own DFM agreement for this address (optional)	Egen DFM-avtale for dette hentestedet (valgfritt)
+6388	Udfyldes kun, hvis adressen bruger en anden Danske Fragtmænd-aftale end den fælles	Fill in only when this address uses a different Danske Fragtmænd agreement than the shared one	Fylles bare ut hvis hentestedet bruker en annen Danske Fragtmænd-avtale enn den felles
+6389	Afhentningsadresse %s	Pickup address %s	Hentested %s
+6390	Åbn afhentningsadresser	Open pickup addresses	Åpne hentesteder

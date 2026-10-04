@@ -527,6 +527,9 @@ class SettingsService
 		if ($module === 'pos') {
 			return $cache[$module] = file_exists(__DIR__ . '/../../debitor/pos_ordre.php');
 		}
+		if ($module === 'bank') {
+			return $cache[$module] = function_exists('settings_feature_enabled') && settings_feature_enabled('bank');
+		}
 		return $cache[$module] = false;
 	}
 

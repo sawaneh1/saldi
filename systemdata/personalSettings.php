@@ -33,6 +33,7 @@
 // 20260928 Sawaneh Popup windows, background colour and highlight removed (settings redesign spec, Personal settings).
 // 20260929 Sawaneh Order autocomplete moved here from Ordrerelaterede valg, saved through SettingsService.
 // 20260930 Sawaneh Notifications tab: daily e-mail summary on/off (Adam: summary only).
+// 20261004 Sawaneh Bank status in the cash journal is a personal setting here when the bank integration is live (G2.7).
 // 20261002 Sawaneh Print card: print to local printer is a personal setting (settings redesign G6.4), not a cookie.
 
 /**
@@ -211,6 +212,10 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 		// Moved here from Ordrerelaterede valg: it was always a per-user choice (settings redesign spec §4).
 		SettingsService::save('personal.orders.autocomplete', !empty($post['order_autocomplete']), $brugerId);
 		SettingsService::save('personal.print.local_print', !empty($post['local_print']), $brugerId);
+		if (SettingsService::hasModule('bank')) {
+			// Moved here from the old bank page (settings redesign G2.7): the status icon in the cash journal is per user.
+			SettingsService::save('personal.profile.bank_status', !empty($post['bank_status']), $brugerId);
+		}
 
 		if (isset($post['due_date_warning_days']) && $post['due_date_warning_days'] !== '') {
 			update_settings_value('due_date_warning_days', 'lager', max(1, intval($post['due_date_warning_days'])), 'Days before expiry to warn', $brugerId);
@@ -381,6 +386,8 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		'warnDays'  => get_due_date_warning_days($brugerId),
 		'autocomplete' => (bool) SettingsService::get('personal.orders.autocomplete', $brugerId),
 		'localPrint' => (bool) SettingsService::get('personal.print.local_print', $brugerId),
+		'bankFeature' => SettingsService::hasModule('bank'),
+		'bankStatus' => (bool) SettingsService::get('personal.profile.bank_status', $brugerId),
 		'sessions'  => $sessionRows,
 		'sessionId' => $sessionId,
 		'roleName'  => $roleName,
@@ -643,6 +650,14 @@ function personal_settings_view_profile(array $d, callable $h, callable $t, stri
             <span class="ps-check-txt"><b><?= $t('5704|Anvend autosøgning på ordrer') ?></b><span><?= $t('5705|Slår autosøgning til på ordresider. Gælder kun for dig.') ?></span></span>
           </label>
         </div>
+			<?php if ($d['bankFeature']) { ?>
+        <div class="ps-field ps-field-full" id="personal.profile.bank_status">
+          <label class="ps-check">
+            <input type="checkbox" name="bank_status" value="on"<?= $d['bankStatus'] ? ' checked' : '' ?>>
+            <span class="ps-check-txt"><b><?= $t('6377|Vis bankstatus i kassekladden') ?></b><span><?= $t('6378|Et ikon i kassekladden viser, om bankforbindelsen er aktiv') ?></span></span>
+          </label>
+        </div>
+			<?php } ?>
         <div class="ps-field">
           <label for="ps-warn"><?= $t('5006|Advar om udløb (dage før)') ?></label>
           <input class="ps-input ps-input-short" type="number" min="1" id="ps-warn" name="due_date_warning_days" value="<?= (int) $d['warnDays'] ?>">

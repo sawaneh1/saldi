@@ -28,6 +28,7 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261004 Sawaneh List items with a 'feature' (bank) are hidden until the feature is on.
 // 20261004 Sawaneh settings_after_section_save() runs once after all fields of a save (KDS colours).
 // 20261004 Sawaneh Access follows the section's permission key only, not the old Indstillinger bit (decision 16).
 // 20261004 Sawaneh A stored secret shows when it was set ("sat 12/9-2026") on form sections too.
@@ -94,6 +95,14 @@ $isList = (!empty($section['kind']) && $section['kind'] === 'list');
 if ($isList && !empty($section['items_from'])) {
 	$section['items'] = settings_list_dynamic_items((string) $section['items_from']);
 }
+if ($isList) {
+	// An item tied to a feature that is not switched on in this installation is not shown at all (spec G2.7).
+	foreach ($section['items'] as $itemId => $it) {
+		if (!empty($it['feature']) && !settings_feature_enabled((string) $it['feature'])) {
+			unset($section['items'][$itemId]);
+		}
+	}
+}
 $item = '';
 if ($isList) {
 	$item = isset($_POST['item']) ? (string) $_POST['item'] : (isset($_GET['item']) ? (string) $_GET['item'] : '');
@@ -130,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$target = $backUrl;
 		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
 			// Till and price-list row actions write their own entry with before/after.
-			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove'), true)) {
+			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove', 'pickup_add', 'pickup_delete'), true)) {
 				audit_log('setting.action', '', 'indstilling', $key);
 			}
 			$target = settings_run_action($defs[$key], $backUrl);
