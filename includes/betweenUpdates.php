@@ -915,6 +915,10 @@ db_modify("update settings set var_name = 'mailText' where var_grp = 'paylist' a
 
 // 20261002 Sawaneh Settings 4b (G5.7): the packaging tables are created here when the module is on, not when a page
 // renders (spec P5). G2.5: paymentDays was written under 'payment' but only read under 'payment_list'; copied once.
+// 20261005 Sawaneh Settings 4c (§8.2): grupper.inaktiv - rows that are in use are hidden from choice lists instead of deleted.
+if (!db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'grupper' and column_name = 'inaktiv'", __FILE__ . " linje " . __LINE__))) {
+	db_modify("alter table grupper add column inaktiv boolean default false", __FILE__ . " linje " . __LINE__);
+}
 // 20261004 Sawaneh When the new settings first ran here (settings_ui/landed_at): the transition banner is shown to users
 //                  with activity from before that moment only (settings redesign §8.10).
 if (!db_fetch_array(db_select("select id from settings where var_grp = 'settings_ui' and var_name = 'landed_at'", __FILE__ . " linje " . __LINE__))) {

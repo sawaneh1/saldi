@@ -57,6 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261005 Sawaneh 4c: Afdelinger, Projekter, Lagre and Enheder entries open the generated row-editor sections.
 // 20261004 Sawaneh §8.11 settings_context_links() for the gear in the sub-bar; §8.10 banner only for users who used the old settings.
 // 20261004 Sawaneh Stripe only in the operator ledger (G9.6), bank only when its credentials exist (G2.7), DFM flag in its own group.
 // 20261004 Sawaneh G10 batch B: Betalingskort and Borde entries; the PoS-valg entry is gone (its keywords moved to Kasser).
@@ -70,11 +71,11 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('vat','vat rate','vat percentage','sales tax','purchase tax','output vat','input vat','tax code','skat','reverse charge','eu vat','vat report','tax report','vat rounding','moms','momssats','momsprocent','udgående moms','indgående moms','momskonto','moms af varekøb','moms af ydelseskøb','momsrapport','momskode','mva','merverdiavgift','mva-sats')),
 			array('key' => 'debitor_grupper',  'group' => 'sales', 'url' => 'syssetup.php?valg=debitor',    'category' => 'groups',  'textId' => 771,
 				'keywords' => array('debtor','creditor','customer groups','supplier groups','vendor groups','vat group','collective account','summary account','samlekonto','counter account','offset account','modkonto','commission percentage','b2b price','reverse charge liability','invoice language','kreditorgrupper','debitorgrupper')),
-			array('key' => 'afdelinger',       'group' => 'organisation', 'url' => 'syssetup.php?valg=afdelinger', 'category' => 'org',     'textId' => 772,
+			array('key' => 'afdelinger',       'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.departments', 'section' => 'organisation.departments', 'category' => 'org',     'textId' => 772,
 				'keywords' => array('department','departments','cost center','branch','store location','afdeling','afdelinger','formularnote','avdeling','avdelinger')),
-			array('key' => 'projekter',        'group' => 'organisation', 'url' => 'projekter.php',               'category' => 'org',     'textId' => 773,
+			array('key' => 'projekter',        'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.projects', 'section' => 'organisation.projects', 'category' => 'org',     'textId' => 773,
 				'keywords' => array('project','projects','project number','project code','job code','projektnummer','projekter','prosjekt','prosjekter')),
-			array('key' => 'lagre',            'group' => 'items', 'url' => 'syssetup.php?valg=lagre',      'category' => 'stock',   'textId' => 608,
+			array('key' => 'lagre',            'group' => 'items', 'url' => 'settingsSection.php?s=items.warehouses', 'section' => 'items.warehouses', 'category' => 'stock',   'textId' => 608,
 				'keywords' => array('warehouse','warehouses','stock location','storage location','inventory location','lager','lagre','lagerlokation')),
 			array('key' => 'varegrupper',      'group' => 'items', 'url' => 'syssetup.php?valg=varer',      'category' => 'groups',  'textId' => 774,
 				'keywords' => array('product groups','item groups','price groups','cost price','sales price','recommended price','retail price','b2b price','campaign groups','special offer price','offer price','discount groups','batch','reverse charge','vat per product group','varegrupper','prisgrupper','tilbudsgrupper','rabatgrupper','kampagnepris','kostpris','salgspris','vejledende pris')),
@@ -93,7 +94,7 @@ if (!function_exists('getSettingsRegistry')) {
 			array('key' => 'formularer',       'group' => 'documents', 'url' => 'formularkort.php?valg=formularer', 'category' => 'documents', 'textId' => 780,
 				'keywords' => array('order layout','order confirmation layout','invoice layout','invoice template','invoice design','quote layout','offer layout','credit note layout','packing slip layout','delivery note layout','reminder letter template','dunning letter','pick list layout','picking list layout','requisition layout','purchase order layout','purchase invoice layout','account card layout','document template','form editor','form design','logo position','logo upload','print layout','template design','background name','ordrebekræftelse layout','fakturadesign','tilbud skabelon','rykker skabelon','følgeseddel layout','plukliste layout','kontokort layout','reminder fee','interest rate on reminders','mail text for invoice','email text template','move text position','text position on form','line and border design','font size on form',
 					'skjemaer','ordrebekreftelse','kredittnota','påminnelse','påminnelsesmal','plukkliste','kjøpsforslag','rekvisisjon','kjøpsfaktura','bestillingslinjer','e-post tekst')),
-			array('key' => 'enheder',          'group' => 'items', 'url' => 'enheder.php',                  'category' => 'products', 'textId' => 781,
+			array('key' => 'enheder',          'group' => 'items', 'url' => 'settingsSection.php?s=items.units', 'section' => 'items.units', 'category' => 'products', 'textId' => 781,
 				'keywords' => array('unit','units','unit of measure','measurement unit','material','materials','material density','weight calculation','enhed','enheder','materiale','enheter')),
 
 			// -- systemdata/diverse.php sub-sections (each independently searchable) --

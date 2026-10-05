@@ -21,6 +21,9 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh Phase 4c: sections of 'kind' rows (tables with columns, usage checks, 'exclude', 'code_col',
+//                  'on_save') for departments, projects, warehouses and units & materials; the project number split
+//                  as a field on the PRJ kodenr 0 row.
 // 20261004 Sawaneh 4b gaps: discount decimals (G3.3), payment link per till, link to confirm-stock-change from G4.2,
 //                  PDF command (G6.4), NemHandel status (G9.4), DFM settings in their own group (B-D5), pickup
 //                  addresses as a list section ('per' => 'pickup', settings group_id), bank item behind its feature,
@@ -98,6 +101,76 @@ if (!function_exists('getSettingsSections')) {
 				'old' => array('div_valg' => array(782, 794), 'orediff' => array(782, 170), 'betalinger' => array(2732)),
 				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
+			),
+			// ---- 4c master data (row editor, spec §8.2)
+			'organisation.departments' => array(
+				'group' => 'organisation', 'section' => 'departments', 'number' => 'G7.2', 'label' => 772, 'icon' => 'bx-sitemap', 'kind' => 'rows',
+				'subsections' => array('departments' => 772),
+				'tables' => array(
+					'departments' => array('sub' => 'departments', 'label' => 772, 'help' => 6395, 'add' => 6396, 'empty' => 6397,
+						'storage' => array('grupper', 'AFD'), 'usage' => 'department',
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 6398, 'type' => 'derived', 'derive' => 'department_warehouse', 'help' => 6400),
+							'box2' => array('label' => 2552, 'type' => 'text'),
+						)),
+				),
+				'legacy' => array(array(772)), 'old' => array('afdelinger' => array(772)),
+				'context' => array('sager/ansatte.php'),
+				'keywords' => array('afdelinger', 'departments', 'afdeling', 'department'),
+			),
+			'organisation.projects' => array(
+				'group' => 'organisation', 'section' => 'projects', 'number' => 'G7.3', 'label' => 773, 'icon' => 'bx-briefcase', 'kind' => 'rows',
+				'subsections' => array('setup' => 1249, 'projects' => 773),
+				'tables' => array(
+					'projects' => array('sub' => 'projects', 'label' => 773, 'help' => 6403, 'add' => 6404, 'empty' => 6405,
+						'storage' => array('grupper', 'PRJ'), 'usage' => 'project', 'exclude' => "cast(kodenr as text) <> '0'", 'row_name' => 'projekt',
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code', 'numeric' => false),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+						)),
+				),
+				'legacy' => array(array(773)), 'old' => array('projekter' => array(773)),
+				'context' => array('finans/kassekladde.php'),
+				'keywords' => array('projekter', 'projects', 'projekt', 'projektnummer', 'projektopdeling'),
+			),
+			'items.warehouses' => array(
+				'group' => 'items', 'section' => 'warehouses', 'number' => 'G5.4', 'label' => 6399, 'icon' => 'bx-building-house', 'kind' => 'rows',
+				'subsections' => array('warehouses' => 6399),
+				'tables' => array(
+					'warehouses' => array('sub' => 'warehouses', 'label' => 6399, 'help' => 6400, 'add' => 6401, 'empty' => 6402,
+						'storage' => array('grupper', 'LG'), 'usage' => 'warehouse', 'on_save' => 'warehouses_to_departments',
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 2464, 'type' => 'select', 'options_from' => 'departments', 'options_literal' => true),
+						)),
+				),
+				'legacy' => array(array(608)), 'old' => array('lagre' => array(608)),
+				'context' => array('lager/vareliste.php', 'lager/varekort.php'),
+				'keywords' => array('lagre', 'lager', 'warehouses', 'warehouse', 'lagersted'),
+			),
+			'items.units' => array(
+				'group' => 'items', 'section' => 'units', 'number' => 'G5.2', 'label' => 6407, 'icon' => 'bx-ruler', 'kind' => 'rows',
+				'lead' => 6408, 'subsections' => array('units' => 1259, 'materials' => 6411),
+				'tables' => array(
+					'units' => array('sub' => 'units', 'label' => 1259, 'add' => 6409, 'empty' => 6410,
+						'storage' => array('table', 'enheder'), 'usage' => 'unit', 'code_col' => 'betegnelse',
+						'columns' => array(
+							'betegnelse' => array('label' => 6442, 'type' => 'code', 'numeric' => false, 'required' => true),
+							'beskrivelse' => array('label' => 914, 'type' => 'text'),
+						)),
+					'materials' => array('sub' => 'materials', 'label' => 6411, 'add' => 6412, 'empty' => 6413,
+						'storage' => array('table', 'materialer'), 'code_col' => 'beskrivelse',
+						'columns' => array(
+							'beskrivelse' => array('label' => 570, 'type' => 'code', 'numeric' => false, 'required' => true),
+							'densitet' => array('label' => 569, 'type' => 'decimal'),
+						)),
+				),
+				'legacy' => array(array(781)), 'old' => array('enheder' => array(781)),
+				'context' => array('lager/varekort.php'),
+				'keywords' => array('enheder', 'units', 'enhed', 'unit', 'materialer', 'materials', 'densitet', 'density'),
 			),
 			'integrations.pickup' => array(
 				'group' => 'integrations', 'section' => 'pickup', 'number' => 'G9.2', 'label' => 6379, 'icon' => 'bx-map-pin', 'kind' => 'list',
@@ -582,6 +655,11 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'POS', 'omv_menu', 'onOff'), 'legacy' => $pos),
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
+
+			// ---------------------------------------------------------------- G7.3 Projects: the number split that was the kodenr 0 row of projekter.php
+			'organisation.projects.number_split' => array('sub' => 'setup', 'type' => 'text', 'label' => 1251, 'help' => 6406,
+				'storage' => array('grupper', 'PRJ', 0, 'box1', 'raw', 'row_name' => 'projekt'), 'legacy' => array(773),
+				'keywords' => array('projektopdeling', 'project split', 'projektnummer')),
 
 			// ---------------------------------------------------------------- G9.2 Pickup addresses (settings DFM_Pickup, one group_id per address)
 			'integrations.pickup.add' => array('sub' => 'addresses', 'type' => 'action', 'label' => 6381, 'help' => 6380, 'confirm_title' => 6381, 'confirm' => 6380, 'run' => 'pickup_add'),
@@ -1170,16 +1248,16 @@ if (!function_exists('getSettingsSections')) {
 		return array(
 			array('old' => array(770), 'to' => array(array('finance', null, 'syssetup.php?valg=moms'))),
 			array('old' => array(771), 'to' => array(array('sales', null, 'syssetup.php?valg=debitor'), array('purchase', null, 'syssetup.php?valg=debitor'))),
-			array('old' => array(772), 'to' => array(array('organisation', null, 'syssetup.php?valg=afdelinger'))),
-			array('old' => array(773), 'to' => array(array('organisation', null, 'syssetup.php?valg=projekter'))),
-			array('old' => array(608), 'to' => array(array('items', null, 'syssetup.php?valg=lagre'))),
+			array('old' => array(772), 'to' => array(array('organisation', 'organisation.departments', null))),
+			array('old' => array(773), 'to' => array(array('organisation', 'organisation.projects', null))),
+			array('old' => array(608), 'to' => array(array('items', 'items.warehouses', null))),
 			array('old' => array(774), 'to' => array(array('items', null, 'syssetup.php?valg=varer'), array('sales', null, 'syssetup.php?valg=varer'))),
 			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
 			array('old' => array(776), 'to' => array(array('finance', null, 'valuta.php'))),
 			array('old' => array(778), 'to' => array(array('company', null, 'regnskabsaar.php'))),
 			array('old' => array(779), 'to' => array(array('company', null, 'stamkort.php'))),
 			array('old' => array(780), 'to' => array(array('documents', null, 'formularkort.php?valg=formularer'))),
-			array('old' => array(781), 'to' => array(array('items', null, 'enheder.php'))),
+			array('old' => array(781), 'to' => array(array('items', 'items.units', null))),
 			array('old' => array($d, 783), 'to' => array(array('company', null, 'diverse.php?sektion=kontoindstillinger'), array('documents', 'documents.email', null))),
 			array('old' => array($d, 784), 'to' => array(array('organisation', 'organisation.commission', null))),
 			array('old' => array($d, 786), 'to' => array(array('sales', 'sales.orders', null), array('sales', 'sales.debtor_card', null), array('purchase', 'purchase.orders', null), array('items', 'items.stock', null), array('personal', null, 'personalSettings.php'))),

@@ -65,6 +65,16 @@ $genberegn=NULL;
 include("../includes/connect.php");
 include("../includes/online.php");
 include("../includes/std_func.php");
+// 20261005 Sawaneh Settings redesign 4c (R6): the master-data lists that have landed in the generated sections.
+$landedValg = array(
+	'afdelinger' => 'settingsSection.php?s=organisation.departments&moved=afdelinger',
+	'projekter'  => 'settingsSection.php?s=organisation.projects&moved=projekter',
+	'lagre'      => 'settingsSection.php?s=items.warehouses&moved=lagre',
+);
+if (isset($_GET['valg']) && isset($landedValg[$_GET['valg']])) {
+	header("Location: " . $landedValg[$_GET['valg']]);
+	exit;
+}
 include("skriv_formtabel.inc.php");
 include("../includes/genberegn.php");
 

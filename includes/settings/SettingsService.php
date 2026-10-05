@@ -25,6 +25,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261005 Sawaneh 4c: auditRow() for master-data rows; the history includes row events.
 // 20261004 Sawaneh G10.5: storage 'dbrow' = a column of any table's row (table_pages), scope 'row' = its id.
 // 20261004 Sawaneh G10.1: a joined list ('join' + 'index') may also live in a settings row (postEachSale); scope 'pos' takes its
 //                  id from the definition like 'group' and 'row'.
@@ -545,7 +546,7 @@ class SettingsService
 	}
 
 	/** Settings history rows; 'setting.change' is the name used before the roles spec's event names. */
-	const HISTORY_HANDLINGS = "'setting.changed', 'setting.reverted', 'setting.change'";
+	const HISTORY_HANDLINGS = "'setting.changed', 'setting.reverted', 'setting.change', 'setting.row_created', 'setting.row_updated', 'setting.row_deactivated', 'setting.row_deleted'";
 
 	private static function audit(array $def, string $old, string $new, string $handling): void
 	{
@@ -575,6 +576,32 @@ class SettingsService
 	}
 
 	/**
+	 * An audit row for a master-data row (settings redesign §8.12): the key names the table and column, the objekt the
+	 * row ("section.table#code"); old/new as stored, detaljer {before, after}.
+	 */
+	public static function auditRow(string $section, string $key, string $objektId, string $old, string $new, string $handling): void
+	{
+		global $bruger_id, $brugernavn;
+		$detaljer = json_encode(array('before' => $old, 'after' => $new), JSON_UNESCAPED_UNICODE);
+		if ($detaljer === false) {
+			$detaljer = json_encode(array('before' => mb_convert_encoding($old, 'UTF-8', 'ISO-8859-1'), 'after' => mb_convert_encoding($new, 'UTF-8', 'ISO-8859-1')), JSON_UNESCAPED_UNICODE);
+		}
+		if (!self::auditColumns()) {
+			if (function_exists('audit_log')) {
+				audit_log($handling, (string) $detaljer, 'indstilling', $objektId);
+			}
+			return;
+		}
+		$ip = db_escape_string(isset($_SERVER['REMOTE_ADDR']) ? substr((string) $_SERVER['REMOTE_ADDR'], 0, 45) : '');
+		$objekt = self::$auditObjekt ? ", objekt_type, objekt_id, kilde" : "";
+		$objektValues = self::$auditObjekt ? ", 'indstilling', '" . db_escape_string(substr($objektId, 0, 60)) . "', 'ui'" : "";
+		$qtxt = "insert into audit_log (bruger_id, brugernavn, handling, detaljer, ip, setting_key, section, old_value, new_value$objekt) values (";
+		$qtxt .= (int) $bruger_id . ", '" . db_escape_string(isset($GLOBALS['brugernavn_raw']) ? (string) $GLOBALS['brugernavn_raw'] : (string) $brugernavn) . "', '" . db_escape_string($handling) . "', '" . db_escape_string((string) $detaljer) . "', '$ip', ";
+		$qtxt .= "'" . db_escape_string($key) . "', '" . db_escape_string($section) . "', '" . db_escape_string($old) . "', '" . db_escape_string($new) . "'$objektValues)";
+		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
+	}
+
+	/**
 	 * Audit version of a section: the id of its newest change (0 when none). The form carries
 	 * the version it was rendered from, so a save on top of someone else's save is detected.
 	 */
@@ -596,7 +623,7 @@ class SettingsService
 		if (!self::auditColumns()) {
 			return $rows;
 		}
-		$qtxt = "select id, bruger_id, brugernavn, tidspunkt, setting_key, old_value, new_value from audit_log ";
+		$qtxt = "select id, bruger_id, brugernavn, tidspunkt, setting_key, old_value, new_value, handling from audit_log ";
 		$qtxt .= "where section = '" . db_escape_string($section) . "' and handling in (" . self::HISTORY_HANDLINGS . ") and id > " . (int) $afterId . " order by id desc limit " . (int) $limit;
 		$q = db_select($qtxt, __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {

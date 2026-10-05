@@ -28,6 +28,8 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261005 Sawaneh Phase 4c: sections of 'kind' rows - tables through includes/settings/rows.php (validate first,
+//                  then fields, then rows), actions row_delete / row_inactive / row_copy_year, year in the address.
 // 20261004 Sawaneh §8.11: 'back' (a path inside Saldi) from the gear in the sub-bar shows "Tilbage" and survives saves.
 // 20261004 Sawaneh List items with a 'feature' (bank) are hidden until the feature is on.
 // 20261004 Sawaneh settings_after_section_save() runs once after all fields of a save (KDS colours).
@@ -70,6 +72,7 @@ include_once(__DIR__ . "/settingsRegistry.php");
 include_once(__DIR__ . "/../includes/settings/components.php");
 include_once(__DIR__ . "/../includes/settings/actions.php");
 include_once(__DIR__ . "/../includes/settings/listView.php");
+include_once(__DIR__ . "/../includes/settings/rowsView.php");
 
 $sections = getSettingsSections();
 $sectionId = isset($_GET['s']) ? (string) $_GET['s'] : '';
@@ -99,6 +102,20 @@ if (!preg_match('#^/[a-z_]+/[A-Za-z0-9_\-]+\.php(\?[A-Za-z0-9_\-=&%.+]*)?$#', $r
 $section['return_to'] = $returnTo;
 $selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId) . ($returnTo !== '' ? '&back=' . rawurlencode($returnTo) : '');
 $isList = (!empty($section['kind']) && $section['kind'] === 'list');
+$isRows = (!empty($section['kind']) && $section['kind'] === 'rows');
+$tables = $isRows ? settings_rows_tables($section) : array();
+$year = null;
+$years = array();
+foreach ($tables as $t) {
+	if ($t['fiscal']) {
+		$years = settings_rows_years();
+		$year = (isset($_GET['year']) && in_array((int) $_GET['year'], $years, true)) ? (int) $_GET['year'] : (int) $regnaar;
+		break;
+	}
+}
+if ($isRows && $year !== null && isset($_GET['year'])) {
+	$selfUrl .= '&year=' . $year;
+}
 if ($isList && !empty($section['items_from'])) {
 	$section['items'] = settings_list_dynamic_items((string) $section['items_from']);
 }
@@ -156,7 +173,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		exit;
 	}
 
-	$state = settings_section_save($sectionId, $defs, $_POST);
+	if ($isRows && in_array($action, array('row_delete', 'row_inactive', 'row_copy_year'), true)) {
+		$tableId = isset($_POST['table']) ? (string) $_POST['table'] : '';
+		if (isset($tables[$tableId])) {
+			if ($action === 'row_delete') {
+				$flash = settings_rows_delete($sectionId, $tableId, $tables[$tableId], (int) $_POST['id'], $year);
+			} elseif ($action === 'row_inactive') {
+				$to = !empty($_POST['value']);
+				$flash = settings_rows_set_inactive($sectionId, $tableId, $tables[$tableId], (int) $_POST['id'], $to, $year);
+				if ($flash[0] === 'ok') {
+					// "Fortryd" in the flash flips it back (spec §8.12 soft delete with undo).
+					$flash[] = array('table' => $tableId, 'id' => (int) $_POST['id'], 'value' => $to ? '0' : '1');
+				}
+			} else {
+				$flash = settings_rows_copy_year($sectionId, $tableId, $tables[$tableId], (int) $_POST['from_year'], (int) $year);
+			}
+			$_SESSION['settings_flash'] = $flash;
+		}
+		ob_end_clean();
+		header('Location: ' . $backUrl);
+		exit;
+	}
+
+	// Rows are checked before anything is written, so a wrong cell leaves the fields unsaved too (spec §7.3).
+	$rowsState = $isRows ? settings_rows_save($sectionId, $tables, $_POST, $year, true) : array('errors' => array(), 'posted' => array(), 'flash' => array());
+	if ($rowsState['errors']) {
+		$state = settings_section_save($sectionId, $defs, $_POST + array('f' => array()));
+		$state['errors'] = $rowsState['errors'];
+	} else {
+		$state = settings_section_save($sectionId, $defs, $_POST);
+		if (!$state['errors'] && !$state['conflict'] && $isRows) {
+			$rowsState = settings_rows_save($sectionId, $tables, $_POST, $year, false);
+		}
+	}
+	$state['rows_posted'] = $rowsState['posted'];
 	if (!$state['errors'] && !$state['conflict']) {
 		ob_end_clean();
 		header('Location: ' . $backUrl . '&saved=' . date('Hi'));
@@ -164,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	}
 }
 
+$settingsRowsContext = array('tables' => $tables, 'year' => $year, 'years' => $years);
 settings_section_view($sectionId, $section, $defs, $state, $canWrite, $csrfToken, $selfUrl, $item);
 
 // ---------------------------------------------------------------- controller
@@ -341,6 +392,18 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	);
 	foreach ($config as $k => $v) {
 		$config[$k] = mb_convert_encoding($v, 'UTF-8', $charset);
+	}
+	if (!empty($section['kind']) && $section['kind'] === 'rows') {
+		global $settingsRowsContext;
+		settings_rows_render(array(
+			'sectionId' => $sectionId, 'section' => $section, 'defs' => $defs, 'state' => $state, 'canWrite' => $canWrite,
+			'csrfToken' => $csrfToken, 'selfUrl' => $selfUrl, 'values' => $values, 'originals' => $originals, 'flash' => $flash,
+			'movedText' => $movedText, 'tabs' => $tabs, 'version' => $version, 'config' => $config, 'accent' => $accent,
+			'accentTxt' => $accentTxt, 'group' => $group, 'sprogId' => $sprogId, 'charset' => $charset,
+			'tables' => $settingsRowsContext['tables'], 'year' => $settingsRowsContext['year'], 'years' => $settingsRowsContext['years'],
+			'rowsPosted' => isset($state['rows_posted']) ? $state['rows_posted'] : array(),
+		));
+		return;
 	}
 	if (!empty($section['kind']) && $section['kind'] === 'list') {
 		settings_list_render(array(

@@ -5998,3 +5998,52 @@
 6391	Påvirker %s varer	Affects %s items	Påvirker %s varer
 6392	Indstillinger for denne side	Settings for this page	Innstillinger for denne siden
 6393	Vis alle (%s)	Show all (%s)	Vis alle (%s)
+6394	Afdelinger	Departments	Avdelinger
+6395	Afdelingerne, ordrer, ansatte og kasser kan høre til. Nummeret bruges i posteringer og kan ikke ændres, når det er i brug.	The departments that orders, employees and tills can belong to. The number is used in postings and cannot be changed once in use.	Avdelingene som ordrer, ansatte og kasser kan høre til. Nummeret brukes i posteringer og kan ikke endres når det er i bruk.
+6396	Tilføj afdeling	Add department	Legg til avdeling
+6397	Ingen afdelinger endnu	No departments yet	Ingen avdelinger ennå
+6398	Standardlager	Default warehouse	Standardlager
+6399	Lagre	Warehouses	Lagre
+6400	Lagrene varer kan ligge på. Et lager kan kun slettes, når intet ligger på det.	The warehouses items can be kept in. A warehouse can only be deleted when nothing is kept in it.	Lagrene varer kan ligge på. Et lager kan bare slettes når ingenting ligger på det.
+6401	Tilføj lager	Add warehouse	Legg til lager
+6402	Ingen lagre endnu – alle varer ligger på lager 0	No warehouses yet – all items are in warehouse 0	Ingen lagre ennå – alle varer ligger på lager 0
+6403	Projekterne, posteringer og ordrer kan mærkes med.	The projects postings and orders can be tagged with.	Prosjektene posteringer og ordrer kan merkes med.
+6404	Tilføj projekt	Add project	Legg til prosjekt
+6405	Ingen projekter endnu	No projects yet	Ingen prosjekter ennå
+6406	Projektnummerets opdeling, f.eks. 4|2|3|4: fire grupper med 4, 2, 3 og 4 tegn. Tom: ingen opdeling.	How the project number is split, e.g. 4|2|3|4: four groups of 4, 2, 3 and 4 characters. Empty: no split.	Prosjektnummerets inndeling, f.eks. 4|2|3|4: fire grupper med 4, 2, 3 og 4 tegn. Tom: ingen inndeling.
+6407	Enheder & materialer	Units & materials	Enheter og materialer
+6408	Enhederne varer sælges i (stk, kg, timer) og materialerne med deres densitet.	The units items are sold in (pcs, kg, hours) and the materials with their density.	Enhetene varer selges i (stk, kg, timer) og materialene med tettheten deres.
+6409	Tilføj enhed	Add unit	Legg til enhet
+6410	Ingen enheder endnu	No units yet	Ingen enheter ennå
+6411	Materialer	Materials	Materialer
+6412	Tilføj materiale	Add material	Legg til materiale
+6413	Ingen materialer endnu	No materials yet	Ingen materialer ennå
+6414	%s kan ikke slettes	%s cannot be deleted	%s kan ikke slettes
+6415	Bruges af %s.	Used by %s.	Brukes av %s.
+6416	Slet %s?	Delete %s?	Slette %s?
+6417	Rækken slettes. Historikken i audit-loggen bevares.	The row is deleted. The history in the audit log is kept.	Raden slettes. Historikken i audit-loggen beholdes.
+6418	Nummeret er allerede i brug	The number is already in use	Nummeret er allerede i bruk
+6419	Skal udfyldes	Required	Må fylles ut
+6420	Nummeret kan ikke ændres, fordi rækken er i brug	The number cannot be changed because the row is in use	Nummeret kan ikke endres fordi raden er i bruk
+6421	Enter flytter ned, Tab til højre – rækker kan indsættes fra et regneark.	Enter moves down, Tab to the right – rows can be pasted from a spreadsheet.	Enter flytter ned, Tab til høyre – rader kan limes inn fra et regneark.
+6422	%s ordrer	%s orders	%s ordrer
+6423	%s posteringer	%s postings	%s posteringer
+6424	%s ansatte	%s employees	%s ansatte
+6425	%s kasser	%s tills	%s kasser
+6426	%s varer på lager	%s items in stock	%s varer på lager
+6427	%s varer	%s items	%s varer
+6428	%s lagre	%s warehouses	%s lagre
+6429	Nyt	New	Ny
+6430	Slettet: %s	Deleted: %s	Slettet: %s
+6431	Nummeret skal være et tal	The number must be numeric	Nummeret må være et tall
+6432	Vis inaktive	Show inactive	Vis inaktive
+6433	Markér inaktiv	Mark inactive	Merk inaktiv
+6434	Aktivér igen	Activate again	Aktiver igjen
+6435	%s er markeret inaktiv og vises ikke i valglister fremover.	%s is marked inactive and no longer offered in lists.	%s er merket inaktiv og vises ikke i valglister fremover.
+6436	Fortryd	Undo	Angre
+6437	%s er aktiv igen.	%s is active again.	%s er aktiv igjen.
+6438	%s kan ikke slettes, fordi den er i brug. Markér den inaktiv i stedet.	%s cannot be deleted because it is in use. Mark it inactive instead.	%s kan ikke slettes fordi den er i bruk. Merk den inaktiv i stedet.
+6439	Gælder regnskabsåret	Applies to the fiscal year	Gjelder regnskapsåret
+6440	Kopiér fra %s	Copy from %s	Kopier fra %s
+6441	Ingen rækker i %s endnu	No rows in %s yet	Ingen rader i %s ennå
+6442	Enhed	Unit	Enhet
