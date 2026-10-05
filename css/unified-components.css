@@ -1090,3 +1090,4 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-rc-col-period span { white-space: nowrap; }
 .st-rfilter select.st-input { width: auto; min-width: 220px; }
 .st-rfilter select.st-input { text-align: left; }
+.st-input.st-input-date, .st-dbody .st-input.st-input-date { width: 124px; }

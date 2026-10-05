@@ -6210,3 +6210,42 @@
 6603	%s åbne poster justeres hos kunder og leverandører	%s open items of customers and suppliers are adjusted	%s åpne poster justeres hos kunder og leverandører
 6604	Kursen skal være større end 0	The rate must be greater than 0	Kursen må være større enn 0
 6605	Alle brugere får dette regnskabsår som aktivt, også ved næste login.	All users get this fiscal year as active, also at their next login.	Alle brukere får dette regnskapsåret som aktivt, også ved neste innlogging.
+6606	Virksomhedens medarbejdere med stamdata, ansættelse, løn og den bruger, de er koblet til. Rækkefølgen her er også rækkefølgen i listerne	The company's employees with master data, employment, pay and the user they are linked to. The order here is also the order in the lists	Virksomhetens medarbeidere med stamdata, ansettelse, lønn og brukeren de er koblet til. Rekkefølgen her er også rekkefølgen i listene
+6607	Ingen medarbejdere endnu	No employees yet	Ingen medarbeidere ennå
+6608	Person	Person	Person
+6609	Ansættelse	Employment	Ansettelse
+6610	Løn og CPR	Pay and CPR	Lønn og personnummer
+6611	Ekstra felter	Extra fields	Ekstra felt
+6612	Bruger	User	Bruker
+6613	Tilføj medarbejder	Add employee	Legg til medarbeider
+6614	Ny medarbejder	New employee	Ny medarbeider
+6615	Slet medarbejder	Delete employee	Slett medarbeider
+6617	Medarbejderen slettes med sine ekstra felter. Det kan ikke fortrydes; en medarbejder, der er i brug, markeres i stedet som fratrådt.	The employee is deleted with their extra fields. This cannot be undone; an employee in use is marked as resigned instead.	Medarbeideren slettes med sine ekstra felt. Det kan ikke angres; en medarbeider som er i bruk, markeres i stedet som fratrådt.
+6618	%s kan ikke slettes – bruges af %s. Markér medarbejderen som fratrådt i stedet.	%s cannot be deleted – used by %s. Mark the employee as resigned instead.	%s kan ikke slettes – brukes av %s. Merk medarbeideren som fratrådt i stedet.
+6619	Flyt op	Move up	Flytt opp
+6620	Flyt ned	Move down	Flytt ned
+6621	Koblet til brugeren %s	Linked to the user %s	Koblet til brukeren %s
+6622	Ingen bruger er koblet til medarbejderen	No user is linked to the employee	Ingen bruker er koblet til medarbeideren
+6623	Åbn i Brugere & roller	Open in Users & roles	Åpne i Brukere og roller
+6624	Medarbejdernummeret er allerede i brug	The employee number is already in use	Medarbeidernummeret er allerede i bruk
+6625	%s brugere	%s users	%s brukere
+6626	%s provisionssatser	%s commission rates	%s provisjonssatser
+6627	Når slutdatoen er passeret, markeres medarbejderen som fratrådt ved næste gem.	Once the end date has passed, the employee is marked as resigned at the next save.	Når sluttdatoen er passert, merkes medarbeideren som fratrådt ved neste lagring.
+6628	Den formularbaggrund, brugeren udskriver med.	The form background the user prints with.	Skjemabakgrunnen brukeren skriver ut med.
+6629	Rækkefølgen bruges i lister over medarbejdere.	The order is used in lists of employees.	Rekkefølgen brukes i lister over medarbeidere.
+6630	Abonnement & konto	Subscription & account	Abonnement og konto
+6631	Regnskabets navn og farezonen: nulstil eller slet regnskabet	The ledger's name and the danger zone: reset or delete the ledger	Regnskapets navn og faresonen: nullstill eller slett regnskapet
+6632	Regnskab	Ledger	Regnskap
+6633	Farezone	Danger zone	Faresone
+6634	Handlingerne her kan ikke fortrydes. De kræver din adgangskode og logges.	These actions cannot be undone. They require your password and are logged.	Handlingene her kan ikke angres. De krever passordet ditt og logges.
+6635	Regnskabets navn	Ledger name	Regnskapets navn
+6636	Navnet, der bruges ved login og i oversigten over regnskaber.	The name used at login and in the list of ledgers.	Navnet som brukes ved innlogging og i oversikten over regnskaper.
+6637	Der findes allerede et regnskab med det navn	A ledger with that name already exists	Det finnes allerede et regnskap med det navnet
+6638	Alle ordrer, fakturaer, posteringer og kassekladder slettes, og regnskabet starter forfra i ét regnskabsår. Brugere og deres personlige indstillinger beholdes. Tag en sikkerhedskopi først.	All orders, invoices, postings and cash journals are deleted and the ledger starts over in one fiscal year. Users and their personal settings are kept. Take a backup first.	Alle ordrer, fakturaer, posteringer og kassekladder slettes, og regnskapet starter på nytt i ett regnskapsår. Brukere og deres personlige innstillinger beholdes. Ta en sikkerhetskopi først.
+6639	%s posteringer de sidste 12 måneder	%s postings in the last 12 months	%s posteringer de siste 12 månedene
+6640	Regnskabet er nulstillet	The ledger has been reset	Regnskapet er nullstilt
+6641	Regnskabet blev ikke nulstillet: %s	The ledger was not reset: %s	Regnskapet ble ikke nullstilt: %s
+6642	Sletter ordrer, fakturaer og posteringer. Kunder, leverandører og varer kan beholdes.	Deletes orders, invoices and postings. Customers, suppliers and items can be kept.	Sletter ordrer, fakturaer og posteringer. Kunder, leverandører og varer kan beholdes.
+6643	Regnskabet lukkes, og alle brugere logges ud. Saldi gemmer en sikkerhedskopi i 5 år jf. bogføringsloven.	The ledger is closed and all users are logged out. Saldi keeps a backup for 5 years as the Bookkeeping Act requires.	Regnskapet lukkes, og alle brukere logges ut. Saldi beholder en sikkerhetskopi i 5 år etter bokføringsloven.
+6644	Aktivitet	Activity	Aktivitet
+6645	Flyttet til	Moved to	Flyttet til

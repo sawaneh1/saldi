@@ -27,6 +27,8 @@
 //                  storage (grupper box / settings row), so every current reader keeps working.
 // 20261005 Sawaneh G1.1: the company address row is created by the first saved field when a ledger has none.
 // 20261005 Sawaneh 4c: auditRow() for master-data rows; the history includes row events.
+// 20261005 Sawaneh G7.1: dbrow storage takes a row filter ('where'), grupper storage an optional 'kode' (ANSAT extra
+//                  fields keep two rows per employee with the same kodenr).
 // 20261004 Sawaneh G10.5: storage 'dbrow' = a column of any table's row (table_pages), scope 'row' = its id.
 // 20261004 Sawaneh G10.1: a joined list ('join' + 'index') may also live in a settings row (postEachSale); scope 'pos' takes its
 //                  id from the definition like 'group' and 'row'.
@@ -84,7 +86,8 @@ class SettingsService
 		$s = $def['storage'];
 		$out = array('join' => isset($s['join']) ? $s['join'] : null, 'index' => isset($s['index']) ? (int) $s['index'] : 0, 'list' => !empty($s['list']));
 		if ($s[0] === 'grupper') {
-			return $out + array('table' => 'grupper', 'art' => (string) $s[1], 'kodenr' => (string) $s[2], 'box' => (string) $s[3], 'encoding' => isset($s[4]) ? $s[4] : 'raw', 'fiscal' => !empty($s['fiscal']));
+			return $out + array('table' => 'grupper', 'art' => (string) $s[1], 'kodenr' => (string) $s[2], 'box' => (string) $s[3], 'encoding' => isset($s[4]) ? $s[4] : 'raw', 'fiscal' => !empty($s['fiscal']),
+				'kode' => isset($s['kode']) ? (string) $s['kode'] : null);
 		}
 		if ($s[0] === 'adresser') {
 			return $out + array('table' => 'adresser', 'column' => (string) $s[1], 'encoding' => isset($s[2]) ? $s[2] : 'raw');
@@ -96,12 +99,28 @@ class SettingsService
 			return $out + array('table' => 'virtual', 'name' => (string) $s[1], 'encoding' => 'raw');
 		}
 		if ($s[0] === 'dbrow') {
-			return $out + array('table' => 'dbrow', 'dbtable' => (string) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
+			return $out + array('table' => 'dbrow', 'dbtable' => (string) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw', 'where' => isset($s['where']) ? (string) $s['where'] : '');
 		}
 		if ($s[0] === 'formularer') {
 			return $out + array('table' => 'formularer', 'formular' => (int) $s[1], 'column' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
 		}
 		return $out + array('table' => 'settings', 'var_grp' => $s[1], 'var_name' => (string) $s[2], 'encoding' => isset($s[3]) ? $s[3] : 'raw');
+	}
+
+	/**
+	 * Cache key of a grupper storage: art|kodenr, plus the kode when the storage names one (two rows share art and kodenr).
+	 */
+	private static function grKey(array $st): string
+	{
+		return $st['art'] . '|' . $st['kodenr'] . ($st['kode'] !== null ? '|k' . $st['kode'] : '');
+	}
+
+	/**
+	 * Cache key of a dbrow storage: the table, plus its row filter when it has one.
+	 */
+	private static function dbKey(array $st): string
+	{
+		return $st['dbtable'] . ($st['where'] !== '' ? '|' . md5($st['where']) : '');
 	}
 
 	// ------------------------------------------------------------ reading
@@ -122,7 +141,7 @@ class SettingsService
 			}
 			$st = self::storage($def);
 			if ($st['table'] === 'grupper') {
-				$gr[$st['art'] . '|' . $st['kodenr']] = "(art = '" . db_escape_string($st['art']) . "' and kodenr = '" . db_escape_string($st['kodenr']) . "')";
+				$gr[self::grKey($st)] = "(art = '" . db_escape_string($st['art']) . "' and kodenr = '" . db_escape_string($st['kodenr']) . "'" . ($st['kode'] !== null ? " and kode = '" . db_escape_string($st['kode']) . "'" : '') . ")";
 			} elseif ($st['table'] === 'adresser') {
 				if (self::$company === null) {
 					$r = db_fetch_array(db_select("select * from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
@@ -145,11 +164,12 @@ class SettingsService
 					}
 				}
 			} elseif ($st['table'] === 'dbrow') {
-				if (!isset(self::$dbrows[$st['dbtable']])) {
-					self::$dbrows[$st['dbtable']] = array();
-					$q = db_select("select * from " . $st['dbtable'] . " order by id", __FILE__ . " linje " . __LINE__);
+				$dk = self::dbKey($st);
+				if (!isset(self::$dbrows[$dk])) {
+					self::$dbrows[$dk] = array();
+					$q = db_select("select * from " . $st['dbtable'] . ($st['where'] !== '' ? " where " . $st['where'] : '') . " order by id", __FILE__ . " linje " . __LINE__);
 					while ($r = db_fetch_array($q)) {
-						self::$dbrows[$st['dbtable']][(int) $r['id']] = $r;
+						self::$dbrows[$dk][(int) $r['id']] = $r;
 					}
 				}
 			} elseif ($st['table'] === 'settings') {
@@ -166,8 +186,12 @@ class SettingsService
 			$q = db_select("select * from grupper where " . implode(' or ', $gr) . " order by (coalesce(fiscal_year, 0) = " . (int) $regnaar . ") desc, id", __FILE__ . " linje " . __LINE__);
 			while ($r = db_fetch_array($q)) {
 				$k = $r['art'] . '|' . $r['kodenr'];
-				if (self::$grupper[$k] === false) {
+				if (isset(self::$grupper[$k]) && self::$grupper[$k] === false) {
 					self::$grupper[$k] = $r;
+				}
+				$kk = $k . '|k' . $r['kode'];
+				if (isset(self::$grupper[$kk]) && self::$grupper[$kk] === false) {
+					self::$grupper[$kk] = $r;
 				}
 			}
 		}
@@ -195,7 +219,7 @@ class SettingsService
 		$st = self::storage($def);
 		$scopeId = self::scopeId($def, $scopeId);
 		if ($st['table'] === 'grupper') {
-			$ck = $st['art'] . '|' . $st['kodenr'];
+			$ck = self::grKey($st);
 			if (!array_key_exists($ck, self::$grupper)) {
 				self::preload(array($key));
 			}
@@ -219,10 +243,10 @@ class SettingsService
 			$row = isset(self::$rows[$st['art']][(int) $scopeId]) ? self::$rows[$st['art']][(int) $scopeId] : null;
 			$value = ($row && isset($row[$st['column']])) ? (string) $row[$st['column']] : '';
 		} elseif ($st['table'] === 'dbrow') {
-			if (!isset(self::$dbrows[$st['dbtable']])) {
+			if (!isset(self::$dbrows[self::dbKey($st)])) {
 				self::preload(array($key));
 			}
-			$row = isset(self::$dbrows[$st['dbtable']][(int) $scopeId]) ? self::$dbrows[$st['dbtable']][(int) $scopeId] : null;
+			$row = isset(self::$dbrows[self::dbKey($st)][(int) $scopeId]) ? self::$dbrows[self::dbKey($st)][(int) $scopeId] : null;
 			$value = ($row && isset($row[$st['column']])) ? (string) $row[$st['column']] : '';
 		} else {
 			if (!array_key_exists($st['var_name'], self::$settings)) {
@@ -274,7 +298,7 @@ class SettingsService
 		$scopeId = self::scopeId($def, $scopeId);
 		self::raw($key, $scopeId);
 		if ($st['table'] === 'grupper') {
-			return (bool) self::$grupper[$st['art'] . '|' . $st['kodenr']];
+			return (bool) self::$grupper[self::grKey($st)];
 		}
 		if ($st['table'] === 'adresser') {
 			return (bool) self::$company;
@@ -289,7 +313,7 @@ class SettingsService
 			return isset(self::$rows[$st['art']][(int) $scopeId]);
 		}
 		if ($st['table'] === 'dbrow') {
-			return isset(self::$dbrows[$st['dbtable']][(int) $scopeId]);
+			return isset(self::$dbrows[self::dbKey($st)][(int) $scopeId]);
 		}
 		foreach (self::$settings[$st['var_name']] as $r) {
 			if (self::rowInScope($r, $def, $st, $scopeId)) {
@@ -382,7 +406,7 @@ class SettingsService
 		$st = self::storage($def);
 		$esc = db_escape_string($raw);
 		if ($st['table'] === 'grupper') {
-			$ck = $st['art'] . '|' . $st['kodenr'];
+			$ck = self::grKey($st);
 			$row = self::$grupper[$ck];
 			$stored = $esc;
 			if ($st['join'] !== null) {
@@ -396,7 +420,7 @@ class SettingsService
 				ksort($parts);
 				$stored = db_escape_string(implode($st['join'], $parts));
 			}
-			$where = "art = '" . db_escape_string($st['art']) . "' and kodenr = '" . db_escape_string($st['kodenr']) . "'";
+			$where = "art = '" . db_escape_string($st['art']) . "' and kodenr = '" . db_escape_string($st['kodenr']) . "'" . ($st['kode'] !== null ? " and kode = '" . db_escape_string($st['kode']) . "'" : '');
 			if ($row) {
 				// Every row of the art/kodenr pair: a ledger may hold duplicates (risk review R9).
 				db_modify("update grupper set " . $st['box'] . " = '$stored' where $where", __FILE__ . " linje " . __LINE__);
@@ -406,7 +430,7 @@ class SettingsService
 					global $regnaar;
 					db_modify("insert into grupper (beskrivelse, kodenr, art, kode, fiscal_year, " . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', '', " . (int) $regnaar . ", '$stored')", __FILE__ . " linje " . __LINE__);
 				} else {
-					db_modify("insert into grupper (beskrivelse, kodenr, art, " . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', '$stored')", __FILE__ . " linje " . __LINE__);
+					db_modify("insert into grupper (beskrivelse, kodenr, art, " . ($st['kode'] !== null ? 'kode, ' : '') . $st['box'] . ") values ('$name', '" . db_escape_string($st['kodenr']) . "', '" . db_escape_string($st['art']) . "', " . ($st['kode'] !== null ? "'" . db_escape_string($st['kode']) . "', " : '') . "'$stored')", __FILE__ . " linje " . __LINE__);
 				}
 			}
 			unset(self::$grupper[$ck]);
@@ -438,11 +462,11 @@ class SettingsService
 			db_modify("update grupper set " . $st['column'] . " = '$esc' where id = " . (int) $scopeId . " and art = '" . db_escape_string($st['art']) . "'", __FILE__ . " linje " . __LINE__);
 			unset(self::$rows[$st['art']]);
 		} elseif ($st['table'] === 'dbrow') {
-			if ((int) $scopeId <= 0 || !isset(self::$dbrows[$st['dbtable']][(int) $scopeId])) {
+			if ((int) $scopeId <= 0 || !isset(self::$dbrows[self::dbKey($st)][(int) $scopeId])) {
 				return false;
 			}
 			db_modify("update " . $st['dbtable'] . " set " . $st['column'] . " = '$esc' where id = " . (int) $scopeId, __FILE__ . " linje " . __LINE__);
-			unset(self::$dbrows[$st['dbtable']]);
+			unset(self::$dbrows[self::dbKey($st)]);
 		} else {
 			$where = "var_name = '" . db_escape_string($st['var_name']) . "'";
 			if ($st['var_grp'] !== null) {
@@ -530,6 +554,10 @@ class SettingsService
 		}
 		if ($module === 'pos') {
 			return $cache[$module] = file_exists(__DIR__ . '/../../debitor/pos_ordre.php');
+		}
+		if ($module === 'hosted') {
+			// G1.4: Saldi's own servers keep the keys file next to the installation (read by includes/betweenUpdates.php).
+			return $cache[$module] = file_exists(__DIR__ . '/../../../.ht_keys.txt');
 		}
 		if ($module === 'bank') {
 			return $cache[$module] = function_exists('settings_feature_enabled') && settings_feature_enabled('bank');
@@ -741,7 +769,9 @@ class SettingsService
 	 */
 	private static function scopeId(array $def, $scopeId)
 	{
-		if ($scopeId === null && isset($def['scope']) && in_array($def['scope'], array('group', 'row', 'pos'), true) && isset($def['scope_id'])) {
+		// A user-scoped field normally gets the current user from its caller; one that names its user (the employee's
+		// linked user, G7.1) carries it as scope_id.
+		if ($scopeId === null && isset($def['scope']) && in_array($def['scope'], array('group', 'row', 'pos', 'user'), true) && isset($def['scope_id'])) {
 			return (int) $def['scope_id'];
 		}
 		return $scopeId;

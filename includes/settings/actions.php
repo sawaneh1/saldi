@@ -210,6 +210,79 @@ function settings_run_action(array $def, string $selfUrl): string
 			}
 			$_SESSION['settings_flash'] = array('ok', st_txt(6249) . ': ' . $name);
 			return 'settingsSection.php?s=purchase.pricelists';
+		case 'ledger_reset':
+			// G1.4 danger zone: the reset plan of systemdata/resetAccount.php (personal settings are kept since 2026-10-05).
+			global $db_type, $db;
+			require_once(__DIR__ . '/../../systemdata/resetAccount.php');
+			$in = isset($GLOBALS['settings_action_inputs']) ? $GLOBALS['settings_action_inputs'] : array();
+			try {
+				resetAccount(!empty($in['keep_accounts']), !empty($in['keep_items']), (string) $db_type, (string) $db);
+				if (function_exists('audit_log')) {
+					audit_log('setting.action', json_encode(array('keep_accounts' => !empty($in['keep_accounts']), 'keep_items' => !empty($in['keep_items']))), 'indstilling', $def['key']);
+				}
+				$_SESSION['settings_flash'] = array('ok', st_txt(6640));
+				$_SESSION['settings_reload_shell'] = 1;
+			} catch (Throwable $error) {
+				$_SESSION['settings_flash'] = array('err', sprintf(st_txt(6641), $error->getMessage()));
+			}
+			return $selfUrl;
+		case 'ledger_delete':
+			// G1.4 danger zone: as the old page - the ledger is closed in the master database and every session of it ends.
+			global $db, $db_id, $brugernavn;
+			if (function_exists('audit_log')) {
+				audit_log('setting.action', 'ledger closed', 'indstilling', $def['key']);
+			}
+			db_modify("update regnskab set lukket = 'on', logintekst = '" . db_escape_string('slettet af ' . $brugernavn . ' den ' . date('Ymd H.i')) . "' where id = '" . (int) $db_id . "'", __FILE__ . " linje " . __LINE__, true);
+			db_modify("delete from online where db = '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__, true);
+			return '../index/index.php';
+		case 'employee_add':
+			$sid = settings_company_account_id();
+			$r = db_fetch_array(db_select("select coalesce(max(nummer), 0) + 1 as n, coalesce(max(posnr), 0) + 1 as p from ansatte where konto_id = $sid", __FILE__ . " linje " . __LINE__));
+			$name = db_escape_string(st_txt(6614));
+			db_modify("insert into ansatte (konto_id, navn, nummer, posnr, startdate, slutdate, lukket) values ($sid, '$name', " . (int) $r['n'] . ", " . (int) $r['p'] . ", '" . date('Y-m-d') . "', '9999-12-31', '')", __FILE__ . " linje " . __LINE__);
+			$r = db_fetch_array(db_select("select max(id) as id from ansatte where konto_id = $sid", __FILE__ . " linje " . __LINE__));
+			$eid = (int) $r['id'];
+			if (function_exists('audit_log')) {
+				audit_log('setting.row_created', json_encode(array('before' => null, 'after' => st_txt(6614)), JSON_UNESCAPED_UNICODE), 'indstilling', 'organisation.employees#' . $eid);
+			}
+			return 'settingsSection.php?s=organisation.employees&item=emp_' . $eid;
+		case 'employee_up':
+		case 'employee_down':
+			$rows = array_keys(settings_employee_rows());
+			$eid = (int) $def['scope_id'];
+			$pos = array_search($eid, $rows, true);
+			$swap = $def['run'] === 'employee_up' ? $pos - 1 : $pos + 1;
+			if ($pos !== false && isset($rows[$swap])) {
+				$moved = $rows[$swap];
+				$rows[$swap] = $eid;
+				$rows[$pos] = $moved;
+				// The list order is stored as posnr 1..n, which also repairs gaps and duplicates of the old Stamdata page.
+				foreach ($rows as $i => $id) {
+					db_modify("update ansatte set posnr = " . ($i + 1) . " where id = " . (int) $id, __FILE__ . " linje " . __LINE__);
+				}
+				if (function_exists('audit_log')) {
+					audit_log('setting.action', $def['run'], 'indstilling', 'organisation.employees#' . $eid);
+				}
+			}
+			return 'settingsSection.php?s=organisation.employees&item=emp_' . $eid;
+		case 'employee_delete':
+			$eid = (int) $def['scope_id'];
+			$usage = settings_employee_usage($eid);
+			$rows = settings_employee_rows();
+			$name = isset($rows[$eid]) ? $rows[$eid]['name'] : (string) $eid;
+			if ($usage !== '') {
+				$_SESSION['settings_flash'] = array('err', sprintf(st_txt(6618), $name, $usage));
+				return 'settingsSection.php?s=organisation.employees&item=emp_' . $eid;
+			}
+			transaktion('begin');
+			db_modify("delete from grupper where art = 'ANSAT' and kodenr = '$eid'", __FILE__ . " linje " . __LINE__);
+			db_modify("delete from ansatte where id = $eid and konto_id = " . settings_company_account_id(), __FILE__ . " linje " . __LINE__);
+			transaktion('commit');
+			if (function_exists('audit_log')) {
+				audit_log('setting.row_deleted', json_encode(array('before' => $name, 'after' => null), JSON_UNESCAPED_UNICODE), 'indstilling', 'organisation.employees#' . $eid);
+			}
+			$_SESSION['settings_flash'] = array('ok', sprintf(st_txt(6430), $name));
+			return 'settingsSection.php?s=organisation.employees';
 		case 'pickup_add':
 			$r = db_fetch_array(db_select("select coalesce(max(group_id), 0) + 1 as next_id from settings where var_grp = 'DFM_Pickup'", __FILE__ . " linje " . __LINE__));
 			$gid = (int) $r['next_id'];
@@ -394,6 +467,26 @@ function settings_kds_colours_compact(): void
 }
 
 /**
+ * Where an employee is referenced ('' when nowhere): a linked user, postings, cash-journal lines, commission rates.
+ */
+function settings_employee_usage(int $eid): string
+{
+	$parts = array();
+	foreach (array(
+		array("select count(*) as n from brugere where ansat_id = $eid", 6625),
+		array("select count(*) as n from transaktioner where cast(ansat as text) = '$eid'", 6423),
+		array("select count(*) as n from kassekladde where cast(ansat as text) = '$eid'", 6566),
+		array("select count(*) as n from provision where ansat_id = $eid", 6626),
+	) as $c) {
+		$r = db_fetch_array(db_select($c[0], __FILE__ . " linje " . __LINE__));
+		if ($r && (int) $r['n'] > 0) {
+			$parts[] = sprintf(st_txt($c[1]), (int) $r['n']);
+		}
+	}
+	return implode(' · ', $parts);
+}
+
+/**
  * Customers and suppliers with no activity for three years (G1.5): no change on the card, no orders, no open items,
  * no notes and no job cards since the cut-off. The same test runs when the list is shown and when it is deleted.
  *
@@ -476,6 +569,13 @@ function settings_impact_text(array $def): string
 		}
 		$r = db_fetch_array(db_select("select count(*) as n from varer where $where", __FILE__ . " linje " . __LINE__));
 		$n = $r ? (int) $r['n'] : 0;
+	} elseif ($def['impact'] === 'ledger_reset') {
+		$t = db_fetch_array(db_select("select count(*) as n from transaktioner", __FILE__ . " linje " . __LINE__));
+		$o = db_fetch_array(db_select("select count(*) as n from ordrer", __FILE__ . " linje " . __LINE__));
+		return sprintf(st_txt(6423), number_format((int) $t['n'], 0, ',', '.')) . ' · ' . sprintf(st_txt(6422), number_format((int) $o['n'], 0, ',', '.'));
+	} elseif ($def['impact'] === 'employee_usage') {
+		$u = settings_employee_usage((int) $def['scope_id']);
+		return $u !== '' ? sprintf(st_txt(6415), $u) : '';
 	} elseif ($def['impact'] === 'gdpr_inactive') {
 		$g = settings_gdpr_inactive();
 		return sprintf(st_txt(6465), $g['D']) . ' · ' . sprintf(st_txt(6466), $g['K']);
@@ -522,6 +622,17 @@ function settings_after_save(array $def, string $raw): void
 		// The old page kept the item group's name next to its number (box8); debitor/_varerInsert.php reads the name.
 		$r = db_fetch_array(db_select("select beskrivelse from grupper where art = 'VG' and kodenr = '" . db_escape_string($raw) . "' order by fiscal_year desc limit 1", __FILE__ . " linje " . __LINE__));
 		db_modify("update grupper set box8 = '" . db_escape_string($r ? (string) $r['beskrivelse'] : '') . "' where art = 'PL' and id = " . (int) $def['scope_id'], __FILE__ . " linje " . __LINE__);
+	}
+	if ($def['on_save'] === 'employee_department') {
+		// The linked user's department follows the employee (as the old card and usersRoles.php do).
+		$r = db_fetch_array(db_select("select id from brugere where ansat_id = " . (int) $def['scope_id'] . " order by id limit 1", __FILE__ . " linje " . __LINE__));
+		if ($r) {
+			update_settings_value('afd', 'brugerAfd', (int) $raw, 'Bruger afdeling', (int) $r['id']);
+		}
+	}
+	if ($def['on_save'] === 'employee_end_date' && $raw !== '' && $raw !== '9999-12-31' && $raw <= date('Y-m-d')) {
+		// An end date that has passed marks the employee as left, as the old card did on save (audit A6, now documented).
+		db_modify("update ansatte set lukket = 'on' where id = " . (int) $def['scope_id'], __FILE__ . " linje " . __LINE__);
 	}
 	if ($def['on_save'] === 'smtp_changed' && function_exists('audit_log')) {
 		// The roles spec names this event (settings redesign §11.2); the value itself is in the setting's own audit row.

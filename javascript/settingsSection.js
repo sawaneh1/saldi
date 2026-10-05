@@ -119,7 +119,7 @@
 		}
 		var run = e.target.closest('[data-run]');
 		if (run) {
-			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, true, run.classList.contains('st-btn-danger'), !!run.dataset.password);
+			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, run.dataset.blank === '1', run.classList.contains('st-btn-danger'), !!run.dataset.password, run.dataset.options);
 		}
 	});
 	// Enter on a focused toggle does nothing; Space toggles (button default).
@@ -173,8 +173,26 @@
 	var backdrop = document.getElementById('st-backdrop');
 	var dform = document.getElementById('st-dialog-form');
 	var returnFocus = null;
-	function openDialog(title, body, verb, values, newTab, danger, password) {
+	function openDialog(title, body, verb, values, newTab, danger, password, options) {
 		returnFocus = document.activeElement;
+		// Checkboxes an action asks for (G1.4 reset: keep customers & suppliers, keep items), posted as opt[name].
+		var opts = document.getElementById('st-dialog-opts');
+		if (opts) {
+			opts.textContent = '';
+			var list = [];
+			try { list = options ? JSON.parse(options) : []; } catch (err) { list = []; }
+			list.forEach(function (o) {
+				var lab = document.createElement('label');
+				var box = document.createElement('input');
+				box.type = 'checkbox';
+				box.name = 'opt[' + o.name + ']';
+				box.value = '1';
+				lab.appendChild(box);
+				lab.appendChild(document.createTextNode(' ' + o.label));
+				opts.appendChild(lab);
+			});
+			opts.hidden = list.length === 0;
+		}
 		// A danger-zone action asks for the user's password (spec §8.3).
 		var pw = document.getElementById('st-dialog-pw');
 		if (pw) { pw.hidden = !password; pw.querySelector('input').value = ''; pw.querySelector('input').required = !!password; }

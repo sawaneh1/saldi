@@ -28,6 +28,7 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261005 Sawaneh A field's own permission key is enforced on save and on actions (st_field_access).
 // 20261005 Sawaneh 4d G1.2/G2.3: row actions (set a fiscal year active, delete an old year with its data behind the
 //                  password), the create card of a table, a parent filter (the currency of the rates) kept in the URL,
 //                  and a save that would post amounts first shows them and needs "Bogfør og gem" (audit V9).
@@ -64,7 +65,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261005c";
+$css = "../css/unified-components.css?v=20261005d";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -178,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	if ($action === 'revert') {
 		$entry = SettingsService::historyEntry(isset($_POST['entry']) ? (int) $_POST['entry'] : 0);
-		if ($entry && $entry['section'] === $sectionId && isset($defs[$entry['setting_key']]) && $defs[$entry['setting_key']]['type'] !== 'secret') {
+		if ($entry && $entry['section'] === $sectionId && isset($defs[$entry['setting_key']]) && $defs[$entry['setting_key']]['type'] !== 'secret' && st_field_access($defs[$entry['setting_key']]) === 'write') {
 			SettingsService::saveRaw($entry['setting_key'], (string) $entry['old_value'], null, 'setting.reverted');
 		}
 		ob_end_clean();
@@ -196,10 +197,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			header('Location: ' . $backUrl);
 			exit;
 		}
-		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
+		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array()) && st_field_access($defs[$key]) === 'write') {
 			// Till and price-list row actions write their own entry with before/after.
-			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove', 'pickup_add', 'pickup_delete', 'gdpr_delete_inactive'), true)) {
+			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove', 'pickup_add', 'pickup_delete', 'gdpr_delete_inactive', 'employee_add', 'employee_up', 'employee_down', 'employee_delete', 'ledger_reset', 'ledger_delete'), true)) {
 				audit_log('setting.action', '', 'indstilling', $key);
+			}
+			$GLOBALS['settings_action_inputs'] = array();
+			foreach (isset($defs[$key]['inputs']) ? array_keys($defs[$key]['inputs']) : array() as $in) {
+				$GLOBALS['settings_action_inputs'][$in] = !empty($_POST['opt'][$in]);
 			}
 			$target = settings_run_action($defs[$key], $backUrl);
 		}
@@ -328,7 +333,7 @@ function settings_section_save(string $sectionId, array $defs, array $post): arr
 	$errors = array();
 	$toSave = array();
 	foreach ($defs as $key => $def) {
-		if (in_array($def['type'], array('action', 'info', 'link', 'mini'), true) || !isset($posted[$key]) || st_locked($def) || !st_visible($def, $posted)) {
+		if (in_array($def['type'], array('action', 'info', 'link', 'mini'), true) || !isset($posted[$key]) || st_locked($def) || !st_visible($def, $posted) || st_field_access($def) !== 'write') {
 			continue;
 		}
 		if ($def['type'] === 'secret' && trim($posted[$key]) === '') {
@@ -668,13 +673,13 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 				}
 				$shown++;
 				$def = $defs[$key];
-				$secret = ($def['type'] === 'secret');
+				$secret = ($def['type'] === 'secret' || st_field_access($def) === 'none');
 				$oldText = st_display_value($def, (string) $row['old_value']);
 				?>
         <div class="st-h">
           <a class="st-h-field" href="#<?= st_h($key) ?>"><?= st_t($def['label']) ?></a>
           <span class="st-h-ch"><?php if ($secret) { ?><?= st_t(5713) ?><?php } else { ?><s><?= st_h($oldText) ?></s> → <?= st_h(st_display_value($def, (string) $row['new_value'])) ?><?php } ?></span>
-          <span class="st-h-m"><span><?= st_h($row['brugernavn']) ?> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'j/n H:i')) ?></span><?php if (!$secret && $canWrite && !st_locked($def)) { ?><button type="button" class="st-tl" data-restore="<?= (int) $row['id'] ?>" data-value="<?= st_h($oldText) ?>"><?= st_t(5711) ?></button><?php } ?></span>
+          <span class="st-h-m"><span><?= st_h($row['brugernavn']) ?> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'j/n H:i')) ?></span><?php if (!$secret && $canWrite && st_field_access($def) === 'write' && !st_locked($def)) { ?><button type="button" class="st-tl" data-restore="<?= (int) $row['id'] ?>" data-value="<?= st_h($oldText) ?>"><?= st_t(5711) ?></button><?php } ?></span>
         </div>
 			<?php } ?>
 			<?php if (!$shown) { ?>
@@ -696,6 +701,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
       <input type="hidden" name="action" value="">
       <input type="hidden" name="key" value="">
       <input type="hidden" name="entry" value="">
+      <div class="st-dialog-opts" id="st-dialog-opts" hidden></div>
       <label class="st-dialog-pw" id="st-dialog-pw" hidden><span><?= st_t(6546) ?></span><input class="st-input" type="password" name="password" autocomplete="current-password" aria-label="<?= st_t(6544) ?>"></label>
       <div class="st-dialog-btns">
         <button type="button" class="st-btn st-btn-quiet" id="st-dialog-cancel"><?= st_t(5) ?></button>
@@ -706,7 +712,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=8"></script>
+<script src="../javascript/settingsSection.js?v=9"></script>
 	<?php
 }
 

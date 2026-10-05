@@ -31,6 +31,8 @@
 //                  dependent fields indented; actions are rows too.
 // 20261004 Sawaneh G10.1: 'decimal_comma', options from departments, sales VAT groups and table names.
 // 20261004 Sawaneh st_current_form_value(): a setting without a stored row shows its registry default.
+// 20261005 Sawaneh Field permissions are enforced (st_field_access): no read = hidden, read only = read-only; decimal
+//                  'decimals' shows a stored number with a Danish comma.
 // 20261004 Sawaneh G4.3: 'value_map' (form value <-> stored value, e.g. tab), rules 'required' and 'csv_url', supplier names.
 // 20261004 Sawaneh G2.6: a secret stored URL-encoded ('urlencode'), 'ensure_suffix' on text fields.
 // 20261003 Sawaneh G3.4 Reminders: type 'creditor' (lookup, stored as adresser id), options from the user list, a group
@@ -217,6 +219,9 @@ function st_form_value(array $def, string $raw): string
 	if ($def['type'] === 'date') {
 		return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $m) ? $m[3] . '-' . $m[2] . '-' . $m[1] : $raw;
 	}
+	if ($def['type'] === 'decimal' && isset($def['decimals']) && is_numeric($raw)) {
+		return number_format((float) $raw, (int) $def['decimals'], ',', '');
+	}
 	return $raw;
 }
 
@@ -358,6 +363,19 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 			$error = 6248;
 		}
 	}
+	if ($error === null && is_array($def['validate']) && $def['validate'][0] === 'ledger_name' && trim($raw) !== '') {
+		// G1.4: no two ledgers with the same name (master database).
+		global $db;
+		if (db_fetch_array(db_select("select id from regnskab where regnskab = '" . db_escape_string(trim($raw)) . "' and db <> '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__, true))) {
+			$error = 6637;
+		}
+	}
+	if ($error === null && is_array($def['validate']) && $def['validate'][0] === 'employee_number' && $raw !== '' && $raw !== '0'
+		&& db_fetch_array(db_select("select id from ansatte where nummer = " . (int) $raw . " and id <> " . (int) (isset($def['scope_id']) ? $def['scope_id'] : 0)
+			. " and konto_id = " . (function_exists('settings_company_account_id') ? settings_company_account_id() : 0), __FILE__ . " linje " . __LINE__))) {
+		// G7.1: an employee number is unique among the company's employees (audit A3/A8).
+		$error = 6624;
+	}
 	if ($error === null && isset($def['value_map'][$raw])) {
 		$raw = $def['value_map'][$raw];
 	}
@@ -452,6 +470,13 @@ function st_options(array $def): array
 			while ($r = db_fetch_array($q)) {
 				$code = trim((string) $r['kode']) . trim((string) $r['kodenr']);
 				$cache[$from][$code] = $code . ' ' . trim((string) $r['beskrivelse']);
+			}
+		} elseif ($from === 'form_backgrounds') {
+			// G7.1: the form backgrounds a user can print with, as the old employee card listed them (formularer.sprog).
+			$cache[$from] = array('Dansk' => 'Dansk');
+			$q = db_select("select distinct sprog from formularer where coalesce(sprog, '') <> '' order by sprog", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$cache[$from][trim((string) $r['sprog'])] = trim((string) $r['sprog']);
 			}
 		} elseif ($from === 'iso_currencies') {
 			// 4d G2.3: ISO codes for a new currency (rowHooks.php), the base currency left out (audit V5).
@@ -557,8 +582,31 @@ function st_default_raw(array $def): string
  *
  * @param array<string, string> $values
  */
+/**
+ * What the user may do with one field under its own permission key ('write', 'read' or 'none'; 'none' only for fields
+ * marked 'hide_without'). Most fields carry
+ * their section's key; some carry a stricter one (country and base currency: settings.company.danger, CPR and salary:
+ * settings.organisation.sensitive).
+ */
+function st_field_access(array $def): string
+{
+	if (empty($def['permission']) || !function_exists('perm_can')) {
+		return 'write';
+	}
+	static $cache = array();
+	$k = (string) $def['permission'];
+	if (!isset($cache[$k])) {
+		$cache[$k] = perm_can($k, 'write') ? 'write' : (perm_can($k, 'read') ? 'read' : 'none');
+	}
+	// Without any access a field is shown read-only (country stays visible, spec G1.1), unless it is sensitive and hidden.
+	return ($cache[$k] === 'none' && empty($def['hide_without'])) ? 'read' : $cache[$k];
+}
+
 function st_visible(array $def, array $values): bool
 {
+	if (st_field_access($def) === 'none') {
+		return false;
+	}
 	$rule = $def['visible_if'];
 	if (!$rule) {
 		return true;
@@ -642,7 +690,14 @@ function st_render_field(array $def, array $state): void
 {
 	$key = $def['key'];
 	$id = 'f-' . str_replace('.', '-', $key);
+	if (st_field_access($def) === 'none') {
+		// Not even hidden markup: the value must not reach the page source (CPR, salary).
+		return;
+	}
 	$value = (string) $state['value'];
+	if (st_field_access($def) !== 'write') {
+		$state['readonly'] = true;
+	}
 	$disabled = (!empty($state['readonly']) || !empty($state['locked']));
 	$rule = $def['visible_if'];
 	$classes = 'st-field st-type-' . $def['type'];
@@ -761,7 +816,7 @@ function st_render_field(array $def, array $state): void
 	} else {
 		$type = ($def['type'] === 'email') ? 'email' : 'text';
 		$mode = ($def['type'] === 'int') ? ' inputmode="numeric"' : (($def['type'] === 'decimal') ? ' inputmode="decimal"' : '');
-		$short = ($def['type'] === 'int' || $def['type'] === 'decimal' || $def['type'] === 'date') ? ' st-input-short' : '';
+		$short = ($def['type'] === 'int' || $def['type'] === 'decimal') ? ' st-input-short' : ($def['type'] === 'date' ? ' st-input-short st-input-date' : '');
 		if ($def['type'] === 'date') {
 			$mode = ' inputmode="numeric" placeholder="dd-mm-' . date('Y') . '"';
 		}
@@ -782,6 +837,7 @@ function st_render_field(array $def, array $state): void
  */
 function st_render_action(array $def, bool $canRun, bool $visible): void
 {
+	$canRun = $canRun && st_field_access($def) === 'write';
 	?>
 <div class="st-action" id="<?= st_h($def['key']) ?>" data-key="<?= st_h($def['key']) ?>"<?= $def['visible_if'] ? ' data-visible-if="' . st_h(json_encode($def['visible_if'])) . '"' : '' ?><?= $visible ? '' : ' hidden' ?>>
   <div class="st-tx">
@@ -791,7 +847,7 @@ function st_render_action(array $def, bool $canRun, bool $visible): void
 	<?php if ($impact !== '') { ?><span class="st-impact"><?= st_h($impact) ?></span><?php } ?>
   </div>
   <div class="st-ctl">
-    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>"<?= !empty($def['danger_zone']) ? ' data-password="1"' : '' ?> data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?><?= $impact !== '' ? ' ' . st_h($impact) : '' ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
+    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>"<?= !empty($def['danger_zone']) ? ' data-password="1"' : '' ?><?= !empty($def['inputs']) ? ' data-options="' . st_h(json_encode(array_map(function ($n, $t) { return array('name' => $n, 'label' => html_entity_decode(st_txt($t), ENT_QUOTES | ENT_HTML5, 'UTF-8')); }, array_keys($def['inputs']), array_values($def['inputs'])), JSON_UNESCAPED_UNICODE)) . '"' : '' ?> data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?><?= $impact !== '' ? ' ' . st_h($impact) : '' ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
   </div>
 </div>
 	<?php

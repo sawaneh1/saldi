@@ -47,6 +47,9 @@ function settings_integration_status(string $item, array $def, array $setAt = ar
 	if (strpos($item, 'card_') === 0) {
 		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(860), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6360), 'button' => 6122);
 	}
+	if (strpos($item, 'emp_') === 0) {
+		return !empty($def['active']) ? array('kind' => 'plain', 'text' => '', 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(660), 'button' => 6122);
+	}
 	if (strpos($item, 'pl_') === 0) {
 		return !empty($def['active']) ? array('kind' => 'ok', 'text' => st_txt(6233), 'button' => 6122) : array('kind' => 'off', 'text' => st_txt(6234), 'button' => 6122);
 	}
@@ -149,6 +152,30 @@ function settings_list_dynamic_items(string $from): array
 			);
 		}
 	}
+	if ($from === 'employees') {
+		$departments = st_options(array('options_from' => 'departments'));
+		$sid = settings_company_account_id();
+		$q = db_select("select id, nummer, navn, initialer, email, tlf, mobil, afd, lukket from ansatte where konto_id = $sid order by coalesce(posnr, 999999), nummer, id", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$desc = array();
+			foreach (array('initialer', 'email', 'mobil', 'tlf') as $c) {
+				if (trim((string) $r[$c]) !== '') {
+					$desc[] = trim((string) $r[$c]);
+				}
+			}
+			if ((int) $r['afd'] && isset($departments[(string) (int) $r['afd']]) && $departments[(string) (int) $r['afd']] !== '') {
+				$desc[] = $departments[(string) (int) $r['afd']];
+			}
+			$left = trim((string) $r['lukket']) !== '';
+			$items['emp_' . (int) $r['id']] = array(
+				'sub' => 'employees', 'abbr' => trim((string) $r['nummer']) !== '' ? trim((string) $r['nummer']) : '–', 'literal' => true,
+				'label' => trim((string) $r['navn']) !== '' ? trim((string) $r['navn']) : '—',
+				'desc' => implode(' · ', array_slice($desc, 0, 3)),
+				'active' => !$left,
+				'status_text' => $left ? st_txt(660) : '',
+			);
+		}
+	}
 	if ($from === 'pricelists') {
 		$q = db_select("select id, beskrivelse, box2, box12 from grupper where art = 'PL' order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
 		while ($r = db_fetch_array($q)) {
@@ -188,6 +215,17 @@ function settings_integration_info(array $def): string
 {
 	global $db;
 	switch ($def['info']) {
+		case 'ledger_activity':
+			$r = db_fetch_array(db_select("select count(id) as n from transaktioner where logdate >= '" . date('Y-m-d', strtotime('-1 year')) . "'", __FILE__ . " linje " . __LINE__));
+			return st_h(sprintf(st_txt(6639), number_format($r ? (int) $r['n'] : 0, 0, ',', '.')));
+		case 'employee_user':
+			$rows = settings_employee_rows();
+			$eid = (int) $def['scope_id'];
+			if (empty($rows[$eid]['user'])) {
+				return st_h(st_txt(6622));
+			}
+			$r = db_fetch_array(db_select("select brugernavn from brugere where id = " . (int) $rows[$eid]['user'], __FILE__ . " linje " . __LINE__));
+			return st_h(sprintf(st_txt(6621), $r ? (string) $r['brugernavn'] : '')) . ' · <a class="st-tl" href="usersRoles.php?tab=users&amp;bruger=' . (int) $rows[$eid]['user'] . '">' . st_t(6623) . '</a>';
 		case 'gdpr_inactive':
 			$n = settings_gdpr_inactive();
 			if (!$n['D'] && !$n['K']) {

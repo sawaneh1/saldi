@@ -36,6 +36,12 @@ function settings_virtual_get(string $name): string
 	if ($name === 'table_count') {
 		return (string) (function_exists('settings_table_count') ? settings_table_count() : 0);
 	}
+	if ($name === 'ledger_name') {
+		// G1.4: the ledger's name lives in the master database (regnskab.regnskab).
+		global $db;
+		$r = db_fetch_array(db_select("select regnskab from regnskab where db = '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__, true));
+		return $r ? (string) $r['regnskab'] : '';
+	}
 	if ($name === 'floor_plan_count') {
 		return (string) count(function_exists('settings_floor_plans') ? settings_floor_plans() : array());
 	}
@@ -74,6 +80,21 @@ function settings_virtual_set(string $name, string $raw): void
 			global $regnaar;
 			db_modify("insert into grupper (beskrivelse, kodenr, art, kode, fiscal_year, box7) values ('Pos valg', '2', 'POS', '', " . (int) $regnaar . ", '" . db_escape_string(implode("\t", $names)) . "')", __FILE__ . " linje " . __LINE__);
 		}
+		return;
+	}
+	if ($name === 'ledger_name') {
+		// G1.4: as the old Kontoindstillinger page - the customer record (kundedata) is tied to the ledger id first, so it
+		// keeps finding the ledger after the rename. The duplicate check is the field's validation ('ledger_name').
+		global $db, $db_id, $regnskab;
+		$name = db_escape_string(trim($raw));
+		if ($name === '' || !isset($db_id)) {
+			return;
+		}
+		$r = db_fetch_array(db_select("select id from kundedata where regnskab_id = '" . (int) $db_id . "'", __FILE__ . " linje " . __LINE__, true));
+		if (!$r) {
+			db_modify("update kundedata set regnskab_id = '" . (int) $db_id . "' where regnskab = '" . db_escape_string((string) $regnskab) . "'", __FILE__ . " linje " . __LINE__, true);
+		}
+		db_modify("update regnskab set regnskab = '$name' where db = '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__, true);
 		return;
 	}
 	if ($name === 'floor_plan_count') {

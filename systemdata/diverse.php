@@ -752,72 +752,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		}
 		
 		
-		if (isset($_POST['newName']) && $_POST['newName']) {
-			$newName = trim(db_escape_string($_POST['newName']));
-			include("../includes/connect.php");
-			if (db_fetch_array(db_select("select id from regnskab WHERE regnskab = '$newName'", __FILE__ . " linje " . __LINE__))) {
-				$alert1 = findtekst('1742|Der findes allerede et regnskab med navnet', $sprog_id);
-				$alert2 = findtekst('1743|Navn ikke ændret', $sprog_id);
-				print "<BODY onLoad=\"JavaScript:alert('$alert1 $newName! $alert2')\">";
-			} else {
-				$r = db_fetch_array(db_select("select id from kundedata WHERE regnskab_id = '$db_id'", __FILE__ . " linje " . __LINE__));
-				if (!$r['id']) {
-					$tmp = db_escape_string($regnskab);
-					db_modify("update kundedata set regnskab_id = '$db_id' WHERE regnskab='$tmp'", __FILE__ . " linje " . __LINE__);
-				}
-				db_modify("update regnskab set regnskab = '$newName' WHERE db='$db'", __FILE__ . " linje " . __LINE__);
-			}
-			include("../includes/online.php");
-		} elseif (isset($_POST['updateCurrency'])) {
-			$baseCurrency = $_POST['baseCurrency'];
-			if ($baseCurrency) {
-				$qtxt = "select id from settings where var_name='baseCurrency'";
-				$r    = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
-				if ($r['id'])
-					$qtxt = "update settings set var_value='$baseCurrency', user_id='0' where id='$r[id]'";
-				else {
-					$qtxt = "insert into settings (var_name,var_value,var_description,user_id)";
-					$qtxt.= " values ";
-					$qtxt.= "('baseCurrency','$baseCurrency','System Base currency','0')";
-				}
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-			}
-		} elseif (isset($_POST['opdat_tidszone'])) {
-			$timezone = $_POST['timezone'];
-			if ($timezone) {
-				$r = db_fetch_array(db_select("select id from settings where var_name='timezone'", __FILE__ . " linje " . __LINE__));
-				if ($r['id'])
-					$qtxt = "update settings set var_value='$timezone', user_id='0' where id='$r[id]'";
-				else {
-					$qtxt = "insert into settings (var_name,var_value,var_description,user_id)";
-					$qtxt.= " values ";
-					$qtxt.= "('timezone','$timezone','Tidszone. Anvendes hvis regnskabet anvender anden tidszone end serveren','0')";
-				}
-				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-				// 20261005 Sawaneh timezone cookie removed (settings redesign G1.3); the setting is read by online.php.
-			}
-		} elseif (isset($_POST['nulstil']) && $_POST['nulstil']) { #20170731
-			require_once(__DIR__ . '/resetAccount.php');
-			try {
-				resetAccount(!empty($_POST['behold_debkred']), !empty($_POST['behold_varer']), $db_type, $db);
-				$regnaar = 1;
-				print tekstboks('regnskab nulstillet');
-			} catch (Throwable $error) { # 20260917 en fejl må ikke ende som en hvid fejlside
-				print tekstboks('Regnskabet blev ikke nulstillet: ' . $error->getMessage());
-			}
-		} elseif (isset($_POST['slet'])) {
-			if ($_POST['slet_regnskab'] == 'on') { #20185024
-				include("../includes/connect.php");
-				db_modify("update regnskab set lukket='on',logintekst='slettet af $brugernavn den " . date("Ymd H.i") . "' where id = '$db_id'", __FILE__ . " linje " . __LINE__);
-				db_modify("delete from online where db='$db'", __FILE__ . " linje " . __LINE__);
-				include("../includes/online.php");
-				print "Sletter";
-			} else {
-				$tekst1 = findtekst('852|Slet regnskab', $sprog_id);
-				$alert  = findtekst('1744|For at slette dit regnskab skal du afmærke feltet ved', $sprog_id);
-				alert("$alert $tekst1: $regnskab");
-			}
-		}
+		// 20261005 Sawaneh G1.3/G1.4: rename, base currency, time zone, reset and delete are saved by the new sections.
 	} elseif ($sektion == 'tjekliste') {
 		$id            = if_isset($_POST['id']);
 		$tjekantal     = if_isset($_POST['tjekantal']);

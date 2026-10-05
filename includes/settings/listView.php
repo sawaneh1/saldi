@@ -256,12 +256,12 @@ function settings_list_render(array $c): void
 				<?php foreach ($rows as $row) {
 					$key = (string) $row['setting_key'];
 					$def = $defs[$key];
-					$secret = ($def['type'] === 'secret');
+					$secret = ($def['type'] === 'secret' || st_field_access($def) === 'none');
 					?>
             <div class="st-h">
               <a class="st-h-field" href="#<?= st_h($key) ?>"><?= st_t($def['label']) ?></a>
               <span class="st-h-ch"><?php if ($secret) { ?><?= st_t(5713) ?><?php } else { ?><s><?= st_h(st_display_value($def, (string) $row['old_value'])) ?></s> → <?= st_h(st_display_value($def, (string) $row['new_value'])) ?><?php } ?></span>
-              <span class="st-h-m"><span><?= st_h($row['brugernavn']) ?> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'j/n H:i')) ?></span><?php if (!$secret && $canWrite && !st_locked($def)) { ?><button type="button" class="st-tl" data-restore="<?= (int) $row['id'] ?>" data-value="<?= st_h(st_display_value($def, (string) $row['old_value'])) ?>"><?= st_t(5711) ?></button><?php } ?></span>
+              <span class="st-h-m"><span><?= st_h($row['brugernavn']) ?> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'j/n H:i')) ?></span><?php if (!$secret && $canWrite && st_field_access($def) === 'write' && !st_locked($def)) { ?><button type="button" class="st-tl" data-restore="<?= (int) $row['id'] ?>" data-value="<?= st_h(st_display_value($def, (string) $row['old_value'])) ?>"><?= st_t(5711) ?></button><?php } ?></span>
             </div>
 				<?php } ?>
 				<?php if (!$rows) { ?>

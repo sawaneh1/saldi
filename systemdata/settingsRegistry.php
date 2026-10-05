@@ -57,7 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
-// 20261005 Sawaneh 4d: Valuta and Regnskabsår open their new sections.
+// 20261005 Sawaneh 4d: Valuta, Regnskabsår and Ansatte open their new sections; Abonnement & konto (G1.4) only on hosted servers.
 // 20261005 Sawaneh 4d: Sprog opens Lokalisering (company.localisation); Persondata (company.gdpr) added.
 // 20261005 Sawaneh 4d: Stamdata opens the generated company.data section.
 // 20261005 Sawaneh 4c: Moms, Debitorgrupper, Kreditorgrupper and Varegrupper open the generated row-editor sections.
@@ -94,9 +94,11 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('fiscal year','financial year','accounting year','start month','end month','close year','closed year','delete fiscal year','active fiscal year','set active year','create fiscal year','regnskabsår','regnskapsår')),
 			array('key' => 'stamkort',         'group' => 'company', 'url' => 'settingsSection.php?s=company.data', 'section' => 'company.data', 'category' => 'company', 'textId' => 779,
 				'keywords' => array('company info','company profile','company name','company address','vat number','tax id','cvr number','bank details','bank account','gdpr agreement','data processing agreement','contact person','phone number','mobile number','employee list','firmanavn','bankoplysninger','databehandleraftale','kontaktperson')),
+			array('key' => 'konto',            'group' => 'company', 'url' => 'settingsSection.php?s=company.account', 'section' => 'company.account', 'category' => 'company', 'textId' => 6630, 'visibilityRule' => 'hosted',
+				'keywords' => array('abonnement', 'konto', 'regnskabets navn', 'skift navn', 'nulstil regnskab', 'slet regnskab', 'farezone', 'reset', 'delete ledger')),
 			array('key' => 'gdpr',             'group' => 'company', 'url' => 'settingsSection.php?s=company.gdpr', 'section' => 'company.gdpr', 'category' => 'company', 'textId' => 6523,
 				'keywords' => array('gdpr', 'persondata', 'personal data', 'inaktive kunder', 'inactive customers', 'oprydning')),
-			array('key' => 'ansatte',          'group' => 'organisation', 'url' => 'ansatte.php',                  'category' => 'company', 'textId' => 1262,
+			array('key' => 'ansatte',          'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.employees', 'section' => 'organisation.employees', 'category' => 'company', 'textId' => 1262,
 				'keywords' => array('employee record','staff record','new employee','edit employee','employee number','employee name','employee address','employee email','employee phone','employee mobile','salary','payroll','extra salary','cpr number','social security number','initials','pos code','employee department','employee background','employee language','employee bank account','employee notes','employee start date','employee end date','terminate employee','close employee','ansatte','løn','cprnr','initialer','startdato','slutdato','lønn')),
 			array('key' => 'formularer',       'group' => 'documents', 'url' => 'formularkort.php?valg=formularer', 'category' => 'documents', 'textId' => 780,
 				'keywords' => array('order layout','order confirmation layout','invoice layout','invoice template','invoice design','quote layout','offer layout','credit note layout','packing slip layout','delivery note layout','reminder letter template','dunning letter','pick list layout','picking list layout','requisition layout','purchase order layout','purchase invoice layout','account card layout','document template','form editor','form design','logo position','logo upload','print layout','template design','background name','ordrebekræftelse layout','fakturadesign','tilbud skabelon','rykker skabelon','følgeseddel layout','plukliste layout','kontokort layout','reminder fee','interest rate on reminders','mail text for invoice','email text template','move text position','text position on form','line and border design','font size on form',
@@ -551,6 +553,12 @@ if (!function_exists('getSettingsGroups')) {
 					// inside a company it logs the user out, so it is never listed there.
 					global $db, $sqdb;
 					if (!isset($db) || !isset($sqdb) || $db !== $sqdb) {
+						return false;
+					}
+					break;
+				case 'hosted':
+					// G1.4 exists only on Saldi's own servers.
+					if (!settings_has_module('hosted')) {
 						return false;
 					}
 					break;

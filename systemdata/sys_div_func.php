@@ -131,6 +131,7 @@
 //                  The four debtor-card rows (Debitorkort section since 4a) are gone from it too.
 // 20261002 Sawaneh Phase 4b batch 2: GLS, Danske Fragtmænd, QuickPay, Flatpay, Vibrant, MobilePay and Copayone left div_valg()
 //                  for Indstillinger » Integrationer (pick-up addresses stay); api_valg() only runs the shop sync.
+// 20261005 Sawaneh G1.4: kontoindstillinger() keeps only the user count; name/reset/delete/time zone moved.
 // 20261003 Sawaneh G6.3: the SMTP form left kontoindstillinger() for Indstillinger » Dokumenter & e-mail » E-mail.
 // 20261004 Sawaneh G5.8 (B-L1): labels() escapes the label name and the custom text lines, and accepts only valg box1/box2.
 // 20261004 Sawaneh G2.6: bilag() and testftp() removed (generated section Finans » Bilagsopbevaring).
@@ -188,76 +189,10 @@ function kontoindstillinger($regnskab, $skiftnavn)
 		}
 	</script>\n";
 
-	if (!$skiftnavn) {
-		$klik  = findtekst('149|Klik her for at sortere på telefonnummer.', $sprog_id);
-		$klik1 = explode(" ", $klik);  #20210710
-		print "<tr><td colspan='6'>".findtekst('1237|Dit regnskab hedder', $sprog_id)." <span style='font-weight:bold'>$regnskab</span>. ";
-		print "$klik1[0] <a href='diverse.php?sektion=kontoindstillinger&amp;skiftnavn=ja'>".findtekst('2157|her', $sprog_id)."</a> ".findtekst('1238|for at ændre navnet.', $sprog_id)."</td></tr>\n";
-		print "<tr><td colspan='6'><hr></td></tr>\n";
-		$tmp = date('U') - 60 * 60 * 24 * 365;
-		$tmp = date("Y-m-d", $tmp);
-		$r   = db_fetch_array(db_select("select count(id) as transantal from transaktioner where logdate>='$tmp'", __FILE__ . " linje " . __LINE__));
-		$transantal = $r['transantal'] * 1;
-		print "<tr><td>".findtekst('1233|Der er foretaget', $sprog_id)." $transantal ".findtekst('1234|posteringer de sidste 12 mdr.', $sprog_id)."</td></tr>";
-		$r   = db_fetch_array(db_select("select felt_1,felt_2,felt_3,felt_4 from adresser where art = 'S'", __FILE__ . " linje " . __LINE__));
-		print "<tr><td colspan='6'><hr></td></tr>\n";
-		print "<form name='timezone' action='diverse.php?sektion=kontoindstillinger' method='post'>\n";
-		$title = findtekst('1235|Vælg den tidszone der skal gælde for dette regnskab', $sprog_id);
-		$text  = findtekst('1236|Tidszone', $sprog_id);
-		print "<tr><td title='$title'><!--tekst 434-->$text<!--tekst 435--></td>";
-		print "<td title='$title'><select class='inputbox' style='width:200px' name='timezone'>";
-		$tz = fopen("../importfiler/timezones.csv", "r");
-		$x  = 0;
-		while ($line = trim(fgets($tz))) {
-			list($a, $b[$x], $c[$x]) = explode(",", $line);
-			$b[$x] = trim($b[$x], '"');
-			$c[$x] = trim($c[$x], '"');
-			$x++;
-		}
-		for ($x = 0; $x < count($c); $x++) {
-			if ($timezone == $c[$x]) print "<option value='$c[$x]'>$b[$x] $c[$x]</option>";
-		}
-		for ($x = 0; $x < count($c); $x++) {
-			if ($timezone != $c[$x]) print "<option value='$c[$x]'>$b[$x] $c[$x]</option>";
-		}
-		print "</select></td></tr>";
-		$text = findtekst('898|Opdatér', $sprog_id) . " " . findtekst('1236|Tidszone', $sprog_id);
-		print "<td></td><td><input class='button gray medium' style='width:200px' type='submit' value='$text' name='opdat_tidszone'><!--tekst 436--></td></tr>\n";
-		print "</form>";
-		print "<tr><td colspan='6'><hr></td></tr>\n";
-		print "<tr><td colspan='6'><br></td></tr>\n";
-		print "<form name='nulstil_regnskab' action='diverse.php?sektion=kontoindstillinger' method='post'>\n"; #20170731 ->
-		$tekst1 = findtekst('756|Nulstil regnskab', $sprog_id);
-		$tekst2 = findtekst('757|Hvis du klikker på `Nulstil` slettes alle ordrer', $sprog_id);
-		print "<tr><td title='$tekst2'><b>$tekst1</b></td></tr>";
-		$tekst1 = findtekst('758|Behold debitorer & kreditorer', $sprog_id);
-		$tekst2 = findtekst('759|Hvis du afmærker dette felt beholdes dine kunder & leverandører (debitorer & kreditorer)', $sprog_id);
-		print "<tr><td title='$tekst2'>$tekst1</td><td title='$tekst2'><input type='checkbox' name='behold_debkred'></td></tr>";
-		$tekst1 = findtekst('760|Behold varer', $sprog_id);
-		$tekst2 = findtekst('761|Hvis du afmærker dette felt beholdes dine varer', $sprog_id);
-		print "<tr><tr><td title='$tekst2'>$tekst1</td><td title='$tekst2'><input type='checkbox' name='behold_varer'></td></tr>";
-		$tekst1  = findtekst('762|Er du sikker på at du vil nulstille dit regnskab? Tag en sikkerhedskopi først!', $sprog_id); $nulstil = findtekst('1239|Nulstil', $sprog_id);
-		$nulstil = findtekst('1239|Nulstil', $sprog_id);
-		print "<tr><td></td><td><input class='button gray medium' style='width:200px' type='submit' name='nulstil' value='$nulstil' onclick=\"return confirm('$tekst1')\"></td></tr>";
-		print "</form>\n"; # <- 20170731
-		print "<tr><td colspan='6'><hr></td></tr>\n";
-		print "<tr><td colspan='6'><br></td></tr>\n";
-		print "<form name='slet_regnskab' action='diverse.php?sektion=kontoindstillinger' method='post'>\n"; #20170731 ->
-		$tekst1 = findtekst('852|Slet regnskab', $sprog_id);
-		$tekst2 = findtekst('853|Hvis du sætter flueben i feltet og klikker på `Slet` slettes regnskabet og din konto lukkes. Vi beholder en sikkerhedskopi i 5 år jf. bogføringsloven.', $sprog_id);
-		print "<tr><td title='$tekst2'><b>$tekst1: $regnskab</b></td><td title='$tekst2'><input type='checkbox' name='slet_regnskab'></td></tr>";
-		$tekst1 = findtekst('851|Er du sikker på at du vil slette dit regnskab? Denne handling kan ikke fortrydes! - Tag en sikkerhedskopi først!', $sprog_id); $slet = findtekst('1099|Slet', $sprog_id);
-		$slet   = findtekst('1099|Slet', $sprog_id);
-		print "<tr><td></td><td><input class='button gray medium' title='$tekst2' style='width:200px' type='submit' name='slet' value='$slet' onclick=\"return confirm('$tekst1')\"></td></tr>";
-		print "</form>\n"; # <- 20170731
-	} else {
-		print "<form name='diverse' action='diverse.php?sektion=kontoindstillinger' method='post'>\n";
-		print "<tr><td colspan='6'>".findtekst('2524|Skriv nyt navn på regnskab', $sprog_id)."<input class='inputbox' type='text' style='width:400px' name='newName' value='$regnskab'> ";
-		print findtekst('2525|og klik', $sprog_id)." <input class='button gray medium' style='width:75px' type='submit' value='".findtekst('2526|Skift navn', $sprog_id)."' name='changeAccountName'></td></tr>\n";
-		print "</form>\n";
-	}
-
-
+	// 20261005 Sawaneh G1.3/G1.4: name, reset and delete moved to Indstillinger » Virksomhed » Abonnement & konto, the
+	// time zone to Lokalisering; only the user count stays here until the billing spec replaces it.
+	print "<tr><td colspan='6'><hr></td></tr>\n";
+	print "<tr><td colspan='6'>" . findtekst('6645|Flyttet til', $sprog_id) . " <a href='settingsSection.php?s=company.account'>" . findtekst('6630|Abonnement & konto', $sprog_id) . "</a> · <a href='settingsSection.php?s=company.localisation'>" . findtekst('6524|Lokalisering', $sprog_id) . "</a></td></tr>\n";
 	print "<tr><td colspan='6'><br></td></tr>\n";
 } # endfunc kontoindstillinger
 

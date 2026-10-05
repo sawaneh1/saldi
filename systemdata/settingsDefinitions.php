@@ -21,6 +21,11 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh 4d G1.4 Abonnement & konto (Saldi-hosted only): ledger name (master database), activity, and the
+//                  danger zone - reset (keep customers/suppliers, keep items) and delete, both with password.
+// 20261005 Sawaneh 4d G7.1 Ansatte: list of the company's employees with a card each (person, contact, employment, CPR
+//                  and salary behind settings.organisation.sensitive, extra fields, linked user and its form language),
+//                  add, move up/down (posnr) and delete with a usage check.
 // 20261005 Sawaneh 4d G1.2 Regnskabsår (row list, create card shared with onboarding, set active, delete empty or old
 //                  year) and G2.3 Valuta (currencies and rates per currency, rate changes confirmed before posting).
 // 20261005 Sawaneh 4d G1.3 Lokalisering (five settings that had no or scattered UI, translations link) and G1.5 Persondata
@@ -126,6 +131,12 @@ if (!function_exists('getSettingsSections')) {
 				'legacy' => array(array(782, 801)), 'old' => array('sprog' => array(782, 801)),
 				'keywords' => array('lokalisering', 'localisation', 'basisvaluta', 'base currency', 'tidszone', 'timezone', 'talformat', 'number format', 'systemsprog', 'sprog', 'language', 'oversættelser', 'translations', 'tekster'),
 			),
+			'company.account' => array(
+				'group' => 'company', 'section' => 'account', 'number' => 'G1.4', 'label' => 6630, 'icon' => 'bx-key', 'module' => 'hosted',
+				'lead' => 6631, 'subsections' => array('account' => 6632, 'danger' => 6633), 'sub_help' => array('danger' => 6634),
+				'legacy' => array(array(782, 783)), 'old' => array('kontoindstillinger' => array(782, 783)),
+				'keywords' => array('abonnement', 'konto', 'regnskabets navn', 'skift navn', 'omdøb', 'nulstil regnskab', 'reset', 'slet regnskab', 'delete ledger', 'farezone', 'danger zone'),
+			),
 			'company.gdpr' => array(
 				'group' => 'company', 'section' => 'gdpr', 'number' => 'G1.5', 'label' => 6523, 'icon' => 'bx-shield-quarter',
 				'subsections' => array('cleanup' => 6537), 'sub_help' => array('cleanup' => 6538),
@@ -199,6 +210,13 @@ if (!function_exists('getSettingsSections')) {
 				'legacy' => array(array(772)), 'old' => array('afdelinger' => array(772)),
 				'context' => array('sager/ansatte.php'),
 				'keywords' => array('afdelinger', 'departments', 'afdeling', 'department'),
+			),
+			'organisation.employees' => array(
+				'group' => 'organisation', 'section' => 'employees', 'number' => 'G7.1', 'label' => 1262, 'icon' => 'bx-id-card', 'kind' => 'list',
+				'lead' => 6606, 'items_from' => 'employees', 'add_action' => 'organisation.employees.add', 'empty_text' => 6607,
+				'subsections' => array('employees' => 1262),
+				'legacy' => array(array(779)), 'old' => array('ansatte' => array(779), 'stamkort' => array(779)),
+				'keywords' => array('ansatte', 'medarbejdere', 'employees', 'personale', 'personalekort', 'medarbejdernummer', 'initialer', 'løn', 'cpr', 'fratrådt', 'tiltrådt', 'ekstra felter'),
 			),
 			'organisation.projects' => array(
 				'group' => 'organisation', 'section' => 'projects', 'number' => 'G7.3', 'label' => 773, 'icon' => 'bx-briefcase', 'kind' => 'rows',
@@ -554,6 +572,8 @@ if (!function_exists('getSettingsSections')) {
 		$vare = array(782, 787);
 		$divvalg = array(782, 794);
 		$mass = array(782, 200);
+		// G7.1: only the company's own employees (ansatte also holds the contact persons of customers and suppliers).
+		$empWhere = 'konto_id = ' . settings_company_account_id();
 		$prov = array(782, 784);
 		$ore = array(782, 170);
 		$api = array(782, 790);
@@ -861,6 +881,16 @@ if (!function_exists('getSettingsSections')) {
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
 
+			// ---------------------------------------------------------------- G1.4 Subscription & account (Saldi-hosted only)
+			'company.account.name' => array('sub' => 'account', 'type' => 'text', 'label' => 6635, 'help' => 6636, 'maxlength' => 80, 'validate' => array('ledger_name'),
+				'storage' => array('virtual', 'ledger_name')),
+			'company.account.activity' => array('sub' => 'account', 'type' => 'info', 'label' => 6644, 'info' => 'ledger_activity', 'audit' => false),
+			'company.account.reset' => array('sub' => 'danger', 'type' => 'action', 'label' => 756, 'help' => 6642, 'confirm_title' => 756, 'confirm' => 6638,
+				'run' => 'ledger_reset', 'impact' => 'ledger_reset', 'danger' => true, 'danger_zone' => true, 'permission' => 'settings.company.danger',
+				'inputs' => array('keep_accounts' => 758, 'keep_items' => 760)),
+			'company.account.delete' => array('sub' => 'danger', 'type' => 'action', 'label' => 852, 'help' => 6643, 'confirm_title' => 852, 'confirm' => 851,
+				'run' => 'ledger_delete', 'danger' => true, 'danger_zone' => true, 'permission' => 'settings.company.danger'),
+
 			// ---------------------------------------------------------------- G1.3 Localisation (settings rows without a group, as the readers look them up)
 			'company.localisation.base_currency' => array('sub' => 'locale', 'type' => 'select', 'label' => 6526, 'help' => 6527, 'default' => 'DKK',
 				'options_from' => 'currencies', 'options_literal' => true, 'storage' => array('settings', null, 'baseCurrency', 'raw'), 'permission' => 'settings.company.danger'),
@@ -879,6 +909,58 @@ if (!function_exists('getSettingsSections')) {
 			'company.gdpr.inactive' => array('sub' => 'cleanup', 'type' => 'info', 'label' => 6537, 'info' => 'gdpr_inactive', 'audit' => false),
 			'company.gdpr.delete_inactive' => array('sub' => 'cleanup', 'type' => 'action', 'label' => 6539, 'help' => 6538, 'confirm_title' => 6540, 'confirm' => 6541,
 				'run' => 'gdpr_delete_inactive', 'impact' => 'gdpr_inactive', 'danger' => true, 'danger_zone' => true, 'permission' => 'settings.company.danger'),
+
+			// ---------------------------------------------------------------- G7.1 Employees (ansatte rows of the company's own address row)
+			'organisation.employees.add' => array('sub' => 'employees', 'type' => 'action', 'label' => 6613, 'help' => 6606, 'confirm_title' => 6613, 'confirm' => 6606, 'run' => 'employee_add'),
+			'organisation.employees.nummer' => array('sub' => 'employees', 'type' => 'int', 'label' => 645, 'per' => 'employee', 'group_label' => array(6608, ''), 'validate' => array('employee_number'),
+				'storage' => array('dbrow', 'ansatte', 'nummer', 'raw', 'where' => $empWhere)),
+			'organisation.employees.navn' => array('sub' => 'employees', 'type' => 'text', 'label' => 646, 'per' => 'employee', 'group_label' => array(6608, ''), 'validate' => array('required'),
+				'storage' => array('dbrow', 'ansatte', 'navn', 'raw', 'where' => $empWhere)),
+			'organisation.employees.initialer' => array('sub' => 'employees', 'type' => 'text', 'label' => 647, 'per' => 'employee', 'group_label' => array(6608, ''),
+				'storage' => array('dbrow', 'ansatte', 'initialer', 'raw', 'where' => $empWhere)),
+			'organisation.employees.addr1' => array('sub' => 'employees', 'type' => 'text', 'label' => 648, 'per' => 'employee', 'group_label' => array(6608, ''),
+				'storage' => array('dbrow', 'ansatte', 'addr1', 'raw', 'where' => $empWhere)),
+			'organisation.employees.addr2' => array('sub' => 'employees', 'type' => 'text', 'label' => 649, 'per' => 'employee', 'group_label' => array(6608, ''),
+				'storage' => array('dbrow', 'ansatte', 'addr2', 'raw', 'where' => $empWhere)),
+			'organisation.employees.postnr' => array('sub' => 'employees', 'type' => 'text', 'label' => 650, 'per' => 'employee', 'group_label' => array(6608, ''),
+				'storage' => array('dbrow', 'ansatte', 'postnr', 'raw', 'where' => $empWhere)),
+			'organisation.employees.bynavn' => array('sub' => 'employees', 'type' => 'text', 'label' => 651, 'per' => 'employee', 'group_label' => array(6608, ''),
+				'storage' => array('dbrow', 'ansatte', 'bynavn', 'raw', 'where' => $empWhere)),
+			'organisation.employees.email' => array('sub' => 'employees', 'type' => 'email', 'label' => 652, 'per' => 'employee', 'group_label' => array(6522, ''),
+				'storage' => array('dbrow', 'ansatte', 'email', 'raw', 'where' => $empWhere)),
+			'organisation.employees.tlf' => array('sub' => 'employees', 'type' => 'text', 'label' => 654, 'per' => 'employee', 'group_label' => array(6522, ''),
+				'storage' => array('dbrow', 'ansatte', 'tlf', 'raw', 'where' => $empWhere)),
+			'organisation.employees.mobil' => array('sub' => 'employees', 'type' => 'text', 'label' => 653, 'per' => 'employee', 'group_label' => array(6522, ''),
+				'storage' => array('dbrow', 'ansatte', 'mobil', 'raw', 'where' => $empWhere)),
+			'organisation.employees.mobile' => array('sub' => 'employees', 'type' => 'text', 'label' => 655, 'per' => 'employee', 'group_label' => array(6522, ''),
+				'storage' => array('dbrow', 'ansatte', 'mobile', 'raw', 'where' => $empWhere)),
+			'organisation.employees.privattlf' => array('sub' => 'employees', 'type' => 'text', 'label' => 656, 'per' => 'employee', 'group_label' => array(6522, ''),
+				'storage' => array('dbrow', 'ansatte', 'privattlf', 'raw', 'where' => $empWhere)),
+			'organisation.employees.afd' => array('sub' => 'employees', 'type' => 'select', 'label' => 658, 'per' => 'employee', 'group_label' => array(6609, ''), 'options_from' => 'departments',
+				'storage' => array('dbrow', 'ansatte', 'afd', 'raw', 'where' => $empWhere), 'on_save' => 'employee_department'),
+			'organisation.employees.startdate' => array('sub' => 'employees', 'type' => 'date', 'label' => 663, 'per' => 'employee', 'group_label' => array(6609, ''), 'value_map' => array('' => '1900-01-01'),
+				'storage' => array('dbrow', 'ansatte', 'startdate', 'raw', 'where' => $empWhere)),
+			'organisation.employees.slutdate' => array('sub' => 'employees', 'type' => 'date', 'label' => 1216, 'help' => 6627, 'per' => 'employee', 'group_label' => array(6609, ''), 'value_map' => array('' => '9999-12-31'),
+				'storage' => array('dbrow', 'ansatte', 'slutdate', 'raw', 'where' => $empWhere), 'on_save' => 'employee_end_date'),
+			'organisation.employees.lukket' => array('sub' => 'employees', 'type' => 'bool', 'label' => 660, 'help' => 6627, 'per' => 'employee', 'group_label' => array(6609, ''),
+				'storage' => array('dbrow', 'ansatte', 'lukket', 'raw', 'where' => $empWhere)),
+			'organisation.employees.notes' => array('sub' => 'employees', 'type' => 'textarea', 'label' => 659, 'per' => 'employee', 'group_label' => array(6609, ''),
+				'storage' => array('dbrow', 'ansatte', 'notes', 'raw', 'where' => $empWhere)),
+			'organisation.employees.cprnr' => array('hide_without' => true, 'sub' => 'employees', 'type' => 'text', 'label' => 661, 'per' => 'employee', 'group_label' => array(6610, ''), 'permission' => 'settings.organisation.sensitive',
+				'storage' => array('dbrow', 'ansatte', 'cprnr', 'raw', 'where' => $empWhere)),
+			'organisation.employees.bank' => array('hide_without' => true, 'sub' => 'employees', 'type' => 'text', 'label' => 662, 'per' => 'employee', 'group_label' => array(6610, ''), 'permission' => 'settings.organisation.sensitive',
+				'storage' => array('dbrow', 'ansatte', 'bank', 'raw', 'where' => $empWhere)),
+			'organisation.employees.loen' => array('hide_without' => true, 'sub' => 'employees', 'type' => 'decimal', 'label' => 664, 'per' => 'employee', 'group_label' => array(6610, ''), 'permission' => 'settings.organisation.sensitive',
+				'decimals' => 2, 'value_map' => array('' => '0'), 'storage' => array('dbrow', 'ansatte', 'loen', 'raw', 'where' => $empWhere)),
+			'organisation.employees.extraloen' => array('hide_without' => true, 'sub' => 'employees', 'type' => 'decimal', 'label' => 665, 'per' => 'employee', 'group_label' => array(6610, ''), 'permission' => 'settings.organisation.sensitive',
+				'decimals' => 2, 'value_map' => array('' => '0'), 'storage' => array('dbrow', 'ansatte', 'extraloen', 'raw', 'where' => $empWhere)),
+			'organisation.employees.user' => array('sub' => 'employees', 'type' => 'info', 'label' => 6612, 'info' => 'employee_user', 'per' => 'employee', 'group_label' => array(6612, ''), 'audit' => false),
+			'organisation.employees.background' => array('sub' => 'employees', 'type' => 'select', 'label' => 571, 'help' => 6628, 'per' => 'employee_user', 'group_label' => array(6612, ''),
+				'options_from' => 'form_backgrounds', 'options_literal' => true, 'scope' => 'user', 'storage' => array('settings', 'brugerSprog', 'sprog', 'raw'), 'default' => 'Dansk'),
+			'organisation.employees.up' => array('sub' => 'employees', 'type' => 'action', 'label' => 6619, 'help' => 6629, 'per' => 'employee', 'run' => 'employee_up', 'confirm_title' => 6619, 'confirm' => 6629),
+			'organisation.employees.down' => array('sub' => 'employees', 'type' => 'action', 'label' => 6620, 'help' => 6629, 'per' => 'employee', 'run' => 'employee_down', 'confirm_title' => 6620, 'confirm' => 6629),
+			'organisation.employees.delete' => array('sub' => 'employees', 'type' => 'action', 'label' => 6615, 'help' => 6617, 'per' => 'employee', 'danger' => true,
+				'confirm_title' => 6615, 'confirm' => 6617, 'run' => 'employee_delete', 'impact' => 'employee_usage'),
 
 			// ---------------------------------------------------------------- G1.1 Company data (the company's own address row, art S)
 			'company.data.name' => array('sub' => 'company', 'type' => 'text', 'label' => 28, 'storage' => array('adresser', 'firmanavn'), 'validate' => array('required'), 'maxlength' => 90, 'legacy' => array(779)),
@@ -906,7 +988,7 @@ if (!function_exists('getSettingsSections')) {
 			'company.data.fi_number' => array('sub' => 'bank', 'type' => 'text', 'label' => 'FI', 'storage' => array('adresser', 'bank_fi'), 'maxlength' => 15, 'legacy' => array(779), 'keywords' => array('fi kreditornummer', 'fi-kort')),
 			'company.data.gdpr_contact' => array('sub' => 'gdpr', 'type' => 'email', 'label' => 6519, 'storage' => array('adresser', 'kontakt'), 'maxlength' => 60, 'legacy' => array(779)),
 			'company.data.dpa' => array('sub' => 'gdpr', 'type' => 'link', 'label' => 2484, 'href' => 'https://saldi.dk/dok/saldi_gdpr_20180525.pdf', 'button' => 6515, 'blank' => true, 'audit' => false),
-			'company.data.employees' => array('sub' => 'gdpr', 'type' => 'link', 'label' => 1262, 'help' => 6516, 'href' => 'stamkort.php?ansatte=1', 'button' => 6504, 'audit' => false),
+			'company.data.employees' => array('sub' => 'gdpr', 'type' => 'link', 'label' => 1262, 'help' => 6516, 'href' => 'settingsSection.php?s=organisation.employees', 'button' => 6504, 'audit' => false),
 
 			// ---------------------------------------------------------------- 4c: links for what stays on the old pages for now
 			'sales.debtor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
@@ -1333,6 +1415,17 @@ if (!function_exists('getSettingsSections')) {
 		$sprog = isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1;
 		// G10.1: interim and difference account per till for each currency the till accepts (VK box5/box6; box4 is the
 		// "used in the till" flag of valuta.php, so the till account column of the old page is not offered).
+		// G7.1: extra employee fields (defined in Sager › Ansatte; label = text 616+n, definition "type|option|option" in
+		// grupper ANSAT kodenr 0, values per employee in ANSAT kodenr <employee id>, kode 0 for fields 1-14 and 1 for 15-28).
+		foreach (settings_employee_extra_fields() as $n => $f) {
+			$d = array('sub' => 'employees', 'type' => $f['type'], 'label' => 616 + $n, 'per' => 'employee', 'group_label' => array(6611, ''),
+				'storage' => array('grupper', 'ANSAT', '0', 'box' . ($n <= 14 ? $n : $n - 14), 'raw', 'kode' => $n <= 14 ? '0' : '1', 'row_name' => 'Ekstra felter på ansatte stamkort'));
+			if ($f['type'] === 'select') {
+				$d['options'] = array('' => '') + array_combine($f['options'], $f['options']);
+				$d['options_literal'] = true;
+			}
+			$defs['organisation.employees.extra_' . $n] = $d;
+		}
 		foreach (settings_pos_currencies() as $kodenr => $code) {
 			$defs['pos.tills.currency_interim_' . $kodenr] = array('sub' => 'tills', 'type' => 'account', 'label' => 6280, 'help' => 6337, 'per' => 'till', 'group_label' => array(6336, $code),
 				'storage' => array('grupper', 'VK', (string) $kodenr, 'box5', 'raw', 'row_name' => $code, 'join' => "\t", 'list' => true), 'legacy' => $pos);
@@ -1442,6 +1535,26 @@ if (!function_exists('getSettingsSections')) {
 				unset($defs[$key]);
 				continue;
 			}
+			if (isset($def['per']) && ($def['per'] === 'employee' || $def['per'] === 'employee_user')) {
+				// One field per employee (ansatte row; extra fields in ANSAT rows keyed by the employee id); the drawer is item
+				// emp_<id>. 'employee_user' fields belong to the employee's linked user and exist only when there is one.
+				foreach (settings_employee_rows() as $eid => $emp) {
+					$d = array('scope' => 'row', 'scope_id' => (int) $eid, 'label_suffix' => $emp['name'], 'per_key' => $key, 'item' => 'emp_' . $eid) + $def;
+					if ($def['per'] === 'employee_user') {
+						if ($emp['user'] <= 0) {
+							continue;
+						}
+						$d['scope'] = 'user';
+						$d['scope_id'] = (int) $emp['user'];
+					}
+					if (isset($d['storage'][0]) && $d['storage'][0] === 'grupper') {
+						$d['storage'][2] = (string) (int) $eid;
+					}
+					$expanded[$key . '.' . $eid] = $d;
+				}
+				unset($defs[$key]);
+				continue;
+			}
 			if (isset($def['per']) && $def['per'] === 'pricelist') {
 				// One field per price list (grupper art PL); the drawer of the list is item pl_<id>.
 				foreach (settings_pricelist_rows() as $rowId => $rowName) {
@@ -1513,10 +1626,10 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
 			array('old' => array(776), 'to' => array(array('finance', 'finance.currencies', null))),
 			array('old' => array(778), 'to' => array(array('company', 'company.fiscal_years', null))),
-			array('old' => array(779), 'to' => array(array('company', 'company.data', null))),
+			array('old' => array(779), 'to' => array(array('company', 'company.data', null), array('organisation', 'organisation.employees', null))),
 			array('old' => array(780), 'to' => array(array('documents', null, 'formularkort.php?valg=formularer'))),
 			array('old' => array(781), 'to' => array(array('items', 'items.units', null))),
-			array('old' => array($d, 783), 'to' => array(array('company', null, 'diverse.php?sektion=kontoindstillinger'), array('documents', 'documents.email', null))),
+			array('old' => array($d, 783), 'to' => array(array('company', 'company.account', null), array('company', 'company.localisation', null), array('company', null, 'diverse.php?sektion=kontoindstillinger'), array('documents', 'documents.email', null))),
 			array('old' => array($d, 784), 'to' => array(array('organisation', 'organisation.commission', null))),
 			array('old' => array($d, 786), 'to' => array(array('sales', 'sales.orders', null), array('sales', 'sales.debtor_card', null), array('purchase', 'purchase.orders', null), array('items', 'items.stock', null), array('personal', null, 'personalSettings.php'))),
 			array('old' => array($d, 787), 'to' => array(array('items', 'items.stock', null), array('items', 'items.consignment', null), array('items', 'items.packaging', null))),
@@ -1713,6 +1826,75 @@ if (!function_exists('getSettingsSections')) {
 	/**
 	 * Pickup addresses (settings DFM_Pickup): group_id => the name shown in the list.
 	 */
+	function settings_company_account_id(): int
+	{
+		static $id = null;
+		if ($id === null) {
+			$r = db_fetch_array(db_select("select id from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
+			$id = $r ? (int) $r['id'] : 0;
+		}
+		return $id;
+	}
+
+	/**
+	 * The company's employees in their list order (posnr, then number): id => array(name, number, user = linked brugere id).
+	 *
+	 * @return array<int, array{name: string, number: string, user: int}>
+	 */
+	function settings_employee_rows(bool $fresh = false): array
+	{
+		static $rows = null;
+		if ($rows === null || $fresh) {
+			$rows = array();
+			$sid = settings_company_account_id();
+			$q = db_select("select a.id, a.navn, a.nummer, (select min(b.id) from brugere b where b.ansat_id = a.id) as uid from ansatte a where a.konto_id = $sid order by coalesce(a.posnr, 999999), a.nummer, a.id", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$rows[(int) $r['id']] = array('name' => trim((string) $r['navn']), 'number' => trim((string) $r['nummer']), 'user' => (int) $r['uid']);
+			}
+		}
+		return $rows;
+	}
+
+	/**
+	 * The extra employee fields in use: n => array(type, options). Only when switched on (Diverse valg, DIV/2 box3) and
+	 * with a type - the label text ids are shared with other texts, so a label alone does not make a field.
+	 *
+	 * @return array<int, array{type: string, options: array<int, string>}>
+	 */
+	function settings_employee_extra_fields(): array
+	{
+		static $out = null;
+		if ($out !== null) {
+			return $out;
+		}
+		$out = array();
+		if (!db_fetch_array(db_select("select id from grupper where art = 'DIV' and kodenr = '2' and box3 = 'on'", __FILE__ . " linje " . __LINE__))) {
+			return $out;
+		}
+		$defsRaw = array();
+		$q = db_select("select kode, box1, box2, box3, box4, box5, box6, box7, box8, box9, box10, box11, box12, box13, box14 from grupper where art = 'ANSAT' and kodenr = '0'", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			for ($b = 1; $b <= 14; $b++) {
+				$defsRaw[(trim((string) $r['kode']) === '1' ? 14 : 0) + $b] = (string) $r['box' . $b];
+			}
+		}
+		$types = array('text' => 'text', 'select' => 'select', 'checkbox' => 'bool', 'textarea' => 'textarea');
+		for ($n = 1; $n <= 28; $n++) {
+			if (!isset($defsRaw[$n]) || trim($defsRaw[$n]) === '') {
+				continue;
+			}
+			$parts = explode('|', $defsRaw[$n]);
+			$type = trim((string) array_shift($parts));
+			$label = function_exists('findtekst') ? trim((string) findtekst((string) (616 + $n), isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1)) : '';
+			if (!isset($types[$type]) || $label === '' || $label === '-') {
+				continue;
+			}
+			$options = array_values(array_filter(array_map('trim', $parts), 'strlen'));
+			$out[$n] = array('type' => $types[$type], 'options' => $options);
+		}
+		return $out;
+	}
+
 	function settings_pickup_rows(): array
 	{
 		static $rows = null;
