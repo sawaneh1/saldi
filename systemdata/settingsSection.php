@@ -60,7 +60,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261004b";
+$css = "../css/unified-components.css?v=20261005";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -120,6 +120,7 @@ foreach ($tables as $t) {
 	if ($t['fiscal']) {
 		$years = settings_rows_years();
 		$year = (isset($_GET['year']) && in_array((int) $_GET['year'], $years, true)) ? (int) $_GET['year'] : (int) $regnaar;
+		$GLOBALS['settings_rows_year'] = $year;
 		break;
 	}
 }

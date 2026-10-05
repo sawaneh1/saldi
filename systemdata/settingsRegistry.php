@@ -57,6 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261005 Sawaneh 4c: Moms, Debitorgrupper, Kreditorgrupper and Varegrupper open the generated row-editor sections.
 // 20261005 Sawaneh settings_breadcrumb_script() goes through page_breadcrumb() (topbar addendum 2026-10-05 §4).
 // 20261005 Sawaneh 4c: Afdelinger, Projekter, Lagre and Enheder entries open the generated row-editor sections.
 // 20261004 Sawaneh §8.11 settings_context_links() for the gear in the sub-bar; §8.10 banner only for users who used the old settings.
@@ -68,9 +69,9 @@ if (!function_exists('getSettingsRegistry')) {
 	function getSettingsRegistry() {
 		return array(
 			// -- systemdata/left_menu.php / top.php sidebar (the main Settings list) --
-			array('key' => 'moms',            'group' => 'finance', 'url' => 'syssetup.php?valg=moms',       'category' => 'tax',      'textId' => 770,
+			array('key' => 'moms',            'group' => 'finance', 'url' => 'settingsSection.php?s=finance.vat', 'section' => 'finance.vat', 'category' => 'tax',      'textId' => 770,
 				'keywords' => array('vat','vat rate','vat percentage','sales tax','purchase tax','output vat','input vat','tax code','skat','reverse charge','eu vat','vat report','tax report','vat rounding','moms','momssats','momsprocent','udgående moms','indgående moms','momskonto','moms af varekøb','moms af ydelseskøb','momsrapport','momskode','mva','merverdiavgift','mva-sats')),
-			array('key' => 'debitor_grupper',  'group' => 'sales', 'url' => 'syssetup.php?valg=debitor',    'category' => 'groups',  'textId' => 771,
+			array('key' => 'debitor_grupper',  'group' => 'sales', 'url' => 'settingsSection.php?s=sales.debtor_groups', 'section' => 'sales.debtor_groups', 'category' => 'groups',  'textId' => 771,
 				'keywords' => array('debtor','creditor','customer groups','supplier groups','vendor groups','vat group','collective account','summary account','samlekonto','counter account','offset account','modkonto','commission percentage','b2b price','reverse charge liability','invoice language','kreditorgrupper','debitorgrupper')),
 			array('key' => 'afdelinger',       'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.departments', 'section' => 'organisation.departments', 'category' => 'org',     'textId' => 772,
 				'keywords' => array('department','departments','cost center','branch','store location','afdeling','afdelinger','formularnote','avdeling','avdelinger')),
@@ -78,7 +79,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('project','projects','project number','project code','job code','projektnummer','projekter','prosjekt','prosjekter')),
 			array('key' => 'lagre',            'group' => 'items', 'url' => 'settingsSection.php?s=items.warehouses', 'section' => 'items.warehouses', 'category' => 'stock',   'textId' => 608,
 				'keywords' => array('warehouse','warehouses','stock location','storage location','inventory location','lager','lagre','lagerlokation')),
-			array('key' => 'varegrupper',      'group' => 'items', 'url' => 'syssetup.php?valg=varer',      'category' => 'groups',  'textId' => 774,
+			array('key' => 'varegrupper',      'group' => 'items', 'url' => 'settingsSection.php?s=items.item_groups', 'section' => 'items.item_groups', 'category' => 'groups',  'textId' => 774,
 				'keywords' => array('product groups','item groups','price groups','cost price','sales price','recommended price','retail price','b2b price','campaign groups','special offer price','offer price','discount groups','batch','reverse charge','vat per product group','varegrupper','prisgrupper','tilbudsgrupper','rabatgrupper','kampagnepris','kostpris','salgspris','vejledende pris')),
 			array('key' => 'rabatgrupper',     'group' => 'sales', 'url' => 'rabatgrupper.php',             'category' => 'groups',  'textId' => 775,
 				'keywords' => array('customer discount matrix','debtor discount group','product discount group','discount matrix','percent discount','amount discount per unit','kr/stk rabat','discount by customer and product group','debitor rabatgruppe','vare rabatgruppe','rabatgrupper','rabat','rabatt')),
@@ -167,7 +168,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('purchase orders','immediate posting purchase orders','købsordrer','indkøbsordrer','omgående bogføring af købsordrer')),
 			array('key' => 'stock_control',     'group' => 'items',    'url' => 'settingsSection.php?s=items.stock', 'section' => 'items.stock', 'category' => 'stock', 'textId' => 5680,
 				'keywords' => array('stock control','cost price','fifo','negative stock','low stock warning','minimum stock','stock status email','lagerstyring','kostpris','negativt lager','minimumsbeholdning','lagerstatus mail')),
-			array('key' => 'kreditorgrupper',   'group' => 'purchase', 'url' => 'syssetup.php?valg=debitor', 'category' => 'groups',   'textId' => 2458,
+			array('key' => 'kreditorgrupper',   'group' => 'purchase', 'url' => 'settingsSection.php?s=purchase.creditor_groups', 'section' => 'purchase.creditor_groups', 'category' => 'groups',   'textId' => 2458,
 				'keywords' => array('creditor groups','supplier groups','vendor groups','kreditorgrupper','leverandørgrupper')),
 			array('key' => 'pos_tills',         'group' => 'pos',        'url' => 'settingsSection.php?s=pos.tills', 'section' => 'pos.tills', 'category' => 'pos', 'textId' => 6275, 'visibilityRule' => 'posModule',
 				'keywords' => array('kasser', 'tills', 'kassekonti', 'pos-valg', 'posoptions', 'pos settings','cash register settings','point of sale options','number of cash registers','number of card terminals','card payment accounts','cash accounts','department per register','vat group cash customers','discount item cash sale','receipt printing','print receipt automatically','disable receipt printing','bon print','cash drawer','opening float','starting cash amount','cash count assistance','coins and banknotes','interim account','cash difference account','table selection','restaurant table','number of tables','table name','font size pos','gift card numbers','gift card text','voucher numbers','active gift card','post each trade immediately','post immediately to finance','printer ip','receipt printer ip','card terminal ip','card terminal type','flatpay','move3500','lane3000','vibrant terminal','ip baseret terminal','payment terminal type','other payment cards','kitchen printer ip','mobile pos','screen width','zoom level','flip menu','reverse primary secondary menu','cash on amount button','account lookup button','deposit button','forced user selection','clerk selection before checkout','customer display','bundle price','set price','jump to price field','show stock in pos','show inventory in pos','larger order total','print timeout','kasseantal','kortkonti','kassekonti','kortterminal','køkkenprinter','kasseprimo',

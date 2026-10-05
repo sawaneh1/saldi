@@ -54,6 +54,8 @@
 // 20260930 Sawaneh Dashboard items in the user menu hidden, not greyed out, away from the dashboard (Adam).
 // 20261002 Sawaneh Hand-over 2 Oct: sidebar "System" replaced by one entry "Indstillinger", Kontoplan under Finans (also for
 //                  users with only that right), breadcrumb in the topbar on settings pages (settings redesign §8.0, decision 16).
+// 20261005 Sawaneh Greeting on Oversigt (addendum 2026-09-30 §3).
+// 20261005 Sawaneh Assist menu (addendum §7): ask about the page with its context, tour (#tutorial-help or page_help), shortcuts ('?'), guide.
 // 20261005 Sawaneh Global search in the bar (addendum §6): sidebar pages, settings, records from globalSearch.php, recent pages.
 // 20261005 Sawaneh Topbar addendum 2026-10-05: sidebar placement removed; breadcrumb from saldi:breadcrumb messages of any
 //                  page (page_breadcrumb()), navigation through saldi:navigate with a 300 ms fallback, came-from chip,
@@ -189,7 +191,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=15' rel='stylesheet'>
+<link href='../css/topbar.css?v=17' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -626,7 +628,11 @@ function brightenColor($color, $amount = 0.2) {
   (function () {
     const bar = document.getElementById('topbar');
     if (!bar || !window.ResizeObserver) return;
-    new ResizeObserver(() => { bar.classList.toggle('topbar-narrow', bar.clientWidth < 1240); }).observe(bar);
+    new ResizeObserver(() => {
+      bar.classList.toggle('topbar-narrow', bar.clientWidth < 1240);
+      bar.classList.toggle('topbar-tight', bar.clientWidth < 1000);
+      bar.classList.toggle('topbar-xtight', bar.clientWidth < 760);
+    }).observe(bar);
   })();
   // Global search (topbar addendum 2026-10-05 §6): magnifier, Ctrl+K or '/'. Pages come from the sidebar the user
   // sees, settings from settingsSearch.php, records from globalSearch.php; at most 4 per group and 9 in all; names
@@ -811,8 +817,68 @@ function brightenColor($color, $amount = 0.2) {
   }
   document.addEventListener('keydown', topbarSearchKeys);
   function topbarSearchBindFrame(win) {
-    try { win.document.addEventListener('keydown', topbarSearchKeys); } catch (e) { /* page from another origin */ }
+    try { win.document.addEventListener('keydown', topbarSearchKeys); win.document.addEventListener('keydown', topbarAssistKeys); } catch (e) { /* page from another origin */ }
   }
+  // Assist menu (topbar addendum 2026-10-05 §7). A page registers its tour, shortcut list and guide with page_help();
+  // a page not migrated yet still offers its tour when it has the old Hjælp button (#tutorial-help).
+  // A value is a selector clicked in the page ('#tutorial-help', '[data-keys]') or an address opened in a new tab.
+  function topbarAssistPage() {
+    const iframe = document.querySelector('.content-iframe');
+    const help = (topbarCrumbMsg && topbarCrumbMsg.help) ? Object.assign({}, topbarCrumbMsg.help) : {};
+    let doc = null;
+    try { doc = iframe.contentWindow.document; } catch (e) { doc = null; }
+    if (!help.tour && doc && doc.getElementById('tutorial-help')) help.tour = '#tutorial-help';
+    let label = '';
+    if (topbarCrumbMsg && Array.isArray(topbarCrumbMsg.items) && topbarCrumbMsg.items.length) {
+      label = String(topbarCrumbMsg.items[topbarCrumbMsg.items.length - 1].label || '');
+    } else if (doc) {
+      label = String(doc.title || '').replace(/^Saldi\s*-\s*/, '').trim();
+    }
+    let path = '';
+    try { path = iframe.contentWindow.location.pathname + iframe.contentWindow.location.search; } catch (e) { path = ''; }
+    return { help: help, label: label, path: path, doc: doc };
+  }
+  function topbarAssistMenu(e) {
+    const page = topbarAssistPage();
+    const pop = document.getElementById('topbar-assist-pop');
+    const ask = document.getElementById('topbar-assist-ask').querySelector('span');
+    ask.textContent = page.label ? (pop.dataset.ask || '').replace('%s', page.label) : (pop.dataset.askPlain || '');
+    ['tour', 'shortcuts', 'guide'].forEach((k) => { document.getElementById('topbar-assist-' + k).hidden = !page.help[k]; });
+    topbarToggle(e, 'topbar-assist-pop');
+  }
+  // Context for the chat: the page and its shortcut list (Assist must be able to answer about shortcuts).
+  function topbarAssistContext() {
+    const page = topbarAssistPage();
+    return { page: page.path, title: page.label, breadcrumb: topbarCrumbMsg ? topbarCrumbMsg.items : [], shortcuts: page.help.shortcuts || null, guide: page.help.guide || null };
+  }
+  function topbarAssistAsk() {
+    if (window.SaldiAssist) { window.SaldiAssist.pageContext = topbarAssistContext(); }
+    topbarOpenAssist();
+  }
+  function topbarAssistRun(kind) {
+    topbarCloseAll();
+    const page = topbarAssistPage();
+    const target = page.help[kind];
+    if (!target) return;
+    if (/^[#\[.]/.test(target)) {
+      const el = page.doc ? page.doc.querySelector(target) : null;
+      if (el) { el.click(); }
+      return;
+    }
+    if (kind === 'guide' && !/^(https?:)?\/\/|\.pdf(\?|$)/i.test(target)) {
+      const overlay = document.getElementById('guideOverlay');
+      if (overlay) { overlay.classList.add('active'); return; }
+    }
+    window.open(target, '_blank', 'noopener');
+  }
+  // '?' when the caret is not in a field opens the page's shortcut list.
+  function topbarAssistKeys(e) {
+    if (e.defaultPrevented || e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    if (topbarAssistPage().help.shortcuts) { e.preventDefault(); topbarAssistRun('shortcuts'); }
+  }
+  document.addEventListener('keydown', topbarAssistKeys);
   // Gear in the sub-bar (settings redesign §8.11): shown when a settings section names the page in the frame
   // (data-map from the registry, already filtered by the user's permissions); opens it with a way back.
   function topbarSetGear(win) {
@@ -832,10 +898,36 @@ function brightenColor($color, $amount = 0.2) {
     try { title = String(win.document.title || '').replace(/^Saldi\s*-\s*/, '').trim().slice(0, 60); } catch (e) { title = ''; }
     gear.onclick = (e) => { e.preventDefault(); update_iframe(links[0].url + '&back=' + encodeURIComponent('/' + page + search) + (title ? '&back_label=' + encodeURIComponent(title) : '')); };
   }
+  // Greeting on Oversigt (topbar addendum 2026-09-30 §3): only on the front page; "opdateret" counts from when the
+  // front page was loaded. Line 2 goes first when space is short, then the whole greeting (CSS).
+  let topbarHelloLoaded = 0, topbarHelloTimer = null;
+  function topbarHello(onDash) {
+    const el = document.getElementById('topbar-hello');
+    if (!el) return;
+    el.hidden = !onDash;
+    clearInterval(topbarHelloTimer);
+    if (!onDash) return;
+    let txt = {};
+    try { txt = JSON.parse(el.dataset.txt || '{}'); } catch (e) { txt = {}; }
+    const hr = new Date().getHours();
+    const g = hr < 5 ? txt.night : hr < 10 ? txt.morning : hr < 12 ? txt.forenoon : hr < 18 ? txt.afternoon : txt.evening;
+    document.getElementById('topbar-hello-greet').textContent = (g || '') + (el.dataset.name ? ', ' + el.dataset.name : '');
+    let d = '';
+    try { d = new Date().toLocaleDateString(el.dataset.lang || 'da', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { d = new Date().toDateString(); }
+    document.getElementById('topbar-hello-date').textContent = d.charAt(0).toUpperCase() + d.slice(1);
+    topbarHelloLoaded = Date.now();
+    const upd = () => {
+      const min = Math.floor((Date.now() - topbarHelloLoaded) / 60000);
+      document.getElementById('topbar-hello-upd').textContent = min < 1 ? (txt.now || '') : String(txt.min || '').replace('%s', min);
+    };
+    upd();
+    topbarHelloTimer = setInterval(upd, 30000);
+  }
   function topbarSetDashState(path) {
     const onDash = /\/index\/dashboard\.php$/.test(path || '');
     document.querySelectorAll('.topbar-dash').forEach((el) => { el.hidden = !onDash; });
     document.documentElement.classList.toggle('topbar-tall', onDash);
+    topbarHello(onDash);
   }
   function topbarDashHide() {
     const iframe = document.querySelector('.content-iframe');
@@ -1178,7 +1270,7 @@ $assistVersion = isset($version) ? (string)$version : '';
   if (typeof update_iframe === 'function') { window.update_iframe = update_iframe; }
 </script>
 <script src="<?= htmlspecialchars($assistWidgetUrl, ENT_QUOTES, 'UTF-8') ?>" data-widget-id="saldi" data-brand="SALDI" data-lang="da" data-app-version="<?= htmlspecialchars($assistVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>
-<script>window.SaldiAssist = { appVersion: <?= json_encode($assistVersion) ?>, correlationId: <?= json_encode($assist_correlation_id ?? null) ?>, errorCategory: <?= json_encode($assist_error_category ?? null) ?>, getContextToken: function (sessionHash) { return fetch('../includes/saldi_assist_token.php?embed_session=' + encodeURIComponent(sessionHash), {credentials:'same-origin'}).then(function (r) { return r.ok ? r.json() : null }).then(function (j) { return j && j.token ? j.token : null }) }, navigate: window.SaldiAssistNavigate };</script>
+<script>window.SaldiAssist = { appVersion: <?= json_encode($assistVersion) ?>, correlationId: <?= json_encode($assist_correlation_id ?? null) ?>, errorCategory: <?= json_encode($assist_error_category ?? null) ?>, getContextToken: function (sessionHash) { return fetch('../includes/saldi_assist_token.php?embed_session=' + encodeURIComponent(sessionHash), {credentials:'same-origin'}).then(function (r) { return r.ok ? r.json() : null }).then(function (j) { return j && j.token ? j.token : null }) }, navigate: window.SaldiAssistNavigate, getPageContext: function () { return typeof topbarAssistContext === 'function' ? topbarAssistContext() : null; } };</script>
 <?php if (getenv('SALDI_ASSIST_RECORDS_ENABLED') === '1') { ?>
 <script src="../javascript/saldi-assist-records.js"></script>
 <script>

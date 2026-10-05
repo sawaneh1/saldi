@@ -863,6 +863,11 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-back:hover { text-decoration: underline; }
 
 /* 20261005 Sawaneh Settings 4c row editor (spec §8.2, mock-up 04) */
+/* Row editors need the width: the change history goes below the tables instead of beside them. */
+.st-page-rows .st-layout { grid-template-columns: 200px minmax(0, 1fr); }
+.st-page-rows .st-hist { grid-column: 2; max-width: 640px; }
+.st-rc-text .st-rin { min-width: 170px; }
+.st-rc-select .st-rin { min-width: 110px; }
 .st-rhead { margin: 18px 0 8px; }
 .st-rhead h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .st-rhelp { margin: 4px 0 0; font-size: 13px; color: var(--st-text-2); max-width: 640px; }
@@ -1053,4 +1058,10 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
   .st-mini { align-items: stretch; }
   .st-mini-f { flex-direction: column; align-items: stretch; gap: 4px; }
   .st-mini-f span { text-align: left; }
+}
+
+/* 20261005 Sawaneh Row editors on narrow screens: one column, history below. */
+@media screen and (max-width: 900px) {
+  .st-page-rows .st-layout { grid-template-columns: minmax(0, 1fr); }
+  .st-page-rows .st-hist { grid-column: 1; }
 }

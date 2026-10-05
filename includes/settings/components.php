@@ -438,6 +438,31 @@ function st_options(array $def): array
 			while ($r = db_fetch_array($q)) {
 				$cache[$from][(string) $r['kodenr']] = (string) $r['beskrivelse'];
 			}
+		} elseif ($from === 'vat_codes_sales' || $from === 'vat_codes_purchase') {
+			// 4c groups: a VAT code as the groups store it ("S1", "K1", "E1", "Y1"), from the year being edited, inactive ones left out.
+			global $regnaar;
+			$y = isset($GLOBALS['settings_rows_year']) ? (int) $GLOBALS['settings_rows_year'] : (int) $regnaar;
+			$arts = $from === 'vat_codes_sales' ? "'SM'" : "'KM', 'EM', 'YM'";
+			$hasInactive = (bool) db_fetch_array(db_select("select column_name from information_schema.columns where table_name = 'grupper' and column_name = 'inaktiv'", __FILE__ . " linje " . __LINE__));
+			$cache[$from] = array('' => '');
+			$q = db_select("select kode, kodenr, beskrivelse from grupper where art in ($arts) and fiscal_year = $y" . ($hasInactive ? " and coalesce(inaktiv, false) = false" : '') . " order by art desc, kodenr", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$code = trim((string) $r['kode']) . trim((string) $r['kodenr']);
+				$cache[$from][$code] = $code . ' ' . trim((string) $r['beskrivelse']);
+			}
+		} elseif ($from === 'currencies') {
+			$cache[$from] = array('DKK' => 'DKK');
+			$q = db_select("select box1 from grupper where art = 'VK' order by box1", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				if (trim((string) $r['box1']) !== '') {
+					$cache[$from][trim((string) $r['box1'])] = trim((string) $r['box1']);
+				}
+			}
+		} elseif ($from === 'form_language_names') {
+			$cache[$from] = array('' => '');
+			foreach (settings_form_languages() as $name) {
+				$cache[$from][$name] = $name;
+			}
 		} elseif ($from === 'tables') {
 			// POS/2 box7 holds the table names; a till stores the table's place in that list.
 			global $regnaar;

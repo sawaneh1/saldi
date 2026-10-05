@@ -44,7 +44,7 @@ function settings_rows_render(array $c): void
 	}
 	$fieldsBySub = array();
 	foreach ($defs as $key => $def) {
-		if (!in_array($def['type'], array('action', 'info', 'link', 'mini'), true)) {
+		if (!in_array($def['type'], array('action', 'mini'), true)) {
 			$fieldsBySub[$def['sub']][$key] = $def;
 		}
 	}
@@ -266,6 +266,9 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 		if ($def['type'] === 'code' && $row && $row['usage'] > 0) {
 			$ro = true;
 			$attrs .= ' title="' . st_t(6420) . '"';
+		} elseif ($def['locked_if_used'] && $row && $row['usage'] > 0) {
+			$ro = true;
+			$attrs .= ' title="' . st_t(is_int($def['locked_if_used']) ? $def['locked_if_used'] : 6467) . '"';
 		}
 		if ($def['type'] === 'derived') {
 			echo '<td class="st-rc st-rc-derived"><span>' . st_h($row ? settings_rows_derived((string) $def['derive'], $row) : '') . '</span></td>';
@@ -277,7 +280,12 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 			echo '<input type="checkbox" class="st-rcheck"' . $attrs . ' value="1"' . ($value !== '' ? ' checked' : '') . ($ro ? ' disabled' : '') . '>';
 		} elseif ($def['type'] === 'select') {
 			echo '<select class="st-rin"' . $attrs . ($ro ? ' disabled' : '') . '>';
-			foreach (st_options($def) as $v => $label) {
+			$opts = st_options($def);
+			if ($value !== '' && !array_key_exists($value, $opts)) {
+				// A stored value the list no longer offers stays visible (and is kept unless changed).
+				echo '<option value="' . st_h($value) . '" selected>' . st_h($value) . '</option>';
+			}
+			foreach ($opts as $v => $label) {
 				echo '<option value="' . st_h((string) $v) . '"' . ((string) $v === $value ? ' selected' : '') . '>' . st_option_label($def, $label) . '</option>';
 			}
 			echo '</select>';

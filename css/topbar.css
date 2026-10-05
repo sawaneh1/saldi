@@ -208,6 +208,9 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 .topbar-pop-user { width: 300px; }
+.topbar-pop-assist { width: 260px; }
+.topbar-pop-assist .topbar-pop-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.topbar-pop-assist .topbar-pop-item small { margin-left: auto; padding: 0 6px; border: 1px solid var(--topbar-line); border-radius: 5px; font-size: 11px; color: var(--topbar-mut); }
 .topbar-pop-bell { width: 360px; }
 
 .topbar-pop-title {
@@ -419,3 +422,13 @@ html.topbar-tall { --topbar-h: 48px; }
     .topbar-search.open .topbar-search-in { background: var(--topbar-hover); border-radius: 10px; padding: 0 10px; }
     .topbar-search-res { position: fixed; top: var(--topbar-h); left: 8px; right: 8px; }
 }
+
+/* 20261005 Sawaneh Greeting on Oversigt (topbar addendum 2026-09-30 §3, prototype_dashboard_tema): name, then the date and
+   "opdateret"; line 2 is hidden first when space is short, then the whole greeting - the cluster never moves. */
+.topbar-hello { display: flex; flex-direction: column; justify-content: center; min-width: 0; margin-left: 7px; line-height: 1.25; white-space: nowrap; overflow: hidden; }
+.topbar-hello[hidden] { display: none; }
+.topbar-hello b { font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: var(--topbar-txt); overflow: hidden; text-overflow: ellipsis; }
+.topbar-hello-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--topbar-mut); }
+.topbar-hello-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--topbar-green); flex: none; }
+.topbar.topbar-tight .topbar-hello-line { display: none; }
+.topbar.topbar-xtight .topbar-hello { display: none; }

@@ -32,6 +32,8 @@
 // 20260928 Sawaneh PoS shortcut shown only with the pos.kasse permission.
 // 20260930 Sawaneh Dashboard items in the user menu are hidden, not greyed out, away from the dashboard (Adam 2026-09-30).
 //                  Who is online shown to users who may manage users (settings.users.manage).
+// 20261005 Sawaneh Greeting, date and "opdateret" on the left on Oversigt only (topbar addendum 2026-09-30 §3).
+// 20261005 Sawaneh Assist button opens a menu (topbar addendum 2026-10-05 §7): ask about the page, page tour, shortcuts, guide.
 // 20261005 Sawaneh "+ Opret nyt regnskabsår" under Regnskabsår through the named route fiscal_year_create (addendum 2026-09-30 §4.1).
 // 20261005 Sawaneh Global search (topbar addendum 2026-10-05 §6): magnifier first in the cluster, field and results panel.
 // 20261005 Sawaneh Topbar addendum 2026-10-05: no sidebar placement (move button and cluster_placement gone).
@@ -332,6 +334,12 @@ function topbar_render(array $ctx, int $sprogId): void
 	?>
   <header class="topbar" id="topbar">
     <button type="button" class="topbar-menu-btn" aria-label="Menu" title="Menu" onclick="topbarMenu()"><i class='bx bx-menu'></i></button>
+    <div class="topbar-hello" id="topbar-hello" data-name="<?= topbar_h((string) strtok((string) $ctx['name'], ' ')) ?>" data-lang="<?= topbar_h(strtolower((string) $lang['code']) === 'no' ? 'nb' : strtolower((string) $lang['code'])) ?>" data-txt="<?= topbar_h(json_encode(array(
+		'night' => topbar_utf8(findtekst('6456|God nat', $sprogId)), 'morning' => topbar_utf8(findtekst('6457|Godmorgen', $sprogId)),
+		'forenoon' => topbar_utf8(findtekst('6458|God formiddag', $sprogId)), 'afternoon' => topbar_utf8(findtekst('6459|God eftermiddag', $sprogId)),
+		'evening' => topbar_utf8(findtekst('6460|God aften', $sprogId)), 'now' => topbar_utf8(findtekst('6461|opdateret for et øjeblik siden', $sprogId)),
+		'min' => topbar_utf8(findtekst('6462|opdateret for %s min. siden', $sprogId)),
+	), JSON_UNESCAPED_UNICODE)) ?>" hidden><b id="topbar-hello-greet"></b><span class="topbar-hello-line"><i class="topbar-hello-dot" aria-hidden="true"></i><span id="topbar-hello-date"></span> · <span id="topbar-hello-upd"></span></span></div>
     <nav class="topbar-crumb" id="topbar-crumb" aria-label="<?= $t('6015|Du er her') ?>" data-company="<?= topbar_h($ctx['company']) ?>" hidden></nav>
     <a class="topbar-gear" id="topbar-gear" href="#" title="<?= $t('6392|Indstillinger for denne side') ?>" aria-label="<?= $t('6392|Indstillinger for denne side') ?>" data-map="<?= topbar_h(json_encode(function_exists('settings_context_links') ? settings_context_links((int) $ctx['langId']) : array(), JSON_UNESCAPED_UNICODE)) ?>" hidden><i class='bx bx-cog' aria-hidden="true"></i></a>
     <span class="topbar-spacer"></span>
@@ -359,7 +367,17 @@ function topbar_render(array $ctx, int $sprogId): void
       </div>
     </div>
 
-    <button type="button" class="topbar-icbtn topbar-assist" id="topbar-assist-btn" title="SALDI Assist" onclick="topbarOpenAssist()"><?= topbar_assist_icon() ?></button>
+    <div class="topbar-item">
+      <button type="button" class="topbar-icbtn topbar-assist" id="topbar-assist-btn" title="SALDI Assist" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-assist-pop" onclick="topbarAssistMenu(event)"><?= topbar_assist_icon() ?></button>
+      <div class="topbar-pop topbar-pop-assist" id="topbar-assist-pop" role="menu" data-ask="<?= $t('6453|Spørg Assist om %s') ?>" data-ask-plain="<?= $t('6454|Spørg Assist') ?>">
+        <div class="topbar-pop-body">
+          <button type="button" class="topbar-pop-item" role="menuitem" id="topbar-assist-ask" onclick="topbarAssistAsk()"><?= topbar_assist_icon() ?><span><?= $t('6454|Spørg Assist') ?></span></button>
+          <button type="button" class="topbar-pop-item" role="menuitem" id="topbar-assist-tour" onclick="topbarAssistRun('tour')" hidden><i class='bx bx-map-alt'></i><?= $t('6455|Rundvisning af siden') ?></button>
+          <button type="button" class="topbar-pop-item" role="menuitem" id="topbar-assist-shortcuts" onclick="topbarAssistRun('shortcuts')" hidden><i class='bx bx-command'></i><?= $t('6024|Tastaturgenveje') ?><small>?</small></button>
+          <button type="button" class="topbar-pop-item" role="menuitem" id="topbar-assist-guide" onclick="topbarAssistRun('guide')" hidden><i class='bx bx-book-open'></i><?= $t('92|Vejledning') ?></button>
+        </div>
+      </div>
+    </div>
 
     <?php if ($ctx['posUrl'] !== '') { ?>
     <a class="topbar-icbtn topbar-desktop" href="<?= topbar_h($ctx['posUrl']) ?>" target="_top" title="<?= $t('5606|Kassesystem') ?>"><i class='bx bx-store-alt'></i></a>

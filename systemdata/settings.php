@@ -110,6 +110,7 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= $js('122|Indstillinger') ?>;</script>
+<?php if (function_exists('page_help')) { page_help(array('shortcuts' => '[data-keys]')); } ?>
 <?= settings_breadcrumb_script(settings_breadcrumb('', '', $sprogId), $charset) ?>
 <div class="sh-page" style="<?= $h($accent) ?>">
   <section class="sh-phead">

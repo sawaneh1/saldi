@@ -65,13 +65,17 @@ $genberegn=NULL;
 include("../includes/connect.php");
 include("../includes/online.php");
 include("../includes/std_func.php");
-// 20261005 Sawaneh Settings redesign 4c (R6): the master-data lists that have landed in the generated sections.
+// 20261005 Sawaneh Settings redesign 4c (R6): the master-data lists that have landed in the generated sections
+//                  (VAT and debtor/creditor groups too; item groups left the varer page, price groups remain).
 $landedValg = array(
 	'afdelinger' => 'settingsSection.php?s=organisation.departments&moved=afdelinger',
 	'projekter'  => 'settingsSection.php?s=organisation.projects&moved=projekter',
 	'lagre'      => 'settingsSection.php?s=items.warehouses&moved=lagre',
+	'moms'       => 'settingsSection.php?s=finance.vat&moved=moms',
+	'debitor'    => 'settingsSection.php?s=sales.debtor_groups&moved=debitor',
 );
-if (isset($_GET['valg']) && isset($landedValg[$_GET['valg']])) {
+// legacy=1 keeps the old group page reachable for moving a control account with postings (not built in the new editor yet).
+if (isset($_GET['valg']) && isset($landedValg[$_GET['valg']]) && !($_GET['valg'] === 'debitor' && !empty($_GET['legacy']))) {
 	header("Location: " . $landedValg[$_GET['valg']]);
 	exit;
 }
@@ -252,86 +256,8 @@ elseif($valg=='lagre'){
 }
 elseif($valg=='varer'){
 	$t6=findtekst('2466|Afmærk her, hvis denne varegruppe er omfattet af omvendt betalingspligt', $sprog_id);
-	$q = db_select("select id from grupper where art = 'DIV' and kodenr = '2' and box4='on'",__FILE__ . " linje " . __LINE__);
-	if (db_fetch_array($q)){
-		print "<tr><td></td><td colspan=10 align=\"center\"><b>".findtekst('774|Varegrupper', $sprog_id)."</td></tr><tr><td colspan=13><hr></td></tr>\n";
-		print "<tr>";
-		print "<td align=\"center\"></td><td></td><td></td>";
-		if ($stockIO) print "<td align=\"center\">".findtekst('608|Lager', $sprog_id)."-</td><td align=\"center\">".findtekst('608|Lager', $sprog_id)."-</td>";
-		print "<td align=\"center\"><!--Køb--></td>";
-		print "<td align=\"center\"><!--".findtekst('1007|Salgs', $sprog_id)."--></td>";
-		print "<td align=\"center\">Varer/</td>\n";
-		#<td align=\"center\">Lager-</td>";
-		print "<td title=\"$t6\" align=\"center\">Omvendt-</td>";
-		print "<td align=\"center\">".findtekst('770|Moms', $sprog_id)."-</td>";
-		print "<td align=\"center\">".findtekst('608|Lager', $sprog_id)."-</td>";
-		print "<td align=\"center\">Batch-</td>";
-		print "<td align=\"center\">Opera-</td>\n";
-		print "<td title='Kontonummer for enten kø af Varekøb i EU (Rubrik A1) eller Ydelseskøb i EU (Rubrik A2) - se Indstillinger - Moms'>".findtekst('1012|Køb', $sprog_id)."</td>\n";
-		print "<td title='Kontonummer for enten Varesalg til EU (Rubrik B1) eller Ydelsessalg til EU (Rubrik B2) - se Indstillinger - Moms'>".findtekst('1007|Salgs', $sprog_id)."</td>\n";
-		print "<td title='Kontonummer for en af Varekøb uden for EU, Ydelseskøb uden for EU eller Vare- og ydelseskøb uden for EU.'>".findtekst('1012|Køb', $sprog_id)." uden</td>\n";
-		print "<td title='Kontonummer for en af Varesalg uden for EU, Ydelsessalg uden for EU eller Vare- og ydelsessalg uden for EU (Rubrik C). Hvis en af de to første angives, så skal kontonummeret være blandt de kontonumre, som summeres til en samlekonto for Vare- og ydelsessalg uden for EU (Rubrik C).'>Salg uden</td></tr>\n";
-		print "<tr><td></td><td>".findtekst('2248|Nr.', $sprog_id)."</td>";
-		print "<td align=\"center\">".findtekst('914|Beskrivelse', $sprog_id)."</td>";
-		if ($stockIO) print "<td align=\"center\">tilgang</td><td align=\"center\">træk</td>";
-		print "<td align=\"center\">".findtekst('1012|Køb', $sprog_id)."</td>";
-		print "<td align=\"center\">".findtekst('2468|Salg', $sprog_id)."<!--".findtekst('1007|Salgs', $sprog_id)."--></td>";
-			print "<td align=\"center\">ydelser</td>\n";
-		#<td align=\"center\">regulering</td>
-		print "<td  title=\"$t6\" align=\"center\">betaling</td>";
-		print "<td align=\"center\">fri</td>";
-		print "<td align=\"center\">ført</td>";
-		print "<td>kontrol</td>";
-		print "<td align=\"center\">tion</td>\n";
-		print "<td title='Kontonummer for enten Varekøb i EU (Rubrik A1) eller Ydelseskøb i EU (Rubrik A2) - se Indstillinger - Moms'>i EU</td>\n";
-		print "<td title='Kontonummer for enten Varesalg til EU (Rubrik B1) eller Ydelsessalg til EU (Rubrik B2) - se Indstillinger - Moms'>til EU</td>\n";
-		print "<td title='Kontonummer for en af Varekøb uden for EU, Ydelseskøb uden for EU eller Vare- og ydelseskøb uden for EU.'>for EU</td>\n";
-		print "<td title='Kontonummer for en af Varesalg uden for EU, Ydelsessalg uden for EU eller Vare- og ydelsessalg uden for EU (Rubrik C). Hvis en af de to første angives, så skal kontonummeret være blandt de kontonumre, som summeres til en samlekonto for Vare- og ydelsessalg uden for EU (Rubrik C).'>for EU</td></tr>\n";
-		if ($stockIO) {
-		$y=skriv_formtabel('VG',$x,$y,$art,$id,'&nbsp;',$kodenr,$beskrivelse,$box1,'4',$box2,'4',$box3,'4',$box4,'4',$box5,'vg-type',$box6,'checkbox',$box7,'checkbox',$box8,'checkbox',$box9,'checkbox',$box10,'checkbox',$box11,'4',$box12,'4',$box13,'4',$box14,'4');
-		} else {
-			$y=skriv_formtabel('VG',$x,$y,$art,$id,'&nbsp;',$kodenr,$beskrivelse,'-','','-','',$box3,'4',$box4,'4',$box5,'vg-type',$box6,'checkbox',$box7,'checkbox',$box8,'checkbox',$box9,'checkbox',$box10,'checkbox',$box11,'4',$box12,'4',$box13,'4',$box14,'4');
-		}
-	} else {
-		print "<tr><td colspan=20 align=\"center\"><b>".findtekst('774|Varegrupper', $sprog_id)."</td></tr><tr><td colspan=20><hr></td></tr>\n";
-		print "<tr><td  title=\"$t6\" align=\"center\"></td><td></td><td></td>";
-		if ($stockIO) {
-			print "<td align=\"center\">".findtekst('608|Lager', $sprog_id)."-</td><td align=\"center\">".findtekst('608|Lager', $sprog_id)."-</td>";
-		}	
-		print "<td align=\"center\">".findtekst('110|Varer', $sprog_id)."-</td><td align=\"center\">".findtekst('110|Varer', $sprog_id)."-</td>";
-		print "<td align=\"center\">Varer/</td>\n";
-#		print "<td align=\"center\">Lager-</td>";
-		print "<td align=\"center\">Omvendt-</td>";
-		print "<td align=\"center\">".findtekst('770|Moms', $sprog_id)."-</td>";
-		print "<td align=\"center\">".findtekst('608|Lager', $sprog_id)."-</td>";
-		print "<td align=\"center\">Batch-</td>";
-		print "<td align=\"center\">Opera-</td>\n";
-		print "<td title='Kontonummer for enten kø af Varekøb i EU (Rubrik A1) eller Ydelseskøb i EU (Rubrik A2) - se Indstillinger - Moms'>".findtekst('1012|Køb', $sprog_id)."</td>\n";
-		print "<td title='Kontonummer for enten Varesalg til EU (Rubrik B1) eller Ydelsessalg til EU (Rubrik B2) - se Indstillinger - Moms'>".findtekst('1007|Salgs', $sprog_id)."</td>\n";
-		print "<td title='Kontonummer for en af Varekø uden for EU, Ydelseskø uden for EU eller Vare- og ydelseskø uden for EU.'>Køb uden</td>\n";
-		print "<td title='Kontonummer for en af Varesalg uden for EU, Ydelsessalg uden for EU eller Vare- og ydelsessalg uden for EU (Rubrik C). Hvis en af de to første angives, så skal kontonummeret være blandt de kontonumre, som summeres til en samlekonto for Vare- og ydelsessalg uden for EU (Rubrik C).'>Salg uden</td></tr>\n";
-		print "<tr><td></td><td>".findtekst('2248|Nr.', $sprog_id)."</td>";
-		print "<td align=\"center\">".findtekst('914|Beskrivelse', $sprog_id)."</td>";
-		if ($stockIO) print "<td align=\"center\">tilgang</td><td align=\"center\">træk</td>";
-		print "<td align=\"center\">".findtekst('1012|Køb', $sprog_id)."</td>";
-		print "<td align=\"center\">".findtekst('1007|Salgs', $sprog_id)."</td>";
-			print "<td align=\"center\">ydelser</td>\n";
-#		print "<td align=\"center\">regulering</td>";
-		print "<td  title=\"$t6\" align=\"center\">betaling</td>";
-		print "<td align=\"center\">fri</td>";
-		print "<td align=\"center\">ført</td>";
-		print "<td align=\"center\">kontrol</td>";
-		print "<td align=\"center\">tion</td>\n";
-		print "<td title='Kontonummer for enten køb af Varekøb i EU (Rubrik A1) eller Ydelseskøb i EU (Rubrik A2) - se Indstillinger - Moms'>i EU</td>\n";
-		print "<td title='Kontonummer for enten Varesalg til EU (Rubrik B1) eller Ydelsessalg til EU (Rubrik B2) - se Indstillinger - Moms'>til EU</td>\n";
-		print "<td title='Kontonummer for en af Varekø uden for EU, Ydelseskø uden for EU eller Vare- og ydelseskø uden for EU.'>for EU</td>\n";
-		print "<td title='Kontonummer for en af Varesalg uden for EU, Ydelsessalg uden for EU eller Vare- og ydelsessalg uden for EU (Rubrik C). Hvis en af de to første angives, så skal kontonummeret være blandt de kontonumre, som summeres til en samlekonto for Vare- og ydelsessalg uden for EU (Rubrik C).'>for EU</td></tr>\n";
-		if ($stockIO) {
-			$y=skriv_formtabel('VG',$x,$y,$art,$id,'&nbsp;',$kodenr,$beskrivelse,$box1,'4',$box2,'4',$box3,'4',$box4,'4',$box5,'vg-type',$box6,'checkbox',$box7,'checkbox',$box8,'checkbox',$box9,'checkbox',$box10,'checkbox',$box11,'4',$box12,'4',$box13,'4',$box14,'4');
-		} else {
-			$y=skriv_formtabel('VG',$x,$y,$art,$id,'&nbsp;',$kodenr,$beskrivelse,'-','','-','',$box3,'4',$box4,'4',$box5,'vg-type',$box6,'checkbox',$box7,'checkbox',$box8,'checkbox',$box9,'checkbox',$box10,'checkbox',$box11,'4',$box12,'4',$box13,'4',$box14,'4');
-		}
-	}
+	// 20261005 Sawaneh Item groups are edited in Indstillinger » Varer » Varegrupper (4c); price, offer and discount groups stay here.
+	print "<tr><td colspan=20 align=\"center\"><a href=\"settingsSection.php?s=items.item_groups\">".findtekst('774|Varegrupper', $sprog_id)." &rarr;</a></td></tr>\n";
 	print "<tr><td colspan=20 align=\"center\"><hr><b>".findtekst('2471|Prisgrupper', $sprog_id)."</td></tr><tr><td colspan=20><hr></td></tr>\n";
 	print "<tr><td colspan=20><table width='100%' align=\"center\"><tbody>";
 	print "<tr><td align=\"center\"></td><td></td><td></td>";

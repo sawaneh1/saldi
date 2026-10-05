@@ -6057,3 +6057,60 @@
 6450	Kassekladde %s	Cash journal %s	Kassekladd %s
 6451	Ingen resultater	No results	Ingen resultater
 6452	Indkøbsordre %s	Purchase order %s	Innkjøpsordre %s
+6453	Spørg Assist om %s	Ask Assist about %s	Spør Assist om %s
+6454	Spørg Assist	Ask Assist	Spør Assist
+6455	Rundvisning af siden	Tour of the page	Omvisning på siden
+6456	God nat	Good night	God natt
+6457	Godmorgen	Good morning	God morgen
+6458	God formiddag	Good morning	God formiddag
+6459	God eftermiddag	Good afternoon	God ettermiddag
+6460	God aften	Good evening	God kveld
+6461	opdateret for et øjeblik siden	updated a moment ago	oppdatert for et øyeblikk siden
+6462	opdateret for %s min. siden	updated %s min. ago	oppdatert for %s min. siden
+6463	%s konti	%s accounts	%s kontoer
+6464	%s grupper	%s groups	%s grupper
+6465	%s kunder	%s customers	%s kunder
+6466	%s leverandører	%s suppliers	%s leverandører
+6467	Kan ikke ændres, mens rækken er i brug	Cannot be changed while the row is in use	Kan ikke endres mens raden er i bruk
+6468	Momskoderne og de konti, momsrapporten bygger på. Gælder pr. regnskabsår.	The VAT codes and the accounts the VAT report is built on. Per fiscal year.	Mva-kodene og kontoene mva-rapporten bygger på. Gjelder per regnskapsår.
+6469	Tilføj momskode	Add VAT code	Legg til mva-kode
+6470	Ingen momskoder endnu	No VAT codes yet	Ingen mva-koder ennå
+6471	Land (OSS)	Country (OSS)	Land (OSS)
+6472	Momskoden skal være et ciffer fra 1 til 9	The VAT code must be a digit from 1 to 9	Mva-koden må være et siffer fra 1 til 9
+6473	Rubrik A1 – EU-varekøb	Box A1 – EU goods purchases	Rubrikk A1 – EU-varekjøp
+6474	Rubrik A2 – EU-ydelseskøb	Box A2 – EU service purchases	Rubrikk A2 – EU-tjenestekjøp
+6475	Tilføj debitorgruppe	Add debtor group	Legg til debitorgruppe
+6476	Tilføj kreditorgruppe	Add creditor group	Legg til kreditorgruppe
+6477	Tilføj varegruppe	Add item group	Legg til varegruppe
+6478	Ingen debitorgrupper endnu	No debtor groups yet	Ingen debitorgrupper ennå
+6479	Ingen kreditorgrupper endnu	No creditor groups yet	Ingen kreditorgrupper ennå
+6480	Ingen varegrupper endnu	No item groups yet	Ingen varegrupper ennå
+6481	Rabat %	Discount %	Rabatt %
+6482	Rabatsats for kundegruppen på ordrer; bruges også som provisionsprocent	Discount rate for the customer group on orders; also used as the commission rate	Rabattsats for kundegruppen på ordrer; brukes også som provisjonsprosent
+6483	B2B	B2B	B2B
+6484	EU-zone	EU zone	EU-sone
+6485	Lagertilgang	Stock in	Lagertilgang
+6486	Lagertræk	Stock out	Lageruttak
+6487	Varekøb	Purchases	Varekjøp
+6488	Varesalg	Sales	Varesalg
+6489	Varer/ydelser	Goods/services	Varer/tjenester
+6490	Momsfri	VAT-free	Mva-fri
+6491	Lagerført	Stock-managed	Lagerført
+6492	Batchkontrol	Batch control	Batchkontroll
+6493	Operation (Sager/løn)	Operation (cases/payroll)	Operasjon (saker/lønn)
+6494	Alt. varekøbskonto i EU (lagerværdi)	Alt. purchase account in the EU (stock value)	Alt. varekjøpskonto i EU (lagerverdi)
+6495	Alt. varekøbskonto uden for EU (lagerværdi)	Alt. purchase account outside the EU (stock value)	Alt. varekjøpskonto utenfor EU (lagerverdi)
+6496	Ekstra varekøbskonto til beregning af lagerværdi. Hed tidligere "Køb i EU".	Extra purchase account for the stock value. Formerly "Køb i EU".	Ekstra varekjøpskonto for lagerverdi. Het tidligere "Køb i EU".
+6497	Ekstra varekøbskonto til beregning af lagerværdi. Hed tidligere "Køb uden for EU".	Extra purchase account for the stock value. Formerly "Køb uden for EU".	Ekstra varekjøpskonto for lagerverdi. Het tidligere "Køb uden for EU".
+6498	Batchkontrol kræver lagerførte varer	Batch control requires stock-managed items	Batchkontroll krever lagerførte varer
+6499	Lagertilgang og lagertræk udfyldes begge eller ingen af dem	Stock in and stock out are both filled in or neither	Lagertilgang og lageruttak fylles begge ut eller ingen av dem
+6500	S.moms grp skal udfyldes, når OB er afmærket	S.VAT group is required when reverse charge is ticked	S.mva-gruppe må fylles ut når OB er avmerket
+6501	Ydelser	Services	Tjenester
+6502	Samlekontoen kan ikke ændres her, mens gruppen har konti – flytning med bogføring sker indtil videre på den gamle side.	The control account cannot be changed here while the group has accounts – moving it with postings is done on the old page for now.	Samlekontoen kan ikke endres her mens gruppen har kontoer – flytting med bokføring gjøres foreløpig på den gamle siden.
+6503	Flyt samlekonto	Move control account	Flytt samlekonto
+6504	Åbn den gamle side	Open the old page	Åpne den gamle siden
+6505	Debitorgruppernes momsgruppe, samlekonto, valuta, sprog og rabat. Gælder pr. regnskabsår.	The debtor groups' VAT group, control account, currency, language and discount. Per fiscal year.	Debitorgruppenes mva-gruppe, samlekonto, valuta, språk og rabatt. Gjelder per regnskapsår.
+6506	Kreditorgruppernes momsgruppe, samlekonto, valuta og omvendt betalingspligt. Gælder pr. regnskabsår.	The creditor groups' VAT group, control account, currency and reverse charge. Per fiscal year.	Kreditorgruppenes mva-gruppe, samlekonto, valuta og omvendt avgiftsplikt. Gjelder per regnskapsår.
+6507	Varegruppernes konti for køb, salg og lager. Gælder pr. regnskabsår.	The item groups' accounts for purchases, sales and stock. Per fiscal year.	Varegruppenes kontoer for kjøp, salg og lager. Gjelder per regnskapsår.
+6508	Prisgrupper, tilbudsgrupper og rabatgrupper	Price groups, offer groups and discount groups	Prisgrupper, tilbudsgrupper og rabattgrupper
+6509	Ligger indtil videre på den gamle side	Remain on the old page for now	Ligger foreløpig på den gamle siden

@@ -17,6 +17,8 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh 4c VAT and groups: column range, 'requires', 'locked_if_used', 'empty_value', table 'defaults', VAT/group usage;
+//                  unchanged cells are not validated again, decimals compare as numbers.
 // 20261005 Sawaneh Settings redesign phase 4c (spec §7.3 / §8.2): the row editor behind a section of 'kind' rows.
 //                  A table is a list of rows in grupper (one art) or in a table of its own; every cell is a column
 //                  definition. Reading, usage counts, validation, saving with one audit row per changed cell,
@@ -33,14 +35,15 @@ function settings_rows_tables(array $section): array
 	$out = array();
 	foreach ($section['tables'] as $tableId => $t) {
 		$t += array('sub' => $tableId, 'fiscal' => false, 'usage' => null, 'inactive' => false, 'exclude' => '', 'help' => null,
-			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null);
+			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null, 'defaults' => array());
 		$st = $t['storage'];
 		$t['kind'] = $st[0] === 'grupper' ? 'grupper' : 'table';
 		$t['art'] = $t['kind'] === 'grupper' ? (string) $st[1] : '';
 		$t['dbtable'] = $t['kind'] === 'grupper' ? 'grupper' : (string) $st[1];
 		$t['code_col'] = isset($t['code_col']) ? (string) $t['code_col'] : (isset($t['columns']['kodenr']) ? 'kodenr' : key($t['columns']));
 		foreach ($t['columns'] as $col => $def) {
-			$t['columns'][$col] = $def + array('type' => 'text', 'required' => false, 'unique' => (isset($def['type']) && $def['type'] === 'code'), 'width' => '', 'numeric' => true, 'help' => null, 'options' => null, 'options_from' => null, 'derive' => null);
+			$t['columns'][$col] = $def + array('type' => 'text', 'required' => false, 'unique' => (isset($def['type']) && $def['type'] === 'code'), 'width' => '', 'numeric' => true, 'help' => null, 'options' => null, 'options_from' => null, 'derive' => null,
+				'range' => null, 'requires' => null, 'locked_if_used' => false, 'empty_value' => null);
 		}
 		$out[$tableId] = $t;
 	}
@@ -161,6 +164,22 @@ function settings_rows_usage(array $t, array $row): array
 			case 'unit':
 				$add("select count(*) as n from varer where enhed = '$esc' or enhed2 = '$esc'", 6427);
 				break;
+			case 'vat':
+				// A VAT code is referenced as kode + number ("S1") by accounts (any year) and by groups of the same year.
+				$ref = db_escape_string((string) $t['kode'] . $code);
+				$y = isset($GLOBALS['settings_rows_year']) ? (int) $GLOBALS['settings_rows_year'] : 0;
+				$add("select count(*) as n from kontoplan where moms = '$ref'", 6463);
+				$add("select count(*) as n from grupper where art in ('DG', 'KG') and (box1 = '$ref' or (art = 'KG' and box6 = '$ref'))" . ($y ? " and fiscal_year = $y" : ''), 6464);
+				break;
+			case 'debtor_group':
+				$add("select count(*) as n from adresser where art = 'D' and cast(gruppe as text) = '$esc'", 6465);
+				break;
+			case 'creditor_group':
+				$add("select count(*) as n from adresser where art = 'K' and cast(gruppe as text) = '$esc'", 6466);
+				break;
+			case 'item_group':
+				$add("select count(*) as n from varer where cast(gruppe as text) = '$esc'", 6427);
+				break;
 		}
 	}
 	return array('count' => $total, 'text' => implode(' · ', $parts));
@@ -217,6 +236,8 @@ function settings_rows_to_raw(array $def, string $value, ?int $year): array
 		case 'code':
 			if ($value !== '' && $def['numeric'] && !preg_match('/^[0-9]+$/', $value)) {
 				$error = 6431;
+			} elseif ($value !== '' && is_array($def['range']) && ((int) $value < $def['range'][0] || (int) $value > $def['range'][1])) {
+				$error = isset($def['range'][2]) ? (int) $def['range'][2] : 6431;
 			}
 			break;
 		case 'decimal':
@@ -250,10 +271,27 @@ function settings_rows_to_raw(array $def, string $value, ?int $year): array
 			}
 			break;
 	}
+	if ($raw === '' && $def['empty_value'] !== null) {
+		$raw = (string) $def['empty_value'];
+	}
 	if ($error === null && $raw === '' && $def['required']) {
 		$error = 6419;
 	}
 	return array('raw' => $raw, 'error' => $error);
+}
+
+/**
+ * Whether a posted cell equals the stored value (decimals compared as numbers: "25" and "25.00" are the same).
+ */
+function settings_rows_same(array $def, string $stored, string $raw): bool
+{
+	if ($def['type'] === 'decimal' && is_numeric($stored) && is_numeric($raw)) {
+		return abs((float) $stored - (float) $raw) < 0.000001;
+	}
+	if ($def['type'] === 'bool') {
+		return (trim($stored) !== '') === ($raw !== '');
+	}
+	return trim($stored) === $raw;
 }
 
 /**
@@ -297,14 +335,32 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 				if ($def['type'] === 'derived') {
 					continue;
 				}
+				if (!$isNew && !isset($cells[$col])) {
+					// Not posted (a disabled control): the stored value stays.
+					$clean[$col] = (string) $current['cells'][$col];
+					continue;
+				}
 				$v = isset($cells[$col]) ? (string) $cells[$col] : '';
 				$conv = settings_rows_to_raw($def, $v, $year);
 				$clean[$col] = $conv['raw'];
 				if ($conv['raw'] !== '' && $def['type'] !== 'bool') {
 					$empty = false;
 				}
-				if ($conv['error'] !== null) {
+				$unchanged = !$isNew && settings_rows_same($def, (string) $current['cells'][$col], $conv['raw']);
+				if ($unchanged) {
+					// A value already stored is not judged again (old data may predate today's rules).
+					$clean[$col] = (string) $current['cells'][$col];
+				} elseif ($conv['error'] !== null) {
 					$rowErrors[$col] = $conv['error'];
+				} elseif (!$isNew && $def['locked_if_used'] && $current['usage'] > 0) {
+					$rowErrors[$col] = 6467;
+				}
+			}
+			foreach ($t['columns'] as $col => $def) {
+				// "requires": when this cell is filled in, another one must be too (batch control needs stock-managed).
+				if (is_array($def['requires']) && !isset($rowErrors[$col]) && isset($clean[$col]) && $clean[$col] !== ''
+					&& (!isset($clean[$def['requires'][0]]) || $clean[$def['requires'][0]] === '')) {
+					$rowErrors[$col] = (int) $def['requires'][1];
 				}
 			}
 			if ($isNew && $empty) {
@@ -333,7 +389,7 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 			} else {
 				$changed = array();
 				foreach ($clean as $col => $raw) {
-					if ((string) $current['cells'][$col] !== $raw) {
+					if (!settings_rows_same($t['columns'][$col], (string) $current['cells'][$col], $raw)) {
 						$changed[$col] = $raw;
 					}
 				}
@@ -354,9 +410,9 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 		if ($step[0] === 'insert') {
 			$cols = array();
 			$vals = array();
-			foreach ($step[2] as $col => $raw) {
+			foreach ($t['defaults'] + $step[2] as $col => $raw) {
 				$cols[] = $col;
-				$vals[] = "'" . db_escape_string($raw) . "'";
+				$vals[] = "'" . db_escape_string((string) (isset($step[2][$col]) && $step[2][$col] !== '' ? $step[2][$col] : $raw)) . "'";
 			}
 			if ($t['kind'] === 'grupper') {
 				$cols[] = 'art';

@@ -21,6 +21,9 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh 4c stage 2: VAT codes (SM/KM/YM/EM per year, code 1-9, usage check, inactive) and VAT report accounts,
+//                  debtor and creditor groups (control account locked while in use, discount shown again, EU zone to all
+//                  years), item groups (box12/box14 left out, box10 kept for Sager/payroll); price groups stay on the old page.
 // 20261005 Sawaneh Phase 4c: sections of 'kind' rows (tables with columns, usage checks, 'exclude', 'code_col',
 //                  'on_save') for departments, projects, warehouses and units & materials; the project number split
 //                  as a field on the PRJ kodenr 0 row.
@@ -171,6 +174,131 @@ if (!function_exists('getSettingsSections')) {
 				'legacy' => array(array(781)), 'old' => array('enheder' => array(781)),
 				'context' => array('lager/varekort.php'),
 				'keywords' => array('enheder', 'units', 'enhed', 'unit', 'materialer', 'materials', 'densitet', 'density'),
+			),
+			'finance.vat' => array(
+				'group' => 'finance', 'section' => 'vat', 'number' => 'G2.2', 'label' => 770, 'icon' => 'bx-receipt', 'kind' => 'rows',
+				'lead' => 6468, 'subsections' => array('sales' => 994, 'purchase' => 996, 'services' => 997, 'goods' => 998, 'report' => 1009),
+				'tables' => array(
+					'sales' => array('sub' => 'sales', 'label' => 994, 'help' => 2247, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'SM'), 'kode' => 'S',
+						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 440, 'type' => 'account', 'required' => true, 'help' => 2245),
+							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
+							'box6' => array('label' => 6471, 'type' => 'text'),
+							'box7' => array('label' => 2995, 'type' => 'select', 'options' => array('' => '–', 'varer' => 110, 'ydelser' => 6501), 'options_mixed' => true),
+						)),
+					'purchase' => array('sub' => 'purchase', 'label' => 996, 'help' => 2431, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'KM'), 'kode' => 'K',
+						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 440, 'type' => 'account', 'required' => true),
+							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
+						)),
+					'services' => array('sub' => 'services', 'label' => 997, 'help' => 2444, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'YM'), 'kode' => 'Y',
+						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 440, 'type' => 'account', 'required' => true, 'help' => 2432),
+							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
+							'box3' => array('label' => 1013, 'type' => 'account', 'help' => 2433),
+						)),
+					'goods' => array('sub' => 'goods', 'label' => 998, 'help' => 2445, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'EM'), 'kode' => 'E',
+						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 440, 'type' => 'account', 'required' => true, 'help' => 2434),
+							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
+							'box3' => array('label' => 1013, 'type' => 'account', 'help' => 2435),
+						)),
+					'report' => array('sub' => 'report', 'label' => 1009, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'MR'), 'kode' => 'R', 'fiscal' => true,
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 903, 'type' => 'account', 'help' => 2436),
+							'box2' => array('label' => 904, 'type' => 'account', 'help' => 2437),
+							'box3' => array('label' => 6473, 'type' => 'account', 'help' => 2438),
+							'box4' => array('label' => 6474, 'type' => 'account', 'help' => 2439),
+						)),
+				),
+				'legacy' => array(array(770)), 'old' => array('moms' => array(770)),
+				'context' => array('finans/moms_periode.php'),
+				'keywords' => array('moms', 'vat', 'momskode', 'momskoder', 'salgsmoms', 'købsmoms', 'momsrapport', 'oss', 'moms-satser', 'momssats', 'rubrik'),
+			),
+			'sales.debtor_groups' => array(
+				'group' => 'sales', 'section' => 'debtor_groups', 'number' => 'G3.1', 'label' => 1008, 'icon' => 'bx-group', 'kind' => 'rows',
+				'lead' => 6505, 'subsections' => array('groups' => 1008),
+				'tables' => array(
+					'groups' => array('sub' => 'groups', 'label' => 1008, 'add' => 6475, 'empty' => 6478, 'storage' => array('grupper', 'DG'), 'kode' => 'D',
+						'fiscal' => true, 'usage' => 'debtor_group', 'inactive' => true, 'propagate' => array('box10'), 'defaults' => array('box3' => 'DKK'),
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 1011, 'type' => 'select', 'options_from' => 'vat_codes_sales', 'options_literal' => true, 'help' => 2447),
+							'box2' => array('label' => 2448, 'type' => 'account', 'required' => true, 'help' => 2449, 'locked_if_used' => 6502),
+							'box3' => array('label' => 776, 'type' => 'select', 'options_from' => 'currencies', 'options_literal' => true, 'empty_value' => 'DKK'),
+							'box4' => array('label' => 801, 'type' => 'select', 'options_from' => 'form_language_names', 'options_literal' => true, 'help' => 1010),
+							'box6' => array('label' => 6481, 'type' => 'decimal', 'help' => 6482),
+							'box8' => array('label' => 6483, 'type' => 'bool', 'help' => 2454),
+							'box9' => array('label' => 2457, 'type' => 'bool', 'help' => 2456),
+							'box10' => array('label' => 6484, 'type' => 'select', 'options' => array('' => '–', 'B2C-EU' => 'B2C EU', 'B2C-UDL' => 'B2C uden for EU', 'B2B-EU' => 'B2B EU', 'B2B-UDL' => 'B2B uden for EU'), 'options_literal' => true),
+						)),
+				),
+				'legacy' => array(array(771)), 'old' => array('debitor' => array(771)),
+				'context' => array('debitor/debitorkort.php', 'debitor/debitor.php'),
+				'keywords' => array('debitorgrupper', 'debtor groups', 'kundegrupper', 'customer groups', 'samlekonto', 'rabat', 'b2b', 'eu-zone', 'oss'),
+			),
+			'purchase.creditor_groups' => array(
+				'group' => 'purchase', 'section' => 'creditor_groups', 'number' => 'G4.1', 'label' => 2458, 'icon' => 'bx-group', 'kind' => 'rows',
+				'lead' => 6506, 'subsections' => array('groups' => 2458),
+				'tables' => array(
+					'groups' => array('sub' => 'groups', 'label' => 2458, 'add' => 6476, 'empty' => 6479, 'storage' => array('grupper', 'KG'), 'kode' => 'K',
+						'fiscal' => true, 'usage' => 'creditor_group', 'inactive' => true, 'propagate' => array('box10'), 'defaults' => array('box3' => 'DKK'),
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 1011, 'type' => 'select', 'options_from' => 'vat_codes_purchase', 'options_literal' => true, 'help' => 2459),
+							'box2' => array('label' => 2448, 'type' => 'account', 'required' => true, 'help' => 2460, 'locked_if_used' => 6502),
+							'box3' => array('label' => 776, 'type' => 'select', 'options_from' => 'currencies', 'options_literal' => true, 'empty_value' => 'DKK'),
+							'box6' => array('label' => 2463, 'type' => 'select', 'options_from' => 'vat_codes_sales', 'options_literal' => true, 'help' => 2462),
+							'box9' => array('label' => 2457, 'type' => 'bool', 'help' => 2465, 'requires' => array('box6', 6500)),
+							'box10' => array('label' => 6484, 'type' => 'select', 'options' => array('' => '–', 'B2B-EU' => 'B2B EU', 'B2B-UDL' => 'B2B uden for EU'), 'options_literal' => true),
+						)),
+				),
+				'legacy' => array(array(771)), 'old' => array('debitor' => array(771)),
+				'context' => array('kreditor/kreditorkort.php', 'kreditor/kreditor.php'),
+				'keywords' => array('kreditorgrupper', 'creditor groups', 'leverandørgrupper', 'supplier groups', 'samlekonto', 'omvendt betalingspligt', 'reverse charge'),
+			),
+			'items.item_groups' => array(
+				'group' => 'items', 'section' => 'item_groups', 'number' => 'G5.1', 'label' => 774, 'icon' => 'bx-category', 'kind' => 'rows',
+				'lead' => 6507, 'subsections' => array('groups' => 774, 'prices' => 6508),
+				'tables' => array(
+					'groups' => array('sub' => 'groups', 'label' => 774, 'add' => 6477, 'empty' => 6480, 'storage' => array('grupper', 'VG'),
+						'fiscal' => true, 'usage' => 'item_group', 'propagate' => array('box5'),
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 6485, 'type' => 'account', 'requires' => array('box2', 6499)),
+							'box2' => array('label' => 6486, 'type' => 'account', 'requires' => array('box1', 6499)),
+							'box3' => array('label' => 6487, 'type' => 'account', 'required' => true),
+							'box4' => array('label' => 6488, 'type' => 'account', 'required' => true),
+							'box5' => array('label' => 6489, 'type' => 'select', 'options' => array('' => '–', 'varer' => 110, 'ydelser' => 6501), 'options_mixed' => true),
+							'box6' => array('label' => 2455, 'type' => 'bool', 'help' => 2466),
+							'box7' => array('label' => 6490, 'type' => 'bool'),
+							'box8' => array('label' => 6491, 'type' => 'bool'),
+							'box9' => array('label' => 6492, 'type' => 'bool', 'requires' => array('box8', 6498)),
+							'box10' => array('label' => 6493, 'type' => 'bool'),
+							'box11' => array('label' => 6494, 'type' => 'account', 'help' => 6496),
+							'box13' => array('label' => 6495, 'type' => 'account', 'help' => 6497),
+						)),
+				),
+				'legacy' => array(array(774)), 'old' => array('varer' => array(774)),
+				'context' => array('lager/varekort.php', 'lager/varer.php'),
+				'keywords' => array('varegrupper', 'item groups', 'product groups', 'varekøb', 'varesalg', 'lagerført', 'batch', 'momsfri', 'omvendt betalingspligt'),
 			),
 			'integrations.pickup' => array(
 				'group' => 'integrations', 'section' => 'pickup', 'number' => 'G9.2', 'label' => 6379, 'icon' => 'bx-map-pin', 'kind' => 'list',
@@ -655,6 +783,12 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'POS', 'omv_menu', 'onOff'), 'legacy' => $pos),
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
+
+			// ---------------------------------------------------------------- 4c: links for what stays on the old pages for now
+			'sales.debtor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
+			'purchase.creditor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
+			'items.item_groups.price_groups' => array('sub' => 'prices', 'type' => 'link', 'label' => 6508, 'help' => 6509, 'href' => 'syssetup.php?valg=varer', 'button' => 6504, 'audit' => false,
+				'keywords' => array('prisgrupper', 'price groups', 'tilbudsgrupper', 'rabatgrupper')),
 
 			// ---------------------------------------------------------------- G7.3 Projects: the number split that was the kodenr 0 row of projekter.php
 			'organisation.projects.number_split' => array('sub' => 'setup', 'type' => 'text', 'label' => 1251, 'help' => 6406,
@@ -1246,12 +1380,12 @@ if (!function_exists('getSettingsSections')) {
 	{
 		$d = 782; // "Diverse"
 		return array(
-			array('old' => array(770), 'to' => array(array('finance', null, 'syssetup.php?valg=moms'))),
-			array('old' => array(771), 'to' => array(array('sales', null, 'syssetup.php?valg=debitor'), array('purchase', null, 'syssetup.php?valg=debitor'))),
+			array('old' => array(770), 'to' => array(array('finance', 'finance.vat', null))),
+			array('old' => array(771), 'to' => array(array('sales', 'sales.debtor_groups', null), array('purchase', 'purchase.creditor_groups', null))),
 			array('old' => array(772), 'to' => array(array('organisation', 'organisation.departments', null))),
 			array('old' => array(773), 'to' => array(array('organisation', 'organisation.projects', null))),
 			array('old' => array(608), 'to' => array(array('items', 'items.warehouses', null))),
-			array('old' => array(774), 'to' => array(array('items', null, 'syssetup.php?valg=varer'), array('sales', null, 'syssetup.php?valg=varer'))),
+			array('old' => array(774), 'to' => array(array('items', 'items.item_groups', null), array('sales', null, 'syssetup.php?valg=varer'))),
 			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
 			array('old' => array(776), 'to' => array(array('finance', null, 'valuta.php'))),
 			array('old' => array(778), 'to' => array(array('company', null, 'regnskabsaar.php'))),
