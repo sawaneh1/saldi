@@ -21,6 +21,9 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh 4d G1.1 Stamdata as a generated section on the company address row (no notes/kontonr overwrite,
+//                  no double escaping, country always shown but changed only with settings.company.danger); employees
+//                  stay on the old page until G7.1.
 // 20261005 Sawaneh 4c stage 2: VAT codes (SM/KM/YM/EM per year, code 1-9, usage check, inactive) and VAT report accounts,
 //                  debtor and creditor groups (control account locked while in use, discount shown again, EU zone to all
 //                  years), item groups (box12/box14 left out, box10 kept for Sager/payroll); price groups stay on the old page.
@@ -104,6 +107,14 @@ if (!function_exists('getSettingsSections')) {
 				'old' => array('div_valg' => array(782, 794), 'orediff' => array(782, 170), 'betalinger' => array(2732)),
 				'context' => array('finans/kassekladde.php', 'debitor/betalingsliste.php', 'kreditor/betalingsliste.php'),
 				'keywords' => array('kassekladde', 'cash journal', 'betalingsliste', 'payment list', 'betalingsfrist', 'payment days', 'øredifferencer', 'rounding', 'bilagsnummer', 'voucher'),
+			),
+			// ---- 4d standalone pages
+			'company.data' => array(
+				'group' => 'company', 'section' => 'data', 'number' => 'G1.1', 'label' => 779, 'icon' => 'bx-buildings',
+				'subsections' => array('company' => 6520, 'contact' => 6522, 'bank' => 6521, 'gdpr' => 6523),
+				'legacy' => array(array(779)), 'old' => array('stamkort' => array(779)),
+				'context' => array('debitor/ordre.php'),
+				'keywords' => array('stamdata', 'firmanavn', 'company name', 'adresse', 'cvr', 'bank', 'iban', 'swift', 'betalingsservice', 'bs', 'fi', 'gdpr', 'databehandleraftale', 'landekonfiguration'),
 			),
 			// ---- 4c master data (row editor, spec §8.2)
 			'organisation.departments' => array(
@@ -784,6 +795,34 @@ if (!function_exists('getSettingsSections')) {
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
 
+			// ---------------------------------------------------------------- G1.1 Company data (the company's own address row, art S)
+			'company.data.name' => array('sub' => 'company', 'type' => 'text', 'label' => 28, 'storage' => array('adresser', 'firmanavn'), 'validate' => array('required'), 'maxlength' => 90, 'legacy' => array(779)),
+			'company.data.address1' => array('sub' => 'company', 'type' => 'text', 'label' => 648, 'storage' => array('adresser', 'addr1'), 'maxlength' => 60, 'legacy' => array(779)),
+			'company.data.address2' => array('sub' => 'company', 'type' => 'text', 'label' => 649, 'storage' => array('adresser', 'addr2'), 'maxlength' => 60, 'legacy' => array(779)),
+			'company.data.zip' => array('sub' => 'company', 'type' => 'text', 'label' => 36, 'storage' => array('adresser', 'postnr'), 'maxlength' => 10, 'legacy' => array(779)),
+			'company.data.city' => array('sub' => 'company', 'type' => 'text', 'label' => 46, 'storage' => array('adresser', 'bynavn'), 'maxlength' => 60, 'legacy' => array(779)),
+			'company.data.cvr' => array('sub' => 'company', 'type' => 'text', 'label' => 376, 'storage' => array('adresser', 'cvrnr'), 'maxlength' => 15, 'legacy' => array(779)),
+			'company.data.country' => array('sub' => 'company', 'type' => 'select', 'label' => 6513, 'help' => 6514, 'default' => 'Denmark', 'permission' => 'settings.company.danger',
+				'options' => array('Denmark' => 'Danmark', 'Norway' => 'Norge', 'Switzerland' => 'Schweiz'), 'options_literal' => true, 'storage' => array('adresser', 'land'), 'legacy' => array(779)),
+			'company.data.phone' => array('sub' => 'contact', 'type' => 'text', 'label' => 37, 'storage' => array('adresser', 'tlf'), 'maxlength' => 60, 'legacy' => array(779)),
+			'company.data.mobile' => array('sub' => 'contact', 'type' => 'text', 'label' => 378, 'storage' => array('adresser', 'mobile'), 'maxlength' => 15, 'legacy' => array(779)),
+			'company.data.email' => array('sub' => 'contact', 'type' => 'email', 'label' => 52, 'storage' => array('adresser', 'email'), 'maxlength' => 60, 'on_save' => 'company_email', 'legacy' => array(779)),
+			'company.data.copy_to_ref' => array('sub' => 'contact', 'type' => 'bool', 'label' => 6512, 'help' => 1880, 'default' => false, 'storage' => array('adresser', 'mailfakt', 'onEmpty'), 'legacy' => array(779)),
+			'company.data.bank_name' => array('sub' => 'bank', 'type' => 'text', 'label' => 662, 'storage' => array('adresser', 'bank_navn'), 'maxlength' => 60, 'legacy' => array(779)),
+			'company.data.bank_reg' => array('sub' => 'bank', 'type' => 'text', 'label' => 2227, 'storage' => array('adresser', 'bank_reg'), 'maxlength' => 15, 'legacy' => array(779)),
+			'company.data.bank_account' => array('sub' => 'bank', 'type' => 'text', 'label' => 592, 'storage' => array('adresser', 'bank_konto'), 'maxlength' => 15, 'legacy' => array(779)),
+			'company.data.iban' => array('sub' => 'bank', 'type' => 'text', 'label' => 'IBAN', 'help' => 3367, 'storage' => array('adresser', 'iban'), 'maxlength' => 40, 'legacy' => array(779)),
+			'company.data.swift' => array('sub' => 'bank', 'type' => 'text', 'label' => 2228, 'help' => 3367, 'storage' => array('adresser', 'swift'), 'maxlength' => 15, 'legacy' => array(779)),
+			'company.data.bs_number' => array('sub' => 'bank', 'type' => 'text', 'label' => 385, 'storage' => array('adresser', 'pbs_nr'), 'maxlength' => 15, 'legacy' => array(779), 'keywords' => array('betalingsservice', 'pbs', 'kreditornummer')),
+			'company.data.bs_type' => array('sub' => 'bank', 'type' => 'select', 'label' => 6517, 'default' => '', 'options' => array('' => 2486, 'B' => 2485, 'L' => 2487),
+				'storage' => array('adresser', 'pbs'), 'legacy' => array(779), 'visible_if' => array('setting_set', 'company.data.bs_number')),
+			'company.data.bs_group' => array('sub' => 'bank', 'type' => 'select', 'label' => 6518, 'default' => '', 'options_from' => 'debtor_groups', 'options_literal' => true,
+				'storage' => array('adresser', 'gruppe'), 'legacy' => array(779), 'visible_if' => array('setting_set', 'company.data.bs_number')),
+			'company.data.fi_number' => array('sub' => 'bank', 'type' => 'text', 'label' => 'FI', 'storage' => array('adresser', 'bank_fi'), 'maxlength' => 15, 'legacy' => array(779), 'keywords' => array('fi kreditornummer', 'fi-kort')),
+			'company.data.gdpr_contact' => array('sub' => 'gdpr', 'type' => 'email', 'label' => 6519, 'storage' => array('adresser', 'kontakt'), 'maxlength' => 60, 'legacy' => array(779)),
+			'company.data.dpa' => array('sub' => 'gdpr', 'type' => 'link', 'label' => 2484, 'href' => 'https://saldi.dk/dok/saldi_gdpr_20180525.pdf', 'button' => 6515, 'blank' => true, 'audit' => false),
+			'company.data.employees' => array('sub' => 'gdpr', 'type' => 'link', 'label' => 1262, 'help' => 6516, 'href' => 'stamkort.php?ansatte=1', 'button' => 6504, 'audit' => false),
+
 			// ---------------------------------------------------------------- 4c: links for what stays on the old pages for now
 			'sales.debtor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
 			'purchase.creditor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
@@ -1389,7 +1428,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
 			array('old' => array(776), 'to' => array(array('finance', null, 'valuta.php'))),
 			array('old' => array(778), 'to' => array(array('company', null, 'regnskabsaar.php'))),
-			array('old' => array(779), 'to' => array(array('company', null, 'stamkort.php'))),
+			array('old' => array(779), 'to' => array(array('company', 'company.data', null))),
 			array('old' => array(780), 'to' => array(array('documents', null, 'formularkort.php?valg=formularer'))),
 			array('old' => array(781), 'to' => array(array('items', 'items.units', null))),
 			array('old' => array($d, 783), 'to' => array(array('company', null, 'diverse.php?sektion=kontoindstillinger'), array('documents', 'documents.email', null))),

@@ -25,6 +25,7 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.2): one service that reads and writes a
 //                  setting through its registry definition. The registry points at the EXISTING
 //                  storage (grupper box / settings row), so every current reader keeps working.
+// 20261005 Sawaneh G1.1: the company address row is created by the first saved field when a ledger has none.
 // 20261005 Sawaneh 4c: auditRow() for master-data rows; the history includes row events.
 // 20261004 Sawaneh G10.5: storage 'dbrow' = a column of any table's row (table_pages), scope 'row' = its id.
 // 20261004 Sawaneh G10.1: a joined list ('join' + 'index') may also live in a settings row (postEachSale); scope 'pos' takes its
@@ -411,9 +412,11 @@ class SettingsService
 			unset(self::$grupper[$ck]);
 		} elseif ($st['table'] === 'adresser') {
 			if (!self::$company) {
-				return false;
+				// A new ledger has no company row yet (G1.1): the first saved field creates it.
+				db_modify("insert into adresser (art, kontonr, " . $st['column'] . ") values ('S', '0', '$esc')", __FILE__ . " linje " . __LINE__);
+			} else {
+				db_modify("update adresser set " . $st['column'] . " = '$esc' where id = " . (int) self::$company['id'], __FILE__ . " linje " . __LINE__);
 			}
-			db_modify("update adresser set " . $st['column'] . " = '$esc' where id = " . (int) self::$company['id'], __FILE__ . " linje " . __LINE__);
 			self::$company = null;
 		} elseif ($st['table'] === 'formularer') {
 			$row = self::feeRow($key, $st, $scopeId);

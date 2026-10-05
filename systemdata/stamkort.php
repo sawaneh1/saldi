@@ -60,6 +60,12 @@ if ($menu=='T') {  # 20150331 start
 }  # 20150331 stop
 
 
+// 20261005 Sawaneh The company data live in Indstillinger » Virksomhed » Stamdata (settings redesign G1.1); this page keeps
+//                  only the employees' order until G7.1. The company fields below are no longer written from here.
+if (empty($_GET['ansatte']) && empty($_POST['ansatte'])) {
+	header("Location: settingsSection.php?s=company.data&moved=stamkort");
+	exit;
+}
 if (!isset ($notes)) $notes = NULL;
 $id=$email=$firmanavn=$addr1=$addr2=$postnr=$bynavn=$bank_navn=$kontakt=$cvrnr=$tlf=$mobile=$pbs_nr=$fi_nr=$bank_reg=$bank_konto=$countryConfig=NULL;
 $swift=$iban='';
@@ -94,42 +100,13 @@ if ($_POST) {
 	$gruppe=(int)if_isset($_POST['gruppe'],0);
 	$fi_nr=trim($_POST['fi_nr']);
 	if ($postnr && !$bynavn) $bynavn=bynavn($postnr);
-	if ($id==0) {
-		$qtxt = "insert into adresser"; $qtxt.="(kontonr,firmanavn,addr1,addr2,postnr,bynavn, land,tlf,mobile,cvrnr,art,bank_navn,bank_reg,bank_konto,swift,iban,";
-		$qtxt.= "email,mailfakt,pbs_nr,pbs,bank_fi,gruppe,kontakt)";
-		$qtxt.= "values"; $qtxt.="('$kontonr','$firmanavn','$addr1','$addr2','$postnr','$bynavn',"; $qtxt.="'$country','$tlf','$mobile','$cvrnr','S','$bank_navn','$bank_reg','$bank_konto',";
-		$qtxt.= "'". db_escape_string($swift) ."','". db_escape_string($iban) ."',";
-		$qtxt.= "'$ny_email','$mailfakt','$pbs_nr','$pbs','$fi_nr','$gruppe','$kontakt')";
-		db_modify($qtxt,__FILE__ . " linje " . __LINE__);
-		$qtxt = "select id from adresser where art = 'S'";
-		$r    = db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__));
-		$id   = $r['id'];
-	}	elseif ($id > 0) {
-		$qtxt = "update adresser set kontonr = '$kontonr',firmanavn = '". db_escape_string($firmanavn) ."',";
-		$qtxt.= "addr1 = '". db_escape_string($addr1) ."',addr2 = '". db_escape_string($addr2) ."',";
-		$qtxt.= "postnr = '". db_escape_string($postnr) ."',land = '". db_escape_string($country) ."',";
-		$qtxt.= "bynavn = '". db_escape_string($bynavn) ."',tlf = '". db_escape_string($tlf) ."',mobile = '". db_escape_string($mobile) ."',";
-		$qtxt.= "cvrnr = '". db_escape_string($cvrnr) ."',bank_navn='". db_escape_string($bank_navn) ."',";
-		$qtxt.= "bank_reg='". db_escape_string($bank_reg) ."',bank_konto='". db_escape_string($bank_konto) ."',";
-		$qtxt.= "swift='". db_escape_string($swift) ."',iban='". db_escape_string($iban) ."',";
-		$qtxt.= "email='". db_escape_string($ny_email) ."',mailfakt='". db_escape_string($mailfakt) ."',";
-		$qtxt.= "notes = '". db_escape_string($notes) ."',pbs_nr='". db_escape_string($pbs_nr) ."',pbs='". db_escape_string($pbs) ."',";
-		$qtxt.= "bank_fi='". db_escape_string($fi_nr) ."',gruppe='$gruppe',kontakt='". db_escape_string($kontakt) ."'";
-		$qtxt.= " where art = 'S'";
-		db_modify($qtxt,__FILE__ . " linje " . __LINE__);
+	if ($id > 0) {
 		for ($x=1; $x<=$ans_ant; $x++) {
-			if (($posnr[$x])&&($posnr[$x]!='-')&&($ans_id[$x])){db_modify("update ansatte set posnr = '$posnr[$x]' where id = '$ans_id[$x]'",__FILE__ . " linje " . __LINE__);}
-			elseif($ans_id[$x]){ db_modify("delete from ansatte where id = '$ans_id[$x]'",__FILE__ . " linje " . __LINE__);}
+			if (($posnr[$x])&&($posnr[$x]!='-')&&($ans_id[$x])){db_modify("update ansatte set posnr = '" . (int) $posnr[$x] . "' where id = '" . (int) $ans_id[$x] . "'",__FILE__ . " linje " . __LINE__);}
 		}
 		for ($x=1; $x<=$lukket_ant; $x++) {
-			if (($posnr[$x])&&($ans_id[$x])){db_modify("update ansatte set posnr = '$posnr[$x]' where id = '$ans_id[$x]'",__FILE__ . " linje " . __LINE__);}
-			elseif($ans_id[$x]){ db_modify("delete from ansatte where id = '$ans_id[$x]'",__FILE__ . " linje " . __LINE__);}
+			if (($posnr[$x])&&($ans_id[$x])){db_modify("update ansatte set posnr = '" . (int) $posnr[$x] . "' where id = '" . (int) $ans_id[$x] . "'",__FILE__ . " linje " . __LINE__);}
 		}
-	}
-	if ($email!=$ny_email) {
-		include("../includes/connect.php");
-		db_modify("update regnskab set email='$ny_email' where db='$db'",__FILE__ . " linje " . __LINE__); 
-		include("../includes/online.php");
 	}
 }
 
@@ -167,7 +144,7 @@ if (!isset($gruppe)) $gruppe=1;
 while(strlen($gruppe)<5) $gruppe='0'.$gruppe; 
 #	$id=0;
 
-print "<form name=stamkort action=stamkort.php method=post>";
+print "<form name=stamkort action=stamkort.php?ansatte=1 method=post><input type='hidden' name='ansatte' value='1'>";
 print "<input TYPE = 'HIDDEN' NAME = 'thisDb' VALUE = '$db'>";
 print "<tr><td valign=\"top\">\n"; # 20150331
 print "<table border=\"0\" cellspacing=\"0\" class=\"dataTable\"><tbody>"; # 20150331

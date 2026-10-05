@@ -302,6 +302,9 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 			}
 			break;
 		case 'text':
+			if (!empty($def['maxlength']) && mb_strlen($value) > (int) $def['maxlength']) {
+				$error = 6511;
+			}
 			if (!empty($def['ensure_suffix']) && $value !== '' && substr($value, -strlen($def['ensure_suffix'])) !== $def['ensure_suffix']) {
 				$raw = $value . $def['ensure_suffix'];
 			}
@@ -462,6 +465,13 @@ function st_options(array $def): array
 			$cache[$from] = array('' => '');
 			foreach (settings_form_languages() as $name) {
 				$cache[$from][$name] = $name;
+			}
+		} elseif ($from === 'debtor_groups') {
+			global $regnaar;
+			$cache[$from] = array('' => '');
+			$q = db_select("select kodenr, beskrivelse from grupper where art = 'DG' and fiscal_year = " . (int) $regnaar . " order by length(cast(kodenr as text)), cast(kodenr as text)", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$cache[$from][(string) (int) $r['kodenr']] = (int) $r['kodenr'] . ' ' . trim((string) $r['beskrivelse']);
 			}
 		} elseif ($from === 'tables') {
 			// POS/2 box7 holds the table names; a till stores the table's place in that list.
@@ -687,7 +697,10 @@ function st_render_field(array $def, array $state): void
     <input type="hidden"<?= $nameAttr ?> value="<?= st_h($value) ?>" data-control>
 	<?php } elseif ($def['type'] === 'select') { ?>
     <select class="st-input st-select" id="<?= $id ?>"<?= $nameAttr ?> data-control<?= $disabled ? ' disabled' : '' ?><?= $invalid ?>>
-		<?php foreach (st_options($def) as $optValue => $optLabel) { ?>
+		<?php $selOptions = st_options($def); if (!array_key_exists($value, $selOptions)) { ?>
+      <option value="<?= st_h($value) ?>" selected><?= st_h($value) ?></option>
+		<?php } ?>
+		<?php foreach ($selOptions as $optValue => $optLabel) { ?>
       <option value="<?= st_h($optValue) ?>"<?= ((string) $optValue === $value) ? ' selected' : '' ?>><?= st_option_label($def, $optLabel) ?></option>
 		<?php } ?>
     </select>
@@ -746,7 +759,7 @@ function st_render_field(array $def, array $state): void
 			$mode = ' inputmode="numeric" placeholder="dd-mm-' . date('Y') . '"';
 		}
 		?>
-    <input class="st-input<?= $short ?>" type="<?= $type ?>" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>"<?= $mode ?> data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>>
+    <input class="st-input<?= $short ?>" type="<?= $type ?>" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>"<?= $mode ?><?= !empty($def['maxlength']) ? ' maxlength="' . (int) $def['maxlength'] . '"' : '' ?> data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>>
 		<?php if (isset($def['unit'])) { ?><span class="st-unit"><?= st_h(st_unit($def)) ?></span><?php } ?>
 	<?php } ?>
 	<?php if (!in_array($def['type'], array('secret', 'info', 'link', 'mini'), true)) { ?>

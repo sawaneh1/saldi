@@ -6114,3 +6114,17 @@
 6507	Varegruppernes konti for køb, salg og lager. Gælder pr. regnskabsår.	The item groups' accounts for purchases, sales and stock. Per fiscal year.	Varegruppenes kontoer for kjøp, salg og lager. Gjelder per regnskapsår.
 6508	Prisgrupper, tilbudsgrupper og rabatgrupper	Price groups, offer groups and discount groups	Prisgrupper, tilbudsgrupper og rabattgrupper
 6509	Ligger indtil videre på den gamle side	Remain on the old page for now	Ligger foreløpig på den gamle siden
+6510	Virksomhedens navn, adresse, CVR, kontakt og bank. Bruges på fakturaer, i e-fakturaer og i Betalingsservice.	The company's name, address, CVR, contact and bank. Used on invoices, in e-invoices and in Betalingsservice.	Firmaets navn, adresse, org.nr., kontakt og bank. Brukes på fakturaer, i e-fakturaer og i Betalingsservice.
+6511	Teksten er for lang	The text is too long	Teksten er for lang
+6512	Kopi af ordremails til sælger	Copy of order e-mails to the salesperson	Kopi av ordre-e-poster til selger
+6513	Landekonfiguration	Country configuration	Landkonfigurasjon
+6514	Styrer moms- og rapportregler. Ændres kun af Saldi.	Controls VAT and report rules. Changed only by Saldi.	Styrer mva- og rapportregler. Endres bare av Saldi.
+6515	Åbn databehandleraftalen	Open the data-processing agreement	Åpne databehandleravtalen
+6516	Ansattes rækkefølge og kontaktoplysninger ligger indtil videre på den gamle Stamdata-side	The employees' order and contact details remain on the old Master data page for now	Ansattes rekkefølge og kontaktopplysninger ligger foreløpig på den gamle Stamdata-siden
+6517	BS-løsning	BS type	BS-løsning
+6518	BS-debitorgruppe	BS debtor group	BS-debitorgruppe
+6519	E-mail til dataansvarlig	E-mail of the data controller	E-post til behandlingsansvarlig
+6520	Virksomhed	Company	Firma
+6521	Bank og betaling	Bank and payment	Bank og betaling
+6522	Kontakt	Contact	Kontakt
+6523	Persondata	Personal data	Persondata

@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh G1.1: company e-mail mirrored to the master database's regnskab row through db_modify(..., true).
 // 20261004 Sawaneh §8.13 settings_impact_text(): the number of items an action touches.
 // 20261004 Sawaneh G9.2: pickup addresses added and deleted here (the old page deleted every address missing from its form, B-D17).
 // 20261004 Sawaneh G10 batch B: payment card rows (add, move, remove across the seven tab-joined lists), KDS colour
@@ -429,6 +430,11 @@ function settings_after_section_save(): void
  */
 function settings_after_save(array $def, string $raw): void
 {
+	if ($def['on_save'] === 'company_email') {
+		// The master database keeps a copy of the ledger's e-mail (regnskab.email), as the old Stamdata page did.
+		global $db;
+		db_modify("update regnskab set email = '" . db_escape_string($raw) . "' where db = '" . db_escape_string((string) $db) . "'", __FILE__ . " linje " . __LINE__, true);
+	}
 	if ($def['on_save'] === 'kds_colours') {
 		$GLOBALS['settings_deferred']['kds_colours'] = true;
 	}
