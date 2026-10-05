@@ -57,6 +57,7 @@
 // 20260313 Sawaneh SD-420 Added ordre_email and ordre_tlf to form dropdown
 // 20260313 Sawaneh SD-427 Default background shown as Standard/Default instead of Dansk
 // 20260529 CL/PHR Rettet: manglende xa-records (mailtekst/bilag) for art=5 oprettes nu automatisk ved visning
+// 20261005 Sawaneh G6.2: background create/delete (nyt_sprog, slet_sprog) moved to Indstillinger » Dokumenter » Baggrunde.
 // 20260604 LOE Added 'Performed by' to form dropdown..to be translated later when needed.
 // 20260710 SZ Added Settings search box (settingsSearch.php/.js/.css)
 // 20260911 CDX/LH SD-186 Use the Danish Udført af label for the invoice field.
@@ -94,7 +95,14 @@ if (isset($_GET['upload']) && $_GET['upload']) {
 }
 */
 if (isset($_GET['nyt_sprog']) && $_GET['nyt_sprog']) {
-	$nyt_sprog = $_GET['nyt_sprog'];
+	// G6.2: backgrounds are created and deleted in the settings section (with a usage check).
+	$bgUrl = 'settingsSection.php?s=documents.backgrounds&moved=formularsprog';
+	if (!headers_sent()) {
+		header("Location: $bgUrl");
+	} else {
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=$bgUrl\">";
+	}
+	exit;
 }
 $id        = if_isset($_GET['id']);
 $returside = nav_back_url((isset($_GET['returside']) && $_GET['returside']) ? $_GET['returside'] : null);
@@ -102,30 +110,7 @@ $navn      = if_isset($_GET['navn']);
 
 if (isset($_POST) && $_POST) {
 
-       ######
-		if (isset($_POST['slet_sprog']) && $_POST['slet_sprog']) {
-			$slet_sprog = db_escape_string((string) if_isset($_POST['slet_sprog']));
-			
-			// Don't allow deleting "Dansk"
-			if ($slet_sprog != 'Dansk') {
-				// Delete from formularer table
-				db_modify("delete from formularer where sprog = '$slet_sprog'",__FILE__ . " linje " . __LINE__);
-				
-				// Delete from grupper table
-				db_modify("delete from grupper where art = 'VSPR' and box1 = '$slet_sprog'",__FILE__ . " linje " . __LINE__);
-				
-				// Show confirmation message
-				print "<BODY onLoad=\"javascript:alert('$slet_sprog has been deleted!')\">";
-				
-				// Refresh the page
-				print "<meta http-equiv=\"refresh\" content=\"0;URL=formularkort.php?nyt_sprog=yes\">";
-				exit;
-			} else {
-				$cannot_delete_default = str_replace('Dansk', bg_display_name('Dansk'), findtekst('2516|Dansk kan ikke slettes', $sprog_id));
-				print "<BODY onLoad=\"javascript:alert('" . $cannot_delete_default . ".')\">";
-			}
-		}
-	   #####
+	// 20261005 Sawaneh G6.2: deleting a background (slet_sprog, audit K1) is done in Indstillinger » Dokumenter » Baggrunde.
 
 
 	if ($nyt_sprog) {

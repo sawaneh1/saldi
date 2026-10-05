@@ -6271,3 +6271,17 @@
 6666	Erstatter kontoplanen for det nyeste regnskabsår.	Replaces the chart of accounts of the latest fiscal year.	Erstatter kontoplanen for det nyeste regnskapsåret.
 6667	Der er ikke taget en sikkerhedskopi her endnu	No backup has been taken here yet	Det er ikke tatt noen sikkerhetskopi her ennå
 6668	Hent	Download	Last ned
+6671	Baggrunde	Backgrounds	Bakgrunner
+6672	Formularernes baggrunde (sprog) og de PDF-filer, der bruges som brevpapir og bilag	The forms' backgrounds (languages) and the PDF files used as letterhead and attachments	Skjemaenes bakgrunner (språk) og PDF-filene som brukes som brevpapir og vedlegg
+6673	Baggrunds- og bilagsfiler	Background and attachment files	Bakgrunns- og vedleggsfiler
+6674	Standard (Dansk) findes altid. En baggrund kan vælges på kunder, leverandører og ordrer.	The default (Danish) always exists. A background can be chosen on customers, suppliers and orders.	Standard (dansk) finnes alltid. En bakgrunn kan velges på kunder, leverandører og ordrer.
+6675	Tilføj baggrund	Add background	Legg til bakgrunn
+6676	Kun standardbaggrunden findes	Only the default background exists	Bare standardbakgrunnen finnes
+6677	Navnet kan ikke ændres bagefter, fordi formularerne bruger det.	The name cannot be changed later because the forms use it.	Navnet kan ikke endres senere fordi skjemaene bruker det.
+6678	Kopiér fra	Copy from	Kopier fra
+6679	Den baggrund, hvis formularer kopieres til den nye.	The background whose forms are copied to the new one.	Bakgrunnen som skjemaene kopieres fra.
+6680	Upload PDF-baggrunde for tilbud, ordrer og fakturaer og PDF-bilag til mails - pr. baggrund og afdeling.	Upload PDF backgrounds for quotes, orders and invoices and PDF attachments for e-mails - per background and department.	Last opp PDF-bakgrunner for tilbud, ordrer og fakturaer og PDF-vedlegg til e-post - per bakgrunn og avdeling.
+6681	Åbn	Open	Åpne
+6682	%s kunder og leverandører	%s customers and suppliers	%s kunder og leverandører
+6683	Dansk er standardbaggrunden og findes altid	Danish is the default background and always exists	Dansk er standardbakgrunnen og finnes alltid
+6684	Navnet er allerede i brug	The name is already in use	Navnet er allerede i bruk

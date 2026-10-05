@@ -470,6 +470,9 @@ function settings_rows_derived_extra(string $name, array $row): ?string
 
 function settings_rows_forbidden(string $rule, string $raw): bool
 {
+	if ($rule === 'default_background') {
+		return strcasecmp(trim($raw), 'Dansk') === 0;
+	}
 	return $rule === 'base_currency' && strtoupper(trim($raw)) === settings_base_currency();
 }
 
@@ -515,6 +518,28 @@ function settings_rows_confirm_lines(string $hook, array $t, array $step): array
 
 function settings_rows_before_row(string $hook, array $t, array $step): void
 {
+	if ($hook === 'background_create' && $step[0] === 'insert') {
+		// G6.2: a new background gets a copy of every form line of its template, as the old formularkort.php did.
+		$name = trim((string) $step[2]['box1']);
+		$template = isset($step[2]['template']) && trim((string) $step[2]['template']) !== '' ? trim((string) $step[2]['template']) : 'Dansk';
+		$nameEsc = db_escape_string($name);
+		if ($name === '' || settings_fy_count("select count(*) as n from formularer where lower(sprog) = lower('$nameEsc')")) {
+			return;
+		}
+		$cols = settings_fy_columns('formularer', array('id', 'sprog'));
+		$r = db_fetch_array(db_select("select coalesce(max(id), 0) as m from formularer", __FILE__ . " linje " . __LINE__));
+		$next = (int) $r['m'] + 1;
+		$q = db_select("select id from formularer where sprog = '" . db_escape_string($template) . "' order by id", __FILE__ . " linje " . __LINE__);
+		$ids = array();
+		while ($row = db_fetch_array($q)) {
+			$ids[] = (int) $row['id'];
+		}
+		foreach ($ids as $id) {
+			db_modify("insert into formularer (id, sprog, " . implode(', ', $cols) . ") select $next, '$nameEsc', " . implode(', ', $cols) . " from formularer where id = $id", __FILE__ . " linje " . __LINE__);
+			$next++;
+		}
+		return;
+	}
 	if ($hook === 'currency_rate') {
 		$effect = settings_currency_step_effect($t, $step);
 		settings_currency_book($effect, $effect['date']);
@@ -523,6 +548,13 @@ function settings_rows_before_row(string $hook, array $t, array $step): void
 
 function settings_rows_on_delete(string $hook, array $t, array $row): void
 {
+	if ($hook === 'background_delete') {
+		$name = trim((string) $row['cells']['box1']);
+		if ($name !== '' && strcasecmp($name, 'Dansk') !== 0) {
+			db_modify("delete from formularer where sprog = '" . db_escape_string($name) . "'", __FILE__ . " linje " . __LINE__);
+		}
+		return;
+	}
 	if ($hook === 'fiscal_year_empty') {
 		$k = (int) $row['raw']['kodenr'];
 		db_modify("delete from kontoplan where regnskabsaar = $k", __FILE__ . " linje " . __LINE__);

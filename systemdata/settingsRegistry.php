@@ -57,7 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
-// 20261005 Sawaneh 4d: Import & eksport and Sikkerhedskopi (G11) open their new sections.
+// 20261005 Sawaneh 4d: Baggrunde (G6.2) added; Import & eksport and Sikkerhedskopi (G11) open their new sections.
 // 20261005 Sawaneh 4d: Valuta, Regnskabsår and Ansatte open their new sections; Abonnement & konto (G1.4) only on hosted servers.
 // 20261005 Sawaneh 4d: Sprog opens Lokalisering (company.localisation); Persondata (company.gdpr) added.
 // 20261005 Sawaneh 4d: Stamdata opens the generated company.data section.
@@ -101,6 +101,8 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('gdpr', 'persondata', 'personal data', 'inaktive kunder', 'inactive customers', 'oprydning')),
 			array('key' => 'ansatte',          'group' => 'organisation', 'url' => 'settingsSection.php?s=organisation.employees', 'section' => 'organisation.employees', 'category' => 'company', 'textId' => 1262,
 				'keywords' => array('employee record','staff record','new employee','edit employee','employee number','employee name','employee address','employee email','employee phone','employee mobile','salary','payroll','extra salary','cpr number','social security number','initials','pos code','employee department','employee background','employee language','employee bank account','employee notes','employee start date','employee end date','terminate employee','close employee','ansatte','løn','cprnr','initialer','startdato','slutdato','lønn')),
+			array('key' => 'baggrunde',        'group' => 'documents', 'url' => 'settingsSection.php?s=documents.backgrounds', 'section' => 'documents.backgrounds', 'category' => 'documents', 'textId' => 6671,
+				'keywords' => array('baggrund', 'baggrunde', 'formularsprog', 'background', 'logo', 'brevpapir', 'bilag', 'pdf')),
 			array('key' => 'formularer',       'group' => 'documents', 'url' => 'formularkort.php?valg=formularer', 'category' => 'documents', 'textId' => 780,
 				'keywords' => array('order layout','order confirmation layout','invoice layout','invoice template','invoice design','quote layout','offer layout','credit note layout','packing slip layout','delivery note layout','reminder letter template','dunning letter','pick list layout','picking list layout','requisition layout','purchase order layout','purchase invoice layout','account card layout','document template','form editor','form design','logo position','logo upload','print layout','template design','background name','ordrebekræftelse layout','fakturadesign','tilbud skabelon','rykker skabelon','følgeseddel layout','plukliste layout','kontokort layout','reminder fee','interest rate on reminders','mail text for invoice','email text template','move text position','text position on form','line and border design','font size on form',
 					'skjemaer','ordrebekreftelse','kredittnota','påminnelse','påminnelsesmal','plukkliste','kjøpsforslag','rekvisisjon','kjøpsfaktura','bestillingslinjer','e-post tekst')),

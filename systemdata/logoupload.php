@@ -37,6 +37,8 @@
 // 20260320 PHR cleanup (pdftk)
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20260928 Sawaneh Security 4.0 (A3/A8): file-name whitelist for upload and delete, $modulnr gate.
+// 20261005 Sawaneh Settings redesign G6.2: real admin check for departments (L1), PDF recognised by content (L4), the page
+//                  is shown again after an upload and pdf2ps runs with escaped arguments (L6). Reached from Baggrunde.
 session_start();
 $s_id=session_id();
 $css="../css/standard.css";
@@ -71,7 +73,8 @@ function bg_display_name($sprog_value) {
 // Get current user info
 global $bruger_id;
 
-$is_admin = 1;
+// G6.2 (audit L1): administrators (and accountant sessions) choose any department; other users only their own.
+$is_admin = !empty($revisor) || (function_exists('perm_can') ? perm_can('settings.users.manage', 'write') : substr((string) $rettigheder, 1, 1) === '1');
 
 // 20260928 Sawaneh Security 4.0 (A3, R22): only the known background/attachment names, with an optional
 //                  language prefix, may be written or deleted under logolib/<db_id>/[<department>/].
@@ -318,7 +321,9 @@ if(isset($_POST['bgfil'])||($_POST['bilagfil'])) {
         }
     }
 
-	if ((strpos($filetype,'pdf'))||(strpos($fileName,'.PDF'))||(strpos($fileName,'pdf'))) {
+	// G6.2 (audit L4): a PDF is recognised by its content ("%PDF" at the start), not by a name or type containing "pdf".
+	$pdfHead = @file_get_contents($fra, false, null, 0, 5);
+	if ($pdfHead !== false && strncmp($pdfHead, '%PDF', 4) === 0) {
 		if($fil_stoerrelse > 10485760) {
 			$tmp=ceil($fil_stoerrelse);
 			@unlink($fra);
@@ -366,21 +371,17 @@ if(isset($_POST['bgfil'])||($_POST['bilagfil'])) {
                 }
 			}
 		}
-		// $pdftk = shell_exec("which pdftk");
-		if ($pdftk) {
-			$alert= findtekst('1751|The page has been loaded.', $sprog_id);
-			print "<BODY onLoad=\"javascript:alert('$alert')\">";
-			upload();
-			exit;
-		} elseif (file_exists($pdf2ps)) {
-			$pdffil=$til;
-			$pdffil = str_replace($dest_dir,"",$pdffil);
-			$psfil=str_replace(".pdf",".ps",$pdffil);
-			system ("cd $dest_dir\nrm $psfil\n$pdf2ps $pdffil");
-			$alert1= findtekst('1751|The page has been loaded.', $sprog_id);
-			print "<BODY onLoad=\"javascript:alert('$alert1')\">";
+		// G6.2 (audit L6): the PDF is in place, so the upload succeeded; the PostScript copy is only made where pdf2ps
+		// is configured (old PostScript forms), with escaped arguments. The page is shown again instead of a blank one.
+		if (!empty($pdf2ps) && file_exists($pdf2ps)) {
+			$pdffil = basename($til);
+			$psfil = str_replace(".pdf", ".ps", $pdffil);
+			system("cd " . escapeshellarg($dest_dir) . " && rm -f " . escapeshellarg($psfil) . " && " . escapeshellarg($pdf2ps) . " " . escapeshellarg($pdffil));
 		}
-		else print "<BODY onLoad=\"javascript:alert('".findtekst('1752|Neither PDFTK (recommended) or PDF2PS is installed - logo cannot be loaded', $sprog_id)."')\">";
+		$alert = findtekst('1751|The page has been loaded.', $sprog_id);
+		print "<BODY onLoad=\"javascript:alert('$alert')\">";
+		upload();
+		exit;
 	} else { 
 		$txt1= findtekst('1753|An error occurred during loading. Please try again', $sprog_id);
 		print "<BODY onLoad=\"javascript:alert('$txt1')\">";

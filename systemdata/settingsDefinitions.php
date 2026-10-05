@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh 4d G6.2 Baggrunde: form backgrounds (VSPR) as a row list - new ones copied from a template background,
+//                  deleted with their form lines only when no customer, supplier or order uses them - and the PDF files.
 // 20261005 Sawaneh 4d G11: Import & eksport (export/import per data type, chart of accounts per fiscal year) and
 //                  Sikkerhedskopi (latest copy, take a copy, restore) framing the existing pages.
 // 20261005 Sawaneh 4d G1.4 Abonnement & konto (Saldi-hosted only): ledger name (master database), activity, and the
@@ -510,6 +512,21 @@ if (!function_exists('getSettingsSections')) {
 				'context' => array('lager/emballage.php', 'lager/varekort.php'),
 				'keywords' => array('emballage', 'packaging', 'producentansvar', 'producer responsibility', 'emballageafgift'),
 			),
+			'documents.backgrounds' => array(
+				'group' => 'documents', 'section' => 'backgrounds', 'number' => 'G6.2', 'label' => 6671, 'icon' => 'bx-layer', 'kind' => 'rows',
+				'lead' => 6672, 'subsections' => array('backgrounds' => 6671, 'files' => 6673),
+				'tables' => array(
+					'backgrounds' => array('sub' => 'backgrounds', 'label' => 6671, 'help' => 6674, 'add' => 6675, 'empty' => 6676, 'storage' => array('grupper', 'VSPR'),
+						'code_col' => 'box1', 'auto_code' => true, 'usage' => 'background', 'before_row' => 'background_create', 'on_delete' => 'background_delete',
+						'defaults' => array('beskrivelse' => 'Formular og varesprog'),
+						'columns' => array(
+							'box1' => array('label' => 646, 'type' => 'text', 'required' => true, 'create_only' => true, 'help' => 6677, 'forbid' => array('default_background', 6683), 'unique_text' => 6684),
+							'template' => array('label' => 6678, 'type' => 'select', 'options_from' => 'form_backgrounds', 'options_literal' => true, 'transient' => true, 'help' => 6679),
+						)),
+				),
+				'legacy' => array(array(780)), 'old' => array('formularsprog' => array(780), 'logoslet' => array(780)),
+				'keywords' => array('baggrund', 'baggrunde', 'formularsprog', 'sprog', 'background', 'form language', 'logo', 'brevpapir', 'bilag', 'pdf'),
+			),
 			'documents.print' => array(
 				'group' => 'documents', 'section' => 'print', 'number' => 'G6.4', 'label' => 5993, 'icon' => 'bx-printer',
 				'subsections' => array('print' => 5993),
@@ -893,6 +910,9 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'POS', 'omv_menu', 'onOff'), 'legacy' => $pos),
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
+
+			// ---------------------------------------------------------------- G6.2 Form backgrounds: the PDF files
+			'documents.backgrounds.files' => array('sub' => 'files', 'type' => 'link', 'label' => 6673, 'help' => 6680, 'href' => 'logoupload.php', 'button' => 6681, 'audit' => false),
 
 			// ---------------------------------------------------------------- G11 Import, export & backup (the existing pages, framed)
 			'import_export.data.accounts_import' => array('sub' => 'accounts', 'type' => 'link', 'label' => 6652, 'help' => 6666, 'href' => 'importer_kontoplan.php', 'button' => 1356, 'audit' => false),

@@ -278,13 +278,18 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 		$name = 'r[' . $tableId . '][' . $rowId . '][' . $col . ']';
 		$err = isset($errors[$tableId . '/' . $rowId . '/' . $col]) ? (int) $errors[$tableId . '/' . $rowId . '/' . $col] : 0;
 		$attrs = ' id="' . st_h($id) . '" name="' . st_h($name) . '" data-orig="' . st_h($value) . '"' . ($err ? ' aria-invalid="true" title="' . st_t($err) . '"' : '');
-		$ro = !$canWrite || $def['readonly'] || ($row && !empty($row['locked']));
+		$ro = !$canWrite || $def['readonly'] || ($row && !empty($row['locked'])) || ($row && ($def['create_only'] || $def['transient']));
 		if ($def['type'] === 'code' && $row && $row['usage'] > 0) {
 			$ro = true;
 			$attrs .= ' title="' . st_t(6420) . '"';
 		} elseif ($def['locked_if_used'] && $row && $row['usage'] > 0) {
 			$ro = true;
 			$attrs .= ' title="' . st_t(is_int($def['locked_if_used']) ? $def['locked_if_used'] : 6467) . '"';
+		}
+		if ($def['transient'] && $row) {
+			// Used only when the row is created (the template of a new background); nothing to show afterwards.
+			echo '<td class="st-rc st-rc-derived"><span></span></td>';
+			return;
 		}
 		if ($def['type'] === 'derived') {
 			echo '<td class="st-rc st-rc-derived st-rc-col-' . st_h($col) . '"><span>' . st_h($row ? settings_rows_derived((string) $def['derive'], $row) : '') . '</span></td>';

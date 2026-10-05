@@ -17,6 +17,8 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh G6.2: 'transient' columns (posted, given to the hooks, never stored - the template of a new background)
+//                  and 'create_only' columns (editable on a new row, read-only afterwards).
 // 20261005 Sawaneh 4d fiscal years and currencies: date cells, read-only columns and locked rows, a parent filter
 //                  (rates of one currency), automatic numbering, 'forbid', per-row actions, hooks before a row is
 //                  written and on delete, and a confirmation step for saves that post amounts (spec G2.3, V9).
@@ -49,7 +51,7 @@ function settings_rows_tables(array $section): array
 		foreach ($t['columns'] as $col => $def) {
 			$t['columns'][$col] = $def + array('type' => 'text', 'required' => false, 'unique' => (isset($def['type']) && $def['type'] === 'code'), 'width' => '', 'numeric' => true, 'help' => null, 'options' => null, 'options_from' => null, 'derive' => null,
 				'range' => null, 'requires' => null, 'locked_if_used' => false, 'empty_value' => null, 'readonly' => false, 'forbid' => null,
-				'kontotype' => null, 'true_value' => 'on', 'false_value' => '');
+				'kontotype' => null, 'true_value' => 'on', 'false_value' => '', 'transient' => false, 'create_only' => false);
 		}
 		$out[$tableId] = $t;
 	}
@@ -106,7 +108,7 @@ function settings_rows_load(array $t, ?int $year): array
 	while ($r = db_fetch_array($q)) {
 		$row = array('id' => (int) $r['id'], 'cells' => array(), 'raw' => $r, 'inactive' => isset($r['inaktiv']) && ($r['inaktiv'] === 't' || $r['inaktiv'] === true || $r['inaktiv'] === '1'));
 		foreach ($t['columns'] as $col => $def) {
-			$row['cells'][$col] = ($def['type'] === 'derived') ? '' : (isset($r[$col]) ? (string) $r[$col] : '');
+			$row['cells'][$col] = ($def['type'] === 'derived' || $def['transient']) ? '' : (isset($r[$col]) ? (string) $r[$col] : '');
 		}
 		$usage = settings_rows_usage($t, $row);
 		$row['usage'] = $usage['count'];
@@ -197,6 +199,11 @@ function settings_rows_usage(array $t, array $row): array
 				break;
 			case 'item_group':
 				$add("select count(*) as n from varer where cast(gruppe as text) = '$esc'", 6427);
+				break;
+			case 'background':
+				// G6.2: customers, suppliers and orders name their background (form language) by its name.
+				$add("select count(*) as n from adresser where sprog = '$esc'", 6682);
+				$add("select count(*) as n from ordrer where sprog = '$esc'", 6422);
 				break;
 			case 'currency':
 				$k = isset($row['raw']['kodenr']) ? (int) $row['raw']['kodenr'] : 0;
@@ -405,7 +412,7 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 				if ($def['type'] === 'derived') {
 					continue;
 				}
-				if (!$isNew && (!isset($cells[$col]) || $def['readonly'])) {
+					if (!$isNew && (!isset($cells[$col]) || $def['readonly'] || $def['create_only'] || $def['transient'])) {
 					// Not posted (a disabled control): the stored value stays.
 					$clean[$col] = (string) $current['cells'][$col];
 					continue;
@@ -441,7 +448,7 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 			if ($code !== '') {
 				$owner = isset($codes[$code]) ? $codes[$code] : null;
 				if ((($owner !== null && (string) $owner !== $rowId) || isset($seen[$code])) && !isset($rowErrors[$codeCol])) {
-					$rowErrors[$codeCol] = 6418;
+					$rowErrors[$codeCol] = isset($t['columns'][$codeCol]['unique_text']) ? (int) $t['columns'][$codeCol]['unique_text'] : 6418;
 				}
 				$seen[$code] = true;
 			}
@@ -511,7 +518,10 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 			}
 			$cols = array();
 			$vals = array();
-			foreach ($t['defaults'] + $step[2] as $col => $raw) {
+				foreach ($t['defaults'] + $step[2] as $col => $raw) {
+					if (isset($t['columns'][$col]) && $t['columns'][$col]['transient']) {
+						continue;
+					}
 				$cols[] = $col;
 				$vals[] = "'" . db_escape_string((string) (isset($step[2][$col]) && $step[2][$col] !== '' ? $step[2][$col] : $raw)) . "'";
 			}
@@ -631,7 +641,7 @@ function settings_rows_copy_year(string $sectionId, string $tableId, array $t, i
 		return array('err', st_txt(5719));
 	}
 	$cols = array_keys(array_filter($t['columns'], function ($def) {
-		return $def['type'] !== 'derived';
+		return $def['type'] !== 'derived' && !$def['transient'];
 	}));
 	$list = implode(', ', $cols);
 	db_modify("insert into grupper ($list, art, kode, fiscal_year) select $list, art, kode, $year from grupper where " . settings_rows_where($t, $fromYear), __FILE__ . " linje " . __LINE__);
