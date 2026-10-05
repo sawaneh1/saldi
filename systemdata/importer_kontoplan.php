@@ -28,6 +28,7 @@
 // 20220404	PHR function vis_data & overfoer_data: Inserted trim($felt[$y],'"');	
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261005 Sawaneh Settings redesign G11.2: the column mapping is kept per company (settings importMapping), not in a cookie.
 
 @session_start();
 $s_id=session_id();
@@ -87,9 +88,9 @@ if (isset($_POST['hent']) || isset($_POST['vis']) || isset($_POST['import'])) {
 			if (!isset($feltnavn[$i])) $feltnavn[$i]=NULL;
 			($i)?$cookie.=";".$feltnavn[$i]:$cookie.=$feltnavn[$i];
 		}
-		setcookie('saldi_kto_imp',$cookie);
-	} elseif (isset($_COOKIE['saldi_kto_imp'])) {
-		list($file_charset,$splitter,$fn)=explode("|",$_COOKIE['saldi_kto_imp']);
+		update_settings_value('kontoplan', 'importMapping', db_escape_string($cookie), 'Kontoplan import: charset|separator|columns');
+	} elseif (($saved = get_settings_value('kontoplan', 'importMapping', '')) || ($saved = (isset($_COOKIE['saldi_kto_imp']) ? $_COOKIE['saldi_kto_imp'] : ''))) {
+		list($file_charset,$splitter,$fn)=array_pad(explode("|",$saved), 3, '');
 		$feltnavn=explode(";",$fn);
 	}
 	if (isset ($_FILES['uploadedfile']['name']) && basename($_FILES['uploadedfile']['name'])) {

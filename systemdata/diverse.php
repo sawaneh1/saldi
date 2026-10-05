@@ -173,6 +173,13 @@ $landedSections = array(
 	'pricelists'     => 'settingsSection.php?s=purchase.pricelists&moved=pricelists',
 	'barcodescan'    => 'settingsSection.php?s=integrations.connections&item=app',
 	'posOptions'     => 'settingsSection.php?s=pos.tills&moved=posOptions',
+	'div_io'         => 'settingsSection.php?s=import_export.data&moved=div_io',
+	'kontoplan_io'   => 'settingsSection.php?s=import_export.data&moved=div_io#sub-accounts',
+	'adresser_io'    => 'settingsSection.php?s=import_export.data&moved=div_io#sub-addresses',
+	'varer_io'       => 'settingsSection.php?s=import_export.data&moved=div_io#sub-items',
+	'variantvarer_io'=> 'settingsSection.php?s=import_export.data&moved=div_io#sub-items',
+	'formular_io'    => 'settingsSection.php?s=import_export.data&moved=div_io#sub-forms',
+	'solar_io'       => 'settingsSection.php?s=import_export.data&moved=div_io',
 );
 if (isset($landedSections[$sektion]) && !($sektion == 'api_valg' && !empty($_GET['varesync']))) {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
@@ -197,6 +204,7 @@ if (!$sektion && $_SERVER['REQUEST_METHOD'] != 'POST') {
 // 20261002 Sawaneh Phase 4b batch 2: api_valg landed in Integrationer (only the shop sync still runs here); div_valg no longer
 //                  saves GLS, Danske Fragtmænd, QuickPay, MobilePay, Flatpay, Vibrant or Copayone.
 // 20261003 Sawaneh G6.3: the SMTP save and the dead 'email' (MAIL/1) save are gone; smtp redirects to Dokumenter & e-mail » E-mail.
+// 20261005 Sawaneh G11: div_io and the *_io sections redirect to Indstillinger » Import & eksport (the B-IO1 handlers removed).
 // 20261004 Sawaneh G5.8: labels - valg limited to box1/box2, new labels only from the six shipped templates and with an allowed name
 //                  (a forged template name could copy any readable file into a label).
 // 20261004 Sawaneh G4.3: pricelists landed in Køb » Leverandørprislister (diverseIncludes/pricelists.php is no longer reached).
@@ -659,35 +667,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
 ######################################################################################
-	} elseif ($sektion == 'kontoplan_io') {
-		if (strstr($_POST['submit']) == "Eksport") {
-			list($tmp) = explode(":", $_POST['regnskabsaar']);
-			print "<BODY onLoad=\"javascript:exporter_kontoplan=window.open('exporter_kontoplan.php?aar=$tmp','lager','scrollbars=yes,resizable=yes,dependent=yes');exporter_kontoplan.focus();\">";
-		} elseif (strstr($_POST['submit']) == "Import") {
-			print "<BODY onLoad=\"javascript:importer_kontoplan=window.open('importer_kontoplan.php','kontoplan','scrollbars=yes,resizable=yes,dependent=yes');importer_kontoplan.focus();\">";
-		}
-	} elseif ($sektion == 'adresser_io') {
-		if (strstr($_POST['submit']) == "Eksport") {
-			print "<BODY onLoad=\"javascript:exporter_adresser=window.open('exporter_adresser.php?aar=$tmp','debitor','scrollbars=yes,resizable=yes,dependent=yes');exporter_adresser.focus();\">";
-		} elseif (strstr($_POST['submit']) == "Import") {
-			print "<BODY onLoad=\"javascript:importer_debitor=window.open('importer_debitor.php','debitor','scrollbars=yes,resizable=yes,dependent=yes');importer_debitor.focus();\">";
-		}
-	} elseif ($sektion == 'varer_io') {
-		if (strstr($_POST['submit']) == "Eksport") {
-			print "<BODY onLoad=\"javascript:exporter_varer=window.open('exporter_varer.php?aar=$tmp','debitor','scrollbars=yes,resizable=yes,dependent=yes');exporter_varer.focus();\">";
-		} elseif (strstr($_POST['submit']) == "Import") {
-			print "<BODY onLoad=\"javascript:importer_varer=window.open('importer_varer.php','importer_varer','scrollbars=yes,resizable=yes,dependent=yes');importer_varer.focus();\">";
-		}
-	} elseif ($sektion == 'solar_io') {
-		if (strstr($_POST['submit']) == "Import") {
-			print "<BODY onLoad=\"javascript:solarvvs=window.open('solarvvs.php','solarvvs','scrollbars=yes,resizable=yes,dependent=yes');solarvvs.focus();\">";
-		}
-	} elseif ($sektion == 'formular_io') {
-		if (strstr($_POST['submit']) == "Eksport") {
-			print "<BODY onLoad=\"javascript:exporter_formular=window.open('exporter_formular.php','exporter_formular','scrollbars=yes,resizable=yes,dependent=yes');exporter_formular.focus();\">";
-		} elseif (strstr($_POST['submit']) == "Import") {
-			print "<BODY onLoad=\"javascript:importer_formular=window.open('importer_formular.php','importer_formular','scrollbars=yes,resizable=yes,dependent=yes');importer_formular.focus();\">";
-		}
+	// 20261005 Sawaneh G11: the *_io handlers (fatal strstr() with one argument, audit B-IO1) are gone; the sections redirect.
 	} elseif ($sektion == 'kontoindstillinger') {
 
 		if (isset($_POST['update_max_users'])) {
@@ -843,13 +823,6 @@ if ($sektion == "sprog") {
 }
 if ($sektion == "tjekliste")
 	tjekliste();
-if (strpos($sektion, "_io")) {
-	kontoplan_io();
-	formular_io();
-	adresser_io();
-	varer_io();
-	variantvarer_io();
-}
 
 print "</tbody></table></td></tr>";
 #print "</form>";

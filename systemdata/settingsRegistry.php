@@ -57,6 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261005 Sawaneh 4d: Import & eksport and Sikkerhedskopi (G11) open their new sections.
 // 20261005 Sawaneh 4d: Valuta, Regnskabsår and Ansatte open their new sections; Abonnement & konto (G1.4) only on hosted servers.
 // 20261005 Sawaneh 4d: Sprog opens Lokalisering (company.localisation); Persondata (company.gdpr) added.
 // 20261005 Sawaneh 4d: Stamdata opens the generated company.data section.
@@ -161,9 +162,9 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('qr code login','app login','mobile app authentication','one time access qr','saldi app login','scan to login')),
 			array('key' => 'sprog',                 'group' => 'company', 'url' => 'settingsSection.php?s=company.localisation', 'section' => 'company.localisation', 'category' => 'company', 'textId' => 6524,
 				'keywords' => array('language','languages','change language','select language','preferred language','edit translation texts','ui language','current language','sprogindstillinger','sprog','språk','språkinnstillinger')),
-			array('key' => 'div_io',                'group' => 'import_export', 'url' => 'diverse.php?sektion=div_io',               'category' => 'data', 'textId' => 802,
+			array('key' => 'div_io',                'group' => 'import_export', 'url' => 'settingsSection.php?s=import_export.data', 'section' => 'import_export.data', 'category' => 'data', 'textId' => 802,
 				'keywords' => array('import export','chart of accounts import export','customer import export','product import export','form import export','data import','data export','solar vvs import','kontoplan import','debitor import','varer import','formular import')),
-			array('key' => 'backup',                'group' => 'import_export', 'url' => '../admin/backup.php', 'category' => 'data', 'textId' => 614, 'permission' => 'settings.backup',
+			array('key' => 'backup',                'group' => 'import_export', 'url' => 'settingsSection.php?s=import_export.backup', 'section' => 'import_export.backup', 'category' => 'data', 'textId' => 614, 'permission' => 'settings.backup',
 				'keywords' => array('backup','restore','sikkerhedskopi','gendan','sikkerhetskopi','gjenopprett','database backup')),
 
 			// -- 20260928: pages that belong to a settings group but had no entry --

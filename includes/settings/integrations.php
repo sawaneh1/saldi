@@ -215,6 +215,18 @@ function settings_integration_info(array $def): string
 {
 	global $db;
 	switch ($def['info']) {
+		case 'backup_latest':
+			// G11.3: the copy admin/backup.php keeps for this ledger (temp/backup/<db>/, the latest only).
+			global $db;
+			$files = glob(__DIR__ . '/../../temp/backup/' . basename((string) $db) . '/*.sdat') ?: array();
+			if (!$files) {
+				return st_h(st_txt(6667));
+			}
+			usort($files, function ($a, $b) {
+				return filemtime($b) - filemtime($a);
+			});
+			$f = $files[0];
+			return st_h(date('d-m-Y H:i', filemtime($f)) . ' · ' . number_format(filesize($f) / 1048576, 1, ',', '.') . ' MB') . ' · <a class="st-tl" href="../temp/backup/' . rawurlencode(basename((string) $db)) . '/' . rawurlencode(basename($f)) . '" download>' . st_t(6668) . '</a>';
 		case 'ledger_activity':
 			$r = db_fetch_array(db_select("select count(id) as n from transaktioner where logdate >= '" . date('Y-m-d', strtotime('-1 year')) . "'", __FILE__ . " linje " . __LINE__));
 			return st_h(sprintf(st_txt(6639), number_format($r ? (int) $r['n'] : 0, 0, ',', '.')));

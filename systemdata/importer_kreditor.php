@@ -18,6 +18,7 @@
 // ----------------------------------------------------------------------
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261005 Sawaneh Settings redesign G11.2: the column mapping is kept per company (settings importMapping), not in a 30-day cookie.
 
 @session_start();
 $s_id=session_id();
@@ -119,9 +120,8 @@ if ($feltnavn) {
  		if ($tmp) $tmp=$tmp.";".$feltnavn[$y];
 		else $tmp=$feltnavn[$y];
 	}
-	setcookie("saldi_debimp",$tmp,time()+60*60*24*30);
-} elseif (isset($_COOKIE['saldi_debimp'])) {
-	$tmp = $_COOKIE['saldi_debimp'];
+	update_settings_value('kreditor', 'importMapping', db_escape_string($tmp), 'Kreditor import: columns');
+} elseif (($tmp = get_settings_value('kreditor', 'importMapping', '')) || ($tmp = (isset($_COOKIE['saldi_debimp']) ? $_COOKIE['saldi_debimp'] : ''))) {
 	$feltnavn=explode(";",$tmp);
 }
 print "<tr><td width=100% align=center><table width=\"100%\" border=\"0\" cellspacing=\"1\" cellpadding=\"1\"><tbody>";

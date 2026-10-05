@@ -803,7 +803,11 @@ function st_render_field(array $def, array $state): void
 	<?php } elseif ($def['type'] === 'info') { ?>
     <span class="st-info"><?= function_exists('settings_integration_info') ? settings_integration_info($def) : '' ?></span>
 	<?php } elseif ($def['type'] === 'link') { ?>
+	<?php if (!empty($state['readonly']) && st_field_access($def) !== 'write') { ?>
+    <span class="st-btn" aria-disabled="true" style="opacity:.5;cursor:not-allowed"><?= st_t($def['button']) ?></span>
+	<?php } else { ?>
     <a class="st-btn" href="<?= st_h($def['href']) ?>"<?= !empty($def['blank']) ? ' target="_blank" rel="noopener"' : '' ?>><?= st_t($def['button']) ?><?php if (!empty($def['blank'])) { ?> <i class='bx bx-link-external' aria-hidden="true"></i><?php } ?></a>
+	<?php } ?>
 	<?php } elseif ($def['type'] === 'color') { ?>
     <span class="st-color">
       <input class="st-input st-input-short" type="text" id="<?= $id ?>"<?= $nameAttr ?> value="<?= st_h($value) ?>" placeholder="#rrggbb" maxlength="7" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>>

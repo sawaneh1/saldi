@@ -6249,3 +6249,25 @@
 6643	Regnskabet lukkes, og alle brugere logges ud. Saldi gemmer en sikkerhedskopi i 5 år jf. bogføringsloven.	The ledger is closed and all users are logged out. Saldi keeps a backup for 5 years as the Bookkeeping Act requires.	Regnskapet lukkes, og alle brukere logges ut. Saldi beholder en sikkerhetskopi i 5 år etter bokføringsloven.
 6644	Aktivitet	Activity	Aktivitet
 6645	Flyttet til	Moved to	Flyttet til
+6646	Hent data ud som en fil, eller læs data ind fra en fil	Download data as a file, or load data from a file	Hent data ut som en fil, eller les inn data fra en fil
+6648	Kunder og leverandører	Customers and suppliers	Kunder og leverandører
+6649	Eksportér kontoplan	Export chart of accounts	Eksporter kontoplan
+6650	En sikkerhedskopi af hele regnskabet, som du kan gemme, og indlæsning af en tidligere kopi	A backup of the whole ledger that you can save, and loading an earlier copy	En sikkerhetskopi av hele regnskapet som du kan lagre, og innlesing av en tidligere kopi
+6651	Indlæsning overskriver hele regnskabet. Alle brugere skal være logget ud. Tag en sikkerhedskopi først.	Loading overwrites the whole ledger. All users must be logged out. Take a backup first.	Innlesing overskriver hele regnskapet. Alle brukere må være logget ut. Ta en sikkerhetskopi først.
+6652	Importér kontoplan	Import chart of accounts	Importer kontoplan
+6653	Eksportér kunder og leverandører	Export customers and suppliers	Eksporter kunder og leverandører
+6654	Importér kunder og leverandører	Import customers and suppliers	Importer kunder og leverandører
+6655	Eksportér varer	Export items	Eksporter varer
+6656	Importér varer	Import items	Importer varer
+6657	Eksportér variantvarer	Export variant items	Eksporter variantvarer
+6658	Importér variantvarer	Import variant items	Importer variantvarer
+6659	Importér varelokationer	Import item locations	Importer varelokasjoner
+6660	Eksportér formularer	Export forms	Eksporter skjemaer
+6661	Importér formularer	Import forms	Importer skjemaer
+6662	Seneste sikkerhedskopi	Latest backup	Siste sikkerhetskopi
+6663	Danner en sikkerhedskopi af hele regnskabet, som du kan gemme på din computer.	Makes a backup of the whole ledger that you can save on your computer.	Lager en sikkerhetskopi av hele regnskapet som du kan lagre på datamaskinen.
+6664	Vælg en sikkerhedskopi (.sdat) og bekræft, før regnskabet overskrives.	Choose a backup (.sdat) and confirm before the ledger is overwritten.	Velg en sikkerhetskopi (.sdat) og bekreft før regnskapet overskrives.
+6665	Sikkerhedskopi	Backup	Sikkerhetskopi
+6666	Erstatter kontoplanen for det nyeste regnskabsår.	Replaces the chart of accounts of the latest fiscal year.	Erstatter kontoplanen for det nyeste regnskapsåret.
+6667	Der er ikke taget en sikkerhedskopi her endnu	No backup has been taken here yet	Det er ikke tatt noen sikkerhetskopi her ennå
+6668	Hent	Download	Last ned

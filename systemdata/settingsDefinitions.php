@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh 4d G11: Import & eksport (export/import per data type, chart of accounts per fiscal year) and
+//                  Sikkerhedskopi (latest copy, take a copy, restore) framing the existing pages.
 // 20261005 Sawaneh 4d G1.4 Abonnement & konto (Saldi-hosted only): ledger name (master database), activity, and the
 //                  danger zone - reset (keep customers/suppliers, keep items) and delete, both with password.
 // 20261005 Sawaneh 4d G7.1 Ansatte: list of the company's employees with a card each (person, contact, employment, CPR
@@ -130,6 +132,17 @@ if (!function_exists('getSettingsSections')) {
 				'subsections' => array('locale' => 6524, 'texts' => 6534), 'sub_help' => array('locale' => 6525),
 				'legacy' => array(array(782, 801)), 'old' => array('sprog' => array(782, 801)),
 				'keywords' => array('lokalisering', 'localisation', 'basisvaluta', 'base currency', 'tidszone', 'timezone', 'talformat', 'number format', 'systemsprog', 'sprog', 'language', 'oversættelser', 'translations', 'tekster'),
+			),
+			'import_export.data' => array(
+				'group' => 'import_export', 'section' => 'data', 'number' => 'G11.1', 'label' => 5539, 'icon' => 'bx-transfer',
+				'lead' => 6646, 'subsections' => array('accounts' => 1352, 'addresses' => 6648, 'items' => 609, 'forms' => 780),
+				'legacy' => array(array(782, 802)), 'old' => array('div_io' => array(782, 802)),
+				'keywords' => array('import', 'eksport', 'export', 'indlæs', 'udlæs', 'csv', 'kontoplan', 'debitorer', 'kreditorer', 'kunder', 'leverandører', 'varer', 'variantvarer', 'varelokationer', 'formularer', 'standardkontoplan', 'mapping'),
+			),
+			'import_export.backup' => array(
+				'group' => 'import_export', 'section' => 'backup', 'number' => 'G11.3', 'label' => 6665, 'icon' => 'bx-data', 'permission' => 'settings.backup',
+				'lead' => 6650, 'subsections' => array('backup' => 6665, 'restore' => 1247), 'sub_help' => array('restore' => 6651),
+				'keywords' => array('backup', 'sikkerhedskopi', 'gendan', 'restore', 'indlæs sikkerhedskopi', 'tag backup'),
 			),
 			'company.account' => array(
 				'group' => 'company', 'section' => 'account', 'number' => 'G1.4', 'label' => 6630, 'icon' => 'bx-key', 'module' => 'hosted',
@@ -881,6 +894,22 @@ if (!function_exists('getSettingsSections')) {
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
 
+			// ---------------------------------------------------------------- G11 Import, export & backup (the existing pages, framed)
+			'import_export.data.accounts_import' => array('sub' => 'accounts', 'type' => 'link', 'label' => 6652, 'help' => 6666, 'href' => 'importer_kontoplan.php', 'button' => 1356, 'audit' => false),
+			'import_export.data.accounts_map' => array('sub' => 'accounts', 'type' => 'link', 'label' => 2336, 'href' => 'importAccountMap.php', 'button' => 1356, 'audit' => false),
+			'import_export.data.addresses_export' => array('sub' => 'addresses', 'type' => 'link', 'label' => 6653, 'href' => 'exporter_adresser.php', 'button' => 1355, 'audit' => false),
+			'import_export.data.addresses_import' => array('sub' => 'addresses', 'type' => 'link', 'label' => 6654, 'href' => 'importer_adresser.php', 'button' => 1356, 'audit' => false),
+			'import_export.data.items_export' => array('sub' => 'items', 'type' => 'link', 'label' => 6655, 'href' => 'exporter_varer.php', 'button' => 1355, 'audit' => false),
+			'import_export.data.items_import' => array('sub' => 'items', 'type' => 'link', 'label' => 6656, 'href' => 'importer_varer.php', 'button' => 1356, 'audit' => false),
+			'import_export.data.variants_export' => array('sub' => 'items', 'type' => 'link', 'label' => 6657, 'href' => 'exporter_variantvarer.php', 'button' => 1355, 'audit' => false),
+			'import_export.data.variants_import' => array('sub' => 'items', 'type' => 'link', 'label' => 6658, 'href' => 'importer_variantvarer.php', 'button' => 1356, 'audit' => false),
+			'import_export.data.forms_export' => array('sub' => 'forms', 'type' => 'link', 'label' => 6660, 'href' => 'exporter_formular.php', 'button' => 1355, 'audit' => false),
+			'import_export.data.forms_import' => array('sub' => 'forms', 'type' => 'link', 'label' => 6661, 'href' => 'importer_formular.php', 'button' => 1356, 'audit' => false),
+			'import_export.backup.latest' => array('sub' => 'backup', 'type' => 'info', 'label' => 6662, 'info' => 'backup_latest', 'audit' => false),
+			'import_export.backup.take' => array('sub' => 'backup', 'type' => 'link', 'label' => 1245, 'help' => 6663, 'href' => '../admin/backup.php?backup=1', 'button' => 1245, 'audit' => false),
+			'import_export.backup.restore' => array('sub' => 'restore', 'type' => 'link', 'label' => 1247, 'help' => 6664, 'href' => '../admin/restore.php', 'button' => 1247, 'audit' => false,
+				'permission' => 'system.backup.restore'),
+
 			// ---------------------------------------------------------------- G1.4 Subscription & account (Saldi-hosted only)
 			'company.account.name' => array('sub' => 'account', 'type' => 'text', 'label' => 6635, 'help' => 6636, 'maxlength' => 80, 'validate' => array('ledger_name'),
 				'storage' => array('virtual', 'ledger_name')),
@@ -1415,6 +1444,17 @@ if (!function_exists('getSettingsSections')) {
 		$sprog = isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1;
 		// G10.1: interim and difference account per till for each currency the till accepts (VK box5/box6; box4 is the
 		// "used in the till" flag of valuta.php, so the till account column of the old page is not offered).
+		// G11.1: the chart of accounts is exported per fiscal year (deleted years have none); item locations only with warehouses.
+		$q = db_select("select kodenr, beskrivelse from grupper where art = 'RA' and coalesce(box10, '') = '' order by cast(kodenr as integer) desc", __FILE__ . " linje " . __LINE__);
+		$ioDefs = array();
+		while ($r = db_fetch_array($q)) {
+			$ioDefs['import_export.data.accounts_export_' . (int) $r['kodenr']] = array('sub' => 'accounts', 'type' => 'link', 'label' => 6649, 'label_suffix' => trim((string) $r['beskrivelse']),
+				'href' => 'exporter_kontoplan.php?aar=' . (int) $r['kodenr'], 'button' => 1355, 'audit' => false);
+		}
+		$defs = $ioDefs + $defs;
+		if (db_fetch_array(db_select("select id from grupper where art = 'LG' limit 1", __FILE__ . " linje " . __LINE__))) {
+			$defs['import_export.data.locations_import'] = array('sub' => 'items', 'type' => 'link', 'label' => 6659, 'href' => 'importer_varelokationer.php', 'button' => 1356, 'audit' => false);
+		}
 		// G7.1: extra employee fields (defined in Sager › Ansatte; label = text 616+n, definition "type|option|option" in
 		// grupper ANSAT kodenr 0, values per employee in ANSAT kodenr <employee id>, kode 0 for fields 1-14 and 1 for 15-28).
 		foreach (settings_employee_extra_fields() as $n => $f) {
@@ -1646,7 +1686,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array($d, 200), 'to' => array(array('sales', 'sales.orders', null))),
 			array('old' => array($d, 271), 'to' => array(array('pos', 'pos.tills', null), array('pos', 'pos.cards', null), array('pos', 'pos.tables', null))),
 			array('old' => array($d, 801), 'to' => array(array('personal', null, 'personalSettings.php'), array('company', null, 'diverse.php?sektion=sprog'))),
-			array('old' => array($d, 802), 'to' => array(array('import_export', null, 'diverse.php?sektion=div_io'))),
+			array('old' => array($d, 802), 'to' => array(array('import_export', 'import_export.data', null))),
 		);
 	}
 
