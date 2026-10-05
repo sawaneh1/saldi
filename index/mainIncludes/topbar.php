@@ -298,7 +298,7 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
  */
 function topbar_route(string $name): string
 {
-	$routes = array('fiscal_year_create' => '/systemdata/regnskabskort.php');
+	$routes = array('fiscal_year_create' => '/systemdata/settingsSection.php?s=company.fiscal_years#create');
 	return isset($routes[$name]) ? $routes[$name] : '/index/dashboard.php';
 }
 

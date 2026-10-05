@@ -21,6 +21,10 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261005 Sawaneh 4d G1.2 Regnskabsår (row list, create card shared with onboarding, set active, delete empty or old
+//                  year) and G2.3 Valuta (currencies and rates per currency, rate changes confirmed before posting).
+// 20261005 Sawaneh 4d G1.3 Lokalisering (five settings that had no or scattered UI, translations link) and G1.5 Persondata
+//                  (inactive customers/suppliers clean-up as a danger-zone action with password).
 // 20261005 Sawaneh 4d G1.1 Stamdata as a generated section on the company address row (no notes/kontonr overwrite,
 //                  no double escaping, country always shown but changed only with settings.company.danger); employees
 //                  stay on the old page until G7.1.
@@ -115,6 +119,68 @@ if (!function_exists('getSettingsSections')) {
 				'legacy' => array(array(779)), 'old' => array('stamkort' => array(779)),
 				'context' => array('debitor/ordre.php'),
 				'keywords' => array('stamdata', 'firmanavn', 'company name', 'adresse', 'cvr', 'bank', 'iban', 'swift', 'betalingsservice', 'bs', 'fi', 'gdpr', 'databehandleraftale', 'landekonfiguration'),
+			),
+			'company.localisation' => array(
+				'group' => 'company', 'section' => 'localisation', 'number' => 'G1.3', 'label' => 6524, 'icon' => 'bx-globe',
+				'subsections' => array('locale' => 6524, 'texts' => 6534), 'sub_help' => array('locale' => 6525),
+				'legacy' => array(array(782, 801)), 'old' => array('sprog' => array(782, 801)),
+				'keywords' => array('lokalisering', 'localisation', 'basisvaluta', 'base currency', 'tidszone', 'timezone', 'talformat', 'number format', 'systemsprog', 'sprog', 'language', 'oversættelser', 'translations', 'tekster'),
+			),
+			'company.gdpr' => array(
+				'group' => 'company', 'section' => 'gdpr', 'number' => 'G1.5', 'label' => 6523, 'icon' => 'bx-shield-quarter',
+				'subsections' => array('cleanup' => 6537), 'sub_help' => array('cleanup' => 6538),
+				'legacy' => array(array(779)),
+				'keywords' => array('gdpr', 'persondata', 'personal data', 'inaktive kunder', 'slet kunder', 'oprydning', 'cleanup'),
+			),
+			'company.fiscal_years' => array(
+				'group' => 'company', 'section' => 'fiscal_years', 'number' => 'G1.2', 'label' => 894, 'icon' => 'bx-calendar', 'kind' => 'rows',
+				'lead' => 6547, 'subsections' => array('years' => 894),
+				'tables' => array(
+					'years' => array('sub' => 'years', 'label' => 894, 'add' => 508, 'empty' => 6565, 'storage' => array('grupper', 'RA'), 'no_add' => true,
+						'usage' => 'fiscal_year', 'on_delete' => 'fiscal_year_empty', 'row_locked' => 'fiscal_year_deleted', 'create' => 'fiscal_year',
+						'order' => 'cast(kodenr as integer)',
+						'columns' => array(
+							'kodenr' => array('label' => 6548, 'type' => 'code', 'readonly' => true),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'period' => array('label' => 6549, 'type' => 'derived', 'derive' => 'fy_period'),
+							'box5' => array('label' => 6550, 'type' => 'bool'),
+							'status' => array('label' => 6551, 'type' => 'derived', 'derive' => 'fy_status'),
+						),
+						'row_actions' => array(
+							'fy_activate' => array('label' => 1213),
+							'fy_activate_all' => array('label' => 6555, 'confirm_title' => 6555, 'confirm' => 6605),
+							'fy_opening' => array('label' => 6556, 'href' => 'regnskabskort.php?id=%d'),
+							'fy_archive' => array('label' => 6557, 'confirm_title' => 6571, 'confirm' => 6572, 'danger' => true, 'danger_zone' => true),
+						)),
+				),
+				'legacy' => array(array(778)), 'old' => array('regnskabsaar' => array(778), 'regnskabskort' => array(778)),
+				'keywords' => array('regnskabsår', 'fiscal year', 'financial year', 'regnskabsperiode', 'periode', 'nyt regnskabsår', 'opret regnskabsår', 'åbningsbalance', 'primo', 'sæt aktivt', 'slet regnskabsår', 'bogføring tilladt'),
+			),
+			'finance.currencies' => array(
+				'group' => 'finance', 'section' => 'currencies', 'number' => 'G2.3', 'label' => 776, 'icon' => 'bx-dollar-circle', 'kind' => 'rows',
+				'lead' => 6580, 'subsections' => array('currencies' => 776, 'rates' => 6587),
+				'tables' => array(
+					'currencies' => array('sub' => 'currencies', 'label' => 776, 'add' => 6585, 'empty' => 6586, 'storage' => array('grupper', 'VK'), 'code_col' => 'box1',
+						'auto_code' => true, 'usage' => 'currency', 'order' => 'box1',
+						'columns' => array(
+							'box1' => array('label' => 6581, 'type' => 'select', 'options_from' => 'iso_currencies', 'required' => true, 'locked_if_used' => true, 'forbid' => array('base_currency', 6593)),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box3' => array('label' => 6582, 'type' => 'account', 'kontotype' => 'D', 'required' => true, 'help' => 1705),
+							'box4' => array('label' => 6583, 'type' => 'bool', 'true_value' => '1', 'false_value' => '0'),
+							'rate' => array('label' => 6584, 'type' => 'derived', 'derive' => 'currency_rate_now'),
+						)),
+					'rates' => array('sub' => 'rates', 'label' => 6587, 'help' => 6588, 'help_args' => 'base_currency', 'add' => 6590, 'empty' => 6591, 'storage' => array('table', 'valuta'),
+						'code_col' => 'valdate', 'filter' => array('param' => 'cur', 'column' => 'gruppe', 'label' => 776, 'options' => 'currencies'),
+						'usage' => 'currency_rate', 'confirm' => 'currency_rate', 'row_check' => 'currency_rate', 'before_row' => 'currency_rate', 'on_save' => 'currency_rates',
+						'order' => 'valdate desc, id desc',
+						'columns' => array(
+							'valdate' => array('label' => 635, 'type' => 'date', 'required' => true, 'help' => 1703),
+							'kurs' => array('label' => 6589, 'type' => 'decimal', 'required' => true, 'locked_if_used' => true),
+						)),
+				),
+				'legacy' => array(array(776)), 'old' => array('valuta' => array(776), 'valutakort' => array(776)),
+				'context' => array('finans/kassekladde.php'),
+				'keywords' => array('valuta', 'valutaer', 'currency', 'currencies', 'valutakode', 'kurs', 'valutakurs', 'exchange rate', 'kursdifference', 'kursændring', 'pos valuta', 'vis i kassen'),
 			),
 			// ---- 4c master data (row editor, spec §8.2)
 			'organisation.departments' => array(
@@ -795,6 +861,25 @@ if (!function_exists('getSettingsSections')) {
 			'pos.tills.remove' => array('sub' => 'tills', 'type' => 'action', 'label' => 6296, 'help' => 6297, 'per' => 'till_last', 'danger' => true,
 				'confirm_title' => 6298, 'confirm' => 6299, 'run' => 'till_remove'),
 
+			// ---------------------------------------------------------------- G1.3 Localisation (settings rows without a group, as the readers look them up)
+			'company.localisation.base_currency' => array('sub' => 'locale', 'type' => 'select', 'label' => 6526, 'help' => 6527, 'default' => 'DKK',
+				'options_from' => 'currencies', 'options_literal' => true, 'storage' => array('settings', null, 'baseCurrency', 'raw'), 'permission' => 'settings.company.danger'),
+			'company.localisation.base_country' => array('sub' => 'locale', 'type' => 'select', 'label' => 47, 'help' => 6528, 'default' => 'dk',
+				'options' => array('dk' => 'Danmark', 'no' => 'Norge', 'ch' => 'Schweiz'), 'options_literal' => true, 'storage' => array('settings', null, 'baseCountry', 'raw')),
+			'company.localisation.timezone' => array('sub' => 'locale', 'type' => 'select', 'label' => 1236, 'help' => 6529, 'default' => 'Europe/Copenhagen',
+				'options' => array('Europe/Copenhagen' => 'Europe/Copenhagen', 'Europe/Oslo' => 'Europe/Oslo', 'Europe/Stockholm' => 'Europe/Stockholm', 'Europe/Zurich' => 'Europe/Zurich', 'Europe/Berlin' => 'Europe/Berlin', 'Europe/London' => 'Europe/London', 'Atlantic/Reykjavik' => 'Atlantic/Reykjavik', 'UTC' => 'UTC'),
+				'options_literal' => true, 'storage' => array('settings', null, 'timezone', 'raw')),
+			'company.localisation.number_format' => array('sub' => 'locale', 'type' => 'select', 'label' => 6530, 'help' => 6531, 'default' => '.|,',
+				'options' => array('.|,' => '1.234,56', ',|.' => '1,234.56', ' |,' => '1 234,56'), 'options_literal' => true, 'storage' => array('settings', 'localization', 'numberFormat', 'raw')),
+			'company.localisation.system_language' => array('sub' => 'locale', 'type' => 'select', 'label' => 6532, 'help' => 6533, 'default' => 'Dansk',
+				'options' => array('Dansk' => 'Dansk', 'English' => 'English', 'Norsk' => 'Norsk'), 'options_literal' => true, 'storage' => array('settings', null, 'systemLanguage', 'raw')),
+			'company.localisation.translations' => array('sub' => 'texts', 'type' => 'link', 'label' => 6534, 'help' => 6535, 'href' => 'tekster.php', 'button' => 6536, 'audit' => false),
+
+			// ---------------------------------------------------------------- G1.5 Personal data: inactive customers and suppliers
+			'company.gdpr.inactive' => array('sub' => 'cleanup', 'type' => 'info', 'label' => 6537, 'info' => 'gdpr_inactive', 'audit' => false),
+			'company.gdpr.delete_inactive' => array('sub' => 'cleanup', 'type' => 'action', 'label' => 6539, 'help' => 6538, 'confirm_title' => 6540, 'confirm' => 6541,
+				'run' => 'gdpr_delete_inactive', 'impact' => 'gdpr_inactive', 'danger' => true, 'danger_zone' => true, 'permission' => 'settings.company.danger'),
+
 			// ---------------------------------------------------------------- G1.1 Company data (the company's own address row, art S)
 			'company.data.name' => array('sub' => 'company', 'type' => 'text', 'label' => 28, 'storage' => array('adresser', 'firmanavn'), 'validate' => array('required'), 'maxlength' => 90, 'legacy' => array(779)),
 			'company.data.address1' => array('sub' => 'company', 'type' => 'text', 'label' => 648, 'storage' => array('adresser', 'addr1'), 'maxlength' => 60, 'legacy' => array(779)),
@@ -1426,8 +1511,8 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(608), 'to' => array(array('items', 'items.warehouses', null))),
 			array('old' => array(774), 'to' => array(array('items', 'items.item_groups', null), array('sales', null, 'syssetup.php?valg=varer'))),
 			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
-			array('old' => array(776), 'to' => array(array('finance', null, 'valuta.php'))),
-			array('old' => array(778), 'to' => array(array('company', null, 'regnskabsaar.php'))),
+			array('old' => array(776), 'to' => array(array('finance', 'finance.currencies', null))),
+			array('old' => array(778), 'to' => array(array('company', 'company.fiscal_years', null))),
 			array('old' => array(779), 'to' => array(array('company', 'company.data', null))),
 			array('old' => array(780), 'to' => array(array('documents', null, 'formularkort.php?valg=formularer'))),
 			array('old' => array(781), 'to' => array(array('items', 'items.units', null))),

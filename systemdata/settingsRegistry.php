@@ -57,6 +57,8 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261005 Sawaneh 4d: Valuta and Regnskabsår open their new sections.
+// 20261005 Sawaneh 4d: Sprog opens Lokalisering (company.localisation); Persondata (company.gdpr) added.
 // 20261005 Sawaneh 4d: Stamdata opens the generated company.data section.
 // 20261005 Sawaneh 4c: Moms, Debitorgrupper, Kreditorgrupper and Varegrupper open the generated row-editor sections.
 // 20261005 Sawaneh settings_breadcrumb_script() goes through page_breadcrumb() (topbar addendum 2026-10-05 §4).
@@ -84,14 +86,16 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('product groups','item groups','price groups','cost price','sales price','recommended price','retail price','b2b price','campaign groups','special offer price','offer price','discount groups','batch','reverse charge','vat per product group','varegrupper','prisgrupper','tilbudsgrupper','rabatgrupper','kampagnepris','kostpris','salgspris','vejledende pris')),
 			array('key' => 'rabatgrupper',     'group' => 'sales', 'url' => 'rabatgrupper.php',             'category' => 'groups',  'textId' => 775,
 				'keywords' => array('customer discount matrix','debtor discount group','product discount group','discount matrix','percent discount','amount discount per unit','kr/stk rabat','discount by customer and product group','debitor rabatgruppe','vare rabatgruppe','rabatgrupper','rabat','rabatt')),
-			array('key' => 'valuta',           'group' => 'finance', 'url' => 'valuta.php',                   'category' => 'finance', 'textId' => 776,
+			array('key' => 'valuta',           'group' => 'finance', 'url' => 'settingsSection.php?s=finance.currencies', 'section' => 'finance.currencies', 'category' => 'finance', 'textId' => 776,
 				'keywords' => array('currency','currencies','exchange rate','currency code','currency rate','pos currency','valuta','valutakode','kurs')),
 			array('key' => 'brugere',          'group' => 'users', 'url' => 'usersRoles.php',               'category' => 'users',   'textId' => 5536,
 				'keywords' => array('user','users','user permissions','access rights','user rights','password','change password','two factor authentication','2fa','sms code','auditor','accountant','revisor','revisoradgang','employee link','ip address restriction','allowed ip','user roles','delete user','add user','new user','brugernavn','rettigheder','adgangskode','brukere','brukernavn','passord','tilgangsrettigheter')),
-			array('key' => 'regnskabsaar',     'group' => 'company', 'url' => 'regnskabsaar.php',             'category' => 'finance', 'textId' => 778,
+			array('key' => 'regnskabsaar',     'group' => 'company', 'url' => 'settingsSection.php?s=company.fiscal_years', 'section' => 'company.fiscal_years', 'category' => 'finance', 'textId' => 778,
 				'keywords' => array('fiscal year','financial year','accounting year','start month','end month','close year','closed year','delete fiscal year','active fiscal year','set active year','create fiscal year','regnskabsår','regnskapsår')),
 			array('key' => 'stamkort',         'group' => 'company', 'url' => 'settingsSection.php?s=company.data', 'section' => 'company.data', 'category' => 'company', 'textId' => 779,
 				'keywords' => array('company info','company profile','company name','company address','vat number','tax id','cvr number','bank details','bank account','gdpr agreement','data processing agreement','contact person','phone number','mobile number','employee list','firmanavn','bankoplysninger','databehandleraftale','kontaktperson')),
+			array('key' => 'gdpr',             'group' => 'company', 'url' => 'settingsSection.php?s=company.gdpr', 'section' => 'company.gdpr', 'category' => 'company', 'textId' => 6523,
+				'keywords' => array('gdpr', 'persondata', 'personal data', 'inaktive kunder', 'inactive customers', 'oprydning')),
 			array('key' => 'ansatte',          'group' => 'organisation', 'url' => 'ansatte.php',                  'category' => 'company', 'textId' => 1262,
 				'keywords' => array('employee record','staff record','new employee','edit employee','employee number','employee name','employee address','employee email','employee phone','employee mobile','salary','payroll','extra salary','cpr number','social security number','initials','pos code','employee department','employee background','employee language','employee bank account','employee notes','employee start date','employee end date','terminate employee','close employee','ansatte','løn','cprnr','initialer','startdato','slutdato','lønn')),
 			array('key' => 'formularer',       'group' => 'documents', 'url' => 'formularkort.php?valg=formularer', 'category' => 'documents', 'textId' => 780,
@@ -153,7 +157,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('bank feed','bank transaction import','bank statement import','show bank status','show status kassekladde','default date range bank import','date method','last quarter','this quarter','bank connection status')),
 			array('key' => 'barcodescan',           'group' => 'integrations', 'url' => 'settingsSection.php?s=integrations.connections&item=app', 'section' => 'integrations.connections', 'category' => 'pos', 'labelDa' => 'App Barcode', 'labelEn' => 'Barcode scanning app', 'labelNo' => 'App-strekkode',
 				'keywords' => array('qr code login','app login','mobile app authentication','one time access qr','saldi app login','scan to login')),
-			array('key' => 'sprog',                 'group' => 'company', 'url' => 'diverse.php?sektion=sprog',                'category' => 'company', 'textId' => 801,
+			array('key' => 'sprog',                 'group' => 'company', 'url' => 'settingsSection.php?s=company.localisation', 'section' => 'company.localisation', 'category' => 'company', 'textId' => 6524,
 				'keywords' => array('language','languages','change language','select language','preferred language','edit translation texts','ui language','current language','sprogindstillinger','sprog','språk','språkinnstillinger')),
 			array('key' => 'div_io',                'group' => 'import_export', 'url' => 'diverse.php?sektion=div_io',               'category' => 'data', 'textId' => 802,
 				'keywords' => array('import export','chart of accounts import export','customer import export','product import export','form import export','data import','data export','solar vvs import','kontoplan import','debitor import','varer import','formular import')),

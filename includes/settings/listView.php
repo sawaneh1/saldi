@@ -292,6 +292,7 @@ function settings_list_render(array $c): void
       <input type="hidden" name="action" value="">
       <input type="hidden" name="key" value="">
       <input type="hidden" name="entry" value="">
+      <label class="st-dialog-pw" id="st-dialog-pw" hidden><span><?= st_t(6546) ?></span><input class="st-input" type="password" name="password" autocomplete="current-password" aria-label="<?= st_t(6544) ?>"></label>
       <input type="hidden" name="item" value="">
       <div class="st-dialog-btns">
         <button type="button" class="st-btn st-btn-quiet" id="st-dialog-cancel"><?= st_t(5) ?></button>

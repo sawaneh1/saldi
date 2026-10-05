@@ -17,6 +17,9 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh 4d fiscal years and currencies: date cells, read-only columns and locked rows, a parent filter
+//                  (rates of one currency), automatic numbering, 'forbid', per-row actions, hooks before a row is
+//                  written and on delete, and a confirmation step for saves that post amounts (spec G2.3, V9).
 // 20261005 Sawaneh 4c VAT and groups: column range, 'requires', 'locked_if_used', 'empty_value', table 'defaults', VAT/group usage;
 //                  unchanged cells are not validated again, decimals compare as numbers.
 // 20261005 Sawaneh Settings redesign phase 4c (spec §7.3 / §8.2): the row editor behind a section of 'kind' rows.
@@ -35,7 +38,9 @@ function settings_rows_tables(array $section): array
 	$out = array();
 	foreach ($section['tables'] as $tableId => $t) {
 		$t += array('sub' => $tableId, 'fiscal' => false, 'usage' => null, 'inactive' => false, 'exclude' => '', 'help' => null,
-			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null, 'defaults' => array());
+			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null, 'defaults' => array(),
+			'no_add' => false, 'filter' => null, 'auto_code' => false, 'row_actions' => array(), 'confirm' => null, 'row_check' => null,
+			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null);
 		$st = $t['storage'];
 		$t['kind'] = $st[0] === 'grupper' ? 'grupper' : 'table';
 		$t['art'] = $t['kind'] === 'grupper' ? (string) $st[1] : '';
@@ -43,7 +48,8 @@ function settings_rows_tables(array $section): array
 		$t['code_col'] = isset($t['code_col']) ? (string) $t['code_col'] : (isset($t['columns']['kodenr']) ? 'kodenr' : key($t['columns']));
 		foreach ($t['columns'] as $col => $def) {
 			$t['columns'][$col] = $def + array('type' => 'text', 'required' => false, 'unique' => (isset($def['type']) && $def['type'] === 'code'), 'width' => '', 'numeric' => true, 'help' => null, 'options' => null, 'options_from' => null, 'derive' => null,
-				'range' => null, 'requires' => null, 'locked_if_used' => false, 'empty_value' => null);
+				'range' => null, 'requires' => null, 'locked_if_used' => false, 'empty_value' => null, 'readonly' => false, 'forbid' => null,
+				'kontotype' => null, 'true_value' => 'on', 'false_value' => '');
 		}
 		$out[$tableId] = $t;
 	}
@@ -81,6 +87,9 @@ function settings_rows_where(array $t, ?int $year): string
 	if ($t['exclude'] !== '') {
 		$w .= " and (" . $t['exclude'] . ")";
 	}
+	if (is_array($t['filter'])) {
+		$w .= " and " . $t['filter']['column'] . " = " . (isset($t['filter']['value']) ? (int) $t['filter']['value'] : 0);
+	}
 	return $w;
 }
 
@@ -92,16 +101,17 @@ function settings_rows_where(array $t, ?int $year): string
 function settings_rows_load(array $t, ?int $year): array
 {
 	$rows = array();
-	$order = ($t['code_col'] === 'kodenr') ? "length(cast(kodenr as text)), cast(kodenr as text), id" : 'id';
+	$order = $t['order'] !== null ? (string) $t['order'] : (($t['code_col'] === 'kodenr') ? "length(cast(kodenr as text)), cast(kodenr as text), id" : 'id');
 	$q = db_select("select * from " . $t['dbtable'] . " where " . settings_rows_where($t, $year) . " order by " . $order, __FILE__ . " linje " . __LINE__);
 	while ($r = db_fetch_array($q)) {
-		$row = array('id' => (int) $r['id'], 'cells' => array(), 'inactive' => isset($r['inaktiv']) && ($r['inaktiv'] === 't' || $r['inaktiv'] === true || $r['inaktiv'] === '1'));
+		$row = array('id' => (int) $r['id'], 'cells' => array(), 'raw' => $r, 'inactive' => isset($r['inaktiv']) && ($r['inaktiv'] === 't' || $r['inaktiv'] === true || $r['inaktiv'] === '1'));
 		foreach ($t['columns'] as $col => $def) {
 			$row['cells'][$col] = ($def['type'] === 'derived') ? '' : (isset($r[$col]) ? (string) $r[$col] : '');
 		}
 		$usage = settings_rows_usage($t, $row);
 		$row['usage'] = $usage['count'];
 		$row['usage_text'] = $usage['text'];
+		$row['locked'] = $t['row_locked'] !== null && function_exists('settings_rows_hook_locked') && settings_rows_hook_locked((string) $t['row_locked'], $row);
 		$rows[$row['id']] = $row;
 	}
 	return $rows;
@@ -127,6 +137,14 @@ function settings_rows_usage(array $t, array $row): array
 			$total += $n;
 		}
 	};
+	if ($t['usage'] === 'fiscal_year' && function_exists('settings_fiscal_year_usage')) {
+		foreach (settings_fiscal_year_usage($row) as $u) {
+			if ($u[0] > 0) {
+				$parts[] = $u[1];
+				$total += $u[0];
+			}
+		}
+	}
 	if ($code !== '') {
 		switch ($t['usage']) {
 			case 'department':
@@ -180,6 +198,19 @@ function settings_rows_usage(array $t, array $row): array
 			case 'item_group':
 				$add("select count(*) as n from varer where cast(gruppe as text) = '$esc'", 6427);
 				break;
+			case 'currency':
+				$k = isset($row['raw']['kodenr']) ? (int) $row['raw']['kodenr'] : 0;
+				$add("select count(*) as n from kontoplan where valuta = $k", 6601);
+				$add("select count(*) as n from transaktioner where cast(valuta as text) = '$k'", 6423);
+				$add("select count(*) as n from kassekladde where valuta = $k", 6566);
+				$add("select count(*) as n from ordrer where valuta = '$esc'", 6422);
+				$add("select count(*) as n from openpost where valuta = '$esc'", 6568);
+				$add("select count(*) as n from valuta where gruppe = $k", 6602);
+				break;
+			case 'currency_rate':
+				$g = isset($row['raw']['gruppe']) ? (int) $row['raw']['gruppe'] : 0;
+				$add("select count(*) as n from transaktioner where cast(valuta as text) = '$g' and transdate >= '$esc'", 6423);
+				break;
 		}
 	}
 	return array('count' => $total, 'text' => implode(' · ', $parts));
@@ -190,6 +221,9 @@ function settings_rows_usage(array $t, array $row): array
  */
 function settings_rows_derived(string $name, array $row): string
 {
+	if (function_exists('settings_rows_derived_extra') && ($v = settings_rows_derived_extra($name, $row)) !== null) {
+		return $v;
+	}
 	if ($name === 'department_warehouse') {
 		$code = db_escape_string(trim((string) $row['cells']['kodenr']));
 		if ($code === '') {
@@ -214,7 +248,10 @@ function settings_rows_form_value(array $def, string $raw): string
 		return $raw === '' ? '' : str_replace('.', ',', rtrim(rtrim(number_format((float) $raw, 4, '.', ''), '0'), '.'));
 	}
 	if ($def['type'] === 'bool') {
-		return trim($raw) !== '' ? '1' : '';
+		return (trim($raw) !== '' && trim($raw) !== (string) $def['false_value']) ? '1' : '';
+	}
+	if ($def['type'] === 'date' && preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $raw, $m)) {
+		return $m[3] . '-' . $m[2] . '-' . $m[1];
 	}
 	return $raw;
 }
@@ -231,7 +268,26 @@ function settings_rows_to_raw(array $def, string $value, ?int $year): array
 	$raw = $value;
 	switch ($def['type']) {
 		case 'bool':
-			$raw = ($value === '1' || $value === 'on') ? 'on' : '';
+			$raw = ($value === '1' || $value === 'on') ? (string) $def['true_value'] : (string) $def['false_value'];
+			break;
+		case 'date':
+			if ($value !== '') {
+				$y = $mo = $d = 0;
+				if (preg_match('/^(\d{1,2})[-.\/](\d{1,2})[-.\/](\d{2}|\d{4})$/', $value, $m)) {
+					$y = strlen($m[3]) === 2 ? 2000 + (int) $m[3] : (int) $m[3];
+					$mo = (int) $m[2];
+					$d = (int) $m[1];
+				} elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $value, $m)) {
+					$y = (int) $m[1];
+					$mo = (int) $m[2];
+					$d = (int) $m[3];
+				}
+				if ($y && checkdate($mo, $d, $y)) {
+					$raw = sprintf('%04d-%02d-%02d', $y, $mo, $d);
+				} else {
+					$error = 6592;
+				}
+			}
 			break;
 		case 'code':
 			if ($value !== '' && $def['numeric'] && !preg_match('/^[0-9]+$/', $value)) {
@@ -258,8 +314,11 @@ function settings_rows_to_raw(array $def, string $value, ?int $year): array
 				} else {
 					global $regnaar;
 					$y = $year !== null ? $year : (int) $regnaar;
-					if (!db_fetch_array(db_select("select id from kontoplan where kontonr = '" . db_escape_string($value) . "' and regnskabsaar = $y", __FILE__ . " linje " . __LINE__))) {
+					$r = db_fetch_array(db_select("select kontotype from kontoplan where kontonr = '" . db_escape_string($value) . "' and regnskabsaar = $y", __FILE__ . " linje " . __LINE__));
+					if (!$r) {
 						$error = 5734;
+					} elseif ($def['kontotype'] !== null && trim((string) $r['kontotype']) !== (string) $def['kontotype']) {
+						$error = 6594;
 					}
 				}
 			}
@@ -273,6 +332,9 @@ function settings_rows_to_raw(array $def, string $value, ?int $year): array
 	}
 	if ($raw === '' && $def['empty_value'] !== null) {
 		$raw = (string) $def['empty_value'];
+	}
+	if ($raw !== '' && is_array($def['forbid']) && function_exists('settings_rows_forbidden') && settings_rows_forbidden((string) $def['forbid'][0], $raw)) {
+		$error = (int) $def['forbid'][1];
 	}
 	if ($error === null && $raw === '' && $def['required']) {
 		$error = 6419;
@@ -289,7 +351,13 @@ function settings_rows_same(array $def, string $stored, string $raw): bool
 		return abs((float) $stored - (float) $raw) < 0.000001;
 	}
 	if ($def['type'] === 'bool') {
-		return (trim($stored) !== '') === ($raw !== '');
+		$on = function ($v) use ($def) {
+			return trim((string) $v) !== '' && trim((string) $v) !== (string) $def['false_value'];
+		};
+		return $on($stored) === $on($raw);
+	}
+	if ($def['type'] === 'date') {
+		return substr(trim($stored), 0, 10) === $raw;
 	}
 	return trim($stored) === $raw;
 }
@@ -299,7 +367,9 @@ function settings_rows_same(array $def, string $stored, string $raw): bool
  * updated, each with its audit row (spec §8.12). Nothing is written while any cell is wrong.
  *
  * @param array<string, array<string, mixed>> $tables
- * @return array{errors: array<string, int>, posted: array<string, array<string, array<string, string>>>, flash: array<int, array<int, string>>}
+ * A dry run also returns 'confirm': lines describing amounts a table's 'confirm' hook would post (spec G2.3, V9).
+ *
+ * @return array{errors: array<string, int>, posted: array<string, array<string, array<string, string>>>, flash: array<int, array<int, string>>, confirm: array<int, string>}
  */
 function settings_rows_save(string $sectionId, array $tables, array $post, ?int $year, bool $dryRun): array
 {
@@ -324,7 +394,7 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 			}
 			$rowId = (string) $rowId;
 			$isNew = (strpos($rowId, 'n') === 0);
-			if (!$isNew && !isset($existing[(int) $rowId])) {
+			if ((!$isNew && !isset($existing[(int) $rowId])) || ($isNew && $t['no_add']) || (!$isNew && $existing[(int) $rowId]['locked'])) {
 				continue;
 			}
 			$current = $isNew ? null : $existing[(int) $rowId];
@@ -335,7 +405,7 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 				if ($def['type'] === 'derived') {
 					continue;
 				}
-				if (!$isNew && !isset($cells[$col])) {
+				if (!$isNew && (!isset($cells[$col]) || $def['readonly'])) {
 					// Not posted (a disabled control): the stored value stays.
 					$clean[$col] = (string) $current['cells'][$col];
 					continue;
@@ -370,13 +440,24 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 			$code = mb_strtolower(trim((string) $clean[$codeCol]));
 			if ($code !== '') {
 				$owner = isset($codes[$code]) ? $codes[$code] : null;
-				if (($owner !== null && (string) $owner !== $rowId) || isset($seen[$code])) {
+				if ((($owner !== null && (string) $owner !== $rowId) || isset($seen[$code])) && !isset($rowErrors[$codeCol])) {
 					$rowErrors[$codeCol] = 6418;
 				}
 				$seen[$code] = true;
 			}
 			if (!$isNew && $current['usage'] > 0 && trim((string) $current['cells'][$codeCol]) !== trim((string) $clean[$codeCol])) {
 				$rowErrors[$codeCol] = 6420;
+			}
+			if (!$rowErrors && $t['row_check'] !== null && function_exists('settings_rows_row_check')) {
+				$dirty = $isNew;
+				foreach ($clean as $col => $raw) {
+					if (!$isNew && !settings_rows_same($t['columns'][$col], (string) $current['cells'][$col], $raw)) {
+						$dirty = true;
+					}
+				}
+				if ($dirty) {
+					$rowErrors = settings_rows_row_check((string) $t['row_check'], $t, $clean, $current);
+				}
 			}
 			foreach ($rowErrors as $col => $textId) {
 				$errors[$tableId . '/' . $rowId . '/' . $col] = $textId;
@@ -399,15 +480,35 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 			}
 		}
 	}
+	$confirm = array();
+	if (!$errors && $dryRun) {
+		foreach ($plan as $step) {
+			$t = $tables[$step[1]];
+			if ($t['confirm'] !== null && function_exists('settings_rows_confirm_lines')) {
+				$confirm = array_merge($confirm, settings_rows_confirm_lines((string) $t['confirm'], $t, $step));
+			}
+		}
+	}
 	if ($errors || $dryRun || !$plan) {
-		return array('errors' => $errors, 'posted' => $posted, 'flash' => $flash);
+		return array('errors' => $errors, 'posted' => $posted, 'flash' => $flash, 'confirm' => $confirm);
 	}
 	global $regnaar;
 	transaktion('begin');
 	foreach ($plan as $step) {
 		$t = $tables[$step[1]];
 		$objekt = $sectionId . '.' . $step[1];
+		if ($t['before_row'] !== null && function_exists('settings_rows_before_row')) {
+			settings_rows_before_row((string) $t['before_row'], $t, $step);
+		}
 		if ($step[0] === 'insert') {
+			if ($t['auto_code'] && $t['kind'] === 'grupper') {
+				// The next number counted as a number, not as text ("10" after "9"; currencies, audit V8).
+				$r = db_fetch_array(db_select("select max(cast(kodenr as integer)) as m from grupper where art = '" . db_escape_string($t['art']) . "' and cast(kodenr as text) ~ '^[0-9]+$'", __FILE__ . " linje " . __LINE__));
+				$step[2] = array('kodenr' => (string) ((int) ($r ? $r['m'] : 0) + 1)) + $step[2];
+			}
+			if (is_array($t['filter'])) {
+				$step[2] = array($t['filter']['column'] => (string) (int) $t['filter']['value']) + $step[2];
+			}
 			$cols = array();
 			$vals = array();
 			foreach ($t['defaults'] + $step[2] as $col => $raw) {
@@ -451,7 +552,7 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
 		}
 	}
 	transaktion('commit');
-	return array('errors' => array(), 'posted' => $posted, 'flash' => $flash);
+	return array('errors' => array(), 'posted' => $posted, 'flash' => $flash, 'confirm' => array());
 }
 
 /**
@@ -459,6 +560,9 @@ function settings_rows_save(string $sectionId, array $tables, array $post, ?int 
  */
 function settings_rows_after_save(string $hook): void
 {
+	if (function_exists('settings_rows_after_save_extra') && settings_rows_after_save_extra($hook)) {
+		return;
+	}
 	if ($hook === 'warehouses_to_departments') {
 		// A department's default warehouse (AFD box1, read by the order pages) follows the warehouses flagged with
 		// it here; a department without a flagged warehouse keeps whatever it had.
@@ -488,11 +592,16 @@ function settings_rows_delete(string $sectionId, string $tableId, array $t, int 
 		return array('err', sprintf(st_txt(6414), $code) . ' – ' . sprintf(st_txt(6415), $row['usage_text']));
 	}
 	$where = "id = $id" . ($t['kind'] === 'grupper' ? " and art = '" . db_escape_string($t['art']) . "'" : '');
+	transaktion('begin');
+	if ($t['on_delete'] !== null && function_exists('settings_rows_on_delete')) {
+		settings_rows_on_delete((string) $t['on_delete'], $t, $row);
+	}
 	db_modify("delete from " . $t['dbtable'] . " where $where", __FILE__ . " linje " . __LINE__);
 	SettingsService::auditRow($sectionId, $tableId, $sectionId . '.' . $tableId . '#' . $code, json_encode($row['cells'], JSON_UNESCAPED_UNICODE), '', 'setting.row_deleted');
 	if ($t['on_save'] !== null) {
 		settings_rows_after_save((string) $t['on_save']);
 	}
+	transaktion('commit');
 	return array('ok', sprintf(st_txt(6430), $code !== '' ? $code : (string) $id));
 }
 

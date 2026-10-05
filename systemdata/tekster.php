@@ -73,9 +73,7 @@ include("top.php");
 // }
 
 
-if ($ryd=if_isset($_GET['ryd'])) {
-	db_modify("delete from tekster where sprog_id='$sprog_id'",__FILE__ . " linje " . __LINE__);
-}
+// 20261005 Sawaneh ?ryd=1 (delete every text of the language on a GET) removed - settings redesign G1.3.
 $sort=if_isset($_GET['sort']);
 if (!in_array($sort, array('tekst', 'tekst_id', 'id'), true)) $sort="tekst"; // 20260928 Sawaneh Security 4.0 (A12): column whitelist
 

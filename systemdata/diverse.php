@@ -794,7 +794,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 					$qtxt.= "('timezone','$timezone','Tidszone. Anvendes hvis regnskabet anvender anden tidszone end serveren','0')";
 				}
 				db_modify($qtxt, __FILE__ . " linje " . __LINE__);
-				setcookie("timezone", $timezone, time() + 60 * 60 * 24 * 30, '/');
+				// 20261005 Sawaneh timezone cookie removed (settings redesign G1.3); the setting is read by online.php.
 			}
 		} elseif (isset($_POST['nulstil']) && $_POST['nulstil']) { #20170731
 			require_once(__DIR__ . '/resetAccount.php');

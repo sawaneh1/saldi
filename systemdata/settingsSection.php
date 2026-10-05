@@ -28,6 +28,10 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261005 Sawaneh 4d G1.2/G2.3: row actions (set a fiscal year active, delete an old year with its data behind the
+//                  password), the create card of a table, a parent filter (the currency of the rates) kept in the URL,
+//                  and a save that would post amounts first shows them and needs "Bogfør og gem" (audit V9).
+// 20261005 Sawaneh Danger-zone actions ('danger_zone') run only with the user's password (§8.3); a refusal is audited.
 // 20261005 Sawaneh Phase 4c: sections of 'kind' rows - tables through includes/settings/rows.php (validate first,
 //                  then fields, then rows), actions row_delete / row_inactive / row_copy_year, year in the address.
 // 20261004 Sawaneh §8.11: 'back' (a path inside Saldi) from the gear in the sub-bar shows "Tilbage" and survives saves.
@@ -60,7 +64,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261005";
+$css = "../css/unified-components.css?v=20261005c";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -73,6 +77,7 @@ include_once(__DIR__ . "/../includes/settings/components.php");
 include_once(__DIR__ . "/../includes/settings/actions.php");
 include_once(__DIR__ . "/../includes/settings/listView.php");
 include_once(__DIR__ . "/../includes/settings/rowsView.php");
+include_once(__DIR__ . "/../includes/settings/rowHooks.php");
 
 $sections = getSettingsSections();
 $sectionId = isset($_GET['s']) ? (string) $_GET['s'] : '';
@@ -127,6 +132,18 @@ foreach ($tables as $t) {
 if ($isRows && $year !== null && isset($_GET['year'])) {
 	$selfUrl .= '&year=' . $year;
 }
+foreach ($tables as $tableId => $t) {
+	if (is_array($t['filter'])) {
+		$opts = settings_rows_filter_options((string) $t['filter']['options']);
+		$param = (string) $t['filter']['param'];
+		$want = isset($_GET[$param]) ? (int) $_GET[$param] : (isset($_POST[$param]) ? (int) $_POST[$param] : 0);
+		$tables[$tableId]['filter']['options'] = $opts;
+		$tables[$tableId]['filter']['value'] = isset($opts[$want]) ? $want : ($opts ? (int) key($opts) : 0);
+		if ($opts) {
+			$selfUrl .= '&' . $param . '=' . $tables[$tableId]['filter']['value'];
+		}
+	}
+}
 if ($isList && !empty($section['items_from'])) {
 	$section['items'] = settings_list_dynamic_items((string) $section['items_from']);
 }
@@ -172,12 +189,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if ($action === 'run') {
 		$key = isset($_POST['key']) ? (string) $_POST['key'] : '';
 		$target = $backUrl;
+		if (isset($defs[$key]) && !empty($defs[$key]['danger_zone']) && !settings_verify_password(isset($_POST['password']) ? (string) $_POST['password'] : '')) {
+			audit_log('setting.action_refused', 'password', 'indstilling', $key);
+			$_SESSION['settings_error'] = st_txt(6545);
+			ob_end_clean();
+			header('Location: ' . $backUrl);
+			exit;
+		}
 		if (isset($defs[$key]) && $defs[$key]['type'] === 'action' && st_visible($defs[$key], array())) {
 			// Till and price-list row actions write their own entry with before/after.
-			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove', 'pickup_add', 'pickup_delete'), true)) {
+			if (!in_array(isset($defs[$key]['run']) ? $defs[$key]['run'] : '', array('till_add', 'till_remove', 'pricelist_create', 'pricelist_delete', 'card_add', 'card_up', 'card_down', 'card_remove', 'pickup_add', 'pickup_delete', 'gdpr_delete_inactive'), true)) {
 				audit_log('setting.action', '', 'indstilling', $key);
 			}
 			$target = settings_run_action($defs[$key], $backUrl);
+		}
+		ob_end_clean();
+		header('Location: ' . $target);
+		exit;
+	}
+
+	if ($isRows && $action === 'row_action') {
+		$tableId = isset($_POST['table']) ? (string) $_POST['table'] : '';
+		$name = isset($_POST['value']) ? (string) $_POST['value'] : '';
+		$target = $backUrl;
+		if (isset($tables[$tableId]['row_actions'][$name])) {
+			$t = $tables[$tableId];
+			$rows = settings_rows_load($t, $year);
+			$rid = (int) (isset($_POST['id']) ? $_POST['id'] : 0);
+			if (!empty($t['row_actions'][$name]['danger_zone']) && !settings_verify_password(isset($_POST['password']) ? (string) $_POST['password'] : '')) {
+				audit_log('setting.action_refused', 'password', 'indstilling', $sectionId . '.' . $tableId . '.' . $name);
+				$_SESSION['settings_error'] = st_txt(6545);
+			} elseif (isset($rows[$rid])) {
+				$res = settings_rows_row_action($sectionId, $tableId, $t, $rows[$rid], $name);
+				$_SESSION['settings_flash'] = $res['flash'];
+				if (!empty($res['reload_shell'])) {
+					$_SESSION['settings_reload_shell'] = 1;
+				}
+			}
+		}
+		ob_end_clean();
+		header('Location: ' . $target);
+		exit;
+	}
+
+	if ($isRows && $action === 'row_create') {
+		$tableId = isset($_POST['table']) ? (string) $_POST['table'] : '';
+		$target = $backUrl . '#create';
+		if (isset($tables[$tableId]) && $tables[$tableId]['create'] !== null) {
+			$res = settings_rows_create_submit((string) $tables[$tableId]['create'], $_POST);
+			$_SESSION['settings_flash'] = $res['flash'];
+			if ($res['redirect'] !== '') {
+				$target = $res['redirect'];
+			}
 		}
 		ob_end_clean();
 		header('Location: ' . $target);
@@ -207,8 +270,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	}
 
 	// Rows are checked before anything is written, so a wrong cell leaves the fields unsaved too (spec §7.3).
-	$rowsState = $isRows ? settings_rows_save($sectionId, $tables, $_POST, $year, true) : array('errors' => array(), 'posted' => array(), 'flash' => array());
-	if ($rowsState['errors']) {
+	$rowsState = $isRows ? settings_rows_save($sectionId, $tables, $_POST, $year, true) : array('errors' => array(), 'posted' => array(), 'flash' => array(), 'confirm' => array());
+	if (!$rowsState['errors'] && !empty($rowsState['confirm']) && empty($_POST['confirmed'])) {
+		// Nothing is written until the amounts the save would post have been seen and confirmed.
+		$state = array('errors' => array(), 'posted' => (isset($_POST['f']) && is_array($_POST['f'])) ? $_POST['f'] : array(), 'conflict' => null, 'flash' => array(), 'confirm' => $rowsState['confirm']);
+	} elseif ($rowsState['errors']) {
 		$state = settings_section_save($sectionId, $defs, $_POST + array('f' => array()));
 		$state['errors'] = $rowsState['errors'];
 	} else {
@@ -218,13 +284,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		}
 	}
 	$state['rows_posted'] = $rowsState['posted'];
-	if (!$state['errors'] && !$state['conflict']) {
+	if (!$state['errors'] && !$state['conflict'] && empty($state['confirm'])) {
 		ob_end_clean();
 		header('Location: ' . $backUrl . '&saved=' . date('Hi'));
 		exit;
 	}
 }
 
+if (!empty($_SESSION['settings_reload_shell']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+	// A new active fiscal year: the shell draws the year in the top bar, so it reloads (with this page in its hash).
+	unset($_SESSION['settings_reload_shell']);
+	ob_end_clean();
+	echo '<!doctype html><script>if (window.top !== window) { window.top.location.reload(); } else { window.location.reload(); }</script>';
+	exit;
+}
 $settingsRowsContext = array('tables' => $tables, 'year' => $year, 'years' => $years);
 settings_section_view($sectionId, $section, $defs, $state, $canWrite, $csrfToken, $selfUrl, $item);
 
@@ -413,6 +486,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 			'accentTxt' => $accentTxt, 'group' => $group, 'sprogId' => $sprogId, 'charset' => $charset,
 			'tables' => $settingsRowsContext['tables'], 'year' => $settingsRowsContext['year'], 'years' => $settingsRowsContext['years'],
 			'rowsPosted' => isset($state['rows_posted']) ? $state['rows_posted'] : array(),
+			'confirm' => isset($state['confirm']) ? $state['confirm'] : array(),
 		));
 		return;
 	}
@@ -622,6 +696,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
       <input type="hidden" name="action" value="">
       <input type="hidden" name="key" value="">
       <input type="hidden" name="entry" value="">
+      <label class="st-dialog-pw" id="st-dialog-pw" hidden><span><?= st_t(6546) ?></span><input class="st-input" type="password" name="password" autocomplete="current-password" aria-label="<?= st_t(6544) ?>"></label>
       <div class="st-dialog-btns">
         <button type="button" class="st-btn st-btn-quiet" id="st-dialog-cancel"><?= st_t(5) ?></button>
         <button type="submit" class="st-btn st-btn-primary" id="st-dialog-ok"></button>

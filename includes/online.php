@@ -87,14 +87,15 @@ if ($questionMarkPos !== false) {
 $slashCount = substr_count($path, '/');
 $relativePath = str_repeat('../', max(0, $slashCount - 2));
 
-if (isset($_COOKIE['timezone'])) { #20190110
-	$timezone = $_COOKIE['timezone'];
-	date_default_timezone_set($timezone);
-} else date_default_timezone_set('Europe/Copenhagen');
+// 20261005 Sawaneh The timezone cookie is gone (settings redesign G1.3): the setting below decides.
+date_default_timezone_set('Europe/Copenhagen');
 	#$r=db_fetch_array(db_select("select lukket,version from regnskab where id='1'",__FILE__ . " linje " . __LINE__)); # 20190605
 $r = db_fetch_array(db_select("select id, var_value from settings where var_name='timezone'", __FILE__ . " linje " . __LINE__));
 if ($r['var_value']) {
 	$timezone = $r['var_value'];
+	if (in_array($timezone, timezone_identifiers_list(), true)) {
+		date_default_timezone_set($timezone);
+	}
 } else {
 	$timezone = 'Europe/Copenhagen';
 	if ($r['id']) $qtxt = "update settings set var_value='$timezone' where id='$r[id]'";

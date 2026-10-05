@@ -1065,3 +1065,28 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
   .st-page-rows .st-layout { grid-template-columns: minmax(0, 1fr); }
   .st-page-rows .st-hist { grid-column: 1; }
 }
+
+/* 20261005 Sawaneh Danger-zone dialog: the password row (spec §8.3). */
+.st-dialog-pw { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 14px; font-size: 13px; color: var(--st-text-2); }
+.st-dialog-pw[hidden] { display: none; }
+.st-dialog-pw .st-input { width: 100%; }
+
+/* 20261005 Sawaneh 4d fiscal years and currencies: text buttons in the action column, the parent picker above a
+   table, the create card and the confirmation of amounts a save posts (audit V9). */
+.st-ricon.st-ricon-txt { font-family: inherit; }
+.st-ricon-txt { width: auto; padding: 0 10px; font-size: 12.5px; font-weight: 500; color: var(--st-link); text-decoration: none; white-space: nowrap; }
+.st-ricon-danger { color: var(--st-bad); }
+.st-rhead .st-rfilter { margin-top: 8px; }
+.st-create-grid { display: flex; flex-wrap: wrap; gap: 16px 22px; align-items: flex-end; padding: 16px 18px; }
+.st-create-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--st-text-2); }
+.st-create-grid .st-create-check { flex-direction: row; align-items: center; gap: 8px; height: 40px; color: var(--st-text); }
+.st-create-pair { display: flex; gap: 8px; }
+.st-create-pair .st-input { width: 88px; }
+.st-create-fixed { height: 40px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 8px; background: var(--st-surface-2); color: var(--st-text); font-variant-numeric: tabular-nums; }
+.st-confirm { margin: 0 0 14px; padding: 14px 16px; border: 1px solid var(--st-warn); border-radius: 10px; background: #fff8ee; font-size: 13.5px; }
+.st-confirm ul { margin: 8px 0; padding-left: 20px; }
+.st-confirm p { margin: 0 0 12px; color: var(--st-text-2); }
+@media (max-width: 640px) { .st-create-grid label, .st-create-grid .st-input { width: 100%; } }
+.st-rc-col-period span { white-space: nowrap; }
+.st-rfilter select.st-input { width: auto; min-width: 220px; }
+.st-rfilter select.st-input { text-align: left; }

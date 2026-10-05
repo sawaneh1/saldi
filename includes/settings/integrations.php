@@ -188,6 +188,12 @@ function settings_integration_info(array $def): string
 {
 	global $db;
 	switch ($def['info']) {
+		case 'gdpr_inactive':
+			$n = settings_gdpr_inactive();
+			if (!$n['D'] && !$n['K']) {
+				return st_h(st_txt(6543));
+			}
+			return st_h(sprintf(st_txt(6465), $n['D']) . ' · ' . sprintf(st_txt(6466), $n['K']));
 		case 'nemhandel':
 			// G9.4: the company is created in NemHandel the first time an invoice goes out digitally (debitor/api.php stores the companyID).
 			return st_h(trim(SettingsService::raw('integrations.easyubl.company_id')) !== '' ? st_txt(6375) : st_txt(6376));

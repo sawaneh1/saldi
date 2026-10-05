@@ -453,6 +453,13 @@ function st_options(array $def): array
 				$code = trim((string) $r['kode']) . trim((string) $r['kodenr']);
 				$cache[$from][$code] = $code . ' ' . trim((string) $r['beskrivelse']);
 			}
+		} elseif ($from === 'iso_currencies') {
+			// 4d G2.3: ISO codes for a new currency (rowHooks.php), the base currency left out (audit V5).
+			foreach (function_exists('settings_iso_currencies') ? settings_iso_currencies() : array() as $code) {
+				if (!function_exists('settings_base_currency') || $code !== settings_base_currency()) {
+					$cache[$from][$code] = $code;
+				}
+			}
 		} elseif ($from === 'currencies') {
 			$cache[$from] = array('DKK' => 'DKK');
 			$q = db_select("select box1 from grupper where art = 'VK' order by box1", __FILE__ . " linje " . __LINE__);
@@ -784,7 +791,7 @@ function st_render_action(array $def, bool $canRun, bool $visible): void
 	<?php if ($impact !== '') { ?><span class="st-impact"><?= st_h($impact) ?></span><?php } ?>
   </div>
   <div class="st-ctl">
-    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?><?= $impact !== '' ? ' ' . st_h($impact) : '' ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
+    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>"<?= !empty($def['danger_zone']) ? ' data-password="1"' : '' ?> data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?><?= $impact !== '' ? ' ' . st_h($impact) : '' ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
   </div>
 </div>
 	<?php

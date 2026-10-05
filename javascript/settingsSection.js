@@ -119,7 +119,7 @@
 		}
 		var run = e.target.closest('[data-run]');
 		if (run) {
-			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, true, run.classList.contains('st-btn-danger'));
+			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, true, run.classList.contains('st-btn-danger'), !!run.dataset.password);
 		}
 	});
 	// Enter on a focused toggle does nothing; Space toggles (button default).
@@ -173,8 +173,11 @@
 	var backdrop = document.getElementById('st-backdrop');
 	var dform = document.getElementById('st-dialog-form');
 	var returnFocus = null;
-	function openDialog(title, body, verb, values, newTab, danger) {
+	function openDialog(title, body, verb, values, newTab, danger, password) {
 		returnFocus = document.activeElement;
+		// A danger-zone action asks for the user's password (spec §8.3).
+		var pw = document.getElementById('st-dialog-pw');
+		if (pw) { pw.hidden = !password; pw.querySelector('input').value = ''; pw.querySelector('input').required = !!password; }
 		document.getElementById('st-dialog-title').textContent = title;
 		document.getElementById('st-dialog-body').textContent = body;
 		document.getElementById('st-dialog-ok').textContent = verb;

@@ -6128,3 +6128,85 @@
 6521	Bank og betaling	Bank and payment	Bank og betaling
 6522	Kontakt	Contact	Kontakt
 6523	Persondata	Personal data	Persondata
+6524	Lokalisering	Localisation	Lokalisering
+6525	Basisvaluta, land, tidszone, talformat og standardsprog for regnskabet.	Base currency, country, time zone, number format and default language of the ledger.	Basisvaluta, land, tidssone, tallformat og standardspråk for regnskapet.
+6526	Basisvaluta	Base currency	Basisvaluta
+6527	Valutaen regnskabet føres i. Ændres kun på et nyt regnskab.	The currency the ledger is kept in. Change only on a new ledger.	Valutaen regnskapet føres i. Endres bare på et nytt regnskap.
+6528	Styrer landespecifikke regler, f.eks. CVR-opslag og momsrubrikker.	Controls country-specific rules, e.g. CVR lookups and VAT boxes.	Styrer landspesifikke regler, f.eks. org.nr.-oppslag og mva-rubrikker.
+6529	Bruges til tidsstempler i regnskabet, når serveren står i en anden tidszone.	Used for timestamps in the ledger when the server is in another time zone.	Brukes til tidsstempler i regnskapet når serveren står i en annen tidssone.
+6530	Talformat	Number format	Tallformat
+6531	Tusindtals- og decimaltegn i tal, der vises og importeres.	Thousands and decimal separators in numbers shown and imported.	Tusen- og desimaltegn i tall som vises og importeres.
+6532	Systemsprog	System language	Systemspråk
+6533	Standardsprog for nye brugere og for sider uden brugervalg.	Default language for new users and for pages without a user choice.	Standardspråk for nye brukere og for sider uten brukervalg.
+6534	Oversættelser	Translations	Oversettelser
+6535	Ret de tekster, Saldi viser, for det sprog du er logget ind med.	Edit the texts Saldi shows, for the language you are logged in with.	Rett tekstene Saldi viser, for språket du er logget inn med.
+6536	Rediger oversættelser	Edit translations	Rediger oversettelser
+6537	Kunder og leverandører uden aktivitet i 3 år	Customers and suppliers with no activity for 3 years	Kunder og leverandører uten aktivitet på 3 år
+6538	Konti uden ordrer, åbne poster, notater eller jobkort i de seneste 3 år. Kontakter og historik slettes med.	Accounts with no orders, open items, notes or job cards in the last 3 years. Contacts and history are deleted with them.	Kontoer uten ordrer, åpne poster, notater eller jobbkort de siste 3 årene. Kontakter og historikk slettes med.
+6539	Slet inaktive kunder og leverandører	Delete inactive customers and suppliers	Slett inaktive kunder og leverandører
+6540	Slet inaktive kunder og leverandører?	Delete inactive customers and suppliers?	Slette inaktive kunder og leverandører?
+6541	Kontiene slettes med kontakter, notater og jobkort. Kan ikke fortrydes. Tag en backup først.	The accounts are deleted with contacts, notes and job cards. Cannot be undone. Take a backup first.	Kontoene slettes med kontakter, notater og jobbkort. Kan ikke angres. Ta en sikkerhetskopi først.
+6542	Slettet: %s kunder og %s leverandører	Deleted: %s customers and %s suppliers	Slettet: %s kunder og %s leverandører
+6543	Ingen kunder eller leverandører uden aktivitet i 3 år	No customers or suppliers without activity for 3 years	Ingen kunder eller leverandører uten aktivitet på 3 år
+6544	Din adgangskode	Your password	Passordet ditt
+6545	Forkert adgangskode – intet er ændret	Wrong password – nothing was changed	Feil passord – ingenting er endret
+6546	Bekræft med din adgangskode	Confirm with your password	Bekreft med passordet ditt
+6547	Periode, bogføring og status for hvert regnskabsår. Et nyt år oprettes i forlængelse af det seneste.	Period, posting and status of each fiscal year. A new year is created right after the latest one.	Periode, bokføring og status for hvert regnskapsår. Et nytt år opprettes i forlengelsen av det siste.
+6548	Nr.	No.	Nr.
+6549	Periode	Period	Periode
+6550	Bogføring tilladt	Posting allowed	Bokføring tillatt
+6551	Status	Status	Status
+6552	Slettet	Deleted	Slettet
+6553	Dit aktive år	Your active year	Ditt aktive år
+6554	Åben for bogføring	Open for posting	Åpen for bokføring
+6555	Sæt aktivt for alle	Set active for everyone	Sett aktivt for alle
+6556	Åbningsbalance	Opening balance	Åpningsbalanse
+6557	Slet med data	Delete with data	Slett med data
+6558	Forslaget starter lige efter det seneste regnskabsår. Kontoplan og år-afhængige indstillinger kopieres fra det seneste år; bagefter gennemgår du åbningsbalancen.	The suggestion starts right after the latest fiscal year. The chart of accounts and year-dependent settings are copied from it; then you review the opening balance.	Forslaget starter rett etter det siste regnskapsåret. Kontoplan og årsavhengige innstillinger kopieres fra det; deretter går du gjennom åpningsbalansen.
+6559	Start	Start	Start
+6560	Første regnskabsår: vælg den måned og det år, regnskabet starter. Bagefter indtaster du åbningsbalancen.	First fiscal year: choose the month and year the accounts start. Then you enter the opening balance.	Første regnskapsår: velg måneden og året regnskapet starter. Deretter legger du inn åpningsbalansen.
+6561	Slut skal ligge efter start	The end must be after the start	Slutt må ligge etter start
+6562	Måned skal være mellem 1 og 12	Month must be between 1 and 12	Måned må være mellom 1 og 12
+6563	Året skal ligge mellem %s og %s	The year must be between %s and %s	Året må ligge mellom %s og %s
+6564	Regnskabsår %s er oprettet og er nu dit aktive år – gennemgå åbningsbalancen	Fiscal year %s has been created and is now your active year – review the opening balance	Regnskapsår %s er opprettet og er nå ditt aktive år – gå gjennom åpningsbalansen
+6565	Ingen regnskabsår endnu	No fiscal years yet	Ingen regnskapsår ennå
+6566	%s kassekladdelinjer	%s cash journal lines	%s kassekladdelinjer
+6567	%s brugere har året som aktivt	%s users have the year as active	%s brukere har året som aktivt
+6568	%s åbne poster	%s open items	%s åpne poster
+6569	det er dit aktive år	it is your active year	det er ditt aktive år
+6570	et senere regnskabsår findes	a later fiscal year exists	et senere regnskapsår finnes
+6571	Slet regnskabsår %s med alle data?	Delete fiscal year %s with all data?	Slette regnskapsår %s med alle data?
+6572	Posteringer, kassekladder, ordrer og fakturaer til og med periodens slutning slettes; åbne poster samles i én primopost pr. konto. Det kan ikke fortrydes – tag en sikkerhedskopi først.	Postings, cash journals, orders and invoices up to the end of the period are deleted; open items are combined into one opening item per account. This cannot be undone – take a backup first.	Posteringer, kassekladder, ordrer og fakturaer til og med periodens slutt slettes; åpne poster samles i én primopost per konto. Det kan ikke angres – ta en sikkerhetskopi først.
+6573	Regnskabsår %s er slettet	Fiscal year %s has been deleted	Regnskapsår %s er slettet
+6574	Regnskabsår %s er nu aktivt for alle brugere	Fiscal year %s is now active for all users	Regnskapsår %s er nå aktivt for alle brukere
+6575	Regnskabsår %s er nu dit aktive år	Fiscal year %s is now your active year	Regnskapsår %s er nå ditt aktive år
+6576	Kan ikke slettes: %s	Cannot be deleted: %s	Kan ikke slettes: %s
+6577	Regnskabsåret kan først slettes 5 år efter periodens slutning	The fiscal year can only be deleted 5 years after the end of the period	Regnskapsåret kan først slettes 5 år etter periodens slutt
+6578	Det ældste regnskabsår skal slettes først	The oldest fiscal year must be deleted first	Det eldste regnskapsåret må slettes først
+6579	Forrige regnskabsår er slettet, så åbningsbalancen vises, som den står, og kan ikke overføres igen.	The previous fiscal year has been deleted, so the opening balance is shown as it stands and cannot be transferred again.	Forrige regnskapsår er slettet, så åpningsbalansen vises som den står og kan ikke overføres igjen.
+6580	Valutaer med kursdifferencekonto og visning i kassen. Kurserne pr. dato står nedenfor.	Currencies with exchange-difference account and display in the till. The rates per date are below.	Valutaer med kursdifferansekonto og visning i kassen. Kursene per dato står nedenfor.
+6581	Valutakode	Currency code	Valutakode
+6582	Kursdifferencekonto	Exchange-difference account	Kursdifferansekonto
+6583	Vis i kassen	Show in the till	Vis i kassen
+6584	Aktuel kurs	Current rate	Aktuell kurs
+6585	Tilføj valuta	Add currency	Legg til valuta
+6586	Ingen valutaer endnu	No currencies yet	Ingen valutaer ennå
+6587	Kurser	Rates	Kurser
+6588	Kursen er værdien i %s af 100 enheder af valutaen. En kursændring tilføjes som en ny kurs med den dato, den gælder fra.	The rate is the value in %s of 100 units of the currency. A rate change is added as a new rate with the date it applies from.	Kursen er verdien i %s av 100 enheter av valutaen. En kursendring legges til som en ny kurs med datoen den gjelder fra.
+6589	Kurs	Rate	Kurs
+6590	Tilføj kurs	Add rate	Legg til kurs
+6591	Ingen kurser for valutaen endnu	No rates for the currency yet	Ingen kurser for valutaen ennå
+6592	Ugyldig dato	Invalid date	Ugyldig dato
+6593	Basisvalutaen kan ikke oprettes som valuta	The base currency cannot be created as a currency	Basisvalutaen kan ikke opprettes som valuta
+6594	Kontoen skal være en driftskonto	The account must be a profit and loss account	Kontoen må være en driftskonto
+6595	Der er bogført i valutaen efter denne dato – brug en senere dato	There are postings in the currency after this date – use a later date	Det er bokført i valutaen etter denne datoen – bruk en senere dato
+6596	Valutaen mangler en kursdifferencekonto	The currency has no exchange-difference account	Valutaen mangler en kursdifferansekonto
+6597	Gemmes kursen, bogføres disse kursdifferencer:	Saving the rate posts these exchange differences:	Lagres kursen, bokføres disse kursdifferansene:
+6598	Konto %s: %s kr. (modkonto %s)	Account %s: %s (contra account %s)	Konto %s: %s kr. (motkonto %s)
+6599	Bogfør og gem	Post and save	Bokfør og lagre
+6600	Posteringerne får teksten "Kursændring" og kan ses på kontokortene.	The postings get the text "Kursændring" and can be seen on the account cards.	Posteringene får teksten "Kursændring" og kan ses på kontokortene.
+6601	%s konti	%s accounts	%s kontoer
+6602	%s kurser	%s rates	%s kurser
+6603	%s åbne poster justeres hos kunder og leverandører	%s open items of customers and suppliers are adjusted	%s åpne poster justeres hos kunder og leverandører
+6604	Kursen skal være større end 0	The rate must be greater than 0	Kursen må være større enn 0
+6605	Alle brugere får dette regnskabsår som aktivt, også ved næste login.	All users get this fiscal year as active, also at their next login.	Alle brukere får dette regnskapsåret som aktivt, også ved neste innlogging.

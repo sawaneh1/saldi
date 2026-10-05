@@ -148,7 +148,7 @@ function kontoindstillinger($regnskab, $skiftnavn)
 		$timezone = $r['var_value'];
 		if ($timezone) {
 			date_default_timezone_set($timezone);
-			setcookie("timezone", $timezone, time() + 60 * 60 * 24 * 30, '/');
+			// 20261005 Sawaneh timezone cookie removed (settings redesign G1.3); the setting is read by online.php.
 		}
 	}
 	print "<tr><td colspan='6'><hr></td></tr>\n";

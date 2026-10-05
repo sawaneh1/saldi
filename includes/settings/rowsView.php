@@ -17,6 +17,8 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh 4d: read-only columns and locked rows, row actions (with password for danger-zone ones), a parent
+//                  picker above a filtered table, a create card below a table and the confirmation of posted amounts.
 // 20261005 Sawaneh Settings redesign phase 4c (spec §8.2, mock-up 04): a section of 'kind' rows. One card per table:
 //                  column headers, every cell an input, an always-available "Tilføj" row, trash (with the usage count)
 //                  and the inaktiv eye; ordinary fields of the section above the tables; year selector for per-year
@@ -143,6 +145,18 @@ function settings_rows_render(array $c): void
         </ul>
       </div>
 			<?php } ?>
+			<?php if (!empty($c['confirm'])) { ?>
+      <div class="st-confirm" role="alert">
+        <b><?= st_t(6597) ?></b>
+        <ul>
+				<?php foreach ($c['confirm'] as $line) { ?>
+          <li><?= st_h($line) ?></li>
+				<?php } ?>
+        </ul>
+        <p><?= st_t(6600) ?></p>
+        <button type="submit" class="st-btn st-btn-primary" name="confirmed" value="1"><?= st_t(6599) ?></button>
+      </div>
+			<?php } ?>
 			<?php if ($state['conflict']) { ?>
       <div class="st-flash st-flash-err" role="alert"><i class="st-dotw st-dot-err" aria-hidden="true"></i><span><?= st_h(sprintf(st_txt(5749), $state['conflict']['by'], st_local_time((string) $state['conflict']['at'], 'H:i'))) ?></span></div>
 			<?php } ?>
@@ -185,6 +199,7 @@ function settings_rows_render(array $c): void
       </footer>
 		<?php } ?>
     </form>
+<?php if (function_exists('settings_rows_create_forms')) { settings_rows_create_forms($c); } ?>
 
     <aside class="st-hist" aria-labelledby="st-hist-title">
       <h2 id="st-hist-title"><?= st_t(5710) ?></h2>
@@ -195,12 +210,12 @@ function settings_rows_render(array $c): void
 				$t = isset($tables[$parts[0]]) ? $tables[$parts[0]] : null;
 				$label = $t ? st_txt($t['label']) : (isset($defs[$key]) ? st_txt($defs[$key]['label']) : $key);
 				if ($t && isset($parts[1])) {
-					$label .= ' · ' . (isset($t['columns'][$parts[1]]) ? st_txt($t['columns'][$parts[1]]['label']) : $parts[1]);
+					$label .= ' · ' . (isset($t['columns'][$parts[1]]) ? st_txt($t['columns'][$parts[1]]['label']) : (isset($t['row_actions'][$parts[1]]) ? st_txt($t['row_actions'][$parts[1]]['label']) : $parts[1]));
 				}
 				?>
         <div class="st-h">
           <span class="st-h-field"><?= st_h($label) ?></span>
-          <span class="st-h-ch"><?php if ($row['handling'] === 'setting.row_created') { ?><?= st_t(6429) ?><?php } elseif ($row['handling'] === 'setting.row_deleted') { ?><s><?= st_t(1099) ?></s><?php } else { ?><s><?= st_h((string) $row['old_value']) ?></s> → <?= st_h((string) $row['new_value']) ?><?php } ?></span>
+          <span class="st-h-ch"><?php if ($row['handling'] === 'setting.row_created') { ?><?= st_t(6429) ?><?php } elseif ($row['handling'] === 'setting.row_deleted') { ?><s><?= st_t(1099) ?></s><?php } else { ?><?php $isBool = $t && isset($parts[1], $t['columns'][$parts[1]]) && $t['columns'][$parts[1]]['type'] === 'bool'; $show = function ($v) use ($isBool, $t, $parts) { return $isBool ? (settings_rows_form_value($t['columns'][$parts[1]], (string) $v) !== '' ? '✓' : '–') : (string) $v; }; ?><s><?= st_h($show($row['old_value'])) ?></s> → <?= st_h($show($row['new_value'])) ?><?php } ?></span>
           <span class="st-h-m"><span><?= st_h($row['brugernavn']) ?> · <?= st_h(st_local_time((string) $row['tidspunkt'], 'j/n H:i')) ?></span></span>
         </div>
 			<?php } ?>
@@ -224,6 +239,7 @@ function settings_rows_render(array $c): void
       <input type="hidden" name="table" value="">
       <input type="hidden" name="id" value="">
       <input type="hidden" name="value" value="">
+      <label class="st-dialog-pw" id="st-dialog-pw" hidden><span><?= st_t(6546) ?></span><input class="st-input" type="password" name="password" autocomplete="current-password"></label>
       <div class="st-dialog-btns">
         <button type="button" class="st-btn st-btn-quiet" id="st-dialog-cancel"><?= st_t(5) ?></button>
         <button type="submit" class="st-btn st-btn-primary" id="st-dialog-ok"></button>
@@ -233,7 +249,7 @@ function settings_rows_render(array $c): void
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsRows.js?v=1"></script>
+<script src="../javascript/settingsRows.js?v=2"></script>
 	<?php
 }
 
@@ -262,7 +278,7 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 		$name = 'r[' . $tableId . '][' . $rowId . '][' . $col . ']';
 		$err = isset($errors[$tableId . '/' . $rowId . '/' . $col]) ? (int) $errors[$tableId . '/' . $rowId . '/' . $col] : 0;
 		$attrs = ' id="' . st_h($id) . '" name="' . st_h($name) . '" data-orig="' . st_h($value) . '"' . ($err ? ' aria-invalid="true" title="' . st_t($err) . '"' : '');
-		$ro = !$canWrite;
+		$ro = !$canWrite || $def['readonly'] || ($row && !empty($row['locked']));
 		if ($def['type'] === 'code' && $row && $row['usage'] > 0) {
 			$ro = true;
 			$attrs .= ' title="' . st_t(6420) . '"';
@@ -271,12 +287,14 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 			$attrs .= ' title="' . st_t(is_int($def['locked_if_used']) ? $def['locked_if_used'] : 6467) . '"';
 		}
 		if ($def['type'] === 'derived') {
-			echo '<td class="st-rc st-rc-derived"><span>' . st_h($row ? settings_rows_derived((string) $def['derive'], $row) : '') . '</span></td>';
+			echo '<td class="st-rc st-rc-derived st-rc-col-' . st_h($col) . '"><span>' . st_h($row ? settings_rows_derived((string) $def['derive'], $row) : '') . '</span></td>';
 			return;
 		}
 		echo '<td class="st-rc st-rc-' . st_h($def['type']) . ($err ? ' st-rc-err' : '') . '">';
 		if ($def['type'] === 'bool') {
-			echo '<input type="hidden" name="' . st_h($name) . '" value="">';
+			if (!$ro) {
+				echo '<input type="hidden" name="' . st_h($name) . '" value="">';
+			}
 			echo '<input type="checkbox" class="st-rcheck"' . $attrs . ' value="1"' . ($value !== '' ? ' checked' : '') . ($ro ? ' disabled' : '') . '>';
 		} elseif ($def['type'] === 'select') {
 			echo '<select class="st-rin"' . $attrs . ($ro ? ' disabled' : '') . '>';
@@ -290,7 +308,7 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 			}
 			echo '</select>';
 		} else {
-			$mode = in_array($def['type'], array('code', 'account', 'decimal'), true) ? ' inputmode="decimal"' : '';
+			$mode = in_array($def['type'], array('code', 'account', 'decimal'), true) ? ' inputmode="decimal"' : ($def['type'] === 'date' ? ' placeholder="dd-mm-åååå"' : '');
 			echo '<input type="text" class="st-rin' . (in_array($def['type'], array('code', 'account', 'decimal'), true) ? ' st-rin-num' : '') . '"' . $attrs . ' value="' . st_h($value) . '"' . $mode . ($ro ? ' readonly' : '') . '>';
 		}
 		echo '</td>';
@@ -298,7 +316,17 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 	?>
         <div class="st-rhead">
           <h2 id="tbl-<?= st_h($tableId) ?>-h"><?= st_t($t['label']) ?></h2>
-					<?php if ($t['help'] !== null) { ?><p class="st-rhelp"><?= st_t($t['help']) ?></p><?php } ?>
+					<?php if ($t['help'] !== null) { ?><p class="st-rhelp"><?= function_exists('settings_rows_help_text') ? st_h(settings_rows_help_text($t)) : st_t($t['help']) ?></p><?php } ?>
+					<?php if (is_array($t['filter'])) { ?>
+          <div class="st-scope st-rfilter">
+            <label for="st-f-<?= st_h($tableId) ?>"><?= st_t($t['filter']['label']) ?></label>
+            <select class="st-input st-input-short" id="st-f-<?= st_h($tableId) ?>" onchange="if (this.value) { window.location = this.value; }">
+						<?php foreach ($t['filter']['options'] as $v => $lab) { ?>
+              <option value="<?= st_h(preg_replace('/([?&])' . $t['filter']['param'] . '=[0-9]*/', '$1', $c['selfUrl']) . '&' . $t['filter']['param'] . '=' . (int) $v) ?>"<?= (int) $v === (int) $t['filter']['value'] ? ' selected' : '' ?>><?= st_h($lab) ?></option>
+						<?php } ?>
+            </select>
+          </div>
+					<?php } ?>
         </div>
         <div class="st-card st-rows" data-table="<?= st_h($tableId) ?>" data-inactive="<?= $t['inactive'] ? '1' : '0' ?>">
           <table class="st-rt" aria-labelledby="tbl-<?= st_h($tableId) ?>-h"<?= (!$rows && !$postedRows) ? ' hidden' : '' ?>>
@@ -322,10 +350,17 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 								$cell($rowId, $col, $def, $value, $row);
 							} ?>
                 <td class="st-ra">
-								<?php if ($canWrite) { ?>
-								<?php if ($t['inactive']) { ?><button type="button" class="st-ricon" data-inactive="<?= $row['inactive'] ? '0' : '1' ?>" title="<?= st_t($row['inactive'] ? 6434 : 6433) ?>" aria-label="<?= st_t($row['inactive'] ? 6434 : 6433) ?>"><i class='bx <?= $row['inactive'] ? 'bx-show' : 'bx-hide' ?>' aria-hidden="true"></i></button><?php } ?>
-                  <button type="button" class="st-ricon st-ricon-del" data-del title="<?= st_t(1099) ?>" aria-label="<?= st_t(1099) ?>"><i class='bx bx-trash' aria-hidden="true"></i></button>
-								<?php } ?>
+				<?php if ($canWrite) { ?>
+				<?php foreach ($t['row_actions'] as $an => $a) {
+					if (!function_exists('settings_rows_action_visible') || !settings_rows_action_visible($an, $row)) {
+						continue;
+					}
+					if (!empty($a['href'])) { ?><a class="st-ricon st-ricon-txt" href="<?= st_h(sprintf($a['href'], (int) $id)) ?>"><?= st_t($a['label']) ?></a><?php continue; }
+					?><button type="button" class="st-ricon st-ricon-txt<?= !empty($a['danger']) ? ' st-ricon-danger' : '' ?>" data-row-action="<?= st_h($an) ?>"<?= !empty($a['confirm_title']) ? ' data-title="' . st_h(sprintf(st_txt($a['confirm_title']), $code)) . '" data-body="' . st_t($a['confirm']) . '"' : '' ?><?= !empty($a['danger']) ? ' data-danger="1"' : '' ?><?= !empty($a['danger_zone']) ? ' data-password="1"' : '' ?> data-verb="<?= st_t($a['label']) ?>"><?= st_t($a['label']) ?></button><?php
+				} ?>
+				<?php if ($t['inactive']) { ?><button type="button" class="st-ricon" data-inactive="<?= $row['inactive'] ? '0' : '1' ?>" title="<?= st_t($row['inactive'] ? 6434 : 6433) ?>" aria-label="<?= st_t($row['inactive'] ? 6434 : 6433) ?>"><i class='bx <?= $row['inactive'] ? 'bx-show' : 'bx-hide' ?>' aria-hidden="true"></i></button><?php } ?>
+				<?php if (empty($row['locked'])) { ?><button type="button" class="st-ricon st-ricon-del" data-del title="<?= st_t(1099) ?>" aria-label="<?= st_t(1099) ?>"><i class='bx bx-trash' aria-hidden="true"></i></button><?php } ?>
+				<?php } ?>
                 </td>
               </tr>
 						<?php } ?>
@@ -346,7 +381,7 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 					<?php if (!$rows && !$postedRows) { ?>
           <div class="st-rempty"><b><?= st_t($t['empty']) ?></b></div>
 					<?php } ?>
-					<?php if ($canWrite) { ?>
+					<?php if ($canWrite && !$t['no_add'] && (!is_array($t['filter']) || !empty($t['filter']['value']))) { ?>
           <template data-row-template>
             <tr class="st-new" data-row="__N__" data-code="">
 						<?php foreach ($t['columns'] as $col => $def) {
@@ -380,5 +415,8 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
           </div>
 					<?php } ?>
         </div>
+					<?php if ($t['create'] !== null && function_exists('settings_rows_create_card')) {
+						settings_rows_create_card((string) $t['create'], $c, $tableId, $t);
+					} ?>
 	<?php
 }

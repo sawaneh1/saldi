@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh settings_verify_password() for danger-zone actions; GDPR clean-up of inactive accounts (G1.5).
 // 20261005 Sawaneh G1.1: company e-mail mirrored to the master database's regnskab row through db_modify(..., true).
 // 20261004 Sawaneh §8.13 settings_impact_text(): the number of items an action touches.
 // 20261004 Sawaneh G9.2: pickup addresses added and deleted here (the old page deleted every address missing from its form, B-D17).
@@ -229,6 +230,13 @@ function settings_run_action(array $def, string $selfUrl): string
 			}
 			$_SESSION['settings_flash'] = array('ok', st_txt(6383) . ': ' . $name);
 			return 'settingsSection.php?s=integrations.pickup';
+		case 'gdpr_delete_inactive':
+			$n = settings_gdpr_delete_inactive();
+			if (function_exists('audit_log')) {
+				audit_log('setting.action', json_encode(array('customers' => $n['D'], 'suppliers' => $n['K'], 'ids' => $n['ids'])), 'indstilling', $def['key']);
+			}
+			$_SESSION['settings_flash'] = array('ok', sprintf(st_txt(6542), $n['D'], $n['K']));
+			return $selfUrl;
 		case 'card_add':
 		case 'card_up':
 		case 'card_down':
@@ -386,6 +394,67 @@ function settings_kds_colours_compact(): void
 }
 
 /**
+ * Customers and suppliers with no activity for three years (G1.5): no change on the card, no orders, no open items,
+ * no notes and no job cards since the cut-off. The same test runs when the list is shown and when it is deleted.
+ *
+ * @return array{D: int, K: int, ids: array<int, int>}
+ */
+function settings_gdpr_inactive(): array
+{
+	static $out = null;
+	if ($out !== null) {
+		return $out;
+	}
+	$cut = date('Y-m-d', strtotime('-3 years'));
+	$out = array('D' => 0, 'K' => 0, 'ids' => array());
+	$q = db_select("select a.id, a.art from adresser a where a.art in ('D', 'K') and a.modtime < '$cut' "
+		. "and not exists (select 1 from ordrer o where o.konto_id = a.id) "
+		. "and not exists (select 1 from openpost p where p.konto_id = a.id) "
+		. "and not exists (select 1 from historik h where h.konto_id = a.id and h.notedate >= '$cut') "
+		. "and not exists (select 1 from jobkort j where j.konto_id = a.id and j.initdate >= '$cut') order by a.art, a.firmanavn", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$out[$r['art']]++;
+		$out['ids'][] = (int) $r['id'];
+	}
+	return $out;
+}
+
+/**
+ * Delete the accounts settings_gdpr_inactive() finds right now, with their contacts, notes and job cards.
+ */
+function settings_gdpr_delete_inactive(): array
+{
+	$n = settings_gdpr_inactive();
+	transaktion('begin');
+	foreach ($n['ids'] as $id) {
+		$q = db_select("select id from jobkort where konto_id = $id", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			db_modify("delete from jobkort_felter where job_id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+		}
+		db_modify("delete from jobkort where konto_id = $id", __FILE__ . " linje " . __LINE__);
+		db_modify("delete from historik where konto_id = $id", __FILE__ . " linje " . __LINE__);
+		db_modify("delete from ansatte where konto_id = $id", __FILE__ . " linje " . __LINE__);
+		db_modify("delete from adresser where id = $id and art in ('D', 'K')", __FILE__ . " linje " . __LINE__);
+	}
+	transaktion('commit');
+	return $n;
+}
+
+/**
+ * Danger-zone actions are confirmed with the user's own password (spec §8.3). Passwords are kept as md5 in brugere.kode,
+ * which is what the login compares against; a revisor session (no user row here) cannot run them.
+ */
+function settings_verify_password(string $typed): bool
+{
+	global $bruger_id;
+	if ((int) $bruger_id <= 0 || $typed === '') {
+		return false;
+	}
+	$r = db_fetch_array(db_select("select kode from brugere where id = " . (int) $bruger_id, __FILE__ . " linje " . __LINE__));
+	return $r && hash_equals(strtolower(trim((string) $r['kode'])), md5($typed));
+}
+
+/**
  * What an action touches, shown under it and in its dialog (spec §8.13 impact preview): "Påvirker 1.240 varer".
  */
 function settings_impact_text(array $def): string
@@ -407,6 +476,9 @@ function settings_impact_text(array $def): string
 		}
 		$r = db_fetch_array(db_select("select count(*) as n from varer where $where", __FILE__ . " linje " . __LINE__));
 		$n = $r ? (int) $r['n'] : 0;
+	} elseif ($def['impact'] === 'gdpr_inactive') {
+		$g = settings_gdpr_inactive();
+		return sprintf(st_txt(6465), $g['D']) . ' · ' . sprintf(st_txt(6466), $g['K']);
 	} elseif ($def['impact'] === 'commission_items') {
 		$r = db_fetch_array(db_select("select count(*) as n from varer where (varenr like 'kb%' or varenr like 'kn%') and ((retail_price > 0 and retail_price < 100) or (kostpris > 0 and kostpris < 1)) and coalesce(provision, 0) = 0", __FILE__ . " linje " . __LINE__));
 		$n = $r ? (int) $r['n'] : 0;

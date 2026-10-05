@@ -1,4 +1,6 @@
 // ---- javascript/settingsRows.js --- lap 5.0.0 --- 2026.10.05 ---
+// 20261005 Sawaneh 4d: row action buttons (set active, delete a year with data...) post through the dialog form;
+//                  a danger-zone action asks for the user's password there.
 // 20261005 Sawaneh Settings redesign phase 4c (spec §8.2): the row editor. Enter moves down the column (and adds a
 //                  row at the bottom), Tab moves right, Esc reverts the cell, Ctrl/Cmd+S saves; a spreadsheet paste
 //                  into a new row fills it and the rows below. Trash asks first - and refuses with the usage count
@@ -120,7 +122,7 @@
 		refresh();
 	});
 
-	function openDialog(title, body, verb, values, danger) {
+	function openDialog(title, body, verb, values, danger, password) {
 		returnFocus = document.activeElement;
 		document.getElementById('st-dialog-title').textContent = title;
 		document.getElementById('st-dialog-body').textContent = body;
@@ -132,9 +134,11 @@
 		dform.elements.table.value = values.table || '';
 		dform.elements.id.value = values.id || '';
 		dform.elements.value.value = values.value || '';
+		var pw = document.getElementById('st-dialog-pw');
+		if (pw) { pw.hidden = !password; pw.querySelector('input').value = ''; pw.querySelector('input').required = !!password; }
 		dialog.hidden = false;
 		backdrop.hidden = false;
-		document.getElementById('st-dialog-cancel').focus();
+		if (password && pw) { pw.querySelector('input').focus(); } else { document.getElementById('st-dialog-cancel').focus(); }
 	}
 	function closeDialog() {
 		dialog.hidden = true;
@@ -168,6 +172,23 @@
 			}
 			document.getElementById('st-dialog-cancel').textContent = cfg.cancel || '';
 			openDialog(fmt(cfg.deleteTitle, code), cfg.deleteBody || '', cfg.deleteVerb, { action: 'row_delete', table: card.dataset.table, id: tr.dataset.row }, true);
+			return;
+		}
+		var act = e.target.closest('[data-row-action]');
+		if (act) {
+			var tr3 = act.closest('tr'), card3 = act.closest('.st-rows');
+			var vals = { action: 'row_action', table: card3.dataset.table, id: tr3.dataset.row, value: act.dataset.rowAction };
+			if (act.dataset.title) {
+				document.getElementById('st-dialog-cancel').textContent = cfg.cancel || '';
+				openDialog(act.dataset.title, act.dataset.body || '', act.dataset.verb || '', vals, act.dataset.danger === '1', act.dataset.password === '1');
+				return;
+			}
+			dform.elements.action.value = vals.action;
+			dform.elements.table.value = vals.table;
+			dform.elements.id.value = vals.id;
+			dform.elements.value.value = vals.value;
+			window.docChange = false;
+			dform.submit();
 			return;
 		}
 		var ina = e.target.closest('[data-inactive]');
