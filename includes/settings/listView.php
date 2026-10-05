@@ -86,6 +86,9 @@ function settings_list_render(array $c): void
   <a class="st-skip" href="#st-list"><?= st_t(5751) ?></a>
   <section class="st-phead">
     <div>
+			<?php if (!empty($section['return_to'])) { ?>
+      <a class="st-back" href="..<?= st_h($section['return_to']) ?>"><i class='bx bx-left-arrow-alt' aria-hidden="true"></i><?= st_t(30) ?></a>
+			<?php } ?>
       <h1><?= st_t($section['label']) ?></h1>
       <p class="st-lead"><?= st_t($section['lead']) ?>. <?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
     </div>
@@ -302,6 +305,6 @@ function settings_list_render(array $c): void
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsList.js?v=1"></script>
+<script src="../javascript/settingsList.js?v=2"></script>
 	<?php
 }

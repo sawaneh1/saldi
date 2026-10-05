@@ -54,6 +54,7 @@
 // 20260930 Sawaneh Dashboard items in the user menu hidden, not greyed out, away from the dashboard (Adam).
 // 20261002 Sawaneh Hand-over 2 Oct: sidebar "System" replaced by one entry "Indstillinger", Kontoplan under Finans (also for
 //                  users with only that right), breadcrumb in the topbar on settings pages (settings redesign §8.0, decision 16).
+// 20261004 Sawaneh topbarSetGear(): the gear in the sub-bar opens the settings section that governs the page in the frame (§8.11).
 @session_start();
 $s_id = session_id();
 
@@ -184,7 +185,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=12' rel='stylesheet'>
+<link href='../css/topbar.css?v=13' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -440,6 +441,7 @@ function brightenColor($color, $amount = 0.2) {
       document.title = 'Saldi - ' + this.contentWindow.document.title;
       topbarSetDashState(this.contentWindow.location.pathname);
       topbarSetCrumb(this.contentWindow);
+      topbarSetGear(this.contentWindow);
       console.log('Locaiton', this.contentWindow.document.location.href);
       trigger_iframe_load();
       stopLoading();
@@ -538,6 +540,23 @@ function brightenColor($color, $amount = 0.2) {
       nav.appendChild(el);
     });
     nav.hidden = false;
+  }
+  // Gear in the sub-bar (settings redesign §8.11): shown when a settings section names the page in the frame
+  // (data-map from the registry, already filtered by the user's permissions); opens it with a way back.
+  function topbarSetGear(win) {
+    const gear = document.getElementById('topbar-gear');
+    if (!gear) return;
+    let map = {};
+    try { map = JSON.parse(gear.dataset.map || '{}'); } catch (e) { map = {}; }
+    const root = window.location.pathname.replace(/\/index\/main\.php$/, '');
+    let page = '', search = '';
+    try { page = win.location.pathname; search = win.location.search || ''; } catch (e) { page = ''; }
+    if (page.indexOf(root + '/') === 0) { page = page.slice(root.length + 1); }
+    const links = map[page];
+    if (!links || !links.length) { gear.hidden = true; return; }
+    gear.hidden = false;
+    gear.title = links[0].label;
+    gear.onclick = (e) => { e.preventDefault(); update_iframe(links[0].url + '&back=' + encodeURIComponent('/' + page + search)); };
   }
   function topbarSetDashState(path) {
     const onDash = /\/index\/dashboard\.php$/.test(path || '');

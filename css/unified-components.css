@@ -857,6 +857,10 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-page .st-btn-primary { background: var(--st-accent); border-color: var(--st-accent); color: var(--st-accent-txt); font-weight: 600; }
 .st-btn-primary:hover:not(:disabled) { background: var(--st-accent); filter: brightness(1.12); }
 .st-page .st-btn-danger { color: var(--st-bad); border-color: var(--st-bad-line); }
+.st-page .st-btn-danger-solid, .st-dialog .st-btn-danger-solid { background: var(--st-bad); border-color: var(--st-bad); color: #fff; }
+.st-impact { display: block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--st-bad); }
+.st-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 13px; color: var(--st-link, #1b68bd); text-decoration: none; }
+.st-back:hover { text-decoration: underline; }
 .st-page .st-btn-quiet, .st-page .st-btn-ghost { border-color: transparent; background: transparent; color: var(--st-text-2); padding: 0 12px; }
 .st-page .st-tl { padding: 0; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 500; color: var(--st-link); text-decoration: none; cursor: pointer; }
 .st-tl:hover { color: var(--st-text); }

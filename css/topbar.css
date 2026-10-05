@@ -35,6 +35,9 @@
 /* Breadcrumb on settings pages (settings redesign §8.0). Shrinks from the left when space is short. */
 .topbar-crumb { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex: 0 1 auto; min-width: 0; overflow: hidden; margin-left: 14px; font-size: 13.5px; white-space: nowrap; color: var(--topbar-mut); }
 .topbar-crumb[hidden] { display: none; }
+.topbar-gear { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-left: 4px; border-radius: 8px; color: inherit; font-size: 18px; opacity: .75; text-decoration: none; }
+.topbar-gear:hover, .topbar-gear:focus-visible { opacity: 1; background: rgba(0, 0, 0, .06); }
+.topbar-gear[hidden] { display: none; }
 .topbar-crumb > * { flex: none; }
 .topbar-crumb a { color: var(--topbar-mut); text-decoration: none; }
 .topbar-crumb a:hover { color: var(--topbar-accent); }

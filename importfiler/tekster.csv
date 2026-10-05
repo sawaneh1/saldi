@@ -5995,3 +5995,6 @@
 6388	Udfyldes kun, hvis adressen bruger en anden Danske Fragtmænd-aftale end den fælles	Fill in only when this address uses a different Danske Fragtmænd agreement than the shared one	Fylles bare ut hvis hentestedet bruker en annen Danske Fragtmænd-avtale enn den felles
 6389	Afhentningsadresse %s	Pickup address %s	Hentested %s
 6390	Åbn afhentningsadresser	Open pickup addresses	Åpne hentesteder
+6391	Påvirker %s varer	Affects %s items	Påvirker %s varer
+6392	Indstillinger for denne side	Settings for this page	Innstillinger for denne siden
+6393	Vis alle (%s)	Show all (%s)	Vis alle (%s)

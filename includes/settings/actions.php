@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261004 Sawaneh §8.13 settings_impact_text(): the number of items an action touches.
 // 20261004 Sawaneh G9.2: pickup addresses added and deleted here (the old page deleted every address missing from its form, B-D17).
 // 20261004 Sawaneh G10 batch B: payment card rows (add, move, remove across the seven tab-joined lists), KDS colour
 //                  compaction after the section is saved, printer cookies cleared as the old page did.
@@ -381,6 +382,35 @@ function settings_kds_colours_compact(): void
 	foreach ($keep as $i => $row) {
 		db_modify("update settings set var_name = 'color_" . ($i + 1) . "' where id = " . $row['id'], __FILE__ . " linje " . __LINE__);
 	}
+}
+
+/**
+ * What an action touches, shown under it and in its dialog (spec §8.13 impact preview): "Påvirker 1.240 varer".
+ */
+function settings_impact_text(array $def): string
+{
+	if (empty($def['impact'])) {
+		return '';
+	}
+	$n = null;
+	if ($def['impact'] === 'cost_price_items') {
+		// Same selection as includes/opdat_kostpriser.php: items in the groups flagged for it, with stock when the method is FIFO.
+		$groups = array();
+		$q = db_select("select kodenr from grupper where box8 = 'on'", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$groups[] = "'" . db_escape_string((string) $r['kodenr']) . "'";
+		}
+		$where = "samlevare != 'on' and lukket != 'on'" . ($groups ? " and gruppe in (" . implode(',', $groups) . ")" : '');
+		if (SettingsService::raw('items.stock.cost_method') === '1') {
+			$where .= " and beholdning > 0";
+		}
+		$r = db_fetch_array(db_select("select count(*) as n from varer where $where", __FILE__ . " linje " . __LINE__));
+		$n = $r ? (int) $r['n'] : 0;
+	} elseif ($def['impact'] === 'commission_items') {
+		$r = db_fetch_array(db_select("select count(*) as n from varer where (varenr like 'kb%' or varenr like 'kn%') and ((retail_price > 0 and retail_price < 100) or (kostpris > 0 and kostpris < 1)) and coalesce(provision, 0) = 0", __FILE__ . " linje " . __LINE__));
+		$n = $r ? (int) $r['n'] : 0;
+	}
+	return $n === null ? '' : sprintf(st_txt(6391), number_format($n, 0, ',', '.'));
 }
 
 /**

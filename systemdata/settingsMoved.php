@@ -31,7 +31,7 @@
 $s_id = session_id();
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261002";
+$css = "../css/unified-components.css?v=20261004b";
 $modulnr = 0;
 $permission_key = 'any';
 

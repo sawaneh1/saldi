@@ -416,7 +416,7 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('grupper', 'DIV', 5, 'box6', 'raw', 'row_name' => 'Div_valg'), 'legacy' => $ordre,
 				'keywords' => array('kostpris', 'gennemsnitspris', 'genanskaffelsespris', 'cost price', 'average cost')),
 			'items.stock.update_cost_prices' => array('sub' => 'cost', 'type' => 'action', 'label' => 739, 'help' => 738,
-				'confirm_title' => 5737, 'confirm' => 5738, 'run' => 'update_cost_prices', 'legacy' => $ordre,
+				'confirm_title' => 5737, 'confirm' => 5738, 'run' => 'update_cost_prices', 'impact' => 'cost_price_items', 'legacy' => $ordre,
 				'visible_if' => array('setting_in', 'items.stock.cost_method', array('1', '2'))),
 
 			'items.stock.status_mail' => array('sub' => 'mail', 'type' => 'email', 'label' => 2553, 'help' => 2554, 'default' => '',
@@ -502,7 +502,7 @@ if (!function_exists('getSettingsSections')) {
 				'storage' => array('settings', 'items', 'commissionFromDate', 'raw'), 'legacy' => $vare,
 				'visible_if' => array('setting', 'items.consignment.enabled', true)),
 			'items.consignment.convert_existing' => array('sub' => 'settlement', 'type' => 'action', 'label' => 1299, 'help' => 6005,
-				'confirm_title' => 1299, 'confirm' => 6006, 'run' => 'convert_commission_items', 'legacy' => $vare,
+				'confirm_title' => 1299, 'confirm' => 6006, 'run' => 'convert_commission_items', 'impact' => 'commission_items', 'legacy' => $vare,
 				'visible_if' => array('setting', 'items.consignment.enabled', true)),
 
 			// ---------------------------------------------------------------- G5.7 Packaging

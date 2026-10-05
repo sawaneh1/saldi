@@ -28,6 +28,7 @@
 // 20261002 Sawaneh Phase 4b: actions run through includes/settings/actions.php, sections gated by a module, on_save follow-ups.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a heading above each card, plain tab list, history as its own column, save bar
 //                  only while something is unsaved, no Back button or in-page trail (the shell's topbar has the breadcrumb).
+// 20261004 Sawaneh §8.11: 'back' (a path inside Saldi) from the gear in the sub-bar shows "Tilbage" and survives saves.
 // 20261004 Sawaneh List items with a 'feature' (bank) are hidden until the feature is on.
 // 20261004 Sawaneh settings_after_section_save() runs once after all fields of a save (KDS colours).
 // 20261004 Sawaneh Access follows the section's permission key only, not the old Indstillinger bit (decision 16).
@@ -57,7 +58,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261004";
+$css = "../css/unified-components.css?v=20261004b";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -90,7 +91,13 @@ $canWrite = perm_can($permission, 'write');
 
 $defs = settings_section_definitions($sectionId);
 SettingsService::preload(array_keys($defs));
-$selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId);
+// Opened from a module page through the gear in the sub-bar (spec §8.11): a path inside Saldi only, kept through saves.
+$returnTo = isset($_GET['back']) ? (string) $_GET['back'] : (isset($_POST['back']) ? (string) $_POST['back'] : '');
+if (!preg_match('#^/[a-z_]+/[A-Za-z0-9_\-]+\.php(\?[A-Za-z0-9_\-=&%.+]*)?$#', $returnTo)) {
+	$returnTo = '';
+}
+$section['return_to'] = $returnTo;
+$selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId) . ($returnTo !== '' ? '&back=' . rawurlencode($returnTo) : '');
 $isList = (!empty($section['kind']) && $section['kind'] === 'list');
 if ($isList && !empty($section['items_from'])) {
 	$section['items'] = settings_list_dynamic_items((string) $section['items_from']);
@@ -352,6 +359,9 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <a class="st-skip" href="#st-form"><?= st_t(5751) ?></a>
   <section class="st-phead">
     <div>
+			<?php if (!empty($section['return_to'])) { ?>
+      <a class="st-back" href="..<?= st_h($section['return_to']) ?>"><i class='bx bx-left-arrow-alt' aria-hidden="true"></i><?= st_t(30) ?></a>
+			<?php } ?>
       <h1><?= st_t($section['label']) ?></h1>
       <p class="st-lead"><?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
     </div>
@@ -550,7 +560,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsSection.js?v=7"></script>
+<script src="../javascript/settingsSection.js?v=8"></script>
 	<?php
 }
 

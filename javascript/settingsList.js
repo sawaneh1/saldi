@@ -197,7 +197,7 @@
 		}
 		var run = e.target.closest('[data-run]');
 		if (run) {
-			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run, item: drawer ? drawer.dataset.item : '', newTab: !!run.dataset.blank });
+			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run, item: drawer ? drawer.dataset.item : '', newTab: !!run.dataset.blank }, run.classList.contains('st-btn-danger'));
 			return;
 		}
 		var restore = e.target.closest('[data-restore]');
@@ -273,11 +273,12 @@
 
 	// ------------------------------------------------------------ dialog (§8.3)
 	var pending = null;
-	function openDialog(title, body, verb, values) {
+	function openDialog(title, body, verb, values, danger) {
 		pending = values;
 		document.getElementById('st-dialog-title').textContent = title;
 		document.getElementById('st-dialog-body').textContent = body;
 		document.getElementById('st-dialog-ok').textContent = verb;
+		document.getElementById('st-dialog-ok').classList.toggle('st-btn-danger-solid', !!danger);
 		dform.elements.action.value = values.action || '';
 		dform.elements.key.value = values.key || '';
 		dform.elements.entry.value = values.entry || '';

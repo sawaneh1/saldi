@@ -32,6 +32,7 @@
 // 20260928 Sawaneh PoS shortcut shown only with the pos.kasse permission.
 // 20260930 Sawaneh Dashboard items in the user menu are hidden, not greyed out, away from the dashboard (Adam 2026-09-30).
 //                  Who is online shown to users who may manage users (settings.users.manage).
+// 20261004 Sawaneh Gear link next to the breadcrumb: the settings section that governs the page in the frame (settings redesign §8.11).
 // 20261002 Sawaneh Breadcrumb element in the left side, filled by the shell on settings pages (settings redesign §8.0).
 
 /**
@@ -323,6 +324,7 @@ function topbar_render(array $ctx, int $sprogId): void
   <header class="topbar" id="topbar" data-placement="<?= topbar_h($ctx['placement']) ?>">
     <button type="button" class="topbar-menu-btn" aria-label="Menu" title="Menu" onclick="topbarMenu()"><i class='bx bx-menu'></i></button>
     <nav class="topbar-crumb" id="topbar-crumb" aria-label="<?= $t('6015|Du er her') ?>" data-company="<?= topbar_h($ctx['company']) ?>" hidden></nav>
+    <a class="topbar-gear" id="topbar-gear" href="#" title="<?= $t('6392|Indstillinger for denne side') ?>" aria-label="<?= $t('6392|Indstillinger for denne side') ?>" data-map="<?= topbar_h(json_encode(function_exists('settings_context_links') ? settings_context_links((int) $ctx['langId']) : array(), JSON_UNESCAPED_UNICODE)) ?>" hidden><i class='bx bx-cog' aria-hidden="true"></i></a>
     <span class="topbar-spacer"></span>
     <div class="topbar-cluster" id="topbar-cluster">
 

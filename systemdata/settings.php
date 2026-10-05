@@ -30,6 +30,8 @@
 // 20261002 Sawaneh Hand-over 2 Oct (A1, settings redesign §8.0): groups as rows in three labelled lists instead of tiles,
 //                  "Kræver opmærksomhed" above them, status as a dot plus text, search results in a dropdown, no Back
 //                  button (the shell shows the breadcrumb). Optional modules are shown inside their group, not here.
+// 20261004 Sawaneh Search results grouped by group with at most 8 until "Vis alle" (§8.5); the transition banner
+//                  only for users with activity from before the new settings landed (§8.10).
 // 20261004 Sawaneh Open to anyone with read on a settings group, not only the old Indstillinger bit (decision 16).
 
 /**
@@ -44,7 +46,7 @@
 $s_id = session_id();
 
 $title = "Indstillinger";
-$css = "../css/settingsHub.css?v=20261002b";
+$css = "../css/settingsHub.css?v=20261004";
 $modulnr = 0; // access is per settings group (settings_require_any_access below), not the old Indstillinger bit
 $permission_key = 'any';
 
@@ -80,7 +82,7 @@ settings_hub_view(array(
 	'status'    => settings_group_status($hubGroups, settings_optional_modules(), $hubAttention, (int) $sprog_id),
 	'attention' => $hubAttention,
 	'readOnly'  => $hubReadOnly,
-	'notice'    => ((int) $bruger_id > 0) && get_settings_value('transition_banner', 'settings_ui', '', (int) $bruger_id) !== 'dismissed',
+	'notice'    => ((int) $bruger_id > 0) && get_settings_value('transition_banner', 'settings_ui', '', (int) $bruger_id) !== 'dismissed' && settings_show_transition_banner((int) $bruger_id),
 	'posLocked' => (function_exists('perm_can') && perm_can('settings.pos', 'read') && !settings_has_module('pos')),
 	'company'   => function_exists('st_company') ? st_company() : '',
 	'csrf'      => (string) $_SESSION['csrf_token'],
@@ -215,8 +217,26 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 <script>
 (function () {
 	var input = document.getElementById('sh-search'), res = document.getElementById('sh-res');
-	var txt = { count: <?= $js('6040|%s resultater') ?>, none: <?= $js('6042|Ingen resultater. Prøv et andet ord, eller se "Hvor er de gamle menupunkter?"') ?> };
-	var hits = [], sel = 0, timer = null, legacyLabel = '', personalLabel = '';
+	var txt = { count: <?= $js('6040|%s resultater') ?>, none: <?= $js('6042|Ingen resultater. Prøv et andet ord, eller se "Hvor er de gamle menupunkter?"') ?>, all: <?= $js('6393|Vis alle (%s)') ?> };
+	var hits = [], sel = 0, timer = null, legacyLabel = '', personalLabel = '', expanded = false, LIMIT = 8;
+
+	// Results grouped by their group, in the order the best hit of each group ranks; at most 8 until "Vis alle" (spec §8.5).
+	function grouped() {
+		var order = [], byGroup = {};
+		hits.forEach(function (hit) {
+			var g = (hit.path || '').split(' › ')[0];
+			if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
+			byGroup[g].push(hit);
+		});
+		var out = [], n = 0;
+		order.forEach(function (g) {
+			byGroup[g].forEach(function (hit) {
+				if (expanded || n < LIMIT) { out.push({ group: g, hit: hit }); n++; }
+			});
+		});
+		return out;
+	}
+	function visible() { return grouped().map(function (x) { return x.hit; }); }
 
 	function mark(parent, text, q) {
 		var i = text.toLowerCase().indexOf(q);
@@ -239,7 +259,16 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 			head.className = 'sh-cnt';
 			head.textContent = txt.count.replace('%s', hits.length);
 			res.appendChild(head);
-			hits.forEach(function (hit, i) {
+			var lastGroup = null;
+			grouped().forEach(function (row, i) {
+				var hit = row.hit;
+				if (row.group !== lastGroup) {
+					var gh = document.createElement('div');
+					gh.className = 'sh-grp';
+					gh.textContent = row.group;
+					res.appendChild(gh);
+					lastGroup = row.group;
+				}
 				var a = document.createElement('a');
 				a.className = 'sh-it' + (i === sel ? ' sh-sel' : '');
 				a.href = hit.url;
@@ -263,6 +292,14 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 				}
 				res.appendChild(a);
 			});
+			if (!expanded && hits.length > LIMIT) {
+				var more = document.createElement('button');
+				more.type = 'button';
+				more.className = 'sh-more';
+				more.textContent = txt.all.replace('%s', hits.length);
+				more.addEventListener('click', function () { expanded = true; render(q); });
+				res.appendChild(more);
+			}
 			input.setAttribute('aria-activedescendant', 'sh-it-' + sel);
 		}
 		res.hidden = false;
@@ -282,6 +319,7 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 					hits = (data.results || []).map(function (r) { return { label: r.label, url: r.url, path: r.group || '', legacy: r.legacy || '', personal: false }; })
 						.concat((data.fields || []).map(function (f) { return { label: f.label, url: f.url, path: f.personal ? f.group : (f.group + (f.section ? ' › ' + f.section : '')), legacy: f.legacy || '', personal: !!f.personal }; }));
 					sel = 0;
+					expanded = false;
 					render(q);
 				})
 				.catch(function () {});
@@ -295,17 +333,18 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 		if (res.hidden || !hits.length) { return; }
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 			e.preventDefault();
-			sel = Math.max(0, Math.min(hits.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+			sel = Math.max(0, Math.min(visible().length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
 			render(input.value.trim().toLowerCase());
 			var cur = document.getElementById('sh-it-' + sel);
 			if (cur && cur.scrollIntoView) { cur.scrollIntoView({ block: 'nearest' }); }
 		} else if (e.key === 'Enter') {
 			e.preventDefault();
-			window.location = hits[sel].url;
+			window.location = visible()[sel].url;
 		}
 	});
 	res.addEventListener('mousedown', function (e) { e.preventDefault(); });
 	res.addEventListener('click', function (e) { var a = e.target.closest('a'); if (a) { window.location = a.getAttribute('href'); } });
+	res.addEventListener('mousedown', function (e) { if (e.target.closest('.sh-more')) { e.preventDefault(); } });
 
 	var dialog = document.getElementById('sh-dialog'), backdrop = document.getElementById('sh-backdrop'), opener = null;
 	function toggleDialog(open, from) {

@@ -54,6 +54,9 @@ html, body {
 .sh-res { position: absolute; left: 0; right: 0; top: 56px; z-index: 20; background: var(--sh-surface); border: 1px solid var(--sh-border); border-radius: 12px; box-shadow: 0 12px 32px rgba(14, 22, 38, .12); padding: 6px; max-height: 400px; overflow: auto; }
 .sh-res[hidden] { display: none; }
 .sh-cnt { font-size: 11.5px; color: var(--sh-text-3); padding: 8px 12px 6px; }
+.sh-grp { padding: 8px 14px 2px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--sh-muted, #6b7280); }
+.sh-more { display: block; width: 100%; padding: 10px 14px; border: 0; border-top: 1px solid var(--sh-border, #e5e7eb); background: transparent; color: var(--sh-link, #1b68bd); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.sh-more:hover { text-decoration: underline; }
 .sh-none { padding: 18px 12px; font-size: 13px; color: var(--sh-text-2); }
 .sh-it { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 8px; text-decoration: none; color: var(--sh-text); }
 .sh-it.sh-sel, .sh-it:hover { background: var(--sh-surface-2); }

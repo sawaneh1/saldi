@@ -57,6 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261004 Sawaneh §8.11 settings_context_links() for the gear in the sub-bar; §8.10 banner only for users who used the old settings.
 // 20261004 Sawaneh Stripe only in the operator ledger (G9.6), bank only when its credentials exist (G2.7), DFM flag in its own group.
 // 20261004 Sawaneh G10 batch B: Betalingskort and Borde entries; the PoS-valg entry is gone (its keywords moved to Kasser).
 // 20261004 Sawaneh Projekter opens projekter.php (syssetup.php?valg=projekter shows no projects, spec C7).
@@ -207,6 +208,52 @@ if (!function_exists('settings_has_module')) {
 			include_once(__DIR__ . '/../includes/settings/SettingsService.php');
 		}
 		return SettingsService::hasModule($module);
+	}
+}
+
+if (!function_exists('settings_context_links')) {
+	/**
+	 * Gear link in the module sub-bar (settings redesign §8.11): page path => the sections whose 'context' names it,
+	 * only those the user may open. Read by the shell (index/mainIncludes/topbar.php), so a new section needs no page code.
+	 *
+	 * @return array<string, array<int, array{url: string, label: string}>>
+	 */
+	function settings_context_links(int $sprogId): array
+	{
+		$out = array();
+		$groups = getSettingsGroups();
+		foreach (getSettingsSections() as $sectionId => $section) {
+			if (empty($section['context'])) {
+				continue;
+			}
+			if (!empty($section['module']) && !settings_has_module($section['module'])) {
+				continue;
+			}
+			$permission = isset($section['permission']) ? (string) $section['permission'] : (isset($groups[$section['group']]) ? $groups[$section['group']]['permission'] : 'system.indstillinger');
+			if (function_exists('perm_can') && !perm_can($permission, 'read')) {
+				continue;
+			}
+			foreach ((array) $section['context'] as $page) {
+				$out[(string) $page][] = array('url' => '/systemdata/settingsSection.php?s=' . rawurlencode($sectionId), 'label' => findtekst((string) $section['label'], $sprogId));
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * The transition banner is for people who used the old settings (§8.10): the user has audit rows from before
+	 * the new settings landed in this installation (settings_ui/landed_at, written once at login). New users never see it.
+	 */
+	function settings_show_transition_banner(int $userId): bool
+	{
+		if ($userId <= 0 || !function_exists('audit_ready') || !audit_ready()) {
+			return false;
+		}
+		$r = db_fetch_array(db_select("select var_value from settings where var_grp = 'settings_ui' and var_name = 'landed_at' order by id limit 1", __FILE__ . " linje " . __LINE__));
+		if (!$r || trim((string) $r['var_value']) === '') {
+			return false;
+		}
+		return (bool) db_fetch_array(db_select("select id from audit_log where bruger_id = $userId and tidspunkt < '" . db_escape_string((string) $r['var_value']) . "' limit 1", __FILE__ . " linje " . __LINE__));
 	}
 }
 

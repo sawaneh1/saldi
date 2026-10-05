@@ -119,7 +119,7 @@
 		}
 		var run = e.target.closest('[data-run]');
 		if (run) {
-			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, true);
+			openDialog(run.dataset.title, run.dataset.body, run.dataset.verb, { action: 'run', key: run.dataset.run }, true, run.classList.contains('st-btn-danger'));
 		}
 	});
 	// Enter on a focused toggle does nothing; Space toggles (button default).
@@ -173,11 +173,13 @@
 	var backdrop = document.getElementById('st-backdrop');
 	var dform = document.getElementById('st-dialog-form');
 	var returnFocus = null;
-	function openDialog(title, body, verb, values, newTab) {
+	function openDialog(title, body, verb, values, newTab, danger) {
 		returnFocus = document.activeElement;
 		document.getElementById('st-dialog-title').textContent = title;
 		document.getElementById('st-dialog-body').textContent = body;
 		document.getElementById('st-dialog-ok').textContent = verb;
+		// The destructive verb is red (spec §8.3); Annullér keeps the default focus.
+		document.getElementById('st-dialog-ok').classList.toggle('st-btn-danger-solid', !!danger);
 		dform.elements.action.value = values.action || '';
 		dform.elements.key.value = values.key || '';
 		dform.elements.entry.value = values.entry || '';
@@ -293,9 +295,11 @@
 		return window.location.origin + root + '/index/main.php#/systemdata/settingsSection.php?s=' + encodeURIComponent(section) + '&field=' + encodeURIComponent(key);
 	}
 	function highlight() {
-		var id = new URLSearchParams(window.location.search).get('field') || decodeURIComponent((window.location.hash || '').replace('#', ''));
-		if (!id) { return; }
-		var el = document.getElementById(id);
+		var params = new URLSearchParams(window.location.search);
+		var id = params.get('field') || decodeURIComponent((window.location.hash || '').replace('#', ''));
+		// A redirect from an old page without an anchor lights up the first card for a moment (spec §8.10).
+		var el = id ? document.getElementById(id) : (params.get('moved') ? form.querySelector('.st-sect') : null);
+		if (!el) { return; }
 		if (!el) { return; }
 		if (el.hidden) { el.hidden = false; }
 		el.classList.add('st-highlight');

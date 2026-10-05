@@ -915,6 +915,11 @@ db_modify("update settings set var_name = 'mailText' where var_grp = 'paylist' a
 
 // 20261002 Sawaneh Settings 4b (G5.7): the packaging tables are created here when the module is on, not when a page
 // renders (spec P5). G2.5: paymentDays was written under 'payment' but only read under 'payment_list'; copied once.
+// 20261004 Sawaneh When the new settings first ran here (settings_ui/landed_at): the transition banner is shown to users
+//                  with activity from before that moment only (settings redesign §8.10).
+if (!db_fetch_array(db_select("select id from settings where var_grp = 'settings_ui' and var_name = 'landed_at'", __FILE__ . " linje " . __LINE__))) {
+	db_modify("insert into settings (var_grp, var_name, var_value, var_description, user_id) values ('settings_ui', 'landed_at', '" . date('Y-m-d H:i:s') . "', 'First login after the settings redesign', 0)", __FILE__ . " linje " . __LINE__);
+}
 // 20261004 Sawaneh G9.2 (B-D5): the Danske Fragtmænd settings get their own group; debitor/ordre.php reads both until 4f.
 db_modify("update settings set var_grp = 'DFM' where var_grp = 'GLS' and var_name like 'dfm\\_%'", __FILE__ . " linje " . __LINE__);
 // 20261004 Sawaneh The packaging tables are created for every company (idempotent), so switching the module on in

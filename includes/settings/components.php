@@ -36,6 +36,7 @@
 // 20261003 Sawaneh G3.4 Reminders: type 'creditor' (lookup, stored as adresser id), options from the user list, a group
 //                  label above a run of fields ("Rykker 1"), a help line under a card heading.
 // 20261003 Sawaneh G6.3 E-mail: type 'textarea', a label suffix (the form language of a sender field), mixed select labels.
+// 20261004 Sawaneh §8.13: an action shows what it touches (impact) under its help and in its dialog.
 // 20261004 Sawaneh G10.6: 'color' type, a #rrggbb text with a colour swatch beside it (empty allowed).
 // 20261002 Sawaneh Phase 4b batch 2 (G9): write-only 'secret' control (masked, Skift), 'info', 'link' and 'mini' rows,
 //                  computed select options, rule 'setting_set', lock 'ht_keys:<var>' for keys the installation manages.
@@ -740,10 +741,12 @@ function st_render_action(array $def, bool $canRun, bool $visible): void
 <div class="st-action" id="<?= st_h($def['key']) ?>" data-key="<?= st_h($def['key']) ?>"<?= $def['visible_if'] ? ' data-visible-if="' . st_h(json_encode($def['visible_if'])) . '"' : '' ?><?= $visible ? '' : ' hidden' ?>>
   <div class="st-tx">
     <span class="st-label"><?= st_t($def['label']) ?></span>
+	<?php $impact = function_exists('settings_impact_text') ? settings_impact_text($def) : ''; ?>
 	<?php if (isset($def['help'])) { ?><span class="st-help"><?= st_t($def['help']) ?></span><?php } ?>
+	<?php if ($impact !== '') { ?><span class="st-impact"><?= st_h($impact) ?></span><?php } ?>
   </div>
   <div class="st-ctl">
-    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
+    <button type="button" class="st-btn<?= !empty($def['danger']) ? ' st-btn-danger' : '' ?>" data-run="<?= st_h($def['key']) ?>" data-title="<?= st_t($def['confirm_title']) ?>" data-body="<?= st_t($def['confirm']) ?><?= $impact !== '' ? ' ' . st_h($impact) : '' ?>" data-verb="<?= st_t($def['label']) ?>"<?= !empty($def['blank']) ? ' data-blank="1"' : '' ?><?= $canRun ? '' : ' disabled' ?>><?= st_t($def['label']) ?><?= !empty($def['danger']) ? ' …' : '' ?></button>
   </div>
 </div>
 	<?php
