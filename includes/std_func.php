@@ -86,6 +86,7 @@
 // 20260916 Sawaneh includes/permissions.php (roles, require_permission, audit_log) loaded here so every page has it.
 // 20260930 Sawaneh check_permissions() shared here (was three copies); read access ('2') counts (roles spec §4.4).
 // 20261001 Sawaneh update_settings_value() treats NULL and 0 (user, till, group) as the same key, as the unique
+// 20261005 Sawaneh stdFunc/pageChrome.php: page_breadcrumb() / page_help() for the shell's breadcrumb and Assist menu.
 //                  index on settings does; a concurrent insert of the same key is dropped (ON CONFLICT DO NOTHING).
 
 include(__DIR__ . '/stdFunc/dkDecimal.php');
@@ -94,6 +95,7 @@ include(__DIR__ . '/stdFunc/strStartsWith.php');
 include(__DIR__ . '/stdFunc/usDecimal.php');
 include(__DIR__ . '/stdFunc/dkAmountValid.php');
 include(__DIR__ . '/stdFunc/navStack.php');
+include_once(__DIR__ . '/stdFunc/pageChrome.php');
 include(__DIR__ . '/stdFunc/fefo.php');
 include_once(__DIR__ . '/permissions.php');
 include(__DIR__ . '/stdFunc/shopApiRequest.php');

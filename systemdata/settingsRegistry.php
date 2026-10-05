@@ -57,6 +57,7 @@
 //                  with its own key, since the sidebar's System menu is gone (decision 16).
 // 20261002 Sawaneh Hand-over 2 Oct (A1): the three labelled group lists, computed status per group and "Kræver opmærksomhed".
 // 20261004 Sawaneh settings_require_any_access(): the settings pages are open to users with read on any settings group.
+// 20261005 Sawaneh settings_breadcrumb_script() goes through page_breadcrumb() (topbar addendum 2026-10-05 §4).
 // 20261005 Sawaneh 4c: Afdelinger, Projekter, Lagre and Enheder entries open the generated row-editor sections.
 // 20261004 Sawaneh §8.11 settings_context_links() for the gear in the sub-bar; §8.10 banner only for users who used the old settings.
 // 20261004 Sawaneh Stripe only in the operator ledger (G9.6), bank only when its credentials exist (G2.7), DFM flag in its own group.
@@ -619,14 +620,23 @@ if (!function_exists('getSettingsGroups')) {
 	}
 
 	/**
-	 * The page tells the shell its trail: index/main.php reads window.saldiBreadcrumb when the frame has loaded.
+	 * The settings trail through the shared page breadcrumb (includes/stdFunc/pageChrome.php, topbar addendum
+	 * 2026-10-05 §4): one mechanism for every page. $back is the page a module's gear came from.
 	 */
-	function settings_breadcrumb_script(array $trail, string $charset = 'UTF-8'): string
+	function settings_breadcrumb_script(array $trail, string $charset = 'UTF-8', string $back = ''): string
 	{
-		foreach ($trail as $i => $crumb) {
-			$trail[$i]['label'] = html_entity_decode(mb_convert_encoding((string) $crumb['label'], 'UTF-8', $charset), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		if (!function_exists('page_breadcrumb')) {
+			include_once(__DIR__ . '/../includes/stdFunc/pageChrome.php');
 		}
-		return '<script>window.saldiBreadcrumb = ' . json_encode($trail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';</script>';
+		$levels = array();
+		foreach ($trail as $crumb) {
+			$levels[] = array('label' => (string) $crumb['label'], 'href' => (string) $crumb['url']);
+		}
+		$backChip = null;
+		if ($back !== '') {
+			$backChip = array('label' => page_label_for($back), 'href' => $back);
+		}
+		return page_breadcrumb($levels, null, $backChip, $charset);
 	}
 
 	/**

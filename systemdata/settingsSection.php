@@ -417,14 +417,11 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(st_txt($section['label']), 'UTF-8', $charset)) ?>;</script>
-<?= settings_breadcrumb_script(settings_breadcrumb((string) $section['group'], st_txt($section['label']), $sprogId), $charset) ?>
+<?= settings_breadcrumb_script(settings_breadcrumb((string) $section['group'], st_txt($section['label']), $sprogId), $charset, isset($section['return_to']) ? (string) $section['return_to'] : '') ?>
 <div class="st-page" style="<?= st_h(st_accent_style((string) $accent, (string) $accentTxt)) ?>">
   <a class="st-skip" href="#st-form"><?= st_t(5751) ?></a>
   <section class="st-phead">
     <div>
-			<?php if (!empty($section['return_to'])) { ?>
-      <a class="st-back" href="..<?= st_h($section['return_to']) ?>"><i class='bx bx-left-arrow-alt' aria-hidden="true"></i><?= st_t(30) ?></a>
-			<?php } ?>
       <h1><?= st_t($section['label']) ?></h1>
       <p class="st-lead"><?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
     </div>

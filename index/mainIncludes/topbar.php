@@ -32,6 +32,7 @@
 // 20260928 Sawaneh PoS shortcut shown only with the pos.kasse permission.
 // 20260930 Sawaneh Dashboard items in the user menu are hidden, not greyed out, away from the dashboard (Adam 2026-09-30).
 //                  Who is online shown to users who may manage users (settings.users.manage).
+// 20261005 Sawaneh Topbar addendum 2026-10-05: no sidebar placement (move button and cluster_placement gone).
 // 20261004 Sawaneh Gear link next to the breadcrumb: the settings section that governs the page in the frame (settings redesign §8.11).
 // 20261002 Sawaneh Breadcrumb element in the left side, filled by the shell on settings pages (settings redesign §8.0).
 
@@ -264,10 +265,6 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 
 	$languages = topbar_languages();
 	$langId = isset($languages[$sprogId]) ? $sprogId : 1;
-	$placement = 'top';
-	if (function_exists('get_settings_value') && (string) get_settings_value('cluster_placement', 'globals', 'top', $brugerId) === 'sidebar') {
-		$placement = 'sidebar';
-	}
 
 	return array(
 		'name'        => topbar_utf8($name),
@@ -286,7 +283,6 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 		'posUrl'      => $posUrl,
 		'sagerUrl'    => $sagerUrl,
 		'dashHidden'  => $dashHidden,
-		'placement'   => $placement,
 		'unread'      => 0,
 	);
 }
@@ -321,7 +317,7 @@ function topbar_render(array $ctx, int $sprogId): void
 	$avatarStyle = 'background:' . topbar_h($ctx['avatar']['bg']) . ';color:' . topbar_h($ctx['avatar']['fg']);
 	$lang = $ctx['languages'][$ctx['langId']];
 	?>
-  <header class="topbar" id="topbar" data-placement="<?= topbar_h($ctx['placement']) ?>">
+  <header class="topbar" id="topbar">
     <button type="button" class="topbar-menu-btn" aria-label="Menu" title="Menu" onclick="topbarMenu()"><i class='bx bx-menu'></i></button>
     <nav class="topbar-crumb" id="topbar-crumb" aria-label="<?= $t('6015|Du er her') ?>" data-company="<?= topbar_h($ctx['company']) ?>" hidden></nav>
     <a class="topbar-gear" id="topbar-gear" href="#" title="<?= $t('6392|Indstillinger for denne side') ?>" aria-label="<?= $t('6392|Indstillinger for denne side') ?>" data-map="<?= topbar_h(json_encode(function_exists('settings_context_links') ? settings_context_links((int) $ctx['langId']) : array(), JSON_UNESCAPED_UNICODE)) ?>" hidden><i class='bx bx-cog' aria-hidden="true"></i></a>
@@ -355,6 +351,7 @@ function topbar_render(array $ctx, int $sprogId): void
       </div>
     </div>
 
+    <span class="topbar-sep" aria-hidden="true"></span>
     <div class="topbar-item">
       <button type="button" class="topbar-chip" id="topbar-user-btn" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-user-pop" onclick="topbarToggle(event, 'topbar-user-pop')" title="<?= topbar_h($ctx['name']) ?> · <?= topbar_h($ctx['company']) ?>">
         <span class="topbar-avatar" style="<?= $avatarStyle ?>"><?= topbar_h($ctx['initials']) ?></span>
@@ -426,7 +423,6 @@ function topbar_render(array $ctx, int $sprogId): void
       </div>
     </div>
 
-    <button type="button" class="topbar-move" id="topbar-move" onclick="topbarMovePlacement()" data-to-sidebar="<?= $t('5608|Flyt til sidebar') ?>" data-to-top="<?= $t('5609|Flyt til toppen') ?>" title="<?= $t('5608|Flyt til sidebar') ?>"><i class='bx bx-transfer-alt'></i><span><?= $t('5608|Flyt til sidebar') ?></span></button>
     </div>
   </header>
 	<?php

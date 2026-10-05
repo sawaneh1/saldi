@@ -34,6 +34,7 @@
 // 20260929 Sawaneh Order autocomplete moved here from Ordrerelaterede valg, saved through SettingsService.
 // 20260930 Sawaneh Notifications tab: daily e-mail summary on/off (Adam: summary only).
 // 20261004 Sawaneh Bank status in the cash journal is a personal setting here when the bank integration is live (G2.7).
+// 20261005 Sawaneh Bar placement option removed: the cluster is always in the top bar (topbar addendum 2026-10-05 §2).
 // 20261002 Sawaneh Print card: print to local printer is a personal setting (settings redesign G6.4), not a cookie.
 
 /**
@@ -178,12 +179,6 @@ function personal_settings_save(array $post, int $brugerId, string $brugernavn, 
 			}
 			setcookie('languageId', (string) $lang, time() + (10 * 365 * 24 * 60 * 60), '/');
 			$out['language'] = $lang;
-			$reloadShell = true;
-		}
-
-		$placement = (isset($post['placement']) && $post['placement'] === 'sidebar') ? 'sidebar' : 'top';
-		if ($placement !== $current['placement']) {
-			update_settings_value('cluster_placement', 'globals', $placement, 'Global bar placement: top or sidebar', $brugerId);
 			$reloadShell = true;
 		}
 
@@ -379,7 +374,6 @@ function personal_settings_load(int $brugerId, bool $isRevisor, string $brugerna
 		'twofactor' => $twofactor,
 		'language'  => max(1, (int) $sprog_id ?: (int) $u['language_id']),
 		'languages' => $languages,
-		'placement' => ((string) get_settings_value('cluster_placement', 'globals', 'top', $brugerId) === 'sidebar') ? 'sidebar' : 'top',
 		'revisor'   => $isRevisor,
 		'colors'    => $colors,
 		'popup'     => ($uset && trim((string) $uset['box2']) !== ''),
@@ -598,13 +592,6 @@ function personal_settings_view_profile(array $d, callable $h, callable $t, stri
             <option value="<?= (int) $id ?>"<?= ($id === $d['language']) ? ' selected' : '' ?>><?= $h($label) ?></option>
             <?php } ?>
           </select>
-        </div>
-        <div class="ps-field">
-          <label><?= $t('5610|Placering af den globale bjælke') ?></label>
-          <div class="ps-seg">
-            <label class="ps-seg-opt"><input type="radio" name="placement" value="top"<?= $d['placement'] === 'top' ? ' checked' : '' ?>><span><i class='bx bx-dock-top'></i><?= $t('5611|Topbjælke') ?></span></label>
-            <label class="ps-seg-opt"><input type="radio" name="placement" value="sidebar"<?= $d['placement'] === 'sidebar' ? ' checked' : '' ?>><span><i class='bx bx-dock-left'></i><?= $t('5622|Sidebar') ?></span></label>
-          </div>
         </div>
       </div>
     </section>

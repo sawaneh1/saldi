@@ -54,6 +54,9 @@
 // 20260930 Sawaneh Dashboard items in the user menu hidden, not greyed out, away from the dashboard (Adam).
 // 20261002 Sawaneh Hand-over 2 Oct: sidebar "System" replaced by one entry "Indstillinger", Kontoplan under Finans (also for
 //                  users with only that right), breadcrumb in the topbar on settings pages (settings redesign §8.0, decision 16).
+// 20261005 Sawaneh Topbar addendum 2026-10-05: sidebar placement removed; breadcrumb from saldi:breadcrumb messages of any
+//                  page (page_breadcrumb()), navigation through saldi:navigate with a 300 ms fallback, came-from chip,
+//                  Alt+L; 44 px bar except Oversigt; avatar-only chip below 1240 px.
 // 20261004 Sawaneh topbarSetGear(): the gear in the sub-bar opens the settings section that governs the page in the frame (§8.11).
 @session_start();
 $s_id = session_id();
@@ -185,7 +188,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=13' rel='stylesheet'>
+<link href='../css/topbar.css?v=14' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -416,7 +419,6 @@ function brightenColor($color, $amount = 0.2) {
     </li>
   </ul>
 
-  <div id="cluster-sidebar-mount"></div>
   <div id="desc-line">
     <p title="DB nummer <?php print $db; ?>">Saldi version <?php print $version; ?></p>
   </div>
@@ -440,7 +442,7 @@ function brightenColor($color, $amount = 0.2) {
       onLoad="
       document.title = 'Saldi - ' + this.contentWindow.document.title;
       topbarSetDashState(this.contentWindow.location.pathname);
-      topbarSetCrumb(this.contentWindow);
+      topbarFrameLoaded(this.contentWindow);
       topbarSetGear(this.contentWindow);
       console.log('Locaiton', this.contentWindow.document.location.href);
       trigger_iframe_load();
@@ -506,41 +508,123 @@ function brightenColor($color, $amount = 0.2) {
   }
 
   // Dashboard items in the chip (Skjul/Rediger oversigt) only act on the dashboard itself.
-  // Settings pages declare their trail in window.saldiBreadcrumb; every other page leaves the left side empty.
-  function topbarSetCrumb(win) {
-    const nav = document.getElementById('topbar-crumb');
-    if (!nav) return;
-    let trail = null;
-    try { trail = win && Array.isArray(win.saldiBreadcrumb) ? win.saldiBreadcrumb : null; } catch (e) { trail = null; }
-    nav.textContent = '';
+  // Breadcrumb (topbar addendum 2026-10-05 §3/§4): a page that uses page_breadcrumb() posts saldi:breadcrumb;
+  // the shell asks for it after every load, so a page that sends nothing leaves the left side empty.
+  let topbarCrumbMsg = null;
+  let topbarNavTimer = null;
+  function topbarFrameLoaded(win) {
+    topbarCrumbMsg = null;
+    topbarRenderCrumb(null);
+    let path = '';
+    try { path = win.location.pathname; } catch (e) { path = ''; }
     const entry = document.getElementById('indstillinger');
     if (entry) {
-      if (trail && trail.length) { clear_sidebar(); entry.parentElement.classList.add('active'); }
+      if (/\/systemdata\//.test(path)) { clear_sidebar(); entry.parentElement.classList.add('active'); }
       else { entry.parentElement.classList.remove('active'); }
     }
-    if (!trail || !trail.length) { nav.hidden = true; return; }
-    const items = [{ label: nav.dataset.company || '', url: '/index/dashboard.php' }].concat(trail);
+    try { win.postMessage({ type: 'saldi:breadcrumb-request' }, location.origin); } catch (e) { /* page from another origin */ }
+  }
+  // A level's href as a path from the Saldi root ('/finans/kladdeliste.php?...'): absolute ones as given, relative
+  // ones resolved against the page in the frame.
+  function topbarShellPath(href) {
+    if (!href) return '';
+    if (href.charAt(0) === '/') return href;
+    const root = window.location.pathname.replace(/\/index\/main\.php$/, '');
+    try {
+      const frame = document.querySelector('.content-iframe').contentWindow.location.href;
+      const url = new URL(href, frame);
+      if (url.origin !== location.origin || url.pathname.indexOf(root + '/') !== 0) return '';
+      return url.pathname.slice(root.length) + url.search;
+    } catch (e) { return ''; }
+  }
+  function topbarRenderCrumb(msg) {
+    const nav = document.getElementById('topbar-crumb');
+    if (!nav) return;
+    nav.textContent = '';
+    if (!msg || !Array.isArray(msg.items) || !msg.items.length) { nav.hidden = true; return; }
+    if (msg.back && msg.back.href && topbarShellPath(msg.back.href)) {
+      const chip = document.createElement('a');
+      chip.className = 'topbar-from';
+      chip.href = '#';
+      chip.title = 'Alt+L';
+      chip.textContent = '‹ ' + String(msg.back.label || '');
+      chip.addEventListener('click', (e) => { e.preventDefault(); topbarNavigate(topbarShellPath(msg.back.href)); });
+      nav.appendChild(chip);
+    }
+    const items = [{ label: nav.dataset.company || '', href: '/index/dashboard.php' }].concat(msg.items);
+    let shown = 0;
     items.forEach((item, i) => {
       if (!item || !item.label) return;
-      if (nav.childNodes.length) {
+      if (shown) {
         const sep = document.createElement('i');
         sep.textContent = '/';
         sep.setAttribute('aria-hidden', 'true');
         nav.appendChild(sep);
       }
-      const last = (i === items.length - 1) || !item.url;
-      const el = document.createElement(last ? 'b' : 'a');
-      el.textContent = item.label;
+      const last = (i === items.length - 1);
+      const path = last ? '' : topbarShellPath(item.href || '');
+      const el = document.createElement(last ? 'b' : (path ? 'a' : 'span'));
+      el.className = 'c' + i;
+      el.textContent = String(item.label);
       if (last) {
         el.setAttribute('aria-current', 'page');
-      } else {
+      } else if (path) {
         el.href = '#';
-        el.addEventListener('click', (e) => { e.preventDefault(); update_iframe(item.url); });
+        el.addEventListener('click', (e) => { e.preventDefault(); topbarNavigate(path); });
       }
       nav.appendChild(el);
+      shown++;
     });
+    if (msg.tag) {
+      const tag = document.createElement('small');
+      tag.className = 'topbar-crumb-tag';
+      tag.textContent = String(msg.tag);
+      nav.appendChild(tag);
+    }
     nav.hidden = false;
   }
+  // Navigation from the bar goes through the page (§4.2): it leaves the way its own Luk did (locks, unsaved
+  // changes). A page that does not answer within 300 ms is not migrated and is navigated by the shell.
+  function topbarNavigate(path) {
+    if (!path) return;
+    const iframe = document.querySelector('.content-iframe');
+    const baseUrl = (location + '').split('/').splice(0, 4).join('/');
+    const url = new URL(baseUrl + (path.startsWith('/') ? path : '/' + path));
+    if (!url.searchParams.has('inframe')) url.searchParams.set('inframe', '1');
+    clearTimeout(topbarNavTimer);
+    if (!topbarCrumbMsg) { update_iframe(path); return; }
+    topbarNavTimer = setTimeout(() => { update_iframe(path); }, 300);
+    try {
+      iframe.contentWindow.postMessage({ type: 'saldi:navigate', href: url.href, confirm: 'Er du sikker på du gerne vil ændre side? Dine ændringer vil ikke blive gemt' }, location.origin);
+    } catch (e) { clearTimeout(topbarNavTimer); update_iframe(path); }
+  }
+  // Alt+L (§3.2): the came-from target when shown, otherwise the parent level.
+  function topbarGoBack() {
+    const msg = topbarCrumbMsg;
+    if (!msg) return;
+    if (msg.back && msg.back.href && topbarShellPath(msg.back.href)) { topbarNavigate(topbarShellPath(msg.back.href)); return; }
+    const items = [{ href: '/index/dashboard.php' }].concat(msg.items || []);
+    for (let i = items.length - 2; i >= 0; i--) {
+      const path = topbarShellPath(items[i].href || '');
+      if (path) { topbarNavigate(path); return; }
+    }
+  }
+  window.addEventListener('message', (e) => {
+    const iframe = document.querySelector('.content-iframe');
+    if (e.origin !== location.origin || !e.data || !iframe || e.source !== iframe.contentWindow) return;
+    if (e.data.type === 'saldi:breadcrumb') { topbarCrumbMsg = e.data; topbarRenderCrumb(e.data); }
+    if (e.data.type === 'saldi:navigate-ack') { clearTimeout(topbarNavTimer); }
+    if (e.data.type === 'saldi:back') { topbarGoBack(); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); topbarGoBack(); }
+  });
+  // The user chip shows only the avatar when the bar is narrower than about 1240 px (§2a).
+  (function () {
+    const bar = document.getElementById('topbar');
+    if (!bar || !window.ResizeObserver) return;
+    new ResizeObserver(() => { bar.classList.toggle('topbar-narrow', bar.clientWidth < 1240); }).observe(bar);
+  })();
   // Gear in the sub-bar (settings redesign §8.11): shown when a settings section names the page in the frame
   // (data-map from the registry, already filtered by the user's permissions); opens it with a way back.
   function topbarSetGear(win) {
@@ -561,6 +645,7 @@ function brightenColor($color, $amount = 0.2) {
   function topbarSetDashState(path) {
     const onDash = /\/index\/dashboard\.php$/.test(path || '');
     document.querySelectorAll('.topbar-dash').forEach((el) => { el.hidden = !onDash; });
+    document.documentElement.classList.toggle('topbar-tall', onDash);
   }
   function topbarDashHide() {
     const iframe = document.querySelector('.content-iframe');
@@ -581,37 +666,6 @@ function brightenColor($color, $amount = 0.2) {
     topbarCloseAll();
     window.frames['iframe_a'].focus();
     window.frames['iframe_a'].print();
-  }
-
-  // Global cluster placement (spec 2.3): the same DOM node is mounted either in the
-  // top bar or at the bottom of the sidebar; no page reload, the iframe is untouched.
-  function topbarApplyPlacement(placement) {
-    const cluster = document.getElementById('topbar-cluster');
-    const header = document.getElementById('topbar');
-    const mount = document.getElementById('cluster-sidebar-mount');
-    const move = document.getElementById('topbar-move');
-    topbarCloseAll();
-    if (placement === 'sidebar') {
-      mount.appendChild(cluster);
-      document.documentElement.classList.add('cluster-sidebar');
-      move.querySelector('span').textContent = move.dataset.toTop;
-      move.title = move.dataset.toTop;
-    } else {
-      header.appendChild(cluster);
-      document.documentElement.classList.remove('cluster-sidebar');
-      move.querySelector('span').textContent = move.dataset.toSidebar;
-      move.title = move.dataset.toSidebar;
-    }
-    header.dataset.placement = placement;
-  }
-  function topbarMovePlacement() {
-    const next = document.getElementById('topbar').dataset.placement === 'sidebar' ? 'top' : 'sidebar';
-    topbarApplyPlacement(next);
-    const body = new URLSearchParams({ action: 'placement', placement: next });
-    fetch('topbarAction.php', { method: 'POST', body: body, credentials: 'same-origin' }).catch(() => {});
-  }
-  if (document.getElementById('topbar').dataset.placement === 'sidebar') {
-    topbarApplyPlacement('sidebar');
   }
 
   // Notification center (spec §3): polled from the shell every 60 s, rendered client-side.

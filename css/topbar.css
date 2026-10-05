@@ -1,11 +1,11 @@
 /* Shell global bar (index/main.php via index/mainIncludes/topbar.php).
-   2026-09-17 topbar spec, topbar mode: slim white bar, cluster right-aligned
-   (language · Assist · PoS · bell · user chip), empty middle; breadcrumb only on
-   settings pages (2026-10-02, settings redesign 8.0).
+   2026-09-17 topbar spec: slim white bar, cluster right-aligned (language · Assist · PoS ·
+   bell · user chip). 2026-10-05 addendum: always in the top bar (no sidebar placement),
+   44 px except on Oversigt, breadcrumb from any page that posts saldi:breadcrumb.
    Panels overlay the content iframe. */
 
 :root {
-    --topbar-h: 48px;
+    --topbar-h: 44px;
     --topbar-bg: #ffffff;
     --topbar-line: #e2e6ee;
     --topbar-txt: #1c2431;
@@ -24,7 +24,9 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    padding: 0 12px 0 10px;
+    padding: 0 16px 0 9px;
+    border-bottom: 1px solid var(--topbar-line);
+    box-sizing: border-box;
     position: relative;
     z-index: 50;
     color: var(--topbar-txt);
@@ -32,18 +34,21 @@
 
 .topbar-spacer { flex: 1; }
 
-/* Breadcrumb on settings pages (settings redesign §8.0). Shrinks from the left when space is short. */
-.topbar-crumb { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex: 0 1 auto; min-width: 0; overflow: hidden; margin-left: 14px; font-size: 13.5px; white-space: nowrap; color: var(--topbar-mut); }
+/* Breadcrumb on every page that posts saldi:breadcrumb (topbar addendum 2026-10-05 §3). Truncates from the left:
+   the company goes first, then the module; the current page is never hidden. */
+.topbar-crumb { display: flex; align-items: center; justify-content: flex-end; gap: 2px; flex: 0 1 auto; min-width: 0; overflow: hidden; margin-left: 0; font-size: 13.5px; white-space: nowrap; color: var(--topbar-mut); }
 .topbar-crumb[hidden] { display: none; }
-.topbar-gear { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-left: 4px; border-radius: 8px; color: inherit; font-size: 18px; opacity: .75; text-decoration: none; }
+.topbar-crumb > * { flex: none; }
+.topbar-crumb a, .topbar-crumb span { padding: 5px 7px; border-radius: 7px; color: var(--topbar-mut); text-decoration: none; }
+.topbar-crumb a:hover { background: var(--topbar-hover); color: var(--topbar-txt); }
+.topbar-crumb a:focus-visible { outline: 2px solid var(--topbar-accent); outline-offset: 1px; }
+.topbar-crumb i { font-style: normal; font-size: 13px; color: #aab6cc; padding: 0 1px; }
+.topbar-crumb b { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 5px 7px; color: var(--topbar-txt); font-weight: 600; }
+.topbar-crumb .topbar-from { margin-right: 6px; padding: 4px 9px; border: 1px solid var(--topbar-line); border-radius: 999px; font-size: 12.5px; color: var(--topbar-txt); }
+.topbar-crumb .topbar-crumb-tag { margin-left: 2px; padding: 2px 8px; border-radius: 999px; background: var(--topbar-accent-soft); color: var(--topbar-accent); font-size: 11.5px; font-weight: 600; }
+.topbar-gear { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-left: 4px; border-radius: 10px; color: inherit; font-size: 18px; opacity: .75; text-decoration: none; }
 .topbar-gear:hover, .topbar-gear:focus-visible { opacity: 1; background: rgba(0, 0, 0, .06); }
 .topbar-gear[hidden] { display: none; }
-.topbar-crumb > * { flex: none; }
-.topbar-crumb a { color: var(--topbar-mut); text-decoration: none; }
-.topbar-crumb a:hover { color: var(--topbar-accent); }
-.topbar-crumb a:focus-visible { outline: 2px solid var(--topbar-accent); outline-offset: 2px; border-radius: 3px; }
-.topbar-crumb i { font-style: normal; color: #aab6cc; }
-.topbar-crumb b { color: var(--topbar-txt); font-weight: 600; }
 .topbar-item { position: relative; }
 .topbar-mobile { display: none; }
 
@@ -66,11 +71,11 @@
 
 .topbar-icbtn {
     position: relative;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border: none;
     background: transparent;
-    border-radius: 9px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -79,7 +84,7 @@
     padding: 0;
     text-decoration: none;
 }
-.topbar-icbtn i { font-size: 21px; }
+.topbar-icbtn i { font-size: 18px; }
 .topbar-icbtn:hover,
 .topbar-icbtn[aria-expanded="true"] { background: var(--topbar-hover); color: var(--topbar-txt); }
 .topbar-icbtn:focus-visible,
@@ -109,18 +114,18 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    height: 36px;
+    height: 34px;
     padding: 0 6px 0 8px;
     border: none;
     background: transparent;
-    border-radius: 9px;
+    border-radius: 10px;
     cursor: pointer;
     color: #49546b;
     font-size: 12.5px;
     font-weight: 700;
     letter-spacing: 0.3px;
 }
-.topbar-lang i.bx-globe { font-size: 19px; }
+.topbar-lang i.bx-globe { font-size: 18px; }
 .topbar-lang:hover,
 .topbar-lang[aria-expanded="true"] { background: var(--topbar-hover); color: var(--topbar-txt); }
 .topbar-pop-lang { width: 200px; padding: 6px 0; }
@@ -142,7 +147,9 @@
     border: none;
     background: none;
     cursor: pointer;
+    height: 36px;
     padding: 4px 6px 4px 4px;
+    box-sizing: border-box;
     border-radius: 10px;
     color: var(--topbar-txt);
     max-width: 320px;
@@ -152,11 +159,11 @@
 .topbar-chip[aria-expanded="true"] { background: var(--topbar-hover); }
 
 .topbar-avatar {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     font-weight: 700;
-    font-size: 12.5px;
+    font-size: 11.5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -173,8 +180,8 @@
     min-width: 0;
     text-align: left;
 }
-.topbar-name { font-size: 13.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
-.topbar-company { font-size: 11.5px; color: var(--topbar-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.topbar-name { font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.topbar-company { font-size: 11px; color: var(--topbar-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .topbar-chev { font-size: 18px; color: var(--topbar-mut); transition: transform 0.2s ease; }
 .topbar-lang .topbar-chev { font-size: 16px; }
 .topbar-chip[aria-expanded="true"] .topbar-chev,
@@ -339,94 +346,26 @@
     .topbar-pop-bell, .topbar-pop-user { width: min(360px, calc(100vw - 24px)); }
 }
 
-/* ---- move button + sidebar placement (spec 2.3) ---- */
-.topbar-cluster { display: flex; align-items: center; gap: 2px; }
-.topbar-move {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 30px;
-    margin-left: 8px;
-    padding: 0 9px;
-    border: 1px dashed #c3cbd8;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--topbar-mut);
-    font-size: 11.5px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-.topbar-move i { font-size: 15px; }
-.topbar-move:hover { border-color: var(--topbar-accent); color: var(--topbar-accent); background: var(--topbar-accent-soft); }
+.topbar-cluster { display: flex; align-items: center; gap: 4px; }
 
-html.cluster-sidebar .topbar { display: none; }
-html.cluster-sidebar .sidebar { overflow: visible !important; }
-#cluster-sidebar-mount { padding: 8px 12px 6px; }
-#cluster-sidebar-mount .topbar-cluster {
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 8px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.10);
+@media screen and (max-width: 1100px) {
+    .topbar-crumb .c0 { display: none; }
+    .topbar-crumb .c0 + i { display: none; }
 }
-#cluster-sidebar-mount .topbar-icbtn,
-#cluster-sidebar-mount .topbar-lang,
-#cluster-sidebar-mount .topbar-menu-btn { color: #dbe4f5; }
-#cluster-sidebar-mount .topbar-icbtn:hover,
-#cluster-sidebar-mount .topbar-lang:hover,
-#cluster-sidebar-mount .topbar-icbtn[aria-expanded="true"],
-#cluster-sidebar-mount .topbar-lang[aria-expanded="true"] { background: rgba(255, 255, 255, 0.16); color: #fff; }
-#cluster-sidebar-mount .topbar-assist { color: #fff; }
-#cluster-sidebar-mount .topbar-item:last-of-type { width: 100%; }
-#cluster-sidebar-mount .topbar-chip { width: 100%; max-width: none; margin: 4px 0 0; color: #fff; }
-#cluster-sidebar-mount .topbar-chip:hover,
-#cluster-sidebar-mount .topbar-chip[aria-expanded="true"] { background: rgba(255, 255, 255, 0.16); }
-#cluster-sidebar-mount .topbar-company { color: #b9c8e6; }
-#cluster-sidebar-mount .topbar-chev { color: #b9c8e6; }
-#cluster-sidebar-mount .topbar-move { width: 100%; justify-content: center; margin: 6px 0 0; border-color: rgba(255, 255, 255, 0.35); color: #dbe4f5; }
-#cluster-sidebar-mount .topbar-move:hover { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: #fff; }
-#cluster-sidebar-mount .topbar-pop { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
-#cluster-sidebar-mount .topbar-pop-body { max-height: calc(100vh - 160px); }
+@media screen and (max-width: 900px) {
+    .topbar-crumb .c1, .topbar-crumb .c1 + i { display: none; }
+}
 
-/* collapsed sidebar: vertical icon column, language via the chip dropdown */
-.sidebar.closed #cluster-sidebar-mount { padding: 8px 6px; }
-.sidebar.closed #cluster-sidebar-mount .topbar-cluster { flex-direction: column; align-items: center; padding: 6px 4px; }
-.sidebar.closed #cluster-sidebar-mount .topbar-desktop:not(.topbar-icbtn),
-.sidebar.closed #cluster-sidebar-mount .topbar-lang,
-.sidebar.closed #cluster-sidebar-mount .topbar-who,
-.sidebar.closed #cluster-sidebar-mount .topbar-chev,
-.sidebar.closed #cluster-sidebar-mount .topbar-move span { display: none; }
-.sidebar.closed #cluster-sidebar-mount .topbar-mobile { display: block; }
-.sidebar.closed #cluster-sidebar-mount .topbar-item:last-of-type { width: auto; }
-.sidebar.closed #cluster-sidebar-mount .topbar-chip { width: auto; padding: 3px; }
-.sidebar.closed #cluster-sidebar-mount .topbar-move { width: auto; padding: 0 6px; }
+/* 20261005 Sawaneh Slim bar (topbar addendum 2026-10-05 §2a): 44 px everywhere, Oversigt keeps 48 px for its greeting;
+   separator before the user chip; the chip shows only the avatar when the bar is narrower than about 1240 px. */
+html.topbar-tall { --topbar-h: 48px; }
+.topbar-sep { flex: none; width: 1px; height: 24px; margin: 0 6px; background: var(--topbar-line); }
+.topbar.topbar-narrow .topbar-who,
+.topbar.topbar-narrow .topbar-chip .topbar-chev { display: none; }
+.topbar.topbar-narrow .topbar-chip { padding: 4px; }
+
 .sidebar.closed #desc-line { display: none; }
 
-/* Sidebar mode: the sidebar paints every link/icon in the theme text colour (!important
-   in index/main.php); panels are white cards and must keep their own colours. */
-#cluster-sidebar-mount .topbar-pop a,
-#cluster-sidebar-mount .topbar-pop button,
-#cluster-sidebar-mount .topbar-pop p,
-#cluster-sidebar-mount .topbar-pop .bx { color: var(--topbar-txt) !important; }
-#cluster-sidebar-mount .topbar-pop .topbar-pop-item i,
-#cluster-sidebar-mount .topbar-pop .topbar-pop-item small,
-#cluster-sidebar-mount .topbar-pop .topbar-pop-mail,
-#cluster-sidebar-mount .topbar-pop .topbar-pop-sub,
-#cluster-sidebar-mount .topbar-pop .topbar-year i,
-#cluster-sidebar-mount .topbar-pop .topbar-empty,
-#cluster-sidebar-mount .topbar-pop .topbar-empty .bx,
-#cluster-sidebar-mount .topbar-pop .topbar-lang-code { color: var(--topbar-mut) !important; }
-#cluster-sidebar-mount .topbar-pop .topbar-pop-out,
-#cluster-sidebar-mount .topbar-pop .topbar-pop-out .bx { color: var(--topbar-red) !important; }
-#cluster-sidebar-mount .topbar-pop .topbar-role,
-#cluster-sidebar-mount .topbar-pop .topbar-pop-trail,
-#cluster-sidebar-mount .topbar-pop .topbar-year.active,
-#cluster-sidebar-mount .topbar-pop .topbar-year.active i,
-#cluster-sidebar-mount .topbar-pop .topbar-year small,
-#cluster-sidebar-mount .topbar-pop .topbar-pop-item.active { color: var(--topbar-accent) !important; }
-#cluster-sidebar-mount .topbar-pop .topbar-pop-item[disabled],
-#cluster-sidebar-mount .topbar-pop .topbar-pop-item[disabled] i { opacity: 0.45; }
 
 /* ---- notification panel (spec §3.1) ---- */
 .topbar-notif-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--topbar-line); }
@@ -447,8 +386,6 @@ html.cluster-sidebar .sidebar { overflow: visible !important; }
 .topbar-notif-t { font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--topbar-txt); }
 .topbar-notif-b { font-size: 12.5px; color: var(--topbar-mut); line-height: 1.4; margin-top: 2px; }
 .topbar-notif-time { font-size: 11px; color: #98a1b5; margin-top: 4px; }
-#cluster-sidebar-mount .topbar-pop .topbar-notif-ic i { color: inherit !important; }
-#cluster-sidebar-mount .topbar-pop .topbar-notif-t { color: var(--topbar-txt) !important; }
 
 /* The Assist widget's own sidebar entry is replaced by the cluster button (spec 6). */
 .sidebar li.topbar-assist-hidden { height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; visibility: hidden; }
