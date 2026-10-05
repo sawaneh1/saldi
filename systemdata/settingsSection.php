@@ -100,7 +100,17 @@ if (!preg_match('#^/[a-z_]+/[A-Za-z0-9_\-]+\.php(\?[A-Za-z0-9_\-=&%.+]*)?$#', $r
 	$returnTo = '';
 }
 $section['return_to'] = $returnTo;
-$selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId) . ($returnTo !== '' ? '&back=' . rawurlencode($returnTo) : '');
+// The name of the page the gear came from, for the "came from" chip (topbar addendum 2026-10-05 §3.1).
+$returnLabel = '';
+if ($returnTo !== '') {
+	$returnLabel = isset($_GET['back_label']) ? (string) $_GET['back_label'] : (isset($_POST['back_label']) ? (string) $_POST['back_label'] : '');
+	$returnLabel = mb_substr(trim(preg_replace('/[\x00-\x1f<>]/u', '', strip_tags($returnLabel))), 0, 60);
+	if (st_charset() !== 'UTF-8') {
+		$returnLabel = mb_convert_encoding($returnLabel, st_charset(), 'UTF-8');
+	}
+}
+$section['return_label'] = $returnLabel;
+$selfUrl = 'settingsSection.php?s=' . rawurlencode($sectionId) . ($returnTo !== '' ? '&back=' . rawurlencode($returnTo) . ($returnLabel !== '' ? '&back_label=' . rawurlencode(st_charset() !== 'UTF-8' ? mb_convert_encoding($returnLabel, 'UTF-8', st_charset()) : $returnLabel) : '') : '');
 $isList = (!empty($section['kind']) && $section['kind'] === 'list');
 $isRows = (!empty($section['kind']) && $section['kind'] === 'rows');
 $tables = $isRows ? settings_rows_tables($section) : array();
@@ -417,7 +427,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
 	?>
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <script>document.title = <?= json_encode(mb_convert_encoding(st_txt($section['label']), 'UTF-8', $charset)) ?>;</script>
-<?= settings_breadcrumb_script(settings_breadcrumb((string) $section['group'], st_txt($section['label']), $sprogId), $charset, isset($section['return_to']) ? (string) $section['return_to'] : '') ?>
+<?= settings_breadcrumb_script(settings_breadcrumb((string) $section['group'], st_txt($section['label']), $sprogId), $charset, isset($section['return_to']) ? (string) $section['return_to'] : '', isset($section['return_label']) ? (string) $section['return_label'] : '') ?>
 <div class="st-page" style="<?= st_h(st_accent_style((string) $accent, (string) $accentTxt)) ?>">
   <a class="st-skip" href="#st-form"><?= st_t(5751) ?></a>
   <section class="st-phead">

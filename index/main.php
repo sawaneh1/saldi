@@ -54,6 +54,7 @@
 // 20260930 Sawaneh Dashboard items in the user menu hidden, not greyed out, away from the dashboard (Adam).
 // 20261002 Sawaneh Hand-over 2 Oct: sidebar "System" replaced by one entry "Indstillinger", Kontoplan under Finans (also for
 //                  users with only that right), breadcrumb in the topbar on settings pages (settings redesign §8.0, decision 16).
+// 20261005 Sawaneh Global search in the bar (addendum §6): sidebar pages, settings, records from globalSearch.php, recent pages.
 // 20261005 Sawaneh Topbar addendum 2026-10-05: sidebar placement removed; breadcrumb from saldi:breadcrumb messages of any
 //                  page (page_breadcrumb()), navigation through saldi:navigate with a 300 ms fallback, came-from chip,
 //                  Alt+L; 44 px bar except Oversigt; avatar-only chip below 1240 px.
@@ -188,7 +189,7 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=14' rel='stylesheet'>
+<link href='../css/topbar.css?v=15' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -443,6 +444,7 @@ function brightenColor($color, $amount = 0.2) {
       document.title = 'Saldi - ' + this.contentWindow.document.title;
       topbarSetDashState(this.contentWindow.location.pathname);
       topbarFrameLoaded(this.contentWindow);
+      topbarSearchBindFrame(this.contentWindow);
       topbarSetGear(this.contentWindow);
       console.log('Locaiton', this.contentWindow.document.location.href);
       trigger_iframe_load();
@@ -461,6 +463,7 @@ function brightenColor($color, $amount = 0.2) {
 <script>
   // ---- topbar (mainIncludes/topbar.php) ----
   function topbarCloseAll() {
+    topbarSearchClose();
     document.querySelectorAll('.topbar-pop.open').forEach((el) => el.classList.remove('open'));
     document.querySelectorAll('.topbar [aria-expanded="true"]').forEach((el) => el.setAttribute('aria-expanded', 'false'));
   }
@@ -625,6 +628,191 @@ function brightenColor($color, $amount = 0.2) {
     if (!bar || !window.ResizeObserver) return;
     new ResizeObserver(() => { bar.classList.toggle('topbar-narrow', bar.clientWidth < 1240); }).observe(bar);
   })();
+  // Global search (topbar addendum 2026-10-05 §6): magnifier, Ctrl+K or '/'. Pages come from the sidebar the user
+  // sees, settings from settingsSearch.php, records from globalSearch.php; at most 4 per group and 9 in all; names
+  // are inserted as text; a result opens through topbarNavigate (the page's own unsaved-changes handling).
+  let topbarSearchTimer = null, topbarSearchSeq = 0, topbarSearchHits = [], topbarSearchSel = -1, topbarSearchPageList = null;
+  function topbarSearchTxt() {
+    const box = document.getElementById('topbar-search');
+    try { return JSON.parse(box.dataset.txt || '{}'); } catch (e) { return {}; }
+  }
+  function topbarSearchPages() {
+    if (topbarSearchPageList) return topbarSearchPageList;
+    topbarSearchPageList = [];
+    document.querySelectorAll('.sidebar .nav-links > li').forEach((li) => {
+      if (li.style.display === 'none') return;
+      const head = li.querySelector('.link_name');
+      const module = head ? head.textContent.trim() : '';
+      li.querySelectorAll('.sub-menu a[onclick*="update_iframe"]').forEach((a) => {
+        const m = /update_iframe\(["']([^"']+)["']\)/.exec(a.getAttribute('onclick') || '');
+        const label = a.textContent.trim();
+        if (!m || !label) return;
+        topbarSearchPageList.push({ label: label, sub: module && module !== label ? module + ' / ' + label : '', href: m[1] });
+      });
+    });
+    return topbarSearchPageList;
+  }
+  function topbarSearchPageLabel(path) {
+    const hit = topbarSearchPages().find((p) => p.href.split('?')[0] === path);
+    return hit ? hit.label : path.split('/').pop().replace(/\.php$/, '');
+  }
+  function topbarSearchOpen() {
+    const box = document.getElementById('topbar-search');
+    if (box.classList.contains('open')) { document.getElementById('topbar-search-in').focus(); return; }
+    topbarCloseAll();
+    box.classList.add('open');
+    document.getElementById('topbar-search-btn').setAttribute('aria-expanded', 'true');
+    const input = document.getElementById('topbar-search-in');
+    input.tabIndex = 0;
+    input.value = '';
+    input.focus();
+    topbarSearchRun('');
+  }
+  function topbarSearchClose() {
+    const box = document.getElementById('topbar-search');
+    if (!box || !box.classList.contains('open')) return;
+    box.classList.remove('open');
+    document.getElementById('topbar-search-btn').setAttribute('aria-expanded', 'false');
+    const input = document.getElementById('topbar-search-in');
+    input.tabIndex = -1;
+    input.setAttribute('aria-expanded', 'false');
+    document.getElementById('topbar-search-res').classList.remove('open');
+    clearTimeout(topbarSearchTimer);
+  }
+  function topbarSearchToggle(e) {
+    e.stopPropagation();
+    const box = document.getElementById('topbar-search');
+    if (box.classList.contains('open') && document.getElementById('topbar-search-in').value.trim() === '') { topbarSearchClose(); return; }
+    topbarSearchOpen();
+  }
+  function topbarSearchMark(parent, text, q) {
+    const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
+    if (i < 0) { parent.appendChild(document.createTextNode(text)); return; }
+    parent.appendChild(document.createTextNode(text.slice(0, i)));
+    const m = document.createElement('mark');
+    m.textContent = text.slice(i, i + q.length);
+    parent.appendChild(m);
+    parent.appendChild(document.createTextNode(text.slice(i + q.length)));
+  }
+  function topbarSearchRender(groups, q) {
+    const res = document.getElementById('topbar-search-res');
+    const txt = topbarSearchTxt();
+    res.textContent = '';
+    topbarSearchHits = [];
+    topbarSearchSel = -1;
+    let total = 0;
+    groups.forEach((g) => {
+      const items = (g.items || []).slice(0, Math.min(4, 9 - total));
+      if (!items.length) return;
+      const head = document.createElement('div');
+      head.className = 'topbar-search-grp';
+      head.textContent = g.label;
+      res.appendChild(head);
+      items.forEach((it) => {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'topbar-search-it';
+        a.id = 'topbar-search-it-' + topbarSearchHits.length;
+        a.setAttribute('role', 'option');
+        const b = document.createElement('b');
+        topbarSearchMark(b, String(it.label || ''), q);
+        a.appendChild(b);
+        if (it.sub) {
+          const sub = document.createElement('span');
+          topbarSearchMark(sub, String(it.sub), q);
+          a.appendChild(sub);
+        }
+        const href = it.href;
+        a.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        a.addEventListener('click', (e) => { e.preventDefault(); topbarSearchGo(href); });
+        res.appendChild(a);
+        topbarSearchHits.push(href);
+        total++;
+      });
+    });
+    if (!total && q) {
+      const none = document.createElement('div');
+      none.className = 'topbar-search-none';
+      none.textContent = txt.none || '';
+      res.appendChild(none);
+    }
+    const open = total > 0 || !!q;
+    res.classList.toggle('open', open);
+    document.getElementById('topbar-search-in').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function topbarSearchGo(href) {
+    topbarSearchClose();
+    topbarNavigate(href.charAt(0) === '/' ? href : '/' + href);
+  }
+  function topbarSearchSettingsPath(url) {
+    if (!url) return '';
+    if (url.indexOf('../') === 0) return url.slice(2);
+    return '/systemdata/' + url;
+  }
+  function topbarSearchRun(q) {
+    clearTimeout(topbarSearchTimer);
+    const seq = ++topbarSearchSeq;
+    const txt = topbarSearchTxt();
+    if (q.length < 2) {
+      fetch('globalSearch.php?recent=1', { credentials: 'same-origin' })
+        .then((r) => r.ok ? r.json() : { recent: [] })
+        .then((data) => {
+          if (seq !== topbarSearchSeq) return;
+          const items = (data.recent || []).map((r) => ({ label: r.label || topbarSearchPageLabel(r.path), sub: '', href: r.href }));
+          topbarSearchRender(items.length ? [{ label: txt.recent || '', items: items }] : [], '');
+        })
+        .catch(() => {});
+      return;
+    }
+    topbarSearchTimer = setTimeout(() => {
+      const lc = q.toLowerCase();
+      const pages = topbarSearchPages().filter((p) => p.label.toLowerCase().indexOf(lc) >= 0 || (p.sub || '').toLowerCase().indexOf(lc) >= 0);
+      const settings = fetch('../systemdata/settingsSearch.php?search=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then((r) => r.ok ? r.json() : {}).catch(() => ({}));
+      const records = fetch('globalSearch.php?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then((r) => r.ok ? r.json() : {}).catch(() => ({}));
+      Promise.all([settings, records]).then(([s, rec]) => {
+        if (seq !== topbarSearchSeq) return;
+        const setItems = (s.results || []).map((r) => ({ label: r.label, sub: r.group || '', href: topbarSearchSettingsPath(r.url) }))
+          .concat((s.fields || []).map((f) => ({ label: f.label, sub: f.group + (f.section ? ' / ' + f.section : ''), href: topbarSearchSettingsPath(f.url) })))
+          .filter((x) => x.href);
+        const groups = [{ label: txt.pages || '', items: pages }, { label: txt.settings || '', items: setItems }].concat(rec.groups || []);
+        topbarSearchRender(groups, q);
+      });
+    }, 200);
+  }
+  (function () {
+    const input = document.getElementById('topbar-search-in');
+    if (!input) return;
+    input.addEventListener('input', () => topbarSearchRun(input.value.trim()));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); topbarSearchClose(); return; }
+      if (!topbarSearchHits.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        topbarSearchSel = Math.max(0, Math.min(topbarSearchHits.length - 1, topbarSearchSel + (e.key === 'ArrowDown' ? 1 : -1)));
+        document.querySelectorAll('.topbar-search-it').forEach((a, i) => a.classList.toggle('sel', i === topbarSearchSel));
+        input.setAttribute('aria-activedescendant', 'topbar-search-it-' + topbarSearchSel);
+        const cur = document.getElementById('topbar-search-it-' + topbarSearchSel);
+        if (cur) cur.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        topbarSearchGo(topbarSearchHits[topbarSearchSel >= 0 ? topbarSearchSel : 0]);
+      }
+    });
+  })();
+  // Ctrl+K / Cmd+K anywhere, '/' when the caret is not in a field - in the shell and in the page in the frame
+  // (a page that handles '/' itself, like the settings front page, keeps it).
+  function topbarSearchKeys(e) {
+    if (e.defaultPrevented) return;
+    const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); topbarSearchOpen(); return; }
+    if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); topbarSearchOpen(); }
+  }
+  document.addEventListener('keydown', topbarSearchKeys);
+  function topbarSearchBindFrame(win) {
+    try { win.document.addEventListener('keydown', topbarSearchKeys); } catch (e) { /* page from another origin */ }
+  }
   // Gear in the sub-bar (settings redesign §8.11): shown when a settings section names the page in the frame
   // (data-map from the registry, already filtered by the user's permissions); opens it with a way back.
   function topbarSetGear(win) {
@@ -640,7 +828,9 @@ function brightenColor($color, $amount = 0.2) {
     if (!links || !links.length) { gear.hidden = true; return; }
     gear.hidden = false;
     gear.title = links[0].label;
-    gear.onclick = (e) => { e.preventDefault(); update_iframe(links[0].url + '&back=' + encodeURIComponent('/' + page + search)); };
+    let title = '';
+    try { title = String(win.document.title || '').replace(/^Saldi\s*-\s*/, '').trim().slice(0, 60); } catch (e) { title = ''; }
+    gear.onclick = (e) => { e.preventDefault(); update_iframe(links[0].url + '&back=' + encodeURIComponent('/' + page + search) + (title ? '&back_label=' + encodeURIComponent(title) : '')); };
   }
   function topbarSetDashState(path) {
     const onDash = /\/index\/dashboard\.php$/.test(path || '');
@@ -749,7 +939,7 @@ function brightenColor($color, $amount = 0.2) {
   new MutationObserver(topbarHideAssistEntry).observe(document.querySelector('.sidebar'), { childList: true, subtree: true });
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.topbar-pop, .topbar-item')) {
+    if (!e.target.closest('.topbar-pop, .topbar-item, .topbar-search')) {
       topbarCloseAll();
     }
   });

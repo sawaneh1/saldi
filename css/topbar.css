@@ -310,6 +310,9 @@
     text-align: left;
 }
 .topbar-pop form .topbar-year i { font-size: 15px; color: var(--topbar-mut); }
+.topbar-pop .topbar-year-new { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--topbar-accent); font: inherit; font-size: 12.8px; font-weight: 600; text-align: left; cursor: pointer; }
+.topbar-pop .topbar-year-new i { font-size: 15px; }
+.topbar-pop .topbar-year-new:hover { background: #f4f6fa; }
 .topbar-pop form .topbar-year:hover:not([disabled]) { background: #f4f6fa !important; }
 .topbar-pop form .topbar-year.active { font-weight: 650; color: var(--topbar-accent) !important; background: var(--topbar-accent-soft) !important; cursor: default; opacity: 1; }
 .topbar-pop form .topbar-year.active i { color: var(--topbar-accent); }
@@ -392,3 +395,27 @@ html.topbar-tall { --topbar-h: 48px; }
 
 /* 20260930 Sawaneh Dashboard items hidden away from the dashboard. */
 .topbar-dash[hidden] { display: none !important; }
+
+/* 20261005 Sawaneh Global search (topbar addendum 2026-10-05 §6): the magnifier expands leftwards into a 440 px field
+   (34 px high inside the 44 px bar); grouped results below; full width over the bar on phones. */
+.topbar-search { position: relative; display: flex; align-items: center; flex: none; height: 34px; border-radius: 10px; transition: width .18s ease; width: 34px; }
+.topbar-search-in { width: 0; min-width: 0; height: 34px; padding: 0; border: 0; background: transparent; color: var(--topbar-txt); font: inherit; font-size: 13.5px; opacity: 0; pointer-events: none; }
+.topbar-search-in::-webkit-search-cancel-button { display: none; }
+.topbar-search.open { width: min(440px, 46vw); background: var(--topbar-hover); }
+.topbar-search.open .topbar-icbtn { background: transparent; }
+.topbar-search.open .topbar-search-in { flex: 1; width: auto; padding-right: 10px; opacity: 1; pointer-events: auto; outline: none; }
+.topbar-search.open:focus-within { box-shadow: 0 0 0 2px var(--topbar-accent); }
+.topbar-search-res { top: calc(100% + 6px); right: 0; left: 0; width: auto; max-height: min(70vh, 520px); overflow-y: auto; padding: 6px 0; }
+.topbar-search-grp { padding: 8px 14px 3px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--topbar-mut); }
+.topbar-search-it { display: flex; flex-direction: column; gap: 1px; padding: 7px 14px; color: var(--topbar-txt); text-decoration: none; }
+.topbar-search-it b { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-search-it span { font-size: 12px; color: var(--topbar-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-search-it mark { background: #fdf0c4; color: inherit; border-radius: 2px; }
+.topbar-search-it:hover, .topbar-search-it.sel { background: var(--topbar-hover); }
+.topbar-search-none { padding: 14px; font-size: 13px; color: var(--topbar-mut); }
+@media screen and (max-width: 780px) {
+    .topbar-search.open { position: fixed; top: 0; left: 0; right: 0; width: auto; height: var(--topbar-h); padding: 5px 10px; border-radius: 0; background: var(--topbar-bg); z-index: 70; box-shadow: none; }
+    .topbar-search.open:focus-within { box-shadow: none; }
+    .topbar-search.open .topbar-search-in { background: var(--topbar-hover); border-radius: 10px; padding: 0 10px; }
+    .topbar-search-res { position: fixed; top: var(--topbar-h); left: 8px; right: 8px; }
+}

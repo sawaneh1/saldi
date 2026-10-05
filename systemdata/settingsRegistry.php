@@ -623,7 +623,7 @@ if (!function_exists('getSettingsGroups')) {
 	 * The settings trail through the shared page breadcrumb (includes/stdFunc/pageChrome.php, topbar addendum
 	 * 2026-10-05 §4): one mechanism for every page. $back is the page a module's gear came from.
 	 */
-	function settings_breadcrumb_script(array $trail, string $charset = 'UTF-8', string $back = ''): string
+	function settings_breadcrumb_script(array $trail, string $charset = 'UTF-8', string $back = '', string $backLabel = ''): string
 	{
 		if (!function_exists('page_breadcrumb')) {
 			include_once(__DIR__ . '/../includes/stdFunc/pageChrome.php');
@@ -634,7 +634,7 @@ if (!function_exists('getSettingsGroups')) {
 		}
 		$backChip = null;
 		if ($back !== '') {
-			$backChip = array('label' => page_label_for($back), 'href' => $back);
+			$backChip = array('label' => $backLabel !== '' ? $backLabel : page_label_for($back), 'href' => $back);
 		}
 		return page_breadcrumb($levels, null, $backChip, $charset);
 	}

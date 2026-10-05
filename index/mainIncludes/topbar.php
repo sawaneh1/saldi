@@ -32,6 +32,8 @@
 // 20260928 Sawaneh PoS shortcut shown only with the pos.kasse permission.
 // 20260930 Sawaneh Dashboard items in the user menu are hidden, not greyed out, away from the dashboard (Adam 2026-09-30).
 //                  Who is online shown to users who may manage users (settings.users.manage).
+// 20261005 Sawaneh "+ Opret nyt regnskabsår" under Regnskabsår through the named route fiscal_year_create (addendum 2026-09-30 §4.1).
+// 20261005 Sawaneh Global search (topbar addendum 2026-10-05 §6): magnifier first in the cluster, field and results panel.
 // 20261005 Sawaneh Topbar addendum 2026-10-05: no sidebar placement (move button and cluster_placement gone).
 // 20261004 Sawaneh Gear link next to the breadcrumb: the settings section that governs the page in the frame (settings redesign §8.11).
 // 20261002 Sawaneh Breadcrumb element in the left side, filled by the shell on settings pages (settings redesign §8.0).
@@ -282,9 +284,20 @@ function topbar_context(array $onlineRows, string $brugernavn, int $brugerId, st
 		'langId'      => $langId,
 		'posUrl'      => $posUrl,
 		'sagerUrl'    => $sagerUrl,
+		'canCreateYear' => !$revisor && (function_exists('perm_can') ? perm_can('settings.company', 'write') : substr($rettigheder, 1, 1) === '1'),
 		'dashHidden'  => $dashHidden,
 		'unread'      => 0,
 	);
+}
+
+/**
+ * Named routes of the top bar (topbar addendum 2026-09-30 §4.1): one place to change when a page moves -
+ * "create fiscal year" points at the old fiscal-year card until settings G1.2 is live.
+ */
+function topbar_route(string $name): string
+{
+	$routes = array('fiscal_year_create' => '/systemdata/regnskabskort.php');
+	return isset($routes[$name]) ? $routes[$name] : '/index/dashboard.php';
 }
 
 function topbar_h(?string $s): string
@@ -323,6 +336,15 @@ function topbar_render(array $ctx, int $sprogId): void
     <a class="topbar-gear" id="topbar-gear" href="#" title="<?= $t('6392|Indstillinger for denne side') ?>" aria-label="<?= $t('6392|Indstillinger for denne side') ?>" data-map="<?= topbar_h(json_encode(function_exists('settings_context_links') ? settings_context_links((int) $ctx['langId']) : array(), JSON_UNESCAPED_UNICODE)) ?>" hidden><i class='bx bx-cog' aria-hidden="true"></i></a>
     <span class="topbar-spacer"></span>
     <div class="topbar-cluster" id="topbar-cluster">
+
+    <div class="topbar-search" id="topbar-search" data-txt="<?= topbar_h(json_encode(array(
+		'recent' => topbar_utf8(findtekst('6445|Senest besøgt', $sprogId)), 'pages' => topbar_utf8(findtekst('6446|Sider', $sprogId)),
+		'settings' => topbar_utf8(findtekst('122|Indstillinger', $sprogId)), 'none' => topbar_utf8(findtekst('6451|Ingen resultater', $sprogId)),
+	), JSON_UNESCAPED_UNICODE)) ?>">
+      <button type="button" class="topbar-icbtn" id="topbar-search-btn" title="<?= $t('6443|Søg i Saldi') ?> (Ctrl+K)" aria-label="<?= $t('6443|Søg i Saldi') ?>" aria-expanded="false" aria-controls="topbar-search-res" onclick="topbarSearchToggle(event)"><i class='bx bx-search'></i></button>
+      <input type="search" class="topbar-search-in" id="topbar-search-in" placeholder="<?= $t('6444|Søg efter sider, kunder, bilag, varer …') ?>" aria-label="<?= $t('6443|Søg i Saldi') ?>" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="topbar-search-res" aria-autocomplete="list" tabindex="-1">
+      <div class="topbar-pop topbar-search-res" id="topbar-search-res" role="listbox" aria-label="<?= $t('6443|Søg i Saldi') ?>"></div>
+    </div>
 
     <div class="topbar-item topbar-desktop">
       <button type="button" class="topbar-lang" id="topbar-lang-btn" title="<?= $t('801|Sprog') ?>" aria-haspopup="true" aria-expanded="false" aria-controls="topbar-lang-pop" onclick="topbarToggle(event, 'topbar-lang-pop')"><i class='bx bx-globe'></i><span><?= topbar_h($lang['code']) ?></span><i class='bx bx-chevron-down topbar-chev'></i></button>
@@ -380,6 +402,10 @@ function topbar_render(array $ctx, int $sprogId): void
               <button type="submit" name="year" value="<?= topbar_h($y['kodenr']) ?>" class="topbar-year<?= $y['active'] ? ' active' : '' ?>"<?= $y['active'] ? ' disabled aria-current="true"' : '' ?>><i class='bx <?= $y['active'] ? 'bx-check-circle' : 'bx-calendar-event' ?>'></i><span><?= topbar_h($y['label']) ?></span><?php if ($y['active']) { ?><small><?= $t('5534|Aktivt') ?></small><?php } ?></button>
               <?php } ?>
             </form>
+            <?php if (!empty($ctx['canCreateYear'])) { ?>
+            <div class="topbar-pop-sep"></div>
+            <button type="button" class="topbar-year topbar-year-new" onclick="topbarCloseAll(); update_iframe('<?= topbar_h(topbar_route('fiscal_year_create')) ?>')"><i class='bx bx-plus'></i><?= $t('508|Opret nyt regnskabsår') ?></button>
+            <?php } ?>
           </div>
           <?php } ?>
 
