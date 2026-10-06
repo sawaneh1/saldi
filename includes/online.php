@@ -88,6 +88,7 @@ $slashCount = substr_count($path, '/');
 $relativePath = str_repeat('../', max(0, $slashCount - 2));
 
 // 20261005 Sawaneh The timezone cookie is gone (settings redesign G1.3): the setting below decides.
+// 20261006 Sawaneh Every page prints its breadcrumb for the shell (page_auto_breadcrumb(), stdFunc/pageChrome.php).
 date_default_timezone_set('Europe/Copenhagen');
 	#$r=db_fetch_array(db_select("select lukket,version from regnskab where id='1'",__FILE__ . " linje " . __LINE__)); # 20190605
 $r = db_fetch_array(db_select("select id, var_value from settings where var_name='timezone'", __FILE__ . " linje " . __LINE__));
@@ -461,6 +462,10 @@ if ($header != 'nix') {
 	</script>
 	<?php
 	# <-- 20140502
+	// 20261006 Sawaneh Breadcrumb on every page (topbar addendum 2026-10-05 §3-4, Adam 2026-10-06): from the central page map.
+	include_once(__DIR__ . "/stdFunc/findTxt.php");
+	include_once(__DIR__ . "/stdFunc/pageChrome.php");
+	print page_auto_breadcrumb(isset($title) ? (string) $title : '', isset($sprog_id) ? (int) $sprog_id : 1, $charset) . "\n";
 	print "</head>\n";
 }
 /*

@@ -24,6 +24,10 @@
 //                  window.saldiNavigate(href) when the page defines its own close logic, otherwise respecting
 //                  docChange. A "came from" chip (§3.1) is added from the navigation stack when the previous page
 //                  is not one of the page's own levels.
+// 20261006 Sawaneh Breadcrumb on every page (Adam 2026-10-06): online.php prints page_auto_breadcrumb() for each page from
+//                  the central map in pageRoutes.php (folder module + page title when a page is not in it); a page's own
+//                  page_breadcrumb() replaces it. The shell is always answered with the latest message, and a click
+//                  leaves through the page's old luk.php link when it has one, so record locks are still released.
 
 if (!function_exists('page_breadcrumb')):
 
@@ -74,11 +78,16 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 	}
 	$json = json_encode($msg, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 	return '<script>' . "\n" . '(function () {' . "\n"
-		. "\tvar msg = $json;\n"
-		. "\tfunction send() { if (window.parent && window.parent !== window) { window.parent.postMessage(msg, window.location.origin); } }\n"
-		. "\twindow.saldiPageChrome = msg;\n"
+		. "\twindow.saldiPageChrome = $json;\n"
+		. "\tfunction send() { if (window.parent && window.parent !== window) { window.parent.postMessage(window.saldiPageChrome, window.location.origin); } }\n"
 		. "\tif (!window.saldiChromeBound) {\n"
 		. "\t\twindow.saldiChromeBound = true;\n"
+		. "\t\t// The page's old Luk/Tilbage through includes/luk.php releases the record it locked: leave the same way.\n"
+		. "\t\tvar viaLuk = function (href) {\n"
+		. "\t\t\tvar c = document.querySelector('a[accesskey=\"l\"], a[accesskey=\"L\"]');\n"
+		. "\t\t\tif (!c || !/(^|\\/)luk\\.php/.test(c.getAttribute('href') || '')) { return href; }\n"
+		. "\t\t\ttry { var u = new URL(c.href), t = new URL(href); u.searchParams.delete('popup'); u.searchParams.set('returside', t.pathname + t.search); return u.href; } catch (x) { return href; }\n"
+		. "\t\t};\n"
 		. "\t\twindow.addEventListener('message', function (e) {\n"
 		. "\t\t\tif (e.origin !== window.location.origin || !e.data || e.source !== window.parent) { return; }\n"
 		. "\t\t\tif (e.data.type === 'saldi:breadcrumb-request') { send(); }\n"
@@ -87,12 +96,12 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 		. "\t\t\t\tif (typeof window.saldiNavigate === 'function') { window.saldiNavigate(e.data.href); return; }\n"
 		. "\t\t\t\tif (window.docChange && !window.confirm(e.data.confirm || '')) { return; }\n"
 		. "\t\t\t\twindow.docChange = false;\n"
-		. "\t\t\t\twindow.location.href = e.data.href;\n"
+		. "\t\t\t\twindow.location.href = viaLuk(e.data.href);\n"
 		. "\t\t\t}\n"
 		. "\t\t});\n"
-		. "\t\t// Alt+L, the accesskey of the old Luk/Tilbage, goes back through the shell (§3.2).\n"
+		. "\t\t// Alt+L goes back through the shell (§3.2); a page that still has its old Luk/Tilbage keeps that accesskey.\n"
 		. "\t\tdocument.addEventListener('keydown', function (e) {\n"
-		. "\t\t\tif (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); window.parent.postMessage({ type: 'saldi:back' }, window.location.origin); }\n"
+		. "\t\t\tif (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L') && !document.querySelector('[accesskey=\"l\"], [accesskey=\"L\"]')) { e.preventDefault(); window.parent.postMessage({ type: 'saldi:back' }, window.location.origin); }\n"
 		. "\t\t});\n"
 		. "\t}\n"
 		. "\tsend();\n"
@@ -215,6 +224,155 @@ function page_came_from(array $items)
 		$href = '/' . $prevPath . (strpos($prev, '?') !== false ? substr($prev, strpos($prev, '?')) : '');
 	}
 	return array('label' => $label, 'href' => $href);
+}
+
+/**
+ * The central page map (pageRoutes.php): 'modules' key => [l, href], 'pages' 'dir/file.php' => [m, l, p].
+ *
+ * @return array{modules: array<string, array<string, string>>, pages: array<string, array<string, mixed>>}
+ */
+function page_routes(): array
+{
+	static $routes = null;
+	if ($routes === null) {
+		$f = __DIR__ . '/pageRoutes.php';
+		$routes = is_file($f) ? (array) include $f : array();
+		$routes += array('modules' => array(), 'pages' => array(), 'dirs' => array());
+	}
+	return $routes;
+}
+
+/**
+ * The running page as 'dir/file.php' from the Saldi root.
+ */
+function page_route_key(): string
+{
+	$root = realpath(__DIR__ . '/../..');
+	$file = isset($_SERVER['SCRIPT_FILENAME']) ? realpath((string) $_SERVER['SCRIPT_FILENAME']) : false;
+	if ($root === false || $file === false || strpos($file, $root . DIRECTORY_SEPARATOR) !== 0) {
+		return '';
+	}
+	return str_replace(DIRECTORY_SEPARATOR, '/', substr($file, strlen($root) + 1));
+}
+
+/**
+ * True when a request's query has every parameter of a map variant ('' = present with any value).
+ */
+function page_route_query_matches(array $want, array $have): bool
+{
+	foreach ($want as $k => $v) {
+		if (!isset($have[$k]) || !is_string($have[$k]) || ($v !== '' && $have[$k] !== $v)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * The link for a parent level: the user's own visit from the navigation stack when there is one (it keeps the ids
+ * and list filters), else the map's path.
+ */
+function page_route_visited(string $parent): string
+{
+	$path = ltrim((string) parse_url($parent, PHP_URL_PATH), '/');
+	$want = array();
+	parse_str((string) parse_url($parent, PHP_URL_QUERY), $want);
+	$stack = function_exists('_nav_read') ? _nav_read() : array();
+	for ($i = count($stack) - 1; $i >= 0; $i--) {
+		$url = (string) $stack[$i];
+		if (page_chrome_path($url) !== implode('/', array_slice(explode('/', $path), -2))) {
+			continue;
+		}
+		$have = array();
+		parse_str((string) parse_url($url, PHP_URL_QUERY), $have);
+		$ok = page_route_query_matches($want, $have);
+		if ($ok && !$want) {
+			// The plain page, not one of its variants.
+			foreach (array_keys(page_routes()['pages']) as $key) {
+				if (strpos($key, $path . '?') === 0) {
+					$variant = array();
+					parse_str(substr($key, strlen($path) + 1), $variant);
+					if (page_route_query_matches($variant, $have)) {
+						$ok = false;
+						break;
+					}
+				}
+			}
+		}
+		if ($ok) {
+			$q = (string) parse_url($url, PHP_URL_QUERY);
+			return '/' . $path . ($q !== '' ? '?' . $q : '');
+		}
+	}
+	return $parent;
+}
+
+/**
+ * The breadcrumb every page gets from online.php (Adam 2026-10-06: breadcrumbs on every page, replacing the old back
+ * buttons): module, the page's parents and the page from the central map; a page not in the map shows its folder's
+ * module and its title. Pages that call page_breadcrumb() themselves replace it.
+ */
+function page_auto_breadcrumb(string $title, int $sprogId, string $charset): string
+{
+	$key = page_route_key();
+	$routes = page_routes();
+	if ($key === '' || in_array($key, array('index/main.php', 'index/dashboard.php', 'index/index.php', 'index/login.php', 'index/menu.php', 'index/onboarding.php', 'systemdata/settingsSection.php', 'systemdata/settings.php'), true)) {
+		return '';
+	}
+	$tx = function (string $l) use ($sprogId) {
+		return trim((strpos($l, '|') === 0) ? substr($l, 1) : findtekst($l, $sprogId));
+	};
+	// A page's own entry, or the variant whose query ('?funktion=vis_sag', '?vare') matches the request's.
+	$find = function (string $path) use ($routes) {
+		$k = ltrim((string) parse_url($path, PHP_URL_PATH), '/');
+		$q = array();
+		parse_str((string) parse_url($path, PHP_URL_QUERY), $q);
+		foreach ($routes['pages'] as $key => $entry) {
+			if (strpos($key, $k . '?') !== 0) {
+				continue;
+			}
+			$want = array();
+			parse_str(substr($key, strlen($k) + 1), $want);
+			if (page_route_query_matches($want, $q)) {
+				return array($key, $entry);
+			}
+		}
+		return isset($routes['pages'][$k]) ? array($k, $routes['pages'][$k]) : null;
+	};
+	$here = $find('/' . $key . '?' . http_build_query(array_filter($_GET, 'is_string')));
+	$levels = array();
+	if ($here) {
+		$levels[] = array('label' => $tx((string) $here[1]['l']));
+		$parent = isset($here[1]['p']) ? (string) $here[1]['p'] : '';
+		$seen = array($here[0] => true);
+		while ($parent !== '' && count($levels) < 6) {
+			$p = $find($parent);
+			if (!$p || isset($seen[$p[0]])) {
+				break;
+			}
+			$seen[$p[0]] = true;
+			$href = page_route_visited($parent);
+			array_unshift($levels, array('label' => $tx((string) $p[1]['l'])) + ($href !== '' ? array('href' => $href) : array()));
+			$parent = isset($p[1]['p']) ? (string) $p[1]['p'] : '';
+		}
+		$module = (string) $here[1]['m'];
+	} else {
+		$label = trim(preg_replace('/\s+/', ' ', strip_tags($title)));
+		if ($label === '') {
+			return '';
+		}
+		$levels[] = array('label' => function_exists('mb_strtoupper') ? mb_strtoupper(mb_substr($label, 0, 1)) . mb_substr($label, 1) : ucfirst($label));
+		$dir = strpos($key, '/') !== false ? substr($key, 0, strpos($key, '/')) : '';
+		$module = isset($routes['dirs'][$dir]) ? (string) $routes['dirs'][$dir] : '';
+	}
+	if ($module !== '' && isset($routes['modules'][$module])) {
+		$m = $routes['modules'][$module];
+		$landing = isset($m['href']) ? (string) $m['href'] : '';
+		$first = isset($levels[0]['href']) ? ltrim((string) parse_url($levels[0]['href'], PHP_URL_PATH), '/') : $key;
+		$isLanding = $landing !== '' && ltrim((string) parse_url($landing, PHP_URL_PATH), '/') === $first;
+		array_unshift($levels, array('label' => $tx((string) $m['l'])) + (($landing !== '' && !$isLanding) ? array('href' => $landing) : array()));
+	}
+	return page_breadcrumb($levels, null, null, $charset);
 }
 
 endif;
