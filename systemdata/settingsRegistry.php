@@ -85,7 +85,7 @@ if (!function_exists('getSettingsRegistry')) {
 				'keywords' => array('warehouse','warehouses','stock location','storage location','inventory location','lager','lagre','lagerlokation')),
 			array('key' => 'varegrupper',      'group' => 'items', 'url' => 'settingsSection.php?s=items.item_groups', 'section' => 'items.item_groups', 'category' => 'groups',  'textId' => 774,
 				'keywords' => array('product groups','item groups','price groups','cost price','sales price','recommended price','retail price','b2b price','campaign groups','special offer price','offer price','discount groups','batch','reverse charge','vat per product group','varegrupper','prisgrupper','tilbudsgrupper','rabatgrupper','kampagnepris','kostpris','salgspris','vejledende pris')),
-			array('key' => 'rabatgrupper',     'group' => 'sales', 'url' => 'rabatgrupper.php',             'category' => 'groups',  'textId' => 775,
+			array('key' => 'rabatgrupper',     'group' => 'sales', 'url' => 'settingsSection.php?s=sales.discounts',             'category' => 'groups',  'textId' => 775,
 				'keywords' => array('customer discount matrix','debtor discount group','product discount group','discount matrix','percent discount','amount discount per unit','kr/stk rabat','discount by customer and product group','debitor rabatgruppe','vare rabatgruppe','rabatgrupper','rabat','rabatt')),
 			array('key' => 'valuta',           'group' => 'finance', 'url' => 'settingsSection.php?s=finance.currencies', 'section' => 'finance.currencies', 'category' => 'finance', 'textId' => 776,
 				'keywords' => array('currency','currencies','exchange rate','currency code','currency rate','pos currency','valuta','valutakode','kurs')),

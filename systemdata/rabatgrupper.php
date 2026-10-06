@@ -23,9 +23,13 @@
 // 20150313 CA  Topmenudesign tilføjet og udvidet feltet %/kr/stk  søg 20150313
 // 2019.02.21 MSC - Rettet topmenu design og isset fejl
 // 2019.02.25 MSC - Rettet topmenu design
+// 20261006 Sawaneh Settings 4c G3.5: the discount groups and the matrix are in Salg » Rabatter & prisgrupper (by group number,
+//                  audit R1-R9); this page only redirects there.
 
 @session_start();
 $s_id=session_id();
+header('Location: settingsSection.php?s=sales.discounts&moved=rabatgrupper#sub-matrix');
+exit;
 
 $modulnr=2;
 $title="rabatgrupper";

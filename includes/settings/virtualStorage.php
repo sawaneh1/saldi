@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261006 Sawaneh G3.5 part B: discount_matrix, the discount per customer group × item group (table rabat) by group number.
 // 20261004 Sawaneh G10.5: table_count (POS/2 box7 names) and floor_plan_count (table_pages rows).
 // 20261004 Sawaneh G10.1: seed_post_each_sale, the starting value of the per-till postEachSale list.
 // 20261004 Sawaneh Settings redesign: a setting whose value is derived from several stored fields (storage
@@ -32,6 +33,9 @@ function settings_virtual_get(string $name): string
 		$on = function_exists('settings_post_each_sale_default') && settings_post_each_sale_default();
 		$tills = function_exists('settings_till_count') ? settings_till_count() : 0;
 		return $tills > 0 ? implode("\t", array_fill(0, $tills, $on ? 'on' : '')) : '';
+	}
+	if ($name === 'discount_matrix') {
+		return settings_discount_matrix_read();
 	}
 	if ($name === 'table_count') {
 		return (string) (function_exists('settings_table_count') ? settings_table_count() : 0);
@@ -65,6 +69,10 @@ function settings_virtual_get(string $name): string
  */
 function settings_virtual_set(string $name, string $raw): void
 {
+	if ($name === 'discount_matrix') {
+		settings_discount_matrix_write($raw);
+		return;
+	}
 	if ($name === 'table_count') {
 		// G10.5: new tables are named "Bord n" as the old page did; the list is written to every fiscal year (R2).
 		$n = max(0, (int) $raw);
@@ -121,6 +129,183 @@ function settings_virtual_set(string $name, string $raw): void
 		} else {
 			// None: the old page cleared the server details too.
 			db_modify("update grupper set box1 = '', box2 = '', box3 = '', box6 = '' where art = 'bilag'", __FILE__ . " linje " . __LINE__);
+		}
+	}
+}
+
+// ---------------------------------------------------------------- discount matrix (G3.5)
+
+/**
+ * The matrix's axes as orders read them (includes/ordrefunc.php): customers by their own discount group (DRG, adresser.
+ * rabatgruppe) when any exist, else by debtor group (DG); items by item discount group (DVRG, varer.dvrg) when any exist,
+ * else by item group (VG). Keys are the group numbers that the table rabat holds.
+ *
+ * @return array{rows: array<string, string>, cols: array<string, string>, own_rows: bool, own_cols: bool}
+ */
+function settings_discount_axes(): array
+{
+	global $regnaar;
+	$y = (int) $regnaar;
+	$read = function (string $sql, string $name) {
+		$out = array();
+		$q = db_select($sql, __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$k = (string) (int) $r['kodenr'];
+			if ($k !== '0' && !isset($out[$k])) {
+				$out[$k] = trim((string) $r[$name]);
+			}
+		}
+		return $out;
+	};
+	$rows = $read("select kodenr, box1 from grupper where art = 'DRG' order by case when fiscal_year = $y then 0 else 1 end, cast(kodenr as integer)", 'box1');
+	$ownRows = (bool) $rows;
+	if (!$rows) {
+		$rows = $read("select kodenr, beskrivelse from grupper where art = 'DG' and fiscal_year = $y order by cast(kodenr as integer)", 'beskrivelse');
+	}
+	$cols = $read("select kodenr, box1 from grupper where art = 'DVRG' order by cast(kodenr as integer), id", 'box1');
+	$ownCols = (bool) $cols;
+	if (!$cols) {
+		$cols = $read("select kodenr, beskrivelse from grupper where art = 'VG' and fiscal_year = $y order by cast(kodenr as integer)", 'beskrivelse');
+	}
+	uksort($rows, function ($a, $b) { return (int) $a - (int) $b; });
+	uksort($cols, function ($a, $b) { return (int) $a - (int) $b; });
+	return array('rows' => $rows, 'cols' => $cols, 'own_rows' => $ownRows, 'own_cols' => $ownCols);
+}
+
+/**
+ * The stored form: [[customer group, type, [[item group, discount], ...]], ...] in axis order, only rows with a discount,
+ * numbers as plain decimals. The page builds the same string, so an untouched matrix compares equal.
+ */
+function settings_discount_matrix_encode(array $rows): string
+{
+	return json_encode($rows);
+}
+
+function settings_discount_matrix_read(): string
+{
+	$axes = settings_discount_axes();
+	$cells = array();
+	$types = array();
+	$q = db_select("select debitor, vare, rabat, rabatart from rabat order by id", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$d = (string) (int) $r['debitor'];
+		$v = (string) (int) $r['vare'];
+		if (!isset($axes['rows'][$d]) || !isset($axes['cols'][$v]) || isset($cells[$d][$v])) {
+			continue;
+		}
+		$n = (float) $r['rabat'];
+		if ($n != 0) {
+			$cells[$d][$v] = (string) $n;
+			if (!isset($types[$d])) {
+				$types[$d] = trim((string) $r['rabatart']) === 'amount' ? 'amount' : '%';
+			}
+		}
+	}
+	$out = array();
+	foreach (array_keys($axes['rows']) as $d) {
+		if (empty($cells[$d])) {
+			continue;
+		}
+		$line = array();
+		foreach (array_keys($axes['cols']) as $v) {
+			if (isset($cells[$d][$v])) {
+				$line[] = array((string) $v, $cells[$d][$v]);
+			}
+		}
+		$out[] = array((string) $d, $types[$d], $line);
+	}
+	return settings_discount_matrix_encode($out);
+}
+
+/**
+ * A posted matrix checked and put in the stored form, or an error text id.
+ *
+ * @return array{raw: string, error: int|null}
+ */
+function settings_discount_matrix_normalise(string $posted): array
+{
+	$data = json_decode($posted, true);
+	if (!is_array($data)) {
+		return array('raw' => '', 'error' => 5732);
+	}
+	$axes = settings_discount_axes();
+	$byRow = array();
+	foreach ($data as $line) {
+		if (!is_array($line) || count($line) !== 3 || !is_array($line[2])) {
+			return array('raw' => '', 'error' => 5732);
+		}
+		$d = (string) (int) $line[0];
+		$type = $line[1] === 'amount' ? 'amount' : '%';
+		if (!isset($axes['rows'][$d])) {
+			continue;
+		}
+		foreach ($line[2] as $cell) {
+			$v = (string) (int) (is_array($cell) && isset($cell[0]) ? $cell[0] : 0);
+			$val = is_array($cell) && isset($cell[1]) ? str_replace(',', '.', trim((string) $cell[1])) : '';
+			if (!isset($axes['cols'][$v]) || $val === '') {
+				continue;
+			}
+			if (!is_numeric($val) || (float) $val < 0 || ($type === '%' && (float) $val > 100)) {
+				return array('raw' => '', 'error' => 6876);
+			}
+			if ((float) $val != 0) {
+				$byRow[$d]['type'] = $type;
+				$byRow[$d]['cells'][$v] = (string) (float) $val;
+			}
+		}
+	}
+	$out = array();
+	foreach (array_keys($axes['rows']) as $d) {
+		if (empty($byRow[$d]['cells'])) {
+			continue;
+		}
+		$line = array();
+		foreach (array_keys($axes['cols']) as $v) {
+			if (isset($byRow[$d]['cells'][$v])) {
+				$line[] = array((string) $v, $byRow[$d]['cells'][$v]);
+			}
+		}
+		$out[] = array((string) $d, $byRow[$d]['type'], $line);
+	}
+	return array('raw' => settings_discount_matrix_encode($out), 'error' => null);
+}
+
+/**
+ * Write the matrix to table rabat by group number (spec G3.5, audit R6). Only cells of the groups shown are touched;
+ * rows for other groups (e.g. stored by the old page by position) stay as they are.
+ */
+function settings_discount_matrix_write(string $raw): void
+{
+	$data = json_decode($raw, true);
+	if (!is_array($data)) {
+		return;
+	}
+	$axes = settings_discount_axes();
+	$want = array();
+	foreach ($data as $line) {
+		foreach ($line[2] as $cell) {
+			$want[(string) (int) $line[0]][(string) (int) $cell[0]] = array((float) $cell[1], $line[1] === 'amount' ? 'amount' : '%');
+		}
+	}
+	$have = array();
+	$q = db_select("select id, debitor, vare from rabat order by id", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$have[(string) (int) $r['debitor']][(string) (int) $r['vare']][] = (int) $r['id'];
+	}
+	foreach (array_keys($axes['rows']) as $d) {
+		foreach (array_keys($axes['cols']) as $v) {
+			$ids = isset($have[$d][$v]) ? $have[$d][$v] : array();
+			if (isset($want[$d][$v])) {
+				list($n, $type) = $want[$d][$v];
+				if ($ids) {
+					db_modify("update rabat set rabat = '$n', rabatart = '$type' where id = " . array_shift($ids), __FILE__ . " linje " . __LINE__);
+				} else {
+					db_modify("insert into rabat (rabat, debitorart, debitor, vareart, vare, rabatart) values ('$n', 'DG', '$d', 'VG', '$v', '$type')", __FILE__ . " linje " . __LINE__);
+				}
+			}
+			foreach ($ids as $id) {
+				db_modify("delete from rabat where id = $id", __FILE__ . " linje " . __LINE__);
+			}
 		}
 	}
 }

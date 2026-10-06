@@ -25,6 +25,8 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.3, §8.1): the components every generated
 //                  settings form is built from, and the conversion between a posted field and
 //                  the stored string. Styles live in css/unified-components.css (.st-*).
+// 20261006 Sawaneh G3.5: field type 'matrix' - the discount grid (customer groups × item groups), kept as one value in a
+//                  hidden input, stored through virtual storage (discount_matrix).
 // 20261001 Sawaneh Accessibility §8.6: readable text on a user-chosen button colour, darker shade for links/outlines.
 // 20261002 Sawaneh Phase 4b: type 'date' (shown dd-mm-yyyy, stored yyyy-mm-dd), decimals stored with a dot, 'range' rule.
 // 20261002 Sawaneh Hand-over 2 Oct (A2, §8.0): a field is a row - label and help left, control right, amber dot when changed,
@@ -300,6 +302,11 @@ function st_posted_to_raw(array $def, string $value, array $posted): array
 				$raw = (string) $def['default'];
 			}
 			break;
+		case 'matrix':
+			$res = function_exists('settings_discount_matrix_normalise') ? settings_discount_matrix_normalise($value) : array('raw' => '', 'error' => 5732);
+			$raw = $res['raw'];
+			$error = $res['error'];
+			break;
 		case 'color':
 			$raw = strtolower($value);
 			if ($raw !== '' && !preg_match('/^#[0-9a-f]{6}$/', $raw)) {
@@ -406,6 +413,12 @@ function st_display_value(array $def, string $raw): string
 		case 'select':
 			$options = st_options($def);
 			return isset($options[$raw]) ? html_entity_decode(st_option_label($def, $options[$raw]), ENT_QUOTES, st_charset()) : $raw;
+		case 'matrix':
+			$n = 0;
+			foreach ((array) json_decode($raw, true) as $line) {
+				$n += isset($line[2]) && is_array($line[2]) ? count($line[2]) : 0;
+			}
+			return sprintf(st_txt(6877), $n);
 		case 'textarea':
 			$raw = trim(preg_replace('/\s+/', ' ', $raw));
 			return $raw === '' ? '—' : (mb_strlen($raw) > 60 ? mb_substr($raw, 0, 57) . '…' : $raw);
@@ -798,6 +811,55 @@ function st_render_field(array $def, array $state): void
 	<?php } ?>
       <input class="st-input" type="password" id="<?= $id ?>"<?= $nameAttr ?> value="" autocomplete="new-password" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?><?= $isSet ? ' hidden' : '' ?>>
     </div>
+	<?php } elseif ($def['type'] === 'matrix') {
+		$axes = settings_discount_axes();
+		$cells = array();
+		$types = array();
+		foreach ((array) json_decode($value, true) as $line) {
+			$types[(string) $line[0]] = (string) $line[1];
+			foreach ((array) $line[2] as $c) {
+				$cells[(string) $line[0]][(string) $c[0]] = str_replace('.', ',', (string) $c[1]);
+			}
+		}
+		?>
+    <div class="st-matrix-wrap">
+      <table class="st-matrix" id="<?= $id ?>" data-matrix>
+        <thead><tr><th><?= st_t($axes['own_rows'] ? 6878 : 1008) ?> \ <?= st_t($axes['own_cols'] ? 6879 : 774) ?></th><th><?= st_t(6869) ?></th>
+		<?php foreach ($axes['cols'] as $v => $name) { ?><th data-col="<?= st_h($v) ?>"><?= st_h($v . ' ' . $name) ?></th><?php } ?></tr></thead>
+        <tbody>
+		<?php foreach ($axes['rows'] as $d => $name) { ?>
+          <tr data-row="<?= st_h($d) ?>"><th><?= st_h($d . ' ' . $name) ?></th>
+            <td><select class="st-input st-mtype"<?= $disabled ? ' disabled' : '' ?>><option value="%"<?= (isset($types[$d]) ? $types[$d] : '%') === '%' ? ' selected' : '' ?>>%</option><option value="amount"<?= (isset($types[$d]) && $types[$d] === 'amount') ? ' selected' : '' ?>><?= st_t(6880) ?></option></select></td>
+			<?php foreach (array_keys($axes['cols']) as $v) { ?><td><input class="st-input st-mcell" type="text" inputmode="decimal" data-col="<?= st_h($v) ?>" value="<?= st_h(isset($cells[$d][$v]) ? $cells[$d][$v] : '') ?>" aria-label="<?= st_h($d . ' × ' . $v) ?>"<?= $disabled ? ' readonly' : '' ?>></td><?php } ?>
+          </tr>
+		<?php } ?>
+        </tbody>
+      </table>
+    </div>
+    <input type="hidden"<?= $nameAttr ?> value="<?= st_h($value) ?>" data-control data-matrix-value="<?= $id ?>">
+    <script>
+    (function () {
+      var table = document.getElementById(<?= json_encode($id) ?>);
+      var out = document.querySelector('[data-matrix-value="' + table.id + '"]');
+      function build() {
+        var rows = [];
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+          var line = [];
+          tr.querySelectorAll('.st-mcell').forEach(function (inp) {
+            var s = inp.value.trim().replace(/\./g, '').replace(',', '.');
+            if (s !== '' && !isNaN(s) && parseFloat(s) !== 0) { line.push([inp.dataset.col, String(parseFloat(s))]); }
+            else if (s !== '' && isNaN(s)) { line.push([inp.dataset.col, inp.value.trim()]); }
+          });
+          if (line.length) { rows.push([tr.dataset.row, tr.querySelector('.st-mtype').value, line]); }
+        });
+        out.value = JSON.stringify(rows);
+        out.dispatchEvent(new Event('input', { bubbles: true }));
+        out.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      table.addEventListener('input', build);
+      table.addEventListener('change', build);
+    })();
+    </script>
 	<?php } elseif ($def['type'] === 'textarea') { ?>
     <textarea class="st-input st-textarea" id="<?= $id ?>"<?= $nameAttr ?> rows="6" data-control<?= $disabled ? ' readonly' : '' ?><?= $invalid ?>><?= st_h($value) ?></textarea>
 	<?php } elseif ($def['type'] === 'info') { ?>

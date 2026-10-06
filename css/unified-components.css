@@ -835,6 +835,16 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-type-textarea { flex-wrap: wrap; }
 .st-type-textarea .st-tx { flex-basis: 100%; }
 .st-type-textarea .st-ctl { flex-basis: 100%; }
+.st-type-matrix { flex-wrap: wrap; }
+.st-type-matrix .st-tx, .st-type-matrix .st-ctl { flex-basis: 100%; }
+.st-type-matrix .st-ctl { justify-content: flex-start; }
+.st-matrix-wrap { width: 100%; overflow-x: auto; }
+.st-matrix { border-collapse: collapse; font-size: 13px; }
+.st-matrix th, .st-matrix td { padding: 4px 6px; border-bottom: 1px solid var(--st-border, #e2e6ee); text-align: left; white-space: nowrap; }
+.st-matrix thead th { font-weight: 600; color: var(--st-text-2); }
+.st-matrix tbody th { font-weight: 500; }
+.st-matrix .st-mcell { width: 72px; text-align: right; }
+.st-matrix .st-mtype { width: 72px; }
 .st-label-suffix { font-weight: 400; color: var(--st-text-2); }
 .st-grouphead { padding: 14px 20px 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--st-text-2); border-top: 1px solid var(--st-grid); }
 .st-card > .st-grouphead:first-child { border-top: 0; }

@@ -265,6 +265,18 @@ function settings_rows_usage(array $t, array $row): array
 				$g = isset($row['raw']['gruppe']) ? (int) $row['raw']['gruppe'] : 0;
 				$add("select count(*) as n from transaktioner where cast(valuta as text) = '$g' and transdate >= '$esc'", 6423);
 				break;
+			case 'discount_debtor_group':
+				if ($isInt) {
+					$add("select count(*) as n from adresser where art = 'D' and rabatgruppe = $code", 6465);
+					$add("select count(*) as n from rabat where cast(debitor as text) = '$code'", 6877);
+				}
+				break;
+			case 'discount_item_group':
+				if ($isInt) {
+					$add("select count(*) as n from varer where dvrg = $code", 6427);
+					$add("select count(*) as n from rabat where cast(vare as text) = '$code'", 6877);
+				}
+				break;
 			case 'price_group':
 				if (function_exists('settings_group_item_count')) {
 					$n = settings_group_item_count($row['raw']);

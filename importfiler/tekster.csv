@@ -6471,3 +6471,12 @@
 6872	Flere trin adskilles med semikolon, fx 5;10.	Several steps are separated by semicolons, e.g. 5;10.	Flere trinn skilles med semikolon, f.eks. 5;10.
 6873	Gruppens værdier er skrevet på %s varer.	The group's values have been written to %s items.	Gruppens verdier er skrevet på %s varer.
 6874	Under Salg » Rabatter & prisgrupper.	Under Sales » Discounts & price groups.	Under Salg » Rabatter og prisgrupper.
+6875	Rabatmatrix	Discount matrix	Rabattmatrise
+6876	Rabatten skal være et tal, og en procentrabat højst 100.	The discount must be a number, and a percentage at most 100.	Rabatten må være et tall, og en prosentrabatt høyst 100.
+6877	%s rabatter	%s discounts	%s rabatter
+6878	Debitorrabatgrupper	Customer discount groups	Kunderabattgrupper
+6879	Vare-rabatgrupper	Item discount groups	Vare-rabattgrupper
+6880	kr/stk	per unit	kr/stk
+6881	Egne rabatgrupper til kunder; vælges på debitorkortet. Uden dem bruger matrixen debitorgrupperne.	Your own discount groups for customers, chosen on the customer card. Without them the matrix uses the debtor groups.	Egne rabattgrupper for kunder; velges på kundekortet. Uten dem bruker matrisen kundegruppene.
+6882	Egne rabatgrupper til varer; vælges på varekortet. Uden dem bruger matrixen varegrupperne.	Your own discount groups for items, chosen on the item card. Without them the matrix uses the item groups.	Egne rabattgrupper for varer; velges på varekortet. Uten dem bruker matrisen varegruppene.
+6883	Rabat pr. kundegruppe og varegruppe på ordrer. Typen gælder hele rækken. Gem nye grupper først, så kommer de med i matrixen.	Discount per customer group and item group on orders. The type applies to the whole row. Save new groups first, then they appear in the matrix.	Rabatt per kundegruppe og varegruppe på ordrer. Typen gjelder hele raden. Lagre nye grupper først, så kommer de med i matrisen.

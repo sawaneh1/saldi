@@ -23,6 +23,8 @@
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
 // 20261006 Sawaneh 4c G3.5 part A: price, campaign and item quantity-discount groups (VPG/VTG/VRG) as rows in Salg » Rabatter
 //                  & prisgrupper; saving no longer rewrites item prices - "Anvend på varer" per group does, after a confirmation.
+//                  Part B: customer and item discount groups (DRG/DVRG) and the discount matrix (virtual discount_matrix, by
+//                  group number); rabatgrupper.php redirects.
 // 20261006 Sawaneh 4c G5.3 Varianter: variant types and their values as rows (values filtered by type), usage from
 //                  variant items, CSV import through importer_varianter.php; diverse.php?sektion=variant_valg redirects.
 // 20261006 Sawaneh §8.13: 'standard' on the VAT, VAT report, debtor/creditor/item group and unit tables ("Opret dansk standardsæt").
@@ -518,7 +520,7 @@ if (!function_exists('getSettingsSections')) {
 			),
 			'sales.discounts' => array(
 				'group' => 'sales', 'section' => 'discounts', 'number' => 'G3.5', 'label' => 6851, 'icon' => 'bx-purchase-tag-alt', 'kind' => 'rows',
-				'lead' => 6854, 'subsections' => array('prices' => 2471, 'campaigns' => 2472, 'quantity' => 6855),
+				'lead' => 6854, 'subsections' => array('prices' => 2471, 'campaigns' => 2472, 'quantity' => 6855, 'debtor_groups' => 6878, 'item_groups' => 6879, 'matrix' => 6875),
 				'tables' => array(
 					'prices' => array('sub' => 'prices', 'label' => 2471, 'help' => 6856, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'VPG'),
 						'usage' => 'price_group', 'row_actions' => array('group_apply' => array('label' => 6852, 'confirm_title' => 6852, 'confirm' => 6853)),
@@ -552,9 +554,21 @@ if (!function_exists('getSettingsSections')) {
 							'box3' => array('label' => 2474, 'type' => 'text', 'help' => 6872),
 							'items' => array('label' => 6863, 'type' => 'derived', 'derive' => 'group_items'),
 						)),
+					'debtor_groups' => array('sub' => 'debtor_groups', 'label' => 6878, 'help' => 6881, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'DRG'),
+						'fiscal' => true, 'propagate' => array('box1'), 'defaults' => array('beskrivelse' => 'Debitorrabatgrupper'), 'usage' => 'discount_debtor_group',
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'box1' => array('label' => 646, 'type' => 'text', 'required' => true),
+						)),
+					'item_groups' => array('sub' => 'item_groups', 'label' => 6879, 'help' => 6882, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'DVRG'),
+						'defaults' => array('beskrivelse' => 'DebitorVareRabatGrupper'), 'usage' => 'discount_item_group',
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'box1' => array('label' => 646, 'type' => 'text', 'required' => true),
+						)),
 				),
-				'legacy' => array(array(2471), array(2472), array(1006)),
-				'context' => array('lager/varekort.php'),
+				'legacy' => array(array(2471), array(2472), array(1006), array(775)),
+				'context' => array('lager/varekort.php', 'debitor/debitorkort.php'),
 				'keywords' => array('prisgrupper', 'price groups', 'tilbudsgrupper', 'kampagne', 'campaign', 'kampagnepris', 'rabatgrupper', 'mængderabat', 'quantity discount', 'stk. rabat', 'b2b-pris', 'vejledende pris', 'anvend priser'),
 			),
 			'sales.mysale' => array(
@@ -990,6 +1004,8 @@ if (!function_exists('getSettingsSections')) {
 			'import_export.data.addresses_import' => array('sub' => 'addresses', 'type' => 'link', 'label' => 6654, 'href' => 'importer_adresser.php', 'button' => 1356, 'audit' => false),
 			'import_export.data.items_export' => array('sub' => 'items', 'type' => 'link', 'label' => 6655, 'href' => 'exporter_varer.php', 'button' => 1355, 'audit' => false),
 			'import_export.data.items_import' => array('sub' => 'items', 'type' => 'link', 'label' => 6656, 'href' => 'importer_varer.php', 'button' => 1356, 'audit' => false),
+			'sales.discounts.matrix' => array('sub' => 'matrix', 'type' => 'matrix', 'label' => 6875, 'help' => 6883, 'storage' => array('virtual', 'discount_matrix'),
+				'keywords' => array('rabatmatrix', 'discount matrix', 'debitorrabatgrupper', 'kunderabat', 'customer discount', 'rabat pr. varegruppe')),
 			'items.variants.import' => array('sub' => 'import', 'type' => 'link', 'label' => 6839, 'help' => 6840, 'href' => 'importer_varianter.php', 'button' => 1356, 'audit' => false, 'permission' => 'settings.import_export'),
 			'import_export.data.variants_export' => array('sub' => 'items', 'type' => 'link', 'label' => 6657, 'href' => 'exporter_variantvarer.php', 'button' => 1355, 'audit' => false),
 			'import_export.data.variants_import' => array('sub' => 'items', 'type' => 'link', 'label' => 6658, 'href' => 'importer_variantvarer.php', 'button' => 1356, 'audit' => false),
@@ -1758,7 +1774,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(773), 'to' => array(array('organisation', 'organisation.projects', null))),
 			array('old' => array(608), 'to' => array(array('items', 'items.warehouses', null))),
 			array('old' => array(774), 'to' => array(array('items', 'items.item_groups', null), array('sales', 'sales.discounts', null))),
-			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
+			array('old' => array(775), 'to' => array(array('sales', 'sales.discounts', null))),
 			array('old' => array(776), 'to' => array(array('finance', 'finance.currencies', null))),
 			array('old' => array(778), 'to' => array(array('company', 'company.fiscal_years', null))),
 			array('old' => array(779), 'to' => array(array('company', 'company.data', null), array('organisation', 'organisation.employees', null))),
