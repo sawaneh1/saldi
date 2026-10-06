@@ -98,7 +98,7 @@ $settingsGroups = settings_accessible_groups();
 include_once(__DIR__ . "/../includes/onboarding.php");
 $onbAutoOpen = onb_get('onboarding_state') === 'new' && onb_can_run();
 if ($onbAutoOpen) {
-  onb_set('onboarding_state', 'started');
+  onb_start((int) $bruger_id);
 }
 
 

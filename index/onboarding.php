@@ -21,6 +21,9 @@
 //                  shown in the shell overlay (index/main.php). Næste saves through the existing logic (company fields
 //                  through the settings definitions of Firmaoplysninger, the logo through fe_logo_store(), the colour as
 //                  a personal setting, the fiscal year through settings_fiscal_year_set_first()) and marks the step done.
+//                  Stage 2: step 4 invoice (bank, payment terms, next invoice number, sender, footer, live preview, logo on
+//                  the invoice), step 5 invitations through user_invite() (source 'onboarding'), step 6 summary with a
+//                  test invoice printed from a rolled-back order.
 
 @session_start();
 $s_id = session_id();
@@ -41,6 +44,7 @@ include_once("../includes/settings/actions.php");
 include_once("../includes/settings/rowHooks.php");
 include_once("../includes/formEditorState.php");
 include_once("../includes/onboarding.php");
+include_once("../includes/userFunctions.php");
 
 $h = function ($s) {
 	return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
@@ -74,6 +78,10 @@ $companyFields = array(
 	'cvrnr' => 'company.data.cvr', 'firmanavn' => 'company.data.name', 'addr1' => 'company.data.address1', 'addr2' => 'company.data.address2',
 	'postnr' => 'company.data.zip', 'bynavn' => 'company.data.city', 'tlf' => 'company.data.phone', 'email' => 'company.data.email',
 );
+$invoiceFields = array(
+	'bank_reg' => 'company.data.bank_reg', 'bank_konto' => 'company.data.bank_account', 'iban' => 'company.data.iban', 'swift' => 'company.data.swift',
+	'payment_terms' => 'company.data.payment_terms', 'payment_days' => 'company.data.payment_days',
+);
 $systems = array('e-conomic' => 'e-conomic', 'uniconta' => 'Uniconta', 'dinero' => 'Dinero', 'billy' => 'Billy', 'spreadsheet' => '6772|Regneark', 'other' => '6773|Andet');
 
 /**
@@ -100,6 +108,44 @@ function onb_company_web(): string
 	return $r ? (string) $r['web'] : '';
 }
 
+/**
+ * Check posted fields against their settings definitions (the same rules as the settings page) and return the
+ * stored values that change. $map is posted name => setting key; fields the user may not change are left out.
+ *
+ * @return array<string, string> setting key => raw value
+ */
+function onb_fields_check(array $defs, array $map, array $posted, array &$errors): array
+{
+	$toSave = array();
+	foreach ($map as $name => $key) {
+		if (!isset($posted[$name], $defs[$key]) || st_field_access($defs[$key]) !== 'write') {
+			continue;
+		}
+		$res = st_posted_to_raw($defs[$key], $posted[$name], $posted);
+		if ($res['error'] !== null) {
+			$errors[$name] = st_txt($res['error']);
+		} elseif ($res['raw'] !== SettingsService::raw($key)) {
+			$toSave[$key] = $res['raw'];
+		}
+	}
+	return $toSave;
+}
+
+function onb_fields_save(array $defs, array $toSave): void
+{
+	transaktion('begin');
+	foreach ($toSave as $key => $raw) {
+		SettingsService::saveRaw($key, $raw);
+	}
+	transaktion('commit');
+	foreach ($toSave as $key => $raw) {
+		if (!empty($defs[$key]['on_save'])) {
+			settings_after_save($defs[$key], $raw);
+		}
+	}
+	settings_after_section_save();
+}
+
 $errors = array();
 $posted = array();
 
@@ -119,8 +165,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		header('Location: dashboard.php');
 		exit;
 	}
+	if ($action === 'unhide') {
+		$all = count(onb_steps()) >= count(onb_steps_def());
+		onb_set('onboarding_state', $all ? 'completed' : 'started');
+		ob_end_clean();
+		header('Location: ' . (isset($_POST['back']) && $_POST['back'] === 'settings' ? '../systemdata/settings.php' : 'dashboard.php'));
+		exit;
+	}
 	if (onb_get('onboarding_state') === 'new') {
-		onb_set('onboarding_state', 'started');
+		onb_start((int) $bruger_id);
 	}
 	foreach ($_POST as $k => $v) {
 		if (is_string($v)) {
@@ -137,46 +190,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	if ($action === 'next' && $step === 'company') {
 		$defs = settings_section_definitions('company.data');
-		$toSave = array();
-		foreach ($companyFields as $name => $key) {
-			if (!isset($posted[$name], $defs[$key]) || st_field_access($defs[$key]) !== 'write') {
-				continue;
-			}
-			if ($key === 'company.data.name' && $posted[$name] === '') {
-				$errors[$name] = $tx('6767|Firmanavn skal udfyldes');
-				continue;
-			}
-			$res = st_posted_to_raw($defs[$key], $posted[$name], $posted);
-			if ($res['error'] !== null) {
-				$errors[$name] = st_txt($res['error']);
-			} elseif ($res['raw'] !== SettingsService::raw($key)) {
-				$toSave[$key] = $res['raw'];
-			}
+		if (isset($posted['firmanavn']) && $posted['firmanavn'] === '') {
+			$errors['firmanavn'] = $tx('6767|Firmanavn skal udfyldes');
 		}
+		$toSave = onb_fields_check($defs, $companyFields, $posted, $errors);
 		$web = isset($posted['web']) ? $posted['web'] : '';
 		if (mb_strlen($web) > 60) {
 			$errors['web'] = st_txt(6511);
 		}
-		$logoError = '';
 		if (!$errors && isset($_FILES['logo']) && (int) $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
 			$res = fe_logo_store($db_id, (string) $_FILES['logo']['tmp_name'], (int) $_FILES['logo']['size']);
 			if (!$res['ok']) {
 				$errors['logo'] = $res['error'] === 'store' ? $tx('6776|Logoet kunne ikke gemmes. Prøv igen.') : $tx('6765|Logoet skal være en png- eller jpg-fil på højst 5 MB.');
+			} else {
+				onb_invoice_logo($db_id);
 			}
 		}
 		if (!$errors) {
-			transaktion('begin');
-			foreach ($toSave as $key => $raw) {
-				SettingsService::saveRaw($key, $raw);
-			}
+			onb_fields_save($defs, $toSave);
 			if ($web !== onb_company_web()) {
 				db_modify("update adresser set web = '" . db_escape_string($web) . "' where art = 'S'", __FILE__ . " linje " . __LINE__);
-			}
-			transaktion('commit');
-			foreach ($toSave as $key => $raw) {
-				if (!empty($defs[$key]['on_save'])) {
-					settings_after_save($defs[$key], $raw);
-				}
 			}
 			$colour = isset($posted['colour']) ? $posted['colour'] : '';
 			if ($colour === 'custom') {
@@ -207,6 +240,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		}
 	}
 
+	if ($action === 'next' && $step === 'invoice') {
+		$defs = settings_section_definitions('company.data');
+		$terms = isset($posted['terms']) ? explode('|', $posted['terms']) : array();
+		if (count($terms) === 2) {
+			$posted['payment_terms'] = $terms[0];
+			$posted['payment_days'] = $terms[1];
+		}
+		$toSave = onb_fields_check($defs, $invoiceFields, $posted, $errors);
+		$mailDefs = settings_section_definitions('documents.email');
+		$mailSave = onb_fields_check($mailDefs, array('sender_email' => 'documents.email.sender_email.0'), $posted, $errors);
+		$nextNo = onb_next_invoice_check($posted, $errors);
+		if (!$errors) {
+			onb_fields_save($defs, $toSave);
+			onb_fields_save($mailDefs, $mailSave);
+			onb_footer_set(isset($posted['footer']) ? $posted['footer'] : '');
+			if ($nextNo !== null) {
+				onb_next_invoice_set($nextNo);
+			}
+			onb_invoice_logo($db_id);
+			if (isset($posted['then']) && $posted['then'] === 'editor') {
+				onb_mark($step, 'done');
+				ob_end_clean();
+				header('Location: onboarding.php?go=editor');
+				exit;
+			}
+		}
+	}
+
+	if ($action === 'next' && $step === 'users' && onb_can_invite()) {
+		$invites = array();
+		$names = array();
+		for ($i = 0; $i < 3; $i++) {
+			$n = isset($posted["u_name$i"]) ? $posted["u_name$i"] : '';
+			$m = isset($posted["u_email$i"]) ? $posted["u_email$i"] : '';
+			$role = isset($posted["u_role$i"]) ? (int) $posted["u_role$i"] : 0;
+			if ($n === '' && $m === '') {
+				continue;
+			}
+			$e = user_invite_error($n, $m, $role);
+			if ($e === '' && in_array(mb_strtolower($n), $names, true)) {
+				$e = 'duplicate';
+			}
+			if ($e !== '') {
+				$msg = array('name' => '5149|Brugernavnet må højst være 80 tegn', 'norole' => '5771|Vælg en rolle først', 'emailrequired' => '5786|En gyldig e-mail er påkrævet for at invitere',
+					'duplicate' => '5578|Brugernavnet findes allerede', 'escalation' => '5577|Du kan ikke tildele flere rettigheder, end du selv har');
+				$errors["u$i"] = $n === '' ? $tx('6798|Skriv et navn') : $tx($msg[$e]);
+			}
+			$names[] = mb_strtolower($n);
+			$invites[] = array('brugernavn' => $n, 'kode' => '', 'role_id' => $role, 'ansat_id' => 0, 'ip_address' => '', 'tlf' => '', 'email' => $m, 'twofactor' => false, 'regnskabsaar' => (int) $regnaar);
+		}
+		if (!$errors) {
+			$flash = array();
+			foreach ($invites as $data) {
+				$r = user_invite($data, 'onboarding');
+				if (user_invite_mail((int) $r['id'], (string) $r['token'], (int) $sprog_id)) {
+					$flash[] = array('ok', sprintf($tx('6799|Invitation sendt til %s'), $data['email']));
+				} else {
+					$flash[] = array('link', $data['brugernavn'] . ': ' . user_invite_link((string) $r['token']));
+				}
+			}
+			$_SESSION['onb_flash'] = $flash;
+		}
+	}
+
+	if ($action === 'testinvoice' && $step === 'done') {
+		$res = onb_test_invoice();
+		$flash = array();
+		if (!$res['ok']) {
+			$flash[] = array('err', $tx('6800|Testfakturaen kunne ikke laves. Tjek fakturaformularen under Indstillinger.'));
+		} else {
+			$me = db_fetch_array(db_select("select email from brugere where id = " . (int) $bruger_id, __FILE__ . " linje " . __LINE__));
+			$to = $me ? trim((string) $me['email']) : '';
+			if ($to !== '' && user_send_mail($to, $tx('6801|Din testfaktura fra Saldi'), '<p>' . user_mail_h($tx('6802|Her er en testfaktura med din fakturaformular. Den er ikke bogført eller gemt.')) . '</p>', $res['file'])) {
+				$flash[] = array('ok', sprintf($tx('6803|Testfakturaen er sendt til %s.'), $to));
+			}
+			$flash[] = array('pdf', $res['url']);
+		}
+		$_SESSION['onb_flash'] = $flash;
+		ob_end_clean();
+		header('Location: onboarding.php?step=done');
+		exit;
+	}
+
 	if (($action === 'next' || $action === 'skip') && !$errors) {
 		onb_mark($step, $action === 'next' ? 'done' : 'skipped');
 		$nb = onb_neighbours($step);
@@ -222,6 +338,8 @@ if ($closed) {
 	unset($_SESSION['onb_colour_changed']);
 }
 
+$flash = isset($_SESSION['onb_flash']) ? $_SESSION['onb_flash'] : array();
+unset($_SESSION['onb_flash']);
 $steps = onb_steps();
 $userColour = onb_colour_get((int) $bruger_id);
 $logoUrl = onb_logo_url($db_id);
@@ -282,6 +400,10 @@ function onbGo(url) {
 <script>onbClose();</script>
 </body></html>
 <?php exit; } ?>
+<?php if (isset($_GET['go']) && $_GET['go'] === 'editor') { ?>
+<script>onbGo('../systemdata/formularkort.php');</script>
+</body></html>
+<?php exit; } ?>
 <div class="onb" style="--brand:#<?php print $h($userColour); ?>">
 <form class="onb-modal" method="post" action="onboarding.php" enctype="multipart/form-data" id="onbForm">
 	<input type="hidden" name="csrf_token" value="<?php print $h($csrfToken); ?>">
@@ -302,7 +424,7 @@ function onbGo(url) {
 			if ($def[$k][3]) {
 				print "<a class='onb-rs $cls' href='onboarding.php?step=" . $h($k) . "'>$label</a>";
 			} else {
-				print "<span class='onb-rs $cls' title='" . $h($tx('6755|Kommer snart')) . "'>$label</span>";
+				print "<span class='onb-rs $cls' title='" . $h($tx('6797|Bed din administrator om at invitere kolleger')) . "'>$label</span>";
 			}
 		}
 		?>
@@ -312,7 +434,7 @@ function onbGo(url) {
 		<div class="onb-head">
 			<span class="n"><?php
 				$pos = array_search($step, $railKeys, true);
-				if ($pos !== false) {
+				if ($pos !== false && $step !== 'done') {
 					print $h(sprintf($tx('6701|Trin %s af %s'), $pos + 1, count($railKeys)));
 				}
 			?></span>
@@ -413,6 +535,121 @@ if ($step === 'fiscal') {
 	print "</div><div><div class='note warn' style='margin-top:22px'><b>" . $h($tx('6744|Hvorfor nu?')) . "</b><br>"
 		. $h($tx('6745|Regnskabsår og momsperiode styrer, hvordan alle posteringer grupperes. Springer du over, markerer tjeklisten trinnet som Vigtigt.')) . "</div></div></div>";
 }
+
+if ($step === 'invoice') {
+	$cd = function ($k) {
+		return SettingsService::raw('company.data.' . $k);
+	};
+	$src = onb_get('onboarding_source');
+	$curTerms = $cd('payment_terms') !== '' ? $cd('payment_terms') : 'Netto';
+	$curDays = ($cd('payment_terms') !== '' && (int) $cd('payment_days') > 0) ? (int) $cd('payment_days') : 8;
+	$presets = array('Netto|8', 'Netto|14', 'Netto|30', 'Lb. md.|15', 'Kontant|0');
+	$current = in_array($curTerms, array('Netto', 'Lb. md.'), true) ? $curTerms . '|' . $curDays : $curTerms . '|0';
+	if (!in_array($current, $presets, true)) {
+		array_unshift($presets, $current);
+	}
+	$termLabel = function (string $v) use ($tx) {
+		list($b, $d) = explode('|', $v);
+		if ($b === 'Netto') return sprintf($tx('6781|Netto %s dage'), $d);
+		if ($b === 'Lb. md.') return sprintf($tx('6782|Løbende måned + %s dage'), $d);
+		$names = array('Kontant' => '370|Kontant', 'Forud' => '369|Forud', 'Efterkrav' => '371|Efterkrav');
+		return isset($names[$b]) ? $tx($names[$b]) : $b;
+	};
+	$terms = $val('terms', $current);
+	$mailDefs = settings_section_definitions('documents.email');
+	$sender = isset($mailDefs['documents.email.sender_email.0']) ? SettingsService::raw('documents.email.sender_email.0') : '';
+	print "<h2>" . $h($tx('6693|Din faktura')) . "</h2><p class='lead'>" . $h($tx('6786|Det, en faktura skal indeholde for at være korrekt. Layoutet kan tilpasses senere i formulareditoren.')) . "</p>";
+	print "<div class='g2' style='grid-template-columns:1fr 1.05fr;gap:12px 26px'><div>";
+	print "<div class='g2' style='gap:10px'><div class='f'><label class='l'>" . $h($tx('2227|Reg. nr.')) . "</label><input type='text' name='bank_reg' maxlength='15' placeholder='1234' value='" . $h($val('bank_reg', $cd('bank_reg'))) . "' oninput='onbInv()'>" . $err('bank_reg') . "</div>"
+		. "<div class='f'><label class='l'>" . $h($tx('43|Kontonr.')) . "</label><input type='text' name='bank_konto' maxlength='15' placeholder='1234567890' value='" . $h($val('bank_konto', $cd('bank_account'))) . "' oninput='onbInv()'>" . $err('bank_konto') . "</div></div>";
+	$abroad = $val('iban', $cd('iban')) !== '' || $val('swift', $cd('swift')) !== '' || isset($errors['iban']) || isset($errors['swift']);
+	print "<details class='more'" . ($abroad ? ' open' : '') . "><summary>" . $h($tx('6787|Sælger du til udlandet?')) . "</summary><div class='g2' style='gap:10px'>"
+		. "<div class='f'><label class='l'>IBAN</label><input type='text' name='iban' maxlength='40' value='" . $h($val('iban', $cd('iban'))) . "' oninput='onbInv()'>" . $err('iban') . "</div>"
+		. "<div class='f'><label class='l'>" . $h($tx('2228|SWIFT nr.')) . "</label><input type='text' name='swift' maxlength='15' value='" . $h($val('swift', $cd('swift'))) . "' oninput='onbInv()'>" . $err('swift') . "</div></div></details>";
+	print "<div class='f'><label class='l'>" . $h($tx('6788|Standard betalingsbetingelse')) . "</label><select name='terms' onchange='onbInv()'>";
+	foreach ($presets as $p) {
+		print "<option value='" . $h($p) . "'" . ($terms === $p ? ' selected' : '') . ">" . $h($termLabel($p)) . "</option>";
+	}
+	print "</select><div class='hint'>" . $h($tx('6779|Bruges som standard på nye kunder. Kan ændres pr. kunde.')) . "</div>" . $err('payment_days') . "</div>";
+	if ($src !== '' && $src !== 'new') {
+		$sysName = isset($systems[$src]) ? (strpos($systems[$src], '|') ? $tx($systems[$src]) : $systems[$src]) : $tx('6791|det gamle system');
+		print "<div class='f'><label class='l'>" . $h($tx('6789|Næste fakturanummer')) . "</label><input type='text' name='next_invoice' inputmode='numeric' placeholder='10482' value='" . $h($val('next_invoice', '')) . "' oninput='onbInv()'>"
+			. "<div class='hint'>" . $h(sprintf($tx('6790|Fortsæt din nummerrække fra %s.'), $sysName)) . "</div>" . $err('next_invoice') . "</div>";
+	}
+	print "<div class='f'><label class='l'>" . $h($tx('6172|Afsender-e-mail')) . "</label><input type='email' name='sender_email' maxlength='60' placeholder='faktura@ditfirma.dk' value='" . $h($val('sender_email', $sender)) . "'>"
+		. "<div class='hint'>" . $h($tx('6783|Egen SMTP-server sættes op under Indstillinger → E-mail.')) . "</div>" . $err('sender_email') . "</div>";
+	print "<div class='f'><label class='l'>" . $h($tx('6784|Bundtekst (valgfri)')) . "</label><input type='text' name='footer' maxlength='120' placeholder='" . $h($tx('6795|Tak for handlen')) . "' value='" . $h($val('footer', onb_footer_get())) . "' oninput='onbInv()'></div>";
+	print "<button type='submit' class='onb-link' name='then' value='editor' onclick=\"document.getElementById('onbAction').value='next'\">" . $h($tx('6785|Tilpas layout i formulareditoren')) . " &rarr;</button>";
+	print "</div><div><div class='prev'><div class='cap'><span>" . $h($tx('3276|Forhåndsvisning')) . "</span><i>&#9679; " . $h($tx('6792|Opdateres live')) . "</i></div><div class='inv'>";
+	$name = $cd('name') !== '' ? $cd('name') : 'SALDI';
+	print "<div class='top'><div>" . ($logoUrl !== '' ? "<img src='" . $h($logoUrl) . "' alt=''>" : "<b style='font-size:15px;color:var(--brand)'>" . $h($name) . "</b>") . "</div>"
+		. "<div class='co'>" . $h($name) . "<br>" . $h($cd('address1')) . "<br>" . $h(trim($cd('zip') . ' ' . $cd('city'))) . "<br>CVR " . $h($cd('cvr')) . "</div></div>";
+	print "<h4>" . $h($tx('643|Faktura')) . " <span id='pvNo'>1</span></h4><div style='color:#555'>" . $h($tx('6793|Kunde A/S')) . " &middot; " . date('d-m-Y') . " &middot; <span id='pvTerms'></span></div>";
+	print "<table><tr><th>" . $h($tx('914|Beskrivelse')) . "</th><th>" . $h($tx('916|Antal')) . "</th><th style='text-align:right'>" . $h($tx('934|Beløb')) . "</th></tr>"
+		. "<tr><td>" . $h($tx('6794|Konsulentydelse')) . "</td><td>10</td><td style='text-align:right'>10.000,00</td></tr>"
+		. "<tr><td>" . $h($tx('770|Moms')) . " 25 %</td><td></td><td style='text-align:right'>2.500,00</td></tr></table>";
+	print "<div class='tot'>" . $h($tx('2373|I alt')) . " DKK 12.500,00</div>";
+	print "<div class='pay'>" . $h($tx('935|Betaling')) . ": <span id='pvTerms2'></span><br>" . $h($tx('662|Bank')) . ": " . $h($tx('2227|Reg. nr.')) . " <span id='pvReg'></span> &middot; " . $h($tx('43|Kontonr.')) . " <span id='pvKonto'></span><span id='pvIban'></span></div>";
+	print "<div class='foot' id='pvFoot'></div></div></div></div></div>";
+}
+
+foreach ($flash as $f) {
+	if ($f[0] === 'ok') {
+		print "<div class='flash'>" . $h($f[1]) . "</div>";
+	} elseif ($f[0] === 'link') {
+		print "<div class='onb-errors'>" . $h($tx('5783|E-mailen kunne ikke sendes. Send dette link til brugeren.')) . "<br><code style='word-break:break-all'>" . $h($f[1]) . "</code></div>";
+	} elseif ($f[0] === 'pdf') {
+		print "<div class='flash'><a class='onb-link' href='" . $h($f[1]) . "' target='_blank' rel='noopener'>" . $h($tx('6804|Åbn testfakturaen (PDF)')) . " &rarr;</a></div>";
+	} else {
+		print "<div class='onb-errors'>" . $h($f[1]) . "</div>";
+	}
+}
+
+if ($step === 'users') {
+	$owner = onb_get('onboarding_role') !== 'accountant';
+	$suggest = $owner ? array('bogholder', 'revisor', 'salg') : array('administrator', 'salg', 'kunvisning');
+	$roles = function_exists('perm_roles') ? perm_roles() : array();
+	print "<h2>" . $h($tx('6695|Inviter kolleger')) . "</h2><p class='lead'>" . $h($owner ? $tx('6805|Har du en bogholder eller revisor? Inviter dem nu, så de kan hjælpe med resten.') : $tx('6806|Inviter ejeren, så de kan følge med og godkende.')) . " " . $h($tx('6807|De får en mail og vælger selv kodeord.')) . "</p>";
+	print "<div class='userrow head'><span>" . $h($tx('6808|Navn')) . "</span><span>" . $h($tx('52|E-mail')) . "</span><span>" . $h($tx('6809|Rolle')) . "</span></div>";
+	for ($i = 0; $i < 3; $i++) {
+		$def = function_exists('perm_role_id_by_key') ? perm_role_id_by_key($suggest[$i]) : 0;
+		$sel = (int) $val("u_role$i", (string) $def);
+		$ph = $i === 0 ? ($owner ? $tx('6810|Din bogholder') : $tx('6811|Ejeren')) : '';
+		print "<div class='userrow'><input type='text' name='u_name$i' maxlength='80' placeholder='" . $h($ph) . "' value='" . $h($val("u_name$i", '')) . "'>"
+			. "<input type='email' name='u_email$i' maxlength='60' placeholder='" . ($i === 0 ? 'navn@firma.dk' : '') . "' value='" . $h($val("u_email$i", '')) . "'><select name='u_role$i'>";
+		foreach ($roles as $role) {
+			$ok = perm_within_own(perm_levels_from_role((int) $role['id']));
+			print "<option value='" . (int) $role['id'] . "'" . ($sel === (int) $role['id'] ? ' selected' : '') . ($ok ? '' : ' disabled') . ">" . $h(perm_role_name($role, (int) $sprog_id)) . "</option>";
+		}
+		print "</select></div>" . $err("u$i");
+	}
+	print "<div class='hint' style='margin-top:2px'>" . $h($tx('6812|Bogholder = finans, kassekladde og rapporter. Revisor = kun læseadgang. Administrator = alt, inkl. brugere.')) . "</div>";
+	print "<div class='note'>" . $h($tx('6813|Flere brugere, egne roller og finjustering under Indstillinger → Brugere & roller. Du kan ikke give en rolle med flere rettigheder end din egen.')) . "</div>";
+}
+
+if ($step === 'done') {
+	$src = onb_get('onboarding_source');
+	print "<h2>" . $h($tx('6814|Sådan, du er i gang')) . " 🎉</h2><p class='lead'>" . $h($tx('6815|Her er, hvad vi har sat op. Alt kan ændres under Indstillinger.')) . "</p><ul class='sum'>";
+	foreach ($railKeys as $k) {
+		$st = isset($steps[$k]) ? $steps[$k] : '';
+		$ok = $st === 'done';
+		print "<li><span><span class='onb-st" . ($ok ? ' done' : '') . "'>" . ($ok ? $icon['check'] : '') . "</span>" . $h($tx($def[$k][0])) . "</span>";
+		if ($ok) {
+			print "<span class='ok'>" . $h($tx('6697|Færdig')) . "</span>";
+		} elseif ($def[$k][3]) {
+			print "<a href='onboarding.php?step=" . $h($k) . "'>" . $h($tx('6816|Fortsæt')) . "</a>";
+		} else {
+			print "<span class='hint'>" . $h($tx('6797|Bed din administrator om at invitere kolleger')) . "</span>";
+		}
+		print "</li>";
+	}
+	print "</ul>";
+	if ($src !== '' && $src !== 'new') {
+		$sysName = isset($systems[$src]) ? (strpos($systems[$src], '|') ? $tx($systems[$src]) : $systems[$src]) : $tx('6791|det gamle system');
+		print "<div class='note' style='margin-top:18px;max-width:540px'><b>" . $h(sprintf($tx('6817|Næste skridt: dine data fra %s.'), $sysName)) . "</b><br>"
+			. $h($tx('6818|Import af kontoplan, åbningsbalance, kunder, leverandører og varer kommer i næste del og ligger klar i tjeklisten på din oversigt.')) . "</div>";
+	}
+}
 ?>
 		</div>
 		<div class="onb-foot">
@@ -421,6 +658,10 @@ if ($step === 'fiscal') {
 if ($step === 'welcome') {
 	print "<span class='sp'></span><button type='button' class='ghost' onclick='onbClose()'>" . $h($tx('6702|Luk og fortsæt senere')) . "</button>"
 		. "<button type='submit' class='pri'>" . $h($tx('6703|Kom i gang')) . " &rarr;</button>";
+} elseif ($step === 'done') {
+	print "<button type='button' class='ghost' onclick=\"location.href='onboarding.php?step=" . $h($nb[0]) . "'\">&larr; " . $h($tx('6704|Tilbage')) . "</button><span class='sp'></span>"
+		. "<button type='submit' formnovalidate onclick=\"document.getElementById('onbAction').value='testinvoice'\">" . $h($tx('6819|Send en testfaktura til mig')) . "</button>"
+		. "<button type='submit' class='pri' onclick=\"document.getElementById('onbAction').value='next'\">" . $h($tx('6820|Gå til Saldi')) . " &rarr;</button>";
 } else {
 	$back = $nb[0] !== '' && $nb[0] !== 'welcome' ? "onclick=\"location.href='onboarding.php?step=" . $h($nb[0]) . "'\"" : 'disabled';
 	print "<button type='button' class='ghost' $back>&larr; " . $h($tx('6704|Tilbage')) . "</button><span class='sp'></span>"
@@ -461,6 +702,21 @@ function onbLogo(input) {
 	};
 	r.readAsDataURL(input.files[0]);
 }
+function onbInv() {
+	var f = document.getElementById('onbForm');
+	if (!f || !f.terms) return;
+	var v = function (n) { return f[n] ? f[n].value.trim() : ''; };
+	var sel = f.terms.options[f.terms.selectedIndex];
+	var terms = sel ? sel.text : '';
+	document.getElementById('pvTerms').textContent = terms;
+	document.getElementById('pvTerms2').textContent = terms;
+	document.getElementById('pvReg').textContent = v('bank_reg') || '____';
+	document.getElementById('pvKonto').textContent = v('bank_konto') || '__________';
+	document.getElementById('pvIban').textContent = v('iban') ? ' · IBAN ' + v('iban') + (v('swift') ? ' · SWIFT ' + v('swift') : '') : '';
+	document.getElementById('pvNo').textContent = v('next_invoice') || '1';
+	document.getElementById('pvFoot').textContent = v('footer');
+}
+onbInv();
 <?php if ($step === 'company') { ?>
 var cvrLookupProxy = '../sager/cvrLookupProxy.php';
 var cvrAutoFelter = ['cvrnr'];

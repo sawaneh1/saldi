@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261006 Sawaneh Onboarding step 4 (acceptance 6): payment terms and days on Firmaoplysninger (company row betalingsbet/
+//                  betalingsdage), used by a new customer card while there are no customers yet.
 // 20261005 Sawaneh 4d G6.2 Baggrunde: form backgrounds (VSPR) as a row list - new ones copied from a template background,
 //                  deleted with their form lines only when no customer, supplier or order uses them - and the PDF files.
 // 20261005 Sawaneh 4d G11: Import & eksport (export/import per data type, chart of accounts per fiscal year) and
@@ -1029,6 +1031,11 @@ if (!function_exists('getSettingsSections')) {
 			'company.data.bank_account' => array('sub' => 'bank', 'type' => 'text', 'label' => 592, 'storage' => array('adresser', 'bank_konto'), 'maxlength' => 15, 'legacy' => array(779)),
 			'company.data.iban' => array('sub' => 'bank', 'type' => 'text', 'label' => 'IBAN', 'help' => 3367, 'storage' => array('adresser', 'iban'), 'maxlength' => 40, 'legacy' => array(779)),
 			'company.data.swift' => array('sub' => 'bank', 'type' => 'text', 'label' => 2228, 'help' => 3367, 'storage' => array('adresser', 'swift'), 'maxlength' => 15, 'legacy' => array(779)),
+			'company.data.payment_terms' => array('sub' => 'bank', 'type' => 'select', 'label' => 368, 'help' => 6779, 'default' => 'Netto',
+				'options' => array('Netto' => 372, 'Lb. md.' => 373, 'Kontant' => 370, 'Forud' => 369, 'Efterkrav' => 371), 'storage' => array('adresser', 'betalingsbet'), 'legacy' => array(779),
+				'keywords' => array('betalingsbetingelser', 'payment terms', 'netto', 'løbende måned')),
+			'company.data.payment_days' => array('sub' => 'bank', 'type' => 'int', 'label' => 6778, 'help' => 6779, 'default' => '8', 'unit' => 5025, 'storage' => array('adresser', 'betalingsdage'), 'legacy' => array(779),
+				'visible_if' => array('setting_in', 'company.data.payment_terms', array('Netto', 'Lb. md.')), 'keywords' => array('betalingsfrist', 'betalingsdage', 'payment days')),
 			'company.data.bs_number' => array('sub' => 'bank', 'type' => 'text', 'label' => 385, 'storage' => array('adresser', 'pbs_nr'), 'maxlength' => 15, 'legacy' => array(779), 'keywords' => array('betalingsservice', 'pbs', 'kreditornummer')),
 			'company.data.bs_type' => array('sub' => 'bank', 'type' => 'select', 'label' => 6517, 'default' => '', 'options' => array('' => 2486, 'B' => 2485, 'L' => 2487),
 				'storage' => array('adresser', 'pbs'), 'legacy' => array(779), 'visible_if' => array('setting_set', 'company.data.bs_number')),

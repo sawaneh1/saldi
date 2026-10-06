@@ -32,6 +32,8 @@
 // 20260930 Sawaneh Confirming a migrated role (§6.3); any role change counts as the confirmation.
 // 20261001 Sawaneh Review fixes: only users within the actor's own access can be changed (R5); a user the
 //                  audit log did not see being created counts as having logged in; booleans as true/false.
+// 20261006 Sawaneh Onboarding step 5: user_invite_error() checks a new invitation (name, role, e-mail, duplicate name,
+//                  R5) for the welcome guide; user_send_mail() takes an optional attachment (the guide's test invoice).
 
 include_once(__DIR__ . '/permissions.php');
 
@@ -340,6 +342,30 @@ function user_invite_token(int $id): string
  * @param array<string, mixed> $data as user_create(), without kode
  * @return array{id: int, token: string}
  */
+/**
+ * Why a new invitation cannot be sent ('' when it can): name, role, e-mail, a name already in use, or a role with more
+ * rights than the inviter's own (R5). The keys are the users page's message keys.
+ */
+function user_invite_error(string $navn, string $email, int $roleId): string
+{
+	if ($navn === '' || mb_strlen($navn) > 80) {
+		return 'name';
+	}
+	if ($roleId <= 0) {
+		return 'norole';
+	}
+	if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+		return 'emailrequired';
+	}
+	if (db_fetch_array(db_select("select id from brugere where brugernavn = '" . db_escape_string($navn) . "'", __FILE__ . " linje " . __LINE__))) {
+		return 'duplicate';
+	}
+	if (!perm_within_own(perm_levels_from_role($roleId))) {
+		return 'escalation';
+	}
+	return '';
+}
+
 function user_invite(array $data, string $kilde = 'ui'): array
 {
 	$data['kode'] = '';
@@ -465,7 +491,7 @@ function user_company_login_name(): string
 /**
  * Send an HTML mail through the company's mail setup (Indstillinger → SMTP).
  */
-function user_send_mail(string $to, string $subject, string $body): bool
+function user_send_mail(string $to, string $subject, string $body, string $attachment = ''): bool
 {
 	global $charset;
 	if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -513,6 +539,9 @@ function user_send_mail(string $to, string $subject, string $body): bool
 		$mail->Subject = $subject;
 		$mail->Body = $body;
 		$mail->AltBody = html_entity_decode(strip_tags(str_replace(array('<br>', '</p>'), "\n", $body)), ENT_QUOTES, $enc);
+		if ($attachment !== '' && is_file($attachment)) {
+			$mail->AddAttachment($attachment);
+		}
 		return (bool) $mail->Send();
 	} catch (\Throwable $e) {
 		return false;

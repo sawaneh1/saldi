@@ -42,8 +42,8 @@ function onb_set(string $name, string $value): void
 }
 
 /**
- * The guide's steps in order: key => [title text, description text, important, built]. Steps not built yet are shown
- * as "Kommer snart" and are not counted as next.
+ * The guide's steps in order: key => [title text, description text, important, available]. A step that is not
+ * available (inviting without settings.users.manage) is left out of the guide and not counted as next.
  *
  * @return array<string, array{0: string, 1: string, 2: bool, 3: bool}>
  */
@@ -54,9 +54,9 @@ function onb_steps_def(): array
 		'profile' => array('6687|Hvem er du?', '6688|Ny virksomhed eller skifter du system?', false, true),
 		'company' => array('6689|Virksomhed og udtryk', '6690|CVR, firmaoplysninger, logo og farve', false, true),
 		'fiscal'  => array('6691|Regnskabsår og moms', '6692|Startdato og momsperiode', true, true),
-		'invoice' => array('6693|Din faktura', '6694|Bank, betalingsbetingelser og forhåndsvisning', false, false),
-		'users'   => array('6695|Inviter kolleger', '6696|Bogholder, ejer eller medarbejdere', false, false),
-		'done'    => array('6697|Færdig', '6698|Opsummering', false, false),
+		'invoice' => array('6693|Din faktura', '6694|Bank, betalingsbetingelser og forhåndsvisning', false, true),
+		'users'   => array('6695|Inviter kolleger', '6696|Bogholder, ejer eller medarbejdere', false, onb_can_invite()),
+		'done'    => array('6697|Færdig', '6698|Opsummering', false, true),
 	);
 }
 
@@ -77,6 +77,7 @@ function onb_steps(): array
 
 function onb_mark(string $step, string $status): void
 {
+	onb_set('onboarding_touched', (string) time());
 	$steps = onb_steps();
 	if ($status === 'skipped' && isset($steps[$step]) && $steps[$step] === 'done') {
 		return;
@@ -92,6 +93,144 @@ function onb_mark(string $step, string $status): void
 	if ($all && onb_state() !== 'hidden') {
 		onb_set('onboarding_state', 'completed');
 	}
+}
+
+/**
+ * The guide is started (first opening, spec §4): who started it, when, and the login address for the reminder e-mail,
+ * which is sent from the command line where no address is known.
+ */
+function onb_start(int $userId): void
+{
+	onb_set('onboarding_state', 'started');
+	onb_set('onboarding_user', (string) $userId);
+	onb_set('onboarding_started_at', (string) time());
+	$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+	$host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/[^A-Za-z0-9.:\-\[\]]/', '', (string) $_SERVER['HTTP_HOST']) : '';
+	if ($host !== '') {
+		$root = rtrim(str_replace('\\', '/', dirname(dirname(isset($_SERVER['SCRIPT_NAME']) ? (string) $_SERVER['SCRIPT_NAME'] : '/index/x'))), '/');
+		onb_set('onboarding_url', ($https ? 'https' : 'http') . '://' . $host . $root . '/index/login.php');
+	}
+}
+
+/**
+ * Step 5 needs the right to manage users (spec §5 step 5, R5).
+ */
+function onb_can_invite(): bool
+{
+	return function_exists('perm_can') ? perm_can('settings.users.manage', 'write') : false;
+}
+
+/**
+ * The invoice number the next posted invoice gets (a read-only look, no number is taken).
+ */
+function onb_next_invoice_peek(): int
+{
+	return function_exists('get_next_invoice_number') ? max(1, (int) get_next_invoice_number('DO')) : 1;
+}
+
+/**
+ * A number typed in step 4 for a company switching from another system: whole, and not below the next number Saldi
+ * would use anyway. Returns the number, or null when nothing was typed or it is refused ($errors['next_invoice']).
+ */
+function onb_next_invoice_check(array $posted, array &$errors): ?int
+{
+	$v = isset($posted['next_invoice']) ? trim($posted['next_invoice']) : '';
+	if ($v === '') {
+		return null;
+	}
+	$peek = onb_next_invoice_peek();
+	if (!preg_match('/^\d{1,9}$/', $v) || (int) $v < $peek) {
+		$errors['next_invoice'] = sprintf(findtekst('6796|Fakturanummeret skal være et helt tal og mindst %s.', isset($GLOBALS['sprog_id']) ? (int) $GLOBALS['sprog_id'] : 1), $peek);
+		return null;
+	}
+	return (int) $v;
+}
+
+/**
+ * The first invoice number of the number series (grupper RB 1 box1, edited on the first fiscal year's card); the
+ * next invoice gets at least this number.
+ */
+function onb_next_invoice_set(int $n): void
+{
+	$r = db_fetch_array(db_select("select id, box1 from grupper where art = 'RB' and kodenr = '1'", __FILE__ . " linje " . __LINE__));
+	if ($r) {
+		db_modify("update grupper set box1 = '$n' where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+	} else {
+		db_modify("insert into grupper (beskrivelse, kodenr, kode, art, box1, box2, box3, box4, box5) values ('Regnskabsbilag', '1', '1', 'RB', '$n', '1', '', 'on', 'on')", __FILE__ . " linje " . __LINE__);
+	}
+	if (function_exists('audit_log')) {
+		audit_log('setting.changed', 'Første fakturanummer ' . ($r ? $r['box1'] : '') . ' -> ' . $n, 'grupper', 'RB', 'onboarding');
+	}
+}
+
+/**
+ * A test invoice with the real form (spec §6.4): a customer, an order and a line are made in a transaction, the PDF is
+ * printed from them through the print engine, and everything is rolled back, so nothing is posted, saved or numbered.
+ *
+ * @return array{ok: bool, file: string, url: string, error: string}
+ */
+function onb_test_invoice(): array
+{
+	global $db, $db_id, $bruger_id, $brugernavn, $charset, $ps2pdf, $pdftk, $sprog_id;
+	$fail = function (string $e) {
+		return array('ok' => false, 'file' => '', 'url' => '', 'error' => $e);
+	};
+	if (!db_fetch_array(db_select("select id from formularer where formular = 4 and art = 2 limit 1", __FILE__ . " linje " . __LINE__))) {
+		return $fail('noform');
+	}
+	include_once(__DIR__ . '/formfunk.php');
+	require_once(__DIR__ . '/stdFunc/renderPrintBatch.php');
+	$co = db_fetch_array(db_select("select * from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
+	$bet = ($co && trim((string) $co['betalingsbet']) !== '') ? trim((string) $co['betalingsbet']) : 'Netto';
+	$dage = ($co && in_array($bet, array('Netto', 'Lb. md.'), true)) ? (int) $co['betalingsdage'] : 0;
+	$no = onb_next_invoice_peek();
+	$today = date('Y-m-d');
+	$e = function ($s) {
+		return db_escape_string((string) $s);
+	};
+	$kunde = findtekst('6793|Kunde A/S', $sprog_id);
+
+	transaktion('begin');
+	db_modify("insert into adresser (firmanavn, addr1, postnr, bynavn, land, kontonr, art, betalingsbet, betalingsdage) values ('" . $e($kunde) . "', 'Testvej 1', '1000', 'København K', 'Danmark', '0', 'D', '" . $e($bet) . "', $dage)", __FILE__ . " linje " . __LINE__);
+	$r = db_fetch_array(db_select("select max(id) as id from adresser where art = 'D'", __FILE__ . " linje " . __LINE__));
+	$kontoId = (int) $r['id'];
+	$r = db_fetch_array(db_select("select coalesce(max(ordrenr), 0) + 1 as n from ordrer where art = 'DO'", __FILE__ . " linje " . __LINE__));
+	$ordrenr = (int) $r['n'];
+	db_modify("insert into ordrer (konto_id, firmanavn, addr1, postnr, bynavn, land, kontonr, art, valuta, valutakurs, sprog, ordredate, levdate, fakturadate, ordrenr, sum, momssats, moms, status, ref, fakturanr, betalingsbet, betalingsdage, udskriv_til, mail_fakt) values ($kontoId, '" . $e($kunde) . "', 'Testvej 1', '1000', 'København K', 'Danmark', '0', 'DO', 'DKK', 100, 'Dansk', '$today', '$today', '$today', $ordrenr, 10000, 25, 2500, 3, '" . $e($brugernavn) . "', '$no', '" . $e($bet) . "', $dage, 'PDF', '')", __FILE__ . " linje " . __LINE__);
+	$r = db_fetch_array(db_select("select max(id) as id from ordrer where art = 'DO'", __FILE__ . " linje " . __LINE__));
+	$ordreId = (int) $r['id'];
+	db_modify("insert into ordrelinjer (ordre_id, posnr, beskrivelse, antal, pris, rabat, vare_id, momsfri, momssats, samlevare) values ($ordreId, 1, '" . $e(findtekst('6794|Konsulentydelse', $sprog_id)) . "', 10, 1000, 0, 0, '', 25, '')", __FILE__ . " linje " . __LINE__);
+
+	ob_start();
+	$res = formularprint($ordreId, 4, 0, $charset, 'PDF');
+	ob_end_clean();
+	$name = isset($GLOBALS['printfilnavn']) ? (string) $GLOBALS['printfilnavn'] : '';
+	transaktion('rollback');
+	if ((is_string($res) && trim($res) !== '') || $name === '') {
+		return $fail('print');
+	}
+
+	$dir = __DIR__ . "/../temp/$db/" . abs((int) $bruger_id);
+	$pv = db_fetch_array(db_select("select box2, box3 from grupper where art = 'PV'", __FILE__ . " linje " . __LINE__));
+	$html = empty($pv['box2']) && !empty($pv['box3']);
+	$pages = 1;
+	while ($html && is_file("$dir/{$name}_" . ($pages + 1) . ".htm")) {
+		$pages++;
+	}
+	$bg = '';
+	foreach (array("faktura_bg.pdf", "bg.pdf") as $f) {
+		if (is_file(__DIR__ . "/../logolib/" . (int) $db_id . "/$f")) {
+			$bg = __DIR__ . "/../logolib/" . (int) $db_id . "/$f";
+			break;
+		}
+	}
+	$out = 'testfaktura.pdf';
+	try {
+		renderPrintBatch($dir, array(array('name' => $name, 'background' => $bg, 'pages' => $pages)), $out, $html, !empty($pv['box2']) ? $pv['box2'] : $ps2pdf, $pdftk, true);
+	} catch (\Throwable $ex) {
+		return $fail('render');
+	}
+	return array('ok' => true, 'file' => "$dir/$out", 'url' => "../temp/$db/" . abs((int) $bruger_id) . "/$out?t=" . time(), 'error' => '');
 }
 
 /**
@@ -210,6 +349,69 @@ function onb_logo_url($dbId): string
 }
 
 /**
+ * Put the uploaded logo on the printed invoice (acceptance 5): the invoice form gets a LOGO element at the top right
+ * when it has none with a size, and the form editor's compositor stamps the logo onto the invoice background
+ * (faktura_bg.pdf, which the print engine uses for invoices, delivery notes and credit notes, when there is none).
+ */
+function onb_invoice_logo($dbId): void
+{
+	$png = "../logolib/" . (int) $dbId . "/fe_logo.png";
+	if (!file_exists($png) || !function_exists('fe_composite_logo')) {
+		return;
+	}
+	$info = @getimagesize($png);
+	$w = 40.0;
+	$h = ($info && $info[0] > 0) ? round($w * $info[1] / $info[0], 1) : 20.0;
+	if ($h > 25) {
+		$w = round($w * 25 / $h, 1);
+		$h = 25.0;
+	}
+	$r = db_fetch_array(db_select("select id, xb, yb from formularer where formular = 4 and art = 1 and beskrivelse = 'LOGO' and sprog = 'Dansk' order by id limit 1", __FILE__ . " linje " . __LINE__));
+	if (!$r) {
+		db_modify("insert into formularer (formular, art, beskrivelse, xa, ya, xb, yb, sprog) values (4, 1, 'LOGO', " . (190 - $w) . ", 290, $w, $h, 'Dansk')", __FILE__ . " linje " . __LINE__);
+	} elseif ((float) $r['xb'] <= 0 || (float) $r['yb'] <= 0) {
+		db_modify("update formularer set xa = " . (190 - $w) . ", ya = 290, xb = $w, yb = $h where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+	}
+	fe_composite_logo($dbId, 4, 'Dansk', 'faktura_bg.pdf');
+}
+
+/**
+ * The invoice's footer text (step 4): one centred text line at the bottom of the standard invoice form, remembered by
+ * its row id. '$' is removed because the print engine reads $names as fields.
+ */
+function onb_footer_get(): string
+{
+	$id = (int) onb_get('invoice_footer_id');
+	if (!$id) {
+		return '';
+	}
+	$r = db_fetch_array(db_select("select beskrivelse from formularer where id = $id and formular = 4 and art = 2", __FILE__ . " linje " . __LINE__));
+	return $r ? (string) $r['beskrivelse'] : '';
+}
+
+function onb_footer_set(string $text): void
+{
+	$text = trim(str_replace('$', '', $text));
+	$id = (int) onb_get('invoice_footer_id');
+	$exists = $id && db_fetch_array(db_select("select id from formularer where id = $id and formular = 4 and art = 2", __FILE__ . " linje " . __LINE__));
+	if ($text === '') {
+		if ($exists) {
+			db_modify("delete from formularer where id = $id", __FILE__ . " linje " . __LINE__);
+		}
+		onb_set('invoice_footer_id', '');
+		return;
+	}
+	$v = db_escape_string($text);
+	if ($exists) {
+		db_modify("update formularer set beskrivelse = '$v' where id = $id", __FILE__ . " linje " . __LINE__);
+		return;
+	}
+	db_modify("insert into formularer (formular, art, beskrivelse, justering, xa, ya, xb, yb, str, color, font, fed, kursiv, side, sprog) values (4, 2, '$v', 'C', 105, 10, 0, 0, 9, 0, 'Helvetica', '', '', 'A', 'Dansk')", __FILE__ . " linje " . __LINE__);
+	$r = db_fetch_array(db_select("select max(id) as id from formularer where formular = 4 and art = 2 and beskrivelse = '$v'", __FILE__ . " linje " . __LINE__));
+	onb_set('invoice_footer_id', $r ? (string) $r['id'] : '');
+}
+
+/**
  * The "Kom godt i gang" card at the top of the dashboard (spec §7): shown while the guide is new or started, and as
  * "Opsætning færdig" once every step is set, until it is hidden. A ledger without a state (existing customers) gets no card.
  */
@@ -268,9 +470,10 @@ function onb_render_card(int $userId, int $sprogId): void
 		$st = isset($steps[$k]) ? $steps[$k] : '';
 		$cls = $st === 'done' ? 'done' : (($st === 'skipped' && $d[2]) ? 'imp' : '');
 		$icon = $cls === 'done' ? $check : ($cls === 'imp' ? '!' : '');
-		$tag = $cls === 'imp' ? "<span class='onb-tag imp'>" . $h($tx('6754|Vigtigt')) . "</span>" : (!$d[3] ? "<span class='onb-tag'>" . $h($tx('6755|Kommer snart')) . "</span>" : '');
+		$tag = $cls === 'imp' ? "<span class='onb-tag imp'>" . $h($tx('6754|Vigtigt')) . "</span>" : '';
+		$desc = ($k === 'users' && !$d[3]) ? '6797|Bed din administrator om at invitere kolleger' : $d[1];
 		$open = ($canRun && $d[3]) ? " onclick=\"onbOpen('" . $h($k) . "')\"" : '';
-		print "<button type='button' class='onb-step" . (($canRun && $d[3]) ? '' : ' soon') . "'$open><span class='onb-st $cls'>$icon</span><span class='t'><b>" . $h($tx($d[0])) . "</b><span>" . $h($tx($d[1])) . "</span></span>$tag</button>";
+		print "<button type='button' class='onb-step" . (($canRun && $d[3]) ? '' : ' soon') . "'$open><span class='onb-st $cls'>$icon</span><span class='t'><b>" . $h($tx($d[0])) . "</b><span>" . $h($tx($desc)) . "</span></span>$tag</button>";
 	}
 	$part2 = array(array('6760|Kontoplan', '6768|Behold standard, vælg skabelon eller importér'), array('6761|Åbningsbalance', '6769|Saldobalance og åbne poster'),
 		array('6762|Debitorer og kreditorer', '6770|Importér kunder og leverandører'), array('6763|Varer og lager', '6771|Importér varer og beholdning'));

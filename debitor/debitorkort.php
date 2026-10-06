@@ -113,6 +113,7 @@
 // 20260904 Sawaneh WP-1.1: Historik/Opgaveliste links now urlencode a returside that carries the card id (was id-less, masked by the nav stack)
 // 20260907 CDX/LH Sanitize the return parameter once before navigation and order-context handling.
 // 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
+// 20261006 Sawaneh A new customer gets the company's own payment terms (Firmaoplysninger / onboarding step 4) while there are no customers.
 @session_start();
 $s_id = session_id();
 
@@ -1257,6 +1258,14 @@ if ($id > 0) {
 	$bd = NULL;
 	$x = NULL;
 	$id = 0;
+	// The company's own payment terms (Firmaoplysninger, onboarding step 4) until there are customers to count.
+	if (!db_fetch_array(db_select("select id from adresser where art = 'D' limit 1", __FILE__ . " linje " . __LINE__))) {
+		$r = db_fetch_array(db_select("select betalingsbet, betalingsdage from adresser where art = 'S' order by id limit 1", __FILE__ . " linje " . __LINE__));
+		if ($r && trim((string) $r['betalingsbet']) !== '') {
+			$maxbb = trim($r['betalingsbet']);
+			$maxbd = ($maxbb === 'Netto' || $maxbb === 'Lb. md.') ? (int) $r['betalingsdage'] : 0;
+		}
+	}
 	$betalingsbet = $maxbb;
 	$betalingsdage = $maxbd;
 	$kontoansvarlig = '0';

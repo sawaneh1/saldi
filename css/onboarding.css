@@ -119,6 +119,34 @@ html.onb-page, html.onb-page body { margin: 0; height: 100%; background: transpa
 .onb-tag { font-size: 10.5px; font-weight: 600; border-radius: 20px; padding: 2px 8px; background: #f0f2f6; color: var(--onb-mut); white-space: nowrap; }
 .onb-tag.imp { background: #fff4d6; color: #8a5a00; }
 
+/* ---------- invoice preview, invite rows, summary ---------- */
+.onb .prev { background: #eef1f6; border-radius: 14px; padding: 18px 18px 14px; display: flex; flex-direction: column; min-height: 100%; }
+.onb .prev .cap { font-size: 11px; font-weight: 600; color: var(--onb-mut); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+.onb .prev .cap i { font-style: normal; color: var(--onb-green); }
+.onb .inv { background: #fff; border-radius: 6px; padding: 22px; font-size: 10.5px; box-shadow: 0 10px 30px #0f1a2e1f, 0 1px 2px #0002; flex: 1; position: relative; display: flex; flex-direction: column; }
+.onb .inv:before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 5px; background: var(--brand); border-radius: 6px 6px 0 0; }
+.onb .inv .top { display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 20px; gap: 12px; }
+.onb .inv .top img { max-height: 36px; max-width: 140px; }
+.onb .inv .co { text-align: right; color: #555; line-height: 1.5; }
+.onb .inv h4 { font-size: 17px; margin: 0 0 8px; color: var(--brand); }
+.onb .inv table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.onb .inv th { text-align: left; font-size: 9.5px; color: #777; border-bottom: 1px solid #ddd; padding: 4px 0; text-transform: uppercase; letter-spacing: .4px; }
+.onb .inv td { padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+.onb .inv .tot { text-align: right; font-weight: 700; font-size: 12px; margin-top: 4px; }
+.onb .inv .pay { margin-top: 16px; color: #555; line-height: 1.6; background: #f7f8fb; padding: 8px 10px; border-radius: 6px; }
+.onb .inv .foot { margin-top: auto; padding-top: 14px; text-align: center; color: #888; font-size: 9.5px; }
+.onb .inv .foot:empty { display: none; }
+.onb details.more { margin-bottom: 13px; }
+.onb details.more summary { cursor: pointer; color: var(--brand); font-weight: 600; font-size: 12.5px; margin-bottom: 8px; }
+.onb .onb-link { color: var(--brand); font-size: 12.5px; font-weight: 600; cursor: pointer; background: none; border: none; padding: 0; text-decoration: none; }
+.onb .userrow { display: grid; grid-template-columns: 1.2fr 1.5fr 1fr; gap: 8px; margin-bottom: 8px; }
+.onb .userrow.head { font-size: 12px; font-weight: 600; color: #3f4a60; }
+.onb .sum li a, .onb .sum li .ok { color: var(--brand); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.onb .sum li .ok { color: var(--onb-green); }
+.onb .sum li > span { display: flex; align-items: center; gap: 10px; }
+.onb .sum .onb-st { width: 20px; height: 20px; }
+.onb .flash { background: #e7f6ee; color: #14663d; border-radius: 10px; padding: 10px 13px; font-size: 12.5px; margin-bottom: 14px; }
+
 /* ---------- the shell overlay (index/main.php) ---------- */
 #onb-overlay { position: fixed; inset: 0; z-index: 2000; background: #0b1526a8; backdrop-filter: blur(6px); display: none; }
 #onb-overlay.open { display: block; }
@@ -128,5 +156,5 @@ html.onb-page, html.onb-page body { margin: 0; height: 100%; background: transpa
 	.onb { padding: 0; }
 	.onb-modal { grid-template-columns: 1fr; width: 100%; height: 100%; border-radius: 0; }
 	.onb-rail { display: none; }
-	.onb .g2, .onb .cards, .onb-card, .onb-grid { grid-template-columns: 1fr; }
+	.onb .g2, .onb .cards, .onb-card, .onb-grid, .onb .userrow { grid-template-columns: 1fr; }
 }

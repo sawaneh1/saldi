@@ -6377,3 +6377,49 @@
 6774	Skjul	Hide	Skjul
 6775	Opsætning færdig	Setup complete	Oppsett ferdig
 6776	Logoet kunne ikke gemmes. Prøv igen.	The logo could not be saved. Try again.	Logoen kunne ikke lagres. Prøv igjen.
+6778	Betalingsfrist	Payment period	Betalingsfrist
+6779	Bruges som standard på nye kunder. Kan ændres pr. kunde.	Used as the default on new customers. Can be changed per customer.	Brukes som standard på nye kunder. Kan endres per kunde.
+6780	Vis tjekliste på oversigten	Show the checklist on the dashboard	Vis sjekklisten på oversikten
+6781	Netto %s dage	Net %s days	Netto %s dager
+6782	Løbende måned + %s dage	End of month + %s days	Løpende måned + %s dager
+6783	Egen SMTP-server sættes op under Indstillinger → E-mail.	Your own SMTP server is set up under Settings → E-mail.	Egen SMTP-server settes opp under Innstillinger → E-post.
+6784	Bundtekst (valgfri)	Footer text (optional)	Bunntekst (valgfri)
+6785	Tilpas layout i formulareditoren	Customise the layout in the form editor	Tilpass oppsettet i skjemaredigereren
+6786	Det, en faktura skal indeholde for at være korrekt. Layoutet kan tilpasses senere i formulareditoren.	What an invoice must contain to be correct. The layout can be customised later in the form editor.	Det en faktura må inneholde for å være korrekt. Oppsettet kan tilpasses senere i skjemaredigereren.
+6787	Sælger du til udlandet?	Do you sell abroad?	Selger du til utlandet?
+6788	Standard betalingsbetingelse	Default payment terms	Standard betalingsbetingelse
+6789	Næste fakturanummer	Next invoice number	Neste fakturanummer
+6790	Fortsæt din nummerrække fra %s.	Continue your number sequence from %s.	Fortsett nummerserien fra %s.
+6791	det gamle system	the old system	det gamle systemet
+6792	Opdateres live	Updates live	Oppdateres live
+6793	Kunde A/S	Customer Ltd	Kunde AS
+6794	Konsulentydelse	Consulting	Konsulenttjeneste
+6795	Tak for handlen	Thank you for your business	Takk for handelen
+6796	Fakturanummeret skal være et helt tal og mindst %s.	The invoice number must be a whole number and at least %s.	Fakturanummeret må være et heltall og minst %s.
+6797	Bed din administrator om at invitere kolleger	Ask your administrator to invite colleagues	Be administratoren om å invitere kolleger
+6798	Skriv et navn	Enter a name	Skriv et navn
+6799	Invitation sendt til %s	Invitation sent to %s	Invitasjon sendt til %s
+6800	Testfakturaen kunne ikke laves. Tjek fakturaformularen under Indstillinger.	The test invoice could not be made. Check the invoice form under Settings.	Testfakturaen kunne ikke lages. Sjekk fakturaskjemaet under Innstillinger.
+6801	Din testfaktura fra Saldi	Your test invoice from Saldi	Din testfaktura fra Saldi
+6802	Her er en testfaktura med din fakturaformular. Den er ikke bogført eller gemt.	Here is a test invoice with your invoice form. It has not been posted or saved.	Her er en testfaktura med fakturaskjemaet ditt. Den er ikke bokført eller lagret.
+6803	Testfakturaen er sendt til %s.	The test invoice has been sent to %s.	Testfakturaen er sendt til %s.
+6804	Åbn testfakturaen (PDF)	Open the test invoice (PDF)	Åpne testfakturaen (PDF)
+6805	Har du en bogholder eller revisor? Inviter dem nu, så de kan hjælpe med resten.	Do you have an accountant or auditor? Invite them now so they can help with the rest.	Har du en regnskapsfører eller revisor? Inviter dem nå, så de kan hjelpe med resten.
+6806	Inviter ejeren, så de kan følge med og godkende.	Invite the owner so they can follow along and approve.	Inviter eieren, så de kan følge med og godkjenne.
+6807	De får en mail og vælger selv kodeord.	They get an e-mail and choose their own password.	De får en e-post og velger passord selv.
+6808	Navn	Name	Navn
+6809	Rolle	Role	Rolle
+6810	Din bogholder	Your accountant	Din regnskapsfører
+6811	Ejeren	The owner	Eieren
+6812	Bogholder = finans, kassekladde og rapporter. Revisor = kun læseadgang. Administrator = alt, inkl. brugere.	Accountant = finance, cash journal and reports. Auditor = read only. Administrator = everything, including users.	Regnskapsfører = finans, kassekladd og rapporter. Revisor = kun lesetilgang. Administrator = alt, inkl. brukere.
+6813	Flere brugere, egne roller og finjustering under Indstillinger → Brugere & roller. Du kan ikke give en rolle med flere rettigheder end din egen.	More users, your own roles and fine-tuning under Settings → Users & roles. You cannot give a role with more rights than your own.	Flere brukere, egne roller og finjustering under Innstillinger → Brukere og roller. Du kan ikke gi en rolle med flere rettigheter enn din egen.
+6814	Sådan, du er i gang	There you go, you are up and running	Sånn, du er i gang
+6815	Her er, hvad vi har sat op. Alt kan ændres under Indstillinger.	Here is what we have set up. Everything can be changed under Settings.	Her er det vi har satt opp. Alt kan endres under Innstillinger.
+6816	Fortsæt	Continue	Fortsett
+6817	Næste skridt: dine data fra %s.	Next step: your data from %s.	Neste steg: dataene dine fra %s.
+6818	Import af kontoplan, åbningsbalance, kunder, leverandører og varer kommer i næste del og ligger klar i tjeklisten på din oversigt.	Importing the chart of accounts, opening balance, customers, suppliers and items comes in the next part and is ready in the checklist on your dashboard.	Import av kontoplan, åpningsbalanse, kunder, leverandører og varer kommer i neste del og ligger klar i sjekklisten på oversikten.
+6819	Send en testfaktura til mig	Send a test invoice to me	Send en testfaktura til meg
+6820	Gå til Saldi	Go to Saldi	Gå til Saldi
+6821	Din opsætning af Saldi venter	Your Saldi setup is waiting	Oppsettet ditt i Saldi venter
+6822	Du er nået %s af %s trin i opsætningen af %s. Fortsæt, hvor du slap – det tager kun et par minutter.	You have done %s of %s steps in setting up %s. Continue where you left off – it only takes a few minutes.	Du har gjort %s av %s trinn i oppsettet av %s. Fortsett der du slapp – det tar bare noen minutter.
+6823	Log ind og vælg Fortsæt på kortet "Kom godt i gang" på din oversigt.	Log in and choose Continue on the "Getting started" card on your dashboard.	Logg inn og velg Fortsett på kortet "Kom godt i gang" på oversikten.

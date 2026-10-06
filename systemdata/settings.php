@@ -27,6 +27,8 @@
 // 20260929 Sawaneh Phase 4a (settings redesign spec §8.5, §8.10, §8.13, §8.14): search finds single settings and
 //                  old menu names, transition banner, "Hvor er...?" link, PoS licence card, shortcuts.
 // 20261001 Sawaneh Phase 4a §8.13: optional modules shown on or off with Aktivér, computed status badges per card.
+// 20261006 Sawaneh §8.8 Getting started: a "Kom godt i gang" card (progress, reopen the guide, bring back a hidden checklist)
+//                  while the welcome guide is not completed, and a link in the footer afterwards.
 // 20261002 Sawaneh Hand-over 2 Oct (A1, settings redesign §8.0): groups as rows in three labelled lists instead of tiles,
 //                  "Kræver opmærksomhed" above them, status as a dot plus text, search results in a dropdown, no Back
 //                  button (the shell shows the breadcrumb). Optional modules are shown inside their group, not here.
@@ -69,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $hubGroups = settings_accessible_groups();
+include_once(__DIR__ . "/../includes/onboarding.php");
+$onbState = onb_get('onboarding_state');
+$hubOnboarding = ($onbState !== '' && onb_can_run()) ? array('state' => $onbState, 'done' => onb_done_count(), 'total' => count(onb_steps_def()), 'next' => onb_next_step(), 'steps' => (bool) onb_steps()) : null;
 $hubAttention = settings_attention($hubGroups, (int) $sprog_id);
 $hubReadOnly = (bool) $hubGroups;
 foreach ($hubGroups as $hubGroup) {
@@ -86,10 +91,11 @@ settings_hub_view(array(
 	'posLocked' => (function_exists('perm_can') && perm_can('settings.pos', 'read') && !settings_has_module('pos')),
 	'company'   => function_exists('st_company') ? st_company() : '',
 	'csrf'      => (string) $_SESSION['csrf_token'],
+	'onboarding' => $hubOnboarding,
 ), (int) $sprog_id, (string) $db_encode);
 
 /**
- * @param array<string, mixed> $vm groups, status, attention, readOnly, notice, posLocked, company, csrf
+ * @param array<string, mixed> $vm groups, status, attention, readOnly, notice, posLocked, company, csrf, onboarding
  */
 function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
 {
@@ -128,6 +134,24 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
   <div class="sh-attn"><div><i class='bx bx-lock-alt' aria-hidden="true"></i><div class="sh-tx"><b><?= $t('5665|Du har ikke adgang til nogen indstillinger. Kontakt en administrator.') ?></b></div></div></div>
   <?php } elseif ($vm['readOnly']) { ?>
   <div class="sh-attn" role="status"><div><i class='bx bx-lock-alt' aria-hidden="true"></i><div class="sh-tx"><b><?= $t('6031|Du har læseadgang') ?></b><span><?= $t('6032|Du kan se indstillingerne, men ikke ændre dem. Kontakt en administrator.') ?></span></div></div></div>
+  <?php } ?>
+
+  <?php $onb = $vm['onboarding']; if ($onb && $onb['state'] !== 'completed') {
+  	$onbNext = $onb['next'] !== '' ? $onb['next'] : 'profile';
+  	$onbDef = onb_steps_def();
+  ?>
+  <section class="sh-sect">
+    <div class="sh-attn">
+      <div>
+        <i class='bx bx-rocket' aria-hidden="true"></i>
+        <div class="sh-tx"><b><?= $t('6748|Kom godt i gang') ?></b><span><?= $h(sprintf(findtekst('6750|%s af %s trin færdige', $sprogId), $onb['done'], $onb['total'])) ?></span></div>
+        <?php if ($onb['state'] === 'hidden') { ?>
+        <form method="post" action="../index/onboarding.php" style="margin:0"><input type="hidden" name="csrf_token" value="<?= $h($vm['csrf']) ?>"><input type="hidden" name="action" value="unhide"><input type="hidden" name="back" value="settings"><button type="submit" class="sh-btn"><?= $t('6780|Vis tjekliste på oversigten') ?></button></form>
+        <?php } ?>
+        <a class="sh-btn" href="../index/onboarding.php?step=<?= $h($onbNext) ?>" onclick="if (window.parent && window.parent.saldiOnboardingOpen) { window.parent.saldiOnboardingOpen('<?= $h($onbNext) ?>'); return false; }"><?= $onb['next'] !== '' ? $h(sprintf(findtekst('6752|Fortsæt: %s', $sprogId), findtekst($onbDef[$onb['next']][0], $sprogId))) : $t('6758|Gennemse opsætning') ?></a>
+      </div>
+    </div>
+  </section>
   <?php } ?>
 
   <?php if ($vm['attention']) { ?>
@@ -199,7 +223,7 @@ function settings_hub_view(array $vm, int $sprogId, string $dbEncode): void
   </div>
 
   <?php if ($groups && !$vm['notice']) { ?>
-  <p class="sh-foot"><a href="settingsMoved.php"><?= $t('6023|Hvor er de gamle menupunkter?') ?></a><button type="button" data-keys><?= $t('6024|Tastaturgenveje') ?></button></p>
+  <p class="sh-foot"><a href="settingsMoved.php"><?= $t('6023|Hvor er de gamle menupunkter?') ?></a><?php if ($vm['onboarding'] && $vm['onboarding']['state'] === 'completed' && $vm['onboarding']['steps']) { ?><a href="../index/onboarding.php?step=done" onclick="if (window.parent && window.parent.saldiOnboardingOpen) { window.parent.saldiOnboardingOpen('done'); return false; }"><?= $t('6748|Kom godt i gang') ?></a><?php } ?><button type="button" data-keys><?= $t('6024|Tastaturgenveje') ?></button></p>
   <?php } ?>
 
   <div class="sh-backdrop" id="sh-backdrop" hidden></div>
