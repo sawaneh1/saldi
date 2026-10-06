@@ -28,7 +28,7 @@ $backUrl = isset($_GET['returside'])
 
 print "<table width=100% align=center border=0 cellspacing=2 cellpadding=0><tbody>"; # Tabel 1.1 ->
 
-print "<td width=10% style=$buttonStyle><a href=\"$backUrl\"><button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">";
+print "<td width=10% style=$buttonStyle><a href=\"$backUrl\" accesskey='L'><button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">";
 print findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 
 print "<td width=80% style=$topStyle align=center><table border=0 cellspacing=2 cellpadding=0><tbody>\n"; # Tabel 1.1.1 ->

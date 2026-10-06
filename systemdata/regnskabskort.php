@@ -40,6 +40,7 @@
 //                  this page without an id redirects there and keeps the opening balance. Audit fixes: F4 (primo
 //                  transfer query built with = instead of .=), F5 (the previous year was tested as the year itself),
 //                  F7 (dead lock-stock redirect), F8 (aaben unchecked), F9 (posted values cast/escaped).
+// 20261006 Sawaneh Back link has accesskey L, so the shell's breadcrumb replaces it (breadcrumb step 2).
 
 @session_start();
 $s_id=session_id();
@@ -83,7 +84,7 @@ if ($menu=='T') {
 		print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"1\"><tbody>";
 		print "<table width=100% height=100% border=0 cellspacing=0 cellpadding=0><tbody>"; ####################table 1a start.
 		print "<tr><td align='center' valign=top>";
-		print "<a href=\"javascript:confirmClose('regnskabsaar.php','". findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id) ."')\">";
+		print "<a accesskey='L' href=\"javascript:confirmClose('regnskabsaar.php','". findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id) ."')\">";
 		if ($menu=='S') {
 			print "<button style = '$buttonStyle; width: 10%' onMouseOver=\"this.style.cursor='pointer'\">";
 		} else {

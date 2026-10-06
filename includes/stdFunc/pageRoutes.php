@@ -35,6 +35,12 @@ return array(
 		'loen'       => array('l' => '2784|Løn', 'href' => '/sager/loen.php'),
 		'produktion' => array('l' => '|Produktion', 'href' => ''),
 	),
+	// Step 2 (the breadcrumb replaces the old Luk/Tilbage): modules done so far, and pages that keep their button.
+	// The cash journal waits for Saul's SD-712 release (15/10).
+	'migrated' => array(
+		'modules' => array('finans', 'debitor', 'kreditor', 'lager', 'produktion', 'system', 'booking'),
+		'keep' => array('finans/kassekladde.php', 'finans/kladdeliste.php', 'finans/bogfor.php'),
+	),
 	// A page that is not in 'pages' shows its folder's module and its title.
 	'dirs' => array('finans' => 'finans', 'bank_integration' => 'finans', 'debitor' => 'debitor', 'kreditor' => 'kreditor', 'lager' => 'lager',
 		'produktion' => 'produktion', 'systemdata' => 'system', 'admin' => 'system', 'rental' => 'booking', 'sager' => 'sager', 'bordplaner' => 'pos'),

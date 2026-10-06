@@ -136,7 +136,7 @@
 	print findtekst('2564|Hjælp', $sprog_id)."</button></td>";
 	if ($valg=="Vareliste") {
 		print "<td id='create-new' width=5% style='$buttonStyle'>
-			<a href=../varekort.php accesskey='L'>
+			<a href=../varekort.php accesskey='L' data-keep-in-shell>
 			<button class='center-btn' style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
 				$add_icon".
 				findtekst('39|Ny', $sprog_id)." 

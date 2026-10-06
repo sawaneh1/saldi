@@ -53,6 +53,7 @@
 // 20260923 CDX/PHR Make inserting invoice references an explicit, unchecked-by-default option.
 // 20260923 CDX/PHR Place the invoice insertion option directly after the reference field.
 // 20260923 CDX/PHR Save explicit manual reference edits on Update, separately from automatic insertion.
+// 20261006 Sawaneh Back link has accesskey L, so the shell's breadcrumb replaces it (breadcrumb step 2).
  
 @session_start();
 $s_id=session_id();
@@ -421,7 +422,7 @@ if ($menu=='S') {
 print "<table width = 100% cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody>";
 print "<tr><td colspan=8 align=center>";
 print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"4\" cellpadding=\"0\"><tbody>";
-print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=$retur?rapportart=accountChart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&submit=ok$layoutParam>Luk</a></div></td>";
+print "<td width=\"10%\" align=center><div class=\"top_bund\"><a accesskey=L href=$retur?rapportart=accountChart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&submit=ok$layoutParam>Luk</a></div></td>";
 print "<td width=\"80%\" align=center><div class=\"top_bund\">Udlign &aring;bne poster<br></div></td>";
 print "<td width=\"10%\"><div class=\"top_bund\"><br></div></td>";
 print " </tr></tbody></table></td></tr>";

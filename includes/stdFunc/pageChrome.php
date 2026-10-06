@@ -28,6 +28,9 @@
 //                  the central map in pageRoutes.php (folder module + page title when a page is not in it); a page's own
 //                  page_breadcrumb() replaces it. The shell is always answered with the latest message, and a click
 //                  leaves through the page's old luk.php link when it has one, so record locks are still released.
+//                  Step 2: in a module listed under 'migrated' in the map, the shell hides the page's old Luk/Tilbage
+//                  (a link or plain button with accesskey L; never a submit button, and not a link marked
+//                  data-keep-in-shell) - outside the shell the page is unchanged.
 
 if (!function_exists('page_breadcrumb')):
 
@@ -77,14 +80,22 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 		$msg['help'] = $GLOBALS['page_help_items'];
 	}
 	$json = json_encode($msg, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+	$hide = !empty($GLOBALS['page_chrome_hide_close']) ? "\tif (window.parent && window.parent !== window && !document.getElementById('saldi-shell-nav')) {\n"
+		. "\t\t// Migrated module (step 2): the breadcrumb replaces the old Luk/Tilbage in the shell; it stays in the page for its luk.php link.\n"
+		. "\t\tdocument.documentElement.classList.add('saldi-shell-nav');\n"
+		. "\t\tvar st = document.createElement('style'); st.id = 'saldi-shell-nav';\n"
+		. "\t\tst.textContent = 'html.saldi-shell-nav a[accesskey=\"l\" i]:not([data-keep-in-shell]), html.saldi-shell-nav td:has(> a[accesskey=\"l\" i]:not([data-keep-in-shell])), html.saldi-shell-nav input[type=\"button\" i][accesskey=\"l\" i] { display: none !important; }';\n"
+		. "\t\t(document.head || document.documentElement).appendChild(st);\n"
+		. "\t}\n" : '';
 	return '<script>' . "\n" . '(function () {' . "\n"
+		. $hide
 		. "\twindow.saldiPageChrome = $json;\n"
 		. "\tfunction send() { if (window.parent && window.parent !== window) { window.parent.postMessage(window.saldiPageChrome, window.location.origin); } }\n"
 		. "\tif (!window.saldiChromeBound) {\n"
 		. "\t\twindow.saldiChromeBound = true;\n"
 		. "\t\t// The page's old Luk/Tilbage through includes/luk.php releases the record it locked: leave the same way.\n"
 		. "\t\tvar viaLuk = function (href) {\n"
-		. "\t\t\tvar c = document.querySelector('a[accesskey=\"l\"], a[accesskey=\"L\"]');\n"
+		. "\t\t\tvar c = document.querySelector('a[accesskey=\"l\"]:not([data-keep-in-shell]), a[accesskey=\"L\"]:not([data-keep-in-shell])');\n"
 		. "\t\t\tif (!c || !/(^|\\/)luk\\.php/.test(c.getAttribute('href') || '')) { return href; }\n"
 		. "\t\t\ttry { var u = new URL(c.href), t = new URL(href); u.searchParams.delete('popup'); u.searchParams.set('returside', t.pathname + t.search); return u.href; } catch (x) { return href; }\n"
 		. "\t\t};\n"
@@ -99,9 +110,9 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 		. "\t\t\t\twindow.location.href = viaLuk(e.data.href);\n"
 		. "\t\t\t}\n"
 		. "\t\t});\n"
-		. "\t\t// Alt+L goes back through the shell (§3.2); a page that still has its old Luk/Tilbage keeps that accesskey.\n"
+		. "\t\t// Alt+L goes back through the shell (§3.2); a page that still shows its old Luk/Tilbage keeps that accesskey.\n"
 		. "\t\tdocument.addEventListener('keydown', function (e) {\n"
-		. "\t\t\tif (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L') && !document.querySelector('[accesskey=\"l\"], [accesskey=\"L\"]')) { e.preventDefault(); window.parent.postMessage({ type: 'saldi:back' }, window.location.origin); }\n"
+		. "\t\t\tif (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L') && !Array.prototype.some.call(document.querySelectorAll('[accesskey=\"l\"], [accesskey=\"L\"]'), function (c) { return c.offsetParent !== null; })) { e.preventDefault(); window.parent.postMessage({ type: 'saldi:back' }, window.location.origin); }\n"
 		. "\t\t});\n"
 		. "\t}\n"
 		. "\tsend();\n"
@@ -372,6 +383,9 @@ function page_auto_breadcrumb(string $title, int $sprogId, string $charset): str
 		$isLanding = $landing !== '' && ltrim((string) parse_url($landing, PHP_URL_PATH), '/') === $first;
 		array_unshift($levels, array('label' => $tx((string) $m['l'])) + (($landing !== '' && !$isLanding) ? array('href' => $landing) : array()));
 	}
+	$migrated = isset($routes['migrated']) ? $routes['migrated'] : array();
+	$GLOBALS['page_chrome_hide_close'] = $module !== '' && in_array($module, isset($migrated['modules']) ? (array) $migrated['modules'] : array(), true)
+		&& !in_array(strtok($here ? $here[0] : $key, '?'), isset($migrated['keep']) ? (array) $migrated['keep'] : array(), true);
 	return page_breadcrumb($levels, null, null, $charset);
 }
 

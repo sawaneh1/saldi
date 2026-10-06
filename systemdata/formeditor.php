@@ -26,6 +26,7 @@
 // 20261005 Sawaneh Settings redesign G6.1: reset keeps the e-mail texts and fee/interest rows (FE2); print-language lock
 //                  and drafts in the settings table via includes/formEditorState.php (FE3); the background link opens
 //                  in the same window and the upload page returns here (FE5).
+// 20261006 Sawaneh Back link has accesskey L, so the shell's breadcrumb replaces it (breadcrumb step 2).
 //
 // New visual (drag & drop) form editor - phase 1, increment 1.
 //
@@ -845,7 +846,7 @@ if ($menu == 'T') {
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">\n";
 	print "<div class=\"headerbtnLft\">";
-	print "<a class='button gray small' href=\"" . htmlspecialchars($returside) . "\">" . findtekst('30|Tilbage', $sprog_id) . "</a> &nbsp;";
+	print "<a class='button gray small' accesskey='L' href=\"" . htmlspecialchars($returside) . "\">" . findtekst('30|Tilbage', $sprog_id) . "</a> &nbsp;";
 	print "<a class='button blue small' href=\"formularkort.php\">" . findtekst('573|Formularkort', $sprog_id) . "</a>";
 	print "</div>";
 	print "<span class=\"headerTxt\">Formulareditor</span>\n";
