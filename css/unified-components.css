@@ -898,6 +898,7 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-rfoot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--st-border); font-size: 12.5px; color: var(--st-text-2); }
 .st-rempty { padding: 32px 20px; text-align: center; font-size: 14px; color: var(--st-text-2); }
 .st-rempty b { display: block; font-weight: 500; color: var(--st-text); }
+.st-rseed { display: inline-flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
 .st-rtoggle { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer; }
 .st-inline { display: inline; }
 .st-scope { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--st-text-2); }

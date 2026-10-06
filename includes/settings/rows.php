@@ -19,6 +19,8 @@
 // ----------------------------------------------------------------------
 // 20261005 Sawaneh G6.2: 'transient' columns (posted, given to the hooks, never stored - the template of a new background)
 //                  and 'create_only' columns (editable on a new row, read-only afterwards).
+// 20261006 Sawaneh §8.13 empty-state seeding: table option 'standard' ('grupper' = the groups file a new ledger is made
+//                  from, or fixed rows); settings_rows_standard() gives the rows the editor inserts as new, unsaved rows.
 // 20261005 Sawaneh 4d fiscal years and currencies: date cells, read-only columns and locked rows, a parent filter
 //                  (rates of one currency), automatic numbering, 'forbid', per-row actions, hooks before a row is
 //                  written and on delete, and a confirmation step for saves that post amounts (spec G2.3, V9).
@@ -42,7 +44,7 @@ function settings_rows_tables(array $section): array
 		$t += array('sub' => $tableId, 'fiscal' => false, 'usage' => null, 'inactive' => false, 'exclude' => '', 'help' => null,
 			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null, 'defaults' => array(),
 			'no_add' => false, 'filter' => null, 'auto_code' => false, 'row_actions' => array(), 'confirm' => null, 'row_check' => null,
-			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null);
+			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null, 'standard' => null);
 		$st = $t['storage'];
 		$t['kind'] = $st[0] === 'grupper' ? 'grupper' : 'table';
 		$t['art'] = $t['kind'] === 'grupper' ? (string) $st[1] : '';
@@ -63,6 +65,51 @@ function settings_rows_tables(array $section): array
  *
  * @return array<int, int>
  */
+/**
+ * The Danish standard set for an empty table (§8.13 "Opret dansk standardsæt"): for a grupper table the rows of its
+ * art from the groups file a new ledger is made from (importfiler/egne_grupper.txt, else grupper.txt, as in
+ * admin/opret.php); otherwise the table's own 'standard' rows. Only the table's columns are returned; the rows go into
+ * the editor as new rows the user edits and saves.
+ *
+ * @return array<int, array<string, string>>
+ */
+function settings_rows_standard(array $t): array
+{
+	if (is_array($t['standard'])) {
+		$rows = $t['standard'];
+	} elseif ($t['standard'] === 'grupper' && $t['kind'] === 'grupper') {
+		$dir = __DIR__ . '/../../importfiler/';
+		$file = is_file($dir . 'egne_grupper.txt') ? $dir . 'egne_grupper.txt' : $dir . 'grupper.txt';
+		$keys = array('beskrivelse', 'kode', 'kodenr', 'art', 'box1', 'box2', 'box3', 'box4', 'box5', 'box6', 'box7', 'box8', 'box9', 'box10', 'box11', 'box12', 'box13', 'box14');
+		$rows = array();
+		foreach (is_file($file) ? file($file, FILE_IGNORE_NEW_LINES) : array() as $line) {
+			if (trim($line) === '' || $line[0] === '#') {
+				continue;
+			}
+			$vals = array_map('trim', str_getcsv(trim($line), ',', "'"));
+			$row = array_combine($keys, array_pad(array_slice($vals, 0, count($keys)), count($keys), ''));
+			if ($row['art'] === $t['art']) {
+				$rows[] = $row;
+			}
+		}
+	} else {
+		return array();
+	}
+	$out = array();
+	foreach ($rows as $row) {
+		$r = array();
+		foreach (array_keys($t['columns']) as $col) {
+			if (isset($row[$col])) {
+				$r[$col] = (string) $row[$col];
+			}
+		}
+		if ($r) {
+			$out[] = $r;
+		}
+	}
+	return $out;
+}
+
 function settings_rows_years(): array
 {
 	static $years = null;

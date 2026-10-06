@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261006 Sawaneh §8.13: an empty table with a standard set offers "Opret dansk standardsæt" and "Tilføj selv".
 // 20261005 Sawaneh 4d: read-only columns and locked rows, row actions (with password for danger-zone ones), a parent
 //                  picker above a filtered table, a create card below a table and the confirmation of posted amounts.
 // 20261005 Sawaneh Settings redesign phase 4c (spec §8.2, mock-up 04): a section of 'kind' rows. One card per table:
@@ -60,7 +61,7 @@ function settings_rows_render(array $c): void
 	$errors = $state['errors'];
 	$config = $c['config'] + array(
 		'deleteTitle' => st_txt(6416), 'deleteBody' => st_txt(6417), 'deleteVerb' => st_txt(1099), 'cannotTitle' => st_txt(6414), 'usedBody' => st_txt(6415),
-		'inactiveVerb' => st_txt(6433), 'close' => st_txt(2172), 'newTag' => st_txt(6429),
+		'inactiveVerb' => st_txt(6433), 'close' => st_txt(2172), 'newTag' => st_txt(6429), 'seeded' => st_txt(6826),
 	);
 	foreach ($config as $k => $v) {
 		$config[$k] = is_string($v) ? mb_convert_encoding($v, 'UTF-8', $charset) : $v;
@@ -249,7 +250,7 @@ function settings_rows_render(array $c): void
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsRows.js?v=2"></script>
+<script src="../javascript/settingsRows.js?v=3"></script>
 	<?php
 }
 
@@ -383,8 +384,11 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 						<?php } ?>
             </tbody>
           </table>
-					<?php if (!$rows && !$postedRows) { ?>
-          <div class="st-rempty"><b><?= st_t($t['empty']) ?></b></div>
+					<?php if (!$rows && !$postedRows) {
+						$standard = ($canWrite && !$t['no_add']) ? settings_rows_standard($t) : array(); ?>
+          <div class="st-rempty"><b><?= st_t($t['empty']) ?></b><?php if ($standard) { ?>
+            <span class="st-rseed"><button type="button" class="st-btn st-btn-primary" data-seed="<?= st_h(json_encode($standard, JSON_INVALID_UTF8_SUBSTITUTE)) ?>"><?= st_t(6824) ?></button>
+            <button type="button" class="st-btn" data-add><?= st_t(6825) ?></button></span><?php } ?></div>
 					<?php } ?>
 					<?php if ($canWrite && !$t['no_add'] && (!is_array($t['filter']) || !empty($t['filter']['value']))) { ?>
           <template data-row-template>

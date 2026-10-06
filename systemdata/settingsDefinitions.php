@@ -21,6 +21,7 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261006 Sawaneh §8.13: 'standard' on the VAT, VAT report, debtor/creditor/item group and unit tables ("Opret dansk standardsæt").
 // 20261006 Sawaneh Onboarding step 4 (acceptance 6): payment terms and days on Firmaoplysninger (company row betalingsbet/
 //                  betalingsdage), used by a new customer card while there are no customers yet.
 // 20261005 Sawaneh 4d G6.2 Baggrunde: form backgrounds (VSPR) as a row list - new ones copied from a template background,
@@ -271,7 +272,7 @@ if (!function_exists('getSettingsSections')) {
 				'lead' => 6408, 'subsections' => array('units' => 1259, 'materials' => 6411),
 				'tables' => array(
 					'units' => array('sub' => 'units', 'label' => 1259, 'add' => 6409, 'empty' => 6410,
-						'storage' => array('table', 'enheder'), 'usage' => 'unit', 'code_col' => 'betegnelse',
+						'storage' => array('table', 'enheder'), 'usage' => 'unit', 'code_col' => 'betegnelse', 'standard' => array(array('betegnelse' => 'stk', 'beskrivelse' => 'styk')),
 						'columns' => array(
 							'betegnelse' => array('label' => 6442, 'type' => 'code', 'numeric' => false, 'required' => true),
 							'beskrivelse' => array('label' => 914, 'type' => 'text'),
@@ -291,7 +292,7 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'finance', 'section' => 'vat', 'number' => 'G2.2', 'label' => 770, 'icon' => 'bx-receipt', 'kind' => 'rows',
 				'lead' => 6468, 'subsections' => array('sales' => 994, 'purchase' => 996, 'services' => 997, 'goods' => 998, 'report' => 1009),
 				'tables' => array(
-					'sales' => array('sub' => 'sales', 'label' => 994, 'help' => 2247, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'SM'), 'kode' => 'S',
+					'sales' => array('sub' => 'sales', 'label' => 994, 'help' => 2247, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'SM'), 'standard' => 'grupper', 'kode' => 'S',
 						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
@@ -301,7 +302,7 @@ if (!function_exists('getSettingsSections')) {
 							'box6' => array('label' => 6471, 'type' => 'text'),
 							'box7' => array('label' => 2995, 'type' => 'select', 'options' => array('' => '–', 'varer' => 110, 'ydelser' => 6501), 'options_mixed' => true),
 						)),
-					'purchase' => array('sub' => 'purchase', 'label' => 996, 'help' => 2431, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'KM'), 'kode' => 'K',
+					'purchase' => array('sub' => 'purchase', 'label' => 996, 'help' => 2431, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'KM'), 'standard' => 'grupper', 'kode' => 'K',
 						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
@@ -309,7 +310,7 @@ if (!function_exists('getSettingsSections')) {
 							'box1' => array('label' => 440, 'type' => 'account', 'required' => true),
 							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
 						)),
-					'services' => array('sub' => 'services', 'label' => 997, 'help' => 2444, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'YM'), 'kode' => 'Y',
+					'services' => array('sub' => 'services', 'label' => 997, 'help' => 2444, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'YM'), 'standard' => 'grupper', 'kode' => 'Y',
 						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
@@ -318,7 +319,7 @@ if (!function_exists('getSettingsSections')) {
 							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
 							'box3' => array('label' => 1013, 'type' => 'account', 'help' => 2433),
 						)),
-					'goods' => array('sub' => 'goods', 'label' => 998, 'help' => 2445, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'EM'), 'kode' => 'E',
+					'goods' => array('sub' => 'goods', 'label' => 998, 'help' => 2445, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'EM'), 'standard' => 'grupper', 'kode' => 'E',
 						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code', 'range' => array(1, 9, 6472)),
@@ -327,7 +328,7 @@ if (!function_exists('getSettingsSections')) {
 							'box2' => array('label' => 995, 'type' => 'decimal', 'required' => true),
 							'box3' => array('label' => 1013, 'type' => 'account', 'help' => 2435),
 						)),
-					'report' => array('sub' => 'report', 'label' => 1009, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'MR'), 'kode' => 'R', 'fiscal' => true,
+					'report' => array('sub' => 'report', 'label' => 1009, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'MR'), 'standard' => 'grupper', 'kode' => 'R', 'fiscal' => true,
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),
 							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
@@ -345,7 +346,7 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'sales', 'section' => 'debtor_groups', 'number' => 'G3.1', 'label' => 1008, 'icon' => 'bx-group', 'kind' => 'rows',
 				'lead' => 6505, 'subsections' => array('groups' => 1008),
 				'tables' => array(
-					'groups' => array('sub' => 'groups', 'label' => 1008, 'add' => 6475, 'empty' => 6478, 'storage' => array('grupper', 'DG'), 'kode' => 'D',
+					'groups' => array('sub' => 'groups', 'label' => 1008, 'add' => 6475, 'empty' => 6478, 'storage' => array('grupper', 'DG'), 'standard' => 'grupper', 'kode' => 'D',
 						'fiscal' => true, 'usage' => 'debtor_group', 'inactive' => true, 'propagate' => array('box10'), 'defaults' => array('box3' => 'DKK'),
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),
@@ -368,7 +369,7 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'purchase', 'section' => 'creditor_groups', 'number' => 'G4.1', 'label' => 2458, 'icon' => 'bx-group', 'kind' => 'rows',
 				'lead' => 6506, 'subsections' => array('groups' => 2458),
 				'tables' => array(
-					'groups' => array('sub' => 'groups', 'label' => 2458, 'add' => 6476, 'empty' => 6479, 'storage' => array('grupper', 'KG'), 'kode' => 'K',
+					'groups' => array('sub' => 'groups', 'label' => 2458, 'add' => 6476, 'empty' => 6479, 'storage' => array('grupper', 'KG'), 'standard' => 'grupper', 'kode' => 'K',
 						'fiscal' => true, 'usage' => 'creditor_group', 'inactive' => true, 'propagate' => array('box10'), 'defaults' => array('box3' => 'DKK'),
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),
@@ -389,7 +390,7 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'items', 'section' => 'item_groups', 'number' => 'G5.1', 'label' => 774, 'icon' => 'bx-category', 'kind' => 'rows',
 				'lead' => 6507, 'subsections' => array('groups' => 774, 'prices' => 6508),
 				'tables' => array(
-					'groups' => array('sub' => 'groups', 'label' => 774, 'add' => 6477, 'empty' => 6480, 'storage' => array('grupper', 'VG'),
+					'groups' => array('sub' => 'groups', 'label' => 774, 'add' => 6477, 'empty' => 6480, 'storage' => array('grupper', 'VG'), 'standard' => 'grupper',
 						'fiscal' => true, 'usage' => 'item_group', 'propagate' => array('box5'),
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),

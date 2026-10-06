@@ -65,6 +65,27 @@
 		return tr;
 	}
 
+	// §8.13: the standard set goes in as new rows to edit and save, like rows added by hand.
+	function seedRows(card, json) {
+		var rows;
+		try { rows = JSON.parse(json); } catch (e) { return; }
+		rows.forEach(function (values) {
+			var tr = addRow(card, 0);
+			if (!tr) { return; }
+			Object.keys(values).forEach(function (col) {
+				var el = tr.querySelector('[name$="[' + col + ']"]:not([type=hidden])') || tr.querySelector('[name$="[' + col + ']"]');
+				if (!el) { return; }
+				if (el.type === 'checkbox') { el.checked = values[col] !== '' && values[col] !== '0'; }
+				else { el.value = values[col]; }
+				el.dispatchEvent(new Event('input', { bubbles: true }));
+				el.dispatchEvent(new Event('change', { bubbles: true }));
+			});
+		});
+		var hint = card.querySelector('.st-rhint');
+		if (hint && cfg.seeded) { hint.textContent = cfg.seeded; }
+		refresh();
+	}
+
 	function cellIndex(c) {
 		var tr = c.closest('tr');
 		return Array.prototype.indexOf.call(tr.querySelectorAll('.st-rin, .st-rcheck'), c);
@@ -153,6 +174,8 @@
 	form.addEventListener('click', function (e) {
 		var add = e.target.closest('[data-add]');
 		if (add) { addRow(add.closest('.st-rows'), 0); return; }
+		var seed = e.target.closest('[data-seed]');
+		if (seed) { seedRows(seed.closest('.st-rows'), seed.getAttribute('data-seed')); return; }
 		var del = e.target.closest('[data-del]');
 		if (del) {
 			var tr = del.closest('tr'), card = del.closest('.st-rows');
