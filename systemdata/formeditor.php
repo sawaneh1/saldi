@@ -23,6 +23,9 @@
 //
 // Copyright (c) 2003-2026 Saldi.dk ApS
 // ----------------------------------------------------------------------
+// 20261005 Sawaneh Settings redesign G6.1: reset keeps the e-mail texts and fee/interest rows (FE2); print-language lock
+//                  and drafts in the settings table via includes/formEditorState.php (FE3); the background link opens
+//                  in the same window and the upload page returns here (FE5).
 //
 // New visual (drag & drop) form editor - phase 1, increment 1.
 //
@@ -75,6 +78,7 @@ $permission_key = 'system.indstillinger';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");
+include_once("../includes/formEditorState.php");
 
 // ---------------------------------------------------------------------------
 //  Background helpers (shared by the view and the logo compositor)
@@ -282,8 +286,8 @@ if ($fe_action === 'save') {
 
 	// Activating supersedes any draft for this form + variant.
 	$sprog_raw = (string) $payload['sprog'];
-	$sprog_safe = preg_replace('/[^A-Za-z0-9_]/', '_', $sprog_raw);
-	@unlink("../logolib/$db_id/fe_draft_{$form_nr}_{$sprog_safe}.json");
+	fe_state_delete(fe_draft_name($form_nr, $sprog_raw));
+	@unlink("../logolib/$db_id/fe_draft_{$form_nr}_" . preg_replace('/[^A-Za-z0-9_]/', '_', $sprog_raw) . ".json");
 
 	// Stamp the placed logo onto the print background (if any logo uploaded).
 	fe_composite_logo($db_id, $form_nr, $sprog_raw);
@@ -356,9 +360,24 @@ if ($fe_action === 'reset') {
 	// Refuse to wipe the form if we have no standard to put back.
 	if (!count($rows)) { print json_encode(array('ok' => false, 'error' => 'nostd')); exit; }
 
+	// G6.1 (audit FE2): the e-mail texts (art 5) and the reminder fee/interest rows (GEBYR/RENTE) are the user's own
+	// settings, not layout - a reset keeps them and only adds the standard ones that are missing.
+	$keepMail = array();
+	$q = db_select("select xa from formularer where formular=$form_nr and sprog='$sprog_db' and art=5", __FILE__ . " linje " . __LINE__);
+	while ($k = db_fetch_array($q)) {
+		$keepMail[(string) (float) $k['xa']] = true;
+	}
+	$keepFee = array();
+	$q = db_select("select upper(beskrivelse) as b from formularer where formular=$form_nr and sprog='$sprog_db' and upper(beskrivelse) in ('GEBYR','RENTE')", __FILE__ . " linje " . __LINE__);
+	while ($k = db_fetch_array($q)) {
+		$keepFee[(string) $k['b']] = true;
+	}
 	transaktion('begin');
-	db_modify("delete from formularer where formular=$form_nr and sprog='$sprog_db'", __FILE__ . " linje " . __LINE__);
+	db_modify("delete from formularer where formular=$form_nr and sprog='$sprog_db' and art <> 5 and upper(coalesce(beskrivelse, '')) not in ('GEBYR','RENTE')", __FILE__ . " linje " . __LINE__);
 	foreach ($rows as $r) {
+		if (($r['art'] == 5 && isset($keepMail[(string) (float) $r['xa']])) || isset($keepFee[strtoupper(stripslashes($r['besk']))])) {
+			continue;
+		}
 		$qtxt  = "insert into formularer (formular,art,beskrivelse,xa,ya,xb,yb,justering,str,color,font,fed,kursiv,side,sprog) values (";
 		$qtxt .= "$form_nr,$r[art],'$r[besk]',$r[xa],$r[ya],$r[xb],$r[yb],'$r[just]',$r[str],$r[color],'$r[font]','$r[fed]','$r[kursiv]','$r[side]','$sprog_db')";
 		db_modify($qtxt, __FILE__ . " linje " . __LINE__);
@@ -458,12 +477,10 @@ if ($fe_action === 'savedraft' || $fe_action === 'discarddraft') {
 	if (!in_array($form_nr, $valid_forms, true) || $sprog === '') {
 		http_response_code(400); print json_encode(array('ok'=>false,'error'=>'payload')); exit;
 	}
-	$dir = "../logolib/$db_id";
-	if (!is_dir($dir)) @mkdir($dir, 0775, true);
-	$sprog_safe = preg_replace('/[^A-Za-z0-9_]/', '_', $sprog);
-	$file = "$dir/fe_draft_{$form_nr}_{$sprog_safe}.json";
+	$file = "../logolib/$db_id/fe_draft_{$form_nr}_" . preg_replace('/[^A-Za-z0-9_]/', '_', $sprog) . ".json";
 
 	if ($fe_action === 'discarddraft') {
+		fe_state_delete(fe_draft_name($form_nr, $sprog));
 		@unlink($file);
 		print json_encode(array('ok'=>true));
 		exit;
@@ -472,8 +489,8 @@ if ($fe_action === 'savedraft' || $fe_action === 'discarddraft') {
 	$state = isset($payload['state']) ? $payload['state'] : null;
 	if ($state === null) { http_response_code(400); print json_encode(array('ok'=>false,'error'=>'payload')); exit; }
 	$doc = array('ts' => time(), 'form_nr' => $form_nr, 'sprog' => $sprog, 'state' => $state);
-	$ok = @file_put_contents($file, json_encode($doc)) !== false;
-	print json_encode($ok ? array('ok'=>true,'ts'=>$doc['ts']) : array('ok'=>false,'error'=>'store'));
+	fe_state_set(fe_draft_name($form_nr, $sprog), json_encode($doc));
+	print json_encode(array('ok'=>true,'ts'=>$doc['ts']));
 	exit;
 }
 
@@ -525,7 +542,6 @@ if ($fe_action === 'set_printlang') {
 	$form_nr = isset($payload['form_nr']) ? (int) $payload['form_nr'] : 0;
 	$valid_forms = array(1,2,3,4,5,6,7,8,9,11,12,13,14);
 	if (!in_array($form_nr, $valid_forms, true)) { http_response_code(400); print json_encode(array('ok'=>false,'error'=>'form')); exit; }
-	if (!is_dir("../logolib/$db_id")) @mkdir("../logolib/$db_id", 0775, true);
 	$file = "../logolib/$db_id/fe_printlang_$form_nr.json";
 	$lock = !empty($payload['lock']);
 	if ($lock) {
@@ -539,8 +555,10 @@ if ($fe_action === 'set_printlang') {
 			$ok_variant = ($r && $r['ok']);
 		}
 		if (!$ok_variant) { http_response_code(400); print json_encode(array('ok'=>false,'error'=>'sprog')); exit; }
-		@file_put_contents($file, json_encode(array('sprog'=>$sp)));
+		fe_state_set('printlang_' . $form_nr, json_encode(array('sprog'=>$sp)));
+		@unlink($file);
 	} else {
+		fe_state_delete('printlang_' . $form_nr);
 		@unlink($file);
 	}
 	print json_encode(array('ok'=>true, 'locked'=>$lock));
@@ -800,8 +818,7 @@ while ($rv = db_fetch_array($qv)) $variants[] = $rv['sprog'];
 
 // print-language lock: the sprog this form is forced to print in (or '')
 $fe_printlang = '';
-$_plf = "../logolib/$db_id/fe_printlang_$form_nr.json";
-if (@file_exists($_plf)) { $_pl = @json_decode(@file_get_contents($_plf), true); if (is_array($_pl) && !empty($_pl['sprog'])) $fe_printlang = (string) $_pl['sprog']; }
+$fe_printlang = fe_printlang_get($db_id, (int) $form_nr);
 
 // ---- e-mail text (art=5): xa 1=subject, 2=body, 3=attachment ---------------
 $fe_mail = array('subject'=>'', 'body'=>'', 'attach'=>'', 'has_attach'=>in_array($form_nr, array(1,2,4), true));
@@ -861,9 +878,9 @@ if (file_exists($logo_png)) {
 // existing draft for this form + variant (working state not yet activated)
 $fe_draft = null;
 $sprog_safe = preg_replace('/[^A-Za-z0-9_]/', '_', $sprog);
-$draft_file = "../logolib/$db_id/fe_draft_{$form_nr}_{$sprog_safe}.json";
-if (file_exists($draft_file)) {
-	$dj = json_decode(@file_get_contents($draft_file), true);
+$draft_json = fe_state_get_migrating(fe_draft_name((int) $form_nr, (string) $sprog), "../logolib/$db_id/fe_draft_{$form_nr}_{$sprog_safe}.json");
+if ($draft_json !== '') {
+	$dj = json_decode($draft_json, true);
 	if (is_array($dj) && isset($dj['state'])) $fe_draft = $dj;
 }
 
@@ -1250,7 +1267,7 @@ if ($menu == 'T') {
     <span class="sep"></span>
     <button type="button" class="fe-btn" id="fe-design-open" style="border:1px solid #c7cdd6;border-radius:3px;background:#fff;" title="<?php echo $T('Vælg en færdig skabelon (Klassisk/Moderne/Minimal) og brand-farve/skrifttype','Pick a ready-made template (Classic/Modern/Minimal) and brand colour/font'); ?>">&#127912; <?php echo $T('Skabeloner','Templates'); ?></button>
     <?php $bg_label = $bg_url ? $T('Skift baggrund','Change background') : $T('Tilføj baggrund','Add background'); ?>
-    <a id="fe-bg-btn" class="fe-btn" style="text-decoration:none;color:inherit;border:1px solid #c7cdd6;border-radius:3px;" href="logoupload.php?upload=yes" target="_blank" rel="noopener" title="<?php echo $T('Upload eller skift baggrund/logo (letterhead)','Upload or change background/logo (letterhead)'); ?>">&#128444; <?php echo htmlspecialchars($bg_label); ?></a>
+    <a id="fe-bg-btn" class="fe-btn" style="text-decoration:none;color:inherit;border:1px solid #c7cdd6;border-radius:3px;" href="logoupload.php?upload=yes&amp;returside=<?php echo urlencode('formeditor.php?form_nr=' . (int) $form_nr . '&sprog=' . rawurlencode((string) $sprog)); ?>" title="<?php echo $T('Upload eller skift baggrund/logo (letterhead)','Upload or change background/logo (letterhead)'); ?>">&#128444; <?php echo htmlspecialchars($bg_label); ?></a>
     <button type="button" class="fe-btn" id="fe-mail-btn" style="border:1px solid #c7cdd6;border-radius:3px;background:#fff;" title="<?php echo $T('Rediger e-mailteksten der sendes med PDF&apos;en','Edit the e-mail text sent with the PDF'); ?>">&#9993; <?php echo $T('E-mailtekst','Email text'); ?></button>
     <label id="fe-lang-toggle" title="<?php echo $T('Skift sproget på alle tekster','Switch the language of all captions'); ?>">&#127760;
       <select id="fe-lang-select" class="fe-lang-select"><option value="da">Dansk</option><option value="en">English</option></select></label>

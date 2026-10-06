@@ -73,6 +73,11 @@ function bg_display_name($sprog_value) {
 // Get current user info
 global $bruger_id;
 
+// G6.1 (audit FE5): Back returns to the page that opened the upload (the form editor), else to formularkort.php.
+$uploadBack = function_exists('nav_sanitize_returside') ? nav_sanitize_returside(isset($_GET['returside']) ? $_GET['returside'] : '') : '';
+if ($uploadBack === '') {
+	$uploadBack = 'formularkort.php';
+}
 // G6.2 (audit L1): administrators (and accountant sessions) choose any department; other users only their own.
 $is_admin = !empty($revisor) || (function_exists('perm_can') ? perm_can('settings.users.manage', 'write') : substr((string) $rettigheder, 1, 1) === '1');
 
@@ -200,7 +205,7 @@ if ($menu=='T') {
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
 
-	print "<td width=\"10%\"><a href=\"formularkort.php\" accesskey=\"L\">";
+	print "<td width=\"10%\"><a href=\"" . htmlspecialchars($uploadBack, ENT_QUOTES) . "\" accesskey=\"L\">";
 	print "<button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">".findtekst('30|Back', $sprog_id)."</button></a></td>"; #20210803
 
 	print "<td width=\"80%\" align='center' style='$topStyle'>".findtekst('1745|Load File', $sprog_id)."</td>";
@@ -212,7 +217,7 @@ if ($menu=='T') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
-	print "<td width=\"10%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><a href=\"formularkort.php\" accesskey=\"L\">".findtekst('30|Back', $sprog_id)."</a></td>"; #20210803
+	print "<td width=\"10%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><a href=\"" . htmlspecialchars($uploadBack, ENT_QUOTES) . "\" accesskey=\"L\">".findtekst('30|Back', $sprog_id)."</a></td>"; #20210803
 	print "<td width=\"80%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\">".findtekst('1745|Load File', $sprog_id)."</td>";
 	print "<td width=\"10%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><br></td>";
 	print "</tbody></table>";
