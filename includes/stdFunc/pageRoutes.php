@@ -195,7 +195,6 @@ return array(
 		'systemdata/formeditor.php' => array('m' => 'system', 'l' => '|Formulareditor', 'p' => '/systemdata/formularkort.php'),
 		'systemdata/logoupload.php' => array('m' => 'system', 'l' => '1745|Indlæs fil', 'p' => '/systemdata/formularkort.php'),
 		'systemdata/regnskabskort.php' => array('m' => 'system', 'l' => '1215|Regnskabskort', 'p' => ''),
-		'systemdata/syssetup.php?valg=varer' => array('m' => 'system', 'l' => '6508|Prisgrupper, tilbudsgrupper og rabatgrupper', 'p' => '', 'q' => array('valg' => 'varer')),
 		'systemdata/syssetup.php?valg=debitor' => array('m' => 'system', 'l' => '771|Debitor-/kreditorgrupper', 'p' => '', 'q' => array('valg' => 'debitor')),
 		'systemdata/diverse.php?sektion=api_valg' => array('m' => 'system', 'l' => '5537|Integrationer', 'p' => '', 'q' => array('sektion' => 'api_valg')),
 		'systemdata/tekster.php' => array('m' => 'system', 'l' => '581|Tekster', 'p' => ''),

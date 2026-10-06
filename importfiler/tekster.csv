@@ -6447,3 +6447,27 @@
 6845	Varianttyper	Variant types	Varianttyper
 6846	Én variant pr. linje.	One variant per line.	Én variant per linje.
 6847	Én værdi pr. linje: variant;værdi. Varianten skal findes i forvejen.	One value per line: variant;value. The variant must already exist.	Én verdi per linje: variant;verdi. Varianten må finnes fra før.
+6851	Rabatter & prisgrupper	Discounts & price groups	Rabatter og prisgrupper
+6852	Anvend på varer	Apply to items	Bruk på varer
+6853	Gruppens priser skrives på alle varer i gruppen. Tomme felter ændrer ikke varerne.	The group's prices are written to every item in the group. Empty fields do not change the items.	Gruppens priser skrives på alle varer i gruppen. Tomme felt endrer ikke varene.
+6854	Prisgrupper, tilbudsgrupper og mængderabatter, som varer tilknyttes på varekortet. Gem ændrer ikke varernes priser – det gør »Anvend på varer«.	Price groups, campaign groups and quantity discounts that items are linked to on the item card. Saving does not change item prices – "Apply to items" does.	Prisgrupper, tilbudsgrupper og mengderabatter som varer knyttes til på varekortet. Lagre endrer ikke varenes priser – det gjør «Bruk på varer».
+6855	Mængderabatter	Quantity discounts	Mengderabatter
+6856	Kost-, salgs-, vejledende og B2B-pris for varerne i gruppen.	Cost, sales, recommended and B2B price for the items in the group.	Kost-, salgs-, veiledende og B2B-pris for varene i gruppen.
+6857	Tilføj gruppe	Add group	Legg til gruppe
+6858	Ingen grupper endnu	No groups yet	Ingen grupper ennå
+6859	Kostpris	Cost price	Kostpris
+6860	Salgspris	Sales price	Salgspris
+6861	Vejl. pris	Recommended price	Veil. pris
+6862	B2B-pris	B2B price	B2B-pris
+6863	Varer	Items	Varer
+6864	Kampagnepris og -kostpris med en periode.	Campaign price and cost with a period.	Kampanjepris og -kostpris med en periode.
+6865	Kampagnepris	Campaign price	Kampanjepris
+6866	Fra	From	Fra
+6867	Til	To	Til
+6868	Rabat pr. stk. fra et antal stk. Flere trin adskilles med semikolon.	Discount per unit from a quantity. Several steps are separated by semicolons.	Rabatt per stk. fra et antall. Flere trinn skilles med semikolon.
+6869	Type	Type	Type
+6870	Procent	Percent	Prosent
+6871	Beløb	Amount	Beløp
+6872	Flere trin adskilles med semikolon, fx 5;10.	Several steps are separated by semicolons, e.g. 5;10.	Flere trinn skilles med semikolon, f.eks. 5;10.
+6873	Gruppens værdier er skrevet på %s varer.	The group's values have been written to %s items.	Gruppens verdier er skrevet på %s varer.
+6874	Under Salg » Rabatter & prisgrupper.	Under Sales » Discounts & price groups.	Under Salg » Rabatter og prisgrupper.

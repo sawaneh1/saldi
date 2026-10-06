@@ -21,6 +21,7 @@
 //                  usage, the year creation shared with the onboarding guide (onboarding spec step 3 and §153: one
 //                  function, no copy of regnskabskort.php), and exchange-rate changes that show the postings they
 //                  make and need a confirmation before they are booked (audit V9).
+// 20261006 Sawaneh 4c G3.5 part A: item count, usage and "Anvend på varer" for price, campaign and quantity-discount groups.
 // 20261006 Sawaneh 4c G5.3 variants: type options for the values filter, value list per type, usage from variant items,
 //                  a type's values deleted with it.
 // 20261006 Sawaneh Onboarding part 1: settings_fiscal_year_set_first() gives the first year a new period while nothing
@@ -503,6 +504,9 @@ function settings_rows_derived_extra(string $name, array $row): ?string
 	global $regnaar;
 	$raw = isset($row['raw']) ? $row['raw'] : array();
 	switch ($name) {
+		case 'group_items':
+			$n = settings_group_item_count($raw);
+			return $n ? sprintf(st_txt(6427), number_format($n, 0, ',', '.')) : '';
 		case 'variant_values':
 			$names = array();
 			$q = db_select("select beskrivelse from variant_typer where variant_id = " . (int) $row['id'] . " order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
@@ -665,6 +669,8 @@ function settings_rows_action_visible(string $name, array $row): bool
 			return !settings_fy_deleted($raw);
 		case 'fy_archive':
 			return settings_fy_archive_refusal($raw) === '';
+		case 'group_apply':
+			return settings_group_item_count($raw) > 0;
 	}
 	return false;
 }
@@ -683,6 +689,12 @@ function settings_rows_row_action(string $sectionId, string $tableId, array $t, 
 		return $out;
 	}
 	$objekt = $sectionId . '.' . $tableId . '#' . $k;
+	if ($name === 'group_apply') {
+		$n = settings_group_apply($raw);
+		SettingsService::auditRow($sectionId, $tableId . '.' . $name, $objekt, '', (string) $n, 'setting.action');
+		$out['flash'] = array('ok', sprintf(st_txt(6873), number_format($n, 0, ',', '.')));
+		return $out;
+	}
 	if ($name === 'fy_activate' || $name === 'fy_activate_all') {
 		settings_fy_switch_year($k, $name === 'fy_activate_all');
 		SettingsService::auditRow($sectionId, $tableId . '.' . $name, $objekt, '', (string) $k, 'setting.action');
@@ -814,4 +826,90 @@ function settings_variant_item_count(array $valueIds): int
 		}
 	}
 	return $n;
+}
+
+// ---------------------------------------------------------------- price, campaign and quantity-discount groups (G3.5)
+
+/**
+ * The item column that holds a group of this art (VPG prisgruppe, VTG tilbudgruppe, VRG rabatgruppe).
+ */
+function settings_group_item_column(string $art): string
+{
+	$cols = array('VPG' => 'prisgruppe', 'VTG' => 'tilbudgruppe', 'VRG' => 'rabatgruppe');
+	return isset($cols[$art]) ? $cols[$art] : '';
+}
+
+function settings_group_item_count(array $raw): int
+{
+	$col = settings_group_item_column(isset($raw['art']) ? (string) $raw['art'] : '');
+	$k = isset($raw['kodenr']) ? (int) $raw['kodenr'] : 0;
+	if ($col === '' || $k <= 0) {
+		return 0;
+	}
+	return settings_fy_count("select count(*) as n from varer where $col = $k");
+}
+
+/**
+ * "Anvend på varer" (spec G3.5, audit B-V02): the group's values are written to the items in the group - only when
+ * asked, never on Save. Empty fields leave the items alone, as before. Campaign groups: box1 is the campaign cost and
+ * box2 the campaign price, as the item card reads them (the old mass update had them swapped). Quantity discounts are
+ * ';'-lists; each step is stored as a number with steps of 0 left out, as the item card does.
+ */
+function settings_group_apply(array $raw): int
+{
+	$art = isset($raw['art']) ? (string) $raw['art'] : '';
+	$col = settings_group_item_column($art);
+	$k = isset($raw['kodenr']) ? (int) $raw['kodenr'] : 0;
+	if ($col === '' || $k <= 0) {
+		return 0;
+	}
+	$num = function ($v) {
+		$v = trim((string) $v);
+		return $v === '' ? null : (float) $v;
+	};
+	$set = array();
+	if ($art === 'VPG') {
+		foreach (array('box1' => 'kostpris', 'box2' => 'salgspris', 'box3' => 'retail_price', 'box4' => 'tier_price') as $box => $field) {
+			if (($v = $num(isset($raw[$box]) ? $raw[$box] : '')) !== null) {
+				$set[] = "$field = $v";
+			}
+		}
+	} elseif ($art === 'VTG') {
+		foreach (array('box1' => 'campaign_cost', 'box2' => 'special_price') as $box => $field) {
+			if (($v = $num(isset($raw[$box]) ? $raw[$box] : '')) !== null) {
+				$set[] = "$field = $v";
+			}
+		}
+		foreach (array('box3' => 'special_from_date', 'box4' => 'special_to_date') as $box => $field) {
+			$d = trim(isset($raw[$box]) ? (string) $raw[$box] : '');
+			if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+				$set[] = "$field = '$d'";
+			}
+		}
+	} elseif ($art === 'VRG') {
+		$type = trim(isset($raw['box1']) ? (string) $raw['box1'] : '');
+		if (in_array($type, array('percent', 'amount'), true)) {
+			$set[] = "m_type = '$type'";
+		}
+		$rabat = explode(';', (string) (isset($raw['box2']) ? $raw['box2'] : ''));
+		$antal = explode(';', (string) (isset($raw['box3']) ? $raw['box3'] : ''));
+		$r = $a = array();
+		foreach ($rabat as $i => $v) {
+			$x = (float) usdecimal(trim($v), 8);
+			$y = isset($antal[$i]) ? (float) usdecimal(trim($antal[$i]), 8) : 0;
+			if ($x && $y) {
+				$r[] = $x;
+				$a[] = $y;
+			}
+		}
+		if ($r) {
+			$set[] = "m_rabat = '" . implode(';', $r) . "'";
+			$set[] = "m_antal = '" . implode(';', $a) . "'";
+		}
+	}
+	$n = settings_group_item_count($raw);
+	if ($set && $n) {
+		db_modify("update varer set " . implode(', ', $set) . " where $col = $k", __FILE__ . " linje " . __LINE__);
+	}
+	return $set ? $n : 0;
 }

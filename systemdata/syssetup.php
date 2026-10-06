@@ -67,12 +67,15 @@ include("../includes/online.php");
 include("../includes/std_func.php");
 // 20261005 Sawaneh Settings redesign 4c (R6): the master-data lists that have landed in the generated sections
 //                  (VAT and debtor/creditor groups too; item groups left the varer page, price groups remain).
+// 20261006 Sawaneh 4c G3.5: price, campaign and discount groups moved to Salg » Rabatter & prisgrupper, so valg=varer (linked as
+//                  "Varegrupper") redirects to the item groups, and its Save (which rewrote every item price, B-V02) is unreachable.
 $landedValg = array(
 	'afdelinger' => 'settingsSection.php?s=organisation.departments&moved=afdelinger',
 	'projekter'  => 'settingsSection.php?s=organisation.projects&moved=projekter',
 	'lagre'      => 'settingsSection.php?s=items.warehouses&moved=lagre',
 	'moms'       => 'settingsSection.php?s=finance.vat&moved=moms',
 	'debitor'    => 'settingsSection.php?s=sales.debtor_groups&moved=debitor',
+	'varer'      => 'settingsSection.php?s=items.item_groups&moved=varer',
 );
 // legacy=1 keeps the old group page reachable for moving a control account with postings (not built in the new editor yet).
 if (isset($_GET['valg']) && isset($landedValg[$_GET['valg']]) && !($_GET['valg'] === 'debitor' && !empty($_GET['legacy']))) {

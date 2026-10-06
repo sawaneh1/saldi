@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261006 Sawaneh 4c G3.5 part A: price, campaign and item quantity-discount groups (VPG/VTG/VRG) as rows in Salg » Rabatter
+//                  & prisgrupper; saving no longer rewrites item prices - "Anvend på varer" per group does, after a confirmation.
 // 20261006 Sawaneh 4c G5.3 Varianter: variant types and their values as rows (values filtered by type), usage from
 //                  variant items, CSV import through importer_varianter.php; diverse.php?sektion=variant_valg redirects.
 // 20261006 Sawaneh §8.13: 'standard' on the VAT, VAT report, debtor/creditor/item group and unit tables ("Opret dansk standardsæt").
@@ -513,6 +515,47 @@ if (!function_exists('getSettingsSections')) {
 				'old' => array('bilag' => array(782, 797)),
 				'context' => array('includes/bilag.php', 'includes/vis_bilag.php', 'finans/kassekladde.php'),
 				'keywords' => array('bilag', 'bilagsopbevaring', 'bilagshåndtering', 'document storage', 'documents', 'ftp', 'scanning', 'scannede bilag', 'bilagspulje', 'google docs'),
+			),
+			'sales.discounts' => array(
+				'group' => 'sales', 'section' => 'discounts', 'number' => 'G3.5', 'label' => 6851, 'icon' => 'bx-purchase-tag-alt', 'kind' => 'rows',
+				'lead' => 6854, 'subsections' => array('prices' => 2471, 'campaigns' => 2472, 'quantity' => 6855),
+				'tables' => array(
+					'prices' => array('sub' => 'prices', 'label' => 2471, 'help' => 6856, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'VPG'),
+						'usage' => 'price_group', 'row_actions' => array('group_apply' => array('label' => 6852, 'confirm_title' => 6852, 'confirm' => 6853)),
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 6859, 'type' => 'decimal'),
+							'box2' => array('label' => 6860, 'type' => 'decimal'),
+							'box3' => array('label' => 6861, 'type' => 'decimal'),
+							'box4' => array('label' => 6862, 'type' => 'decimal'),
+							'items' => array('label' => 6863, 'type' => 'derived', 'derive' => 'group_items'),
+						)),
+					'campaigns' => array('sub' => 'campaigns', 'label' => 2472, 'help' => 6864, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'VTG'),
+						'usage' => 'price_group', 'row_actions' => array('group_apply' => array('label' => 6852, 'confirm_title' => 6852, 'confirm' => 6853)),
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 6859, 'type' => 'decimal'),
+							'box2' => array('label' => 6865, 'type' => 'decimal'),
+							'box3' => array('label' => 6866, 'type' => 'date'),
+							'box4' => array('label' => 6867, 'type' => 'date'),
+							'items' => array('label' => 6863, 'type' => 'derived', 'derive' => 'group_items'),
+						)),
+					'quantity' => array('sub' => 'quantity', 'label' => 6855, 'help' => 6868, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'VRG'),
+						'usage' => 'price_group', 'row_actions' => array('group_apply' => array('label' => 6852, 'confirm_title' => 6852, 'confirm' => 6853)),
+						'columns' => array(
+							'kodenr' => array('label' => 2248, 'type' => 'code'),
+							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
+							'box1' => array('label' => 6869, 'type' => 'select', 'options' => array('percent' => 6870, 'amount' => 6871), 'required' => true),
+							'box2' => array('label' => 2473, 'type' => 'text', 'help' => 6872),
+							'box3' => array('label' => 2474, 'type' => 'text', 'help' => 6872),
+							'items' => array('label' => 6863, 'type' => 'derived', 'derive' => 'group_items'),
+						)),
+				),
+				'legacy' => array(array(2471), array(2472), array(1006)),
+				'context' => array('lager/varekort.php'),
+				'keywords' => array('prisgrupper', 'price groups', 'tilbudsgrupper', 'kampagne', 'campaign', 'kampagnepris', 'rabatgrupper', 'mængderabat', 'quantity discount', 'stk. rabat', 'b2b-pris', 'vejledende pris', 'anvend priser'),
 			),
 			'sales.mysale' => array(
 				'group' => 'sales', 'section' => 'mysale', 'number' => 'G3.6', 'label' => 5986, 'icon' => 'bx-store',
@@ -1074,7 +1117,7 @@ if (!function_exists('getSettingsSections')) {
 			// ---------------------------------------------------------------- 4c: links for what stays on the old pages for now
 			'sales.debtor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
 			'purchase.creditor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
-			'items.item_groups.price_groups' => array('sub' => 'prices', 'type' => 'link', 'label' => 6508, 'help' => 6509, 'href' => 'syssetup.php?valg=varer', 'button' => 6504, 'audit' => false,
+			'items.item_groups.price_groups' => array('sub' => 'prices', 'type' => 'link', 'label' => 6508, 'help' => 6874, 'href' => 'settingsSection.php?s=sales.discounts', 'button' => 6504, 'audit' => false,
 				'keywords' => array('prisgrupper', 'price groups', 'tilbudsgrupper', 'rabatgrupper')),
 
 			// ---------------------------------------------------------------- G7.3 Projects: the number split that was the kodenr 0 row of projekter.php
@@ -1714,7 +1757,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array(772), 'to' => array(array('organisation', 'organisation.departments', null))),
 			array('old' => array(773), 'to' => array(array('organisation', 'organisation.projects', null))),
 			array('old' => array(608), 'to' => array(array('items', 'items.warehouses', null))),
-			array('old' => array(774), 'to' => array(array('items', 'items.item_groups', null), array('sales', null, 'syssetup.php?valg=varer'))),
+			array('old' => array(774), 'to' => array(array('items', 'items.item_groups', null), array('sales', 'sales.discounts', null))),
 			array('old' => array(775), 'to' => array(array('sales', null, 'rabatgrupper.php'))),
 			array('old' => array(776), 'to' => array(array('finance', 'finance.currencies', null))),
 			array('old' => array(778), 'to' => array(array('company', 'company.fiscal_years', null))),
