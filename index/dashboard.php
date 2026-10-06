@@ -32,6 +32,7 @@
 // 20260927 Sawaneh News and batch-expiry banners removed (now notifications in the bell).
 // 20260930 Sawaneh "Review roles" card for administrators after the migration to roles (roles spec §6.3).
 // 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
+// 20261006 Sawaneh Onboarding part 1: the "Kom godt i gang" card at the top (Requirements_onboarding_welcome_EN.md §7).
 @session_start();
 $s_id = session_id();
 
@@ -233,6 +234,9 @@ print "<div style='display: flex; flex-direction: column; padding: 2em 1em; gap:
 // 20260922 Sawaneh Topbar spec 5: heading, fiscal-year/language selectors and the hide/edit/PoS
 // buttons moved to the shell (user chip, global cluster, sidebar). The hidden= handling and the
 // #settingpopup editor below stay; the chip drives them.
+include_once("../includes/onboarding.php");
+onb_render_card((int) $bruger_id, (int) $sprog_id);
+
 if ($hide_dash === "1" || is_null($regnaar)) {
 	exit;
 }

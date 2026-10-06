@@ -61,6 +61,8 @@
 //                  page (page_breadcrumb()), navigation through saldi:navigate with a 300 ms fallback, came-from chip,
 //                  Alt+L; 44 px bar except Oversigt; avatar-only chip below 1240 px.
 // 20261004 Sawaneh topbarSetGear(): the gear in the sub-bar opens the settings section that governs the page in the frame (§8.11).
+// 20261006 Sawaneh Onboarding part 1: the welcome guide's overlay; a new ledger's first login by a user with the Settings
+//                  permission opens it and sets the state to started (Requirements_onboarding_welcome_EN.md §4, §8).
 @session_start();
 $s_id = session_id();
 
@@ -93,6 +95,11 @@ include("../includes/stdFunc/dkDecimal.php");
 $topbar = topbar_context($topbarOnlineRows, (string) $brugernavn, (int) $bruger_id, (string) $rettigheder, $revisor, $regnaar, (int) $sprog_id, (string) $regnskab);
 include_once(__DIR__ . "/../systemdata/settingsRegistry.php");
 $settingsGroups = settings_accessible_groups();
+include_once(__DIR__ . "/../includes/onboarding.php");
+$onbAutoOpen = onb_get('onboarding_state') === 'new' && onb_can_run();
+if ($onbAutoOpen) {
+  onb_set('onboarding_state', 'started');
+}
 
 
 if (substr($brugernavn, 0, 11) == "debitoripad") {
@@ -192,6 +199,7 @@ function brightenColor($color, $amount = 0.2) {
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
 <link href='../css/topbar.css?v=17' rel='stylesheet'>
+<link href='../css/onboarding.css?v=1' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
 <div class="modalbg" onclick="
@@ -436,6 +444,8 @@ function brightenColor($color, $amount = 0.2) {
     </div>
   </div>
 </div>
+
+<div id="onb-overlay"><iframe id="onb-frame" title="Saldi" src="about:blank"></iframe></div>
 
 <section class="home-section">
   <?php topbar_render($topbar, (int) $sprog_id); ?>
@@ -1268,6 +1278,25 @@ $assistVersion = isset($version) ? (string)$version : '';
   // navigate-hook'en, saa "Gaa dertil" gaar gennem SALDIs egen navigation
   // (inkl. advarslen om ugemte aendringer).
   if (typeof update_iframe === 'function') { window.update_iframe = update_iframe; }
+</script>
+<script>
+  window.saldiOnboardingOpen = function (step) {
+    document.getElementById('onb-frame').src = 'onboarding.php' + (step ? '?step=' + encodeURIComponent(step) : '');
+    document.getElementById('onb-overlay').classList.add('open');
+  };
+  window.saldiOnboardingClose = function (reloadShell) {
+    document.getElementById('onb-overlay').classList.remove('open');
+    document.getElementById('onb-frame').src = 'about:blank';
+    if (reloadShell) { location.reload(); return; }
+    try { document.querySelector('.content-iframe').contentWindow.location.reload(); } catch (e) {}
+  };
+  window.saldiOnboardingGo = function (url) {
+    window.saldiOnboardingClose(false);
+    update_iframe(url.replace(/^\.\.\//, '/'));
+  };
+<?php if ($onbAutoOpen) { ?>
+  window.saldiOnboardingOpen('welcome');
+<?php } ?>
 </script>
 <script src="<?= htmlspecialchars($assistWidgetUrl, ENT_QUOTES, 'UTF-8') ?>" data-widget-id="saldi" data-brand="SALDI" data-lang="da" data-app-version="<?= htmlspecialchars($assistVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>
 <script>window.SaldiAssist = { appVersion: <?= json_encode($assistVersion) ?>, correlationId: <?= json_encode($assist_correlation_id ?? null) ?>, errorCategory: <?= json_encode($assist_error_category ?? null) ?>, getContextToken: function (sessionHash) { return fetch('../includes/saldi_assist_token.php?embed_session=' + encodeURIComponent(sessionHash), {credentials:'same-origin'}).then(function (r) { return r.ok ? r.json() : null }).then(function (j) { return j && j.token ? j.token : null }) }, navigate: window.SaldiAssistNavigate, getPageContext: function () { return typeof topbarAssistContext === 'function' ? topbarAssistContext() : null; } };</script>

@@ -20,6 +20,7 @@
 // 20261005 Sawaneh Settings redesign G6.1 (audit FE3): the visual form editor's print-language lock and drafts are kept
 //                  in the settings table (var_grp 'formeditor'), so they are in backups and the ledger, not in files
 //                  under logolib/. A file left from before is moved into the table the first time it is read.
+// 20261006 Sawaneh Onboarding part 1: fe_logo_store() is the logo upload shared by the form editor and the welcome guide.
 
 if (!function_exists('fe_state_get')):
 
@@ -74,6 +75,47 @@ function fe_printlang_get($dbId, int $form): string
 function fe_draft_name(int $form, string $sprog): string
 {
 	return 'draft_' . $form . '_' . preg_replace('/[^A-Za-z0-9_]/', '_', $sprog);
+}
+
+/**
+ * Store an uploaded logo as logolib/<db_id>/fe_logo.png: png or jpg up to 5 MB, re-encoded to drop embedded scripts and
+ * metadata (NR-8) and capped at 1500 px. It is placed on printed forms when a form is saved in the form editor.
+ *
+ * @return array{ok: bool, error: string, w: int, h: int, url: string}
+ */
+function fe_logo_store($dbId, string $tmp, int $size): array
+{
+	$fail = function (string $e) {
+		return array('ok' => false, 'error' => $e, 'w' => 0, 'h' => 0, 'url' => '');
+	};
+	if ($tmp === '' || !is_uploaded_file($tmp)) return $fail('nofile');
+	if ($size > 5 * 1024 * 1024) return $fail('toobig');
+	$info = @getimagesize($tmp);
+	if (!$info || !in_array($info['mime'], array('image/png', 'image/jpeg', 'image/jpg'), true)) return $fail('badtype');
+	$w = (int) $info[0]; $h = (int) $info[1];
+	if ($w < 1 || $h < 1) return $fail('badimg');
+
+	$dir = "../logolib/" . (int) $dbId;
+	if (!is_dir($dir)) @mkdir($dir, 0775, true);
+	$png = "$dir/fe_logo.png";
+	$new = "$dir/fe_logo_new.png";
+	@unlink($new);
+	$ok = false;
+	if (function_exists('shell_exec')) {
+		@shell_exec("convert " . escapeshellarg($tmp) . "[0] -strip -background none -resize '1500x1500>' " . escapeshellarg($new) . " 2>/dev/null");
+		$ok = file_exists($new);
+	}
+	if (!$ok) $ok = @move_uploaded_file($tmp, $new);
+	if (!$ok || !@rename($new, $png)) {
+		@unlink($new);
+		return $fail('store');
+	}
+
+	// Never write logolib/logo_<db_id>.eps: the print engine stamps that file on every form without a background PDF.
+	@unlink("../logolib/logo_" . (int) $dbId . ".eps");
+	$ni = @getimagesize($png);
+	if ($ni) { $w = (int) $ni[0]; $h = (int) $ni[1]; }
+	return array('ok' => true, 'error' => '', 'w' => $w, 'h' => $h, 'url' => "../logolib/" . (int) $dbId . "/fe_logo.png?t=" . time());
 }
 
 endif;

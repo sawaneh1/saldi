@@ -6285,3 +6285,95 @@
 6682	%s kunder og leverandører	%s customers and suppliers	%s kunder og leverandører
 6683	Dansk er standardbaggrunden og findes altid	Danish is the default background and always exists	Dansk er standardbakgrunnen og finnes alltid
 6684	Navnet er allerede i brug	The name is already in use	Navnet er allerede i bruk
+6685	Velkommen	Welcome	Velkommen
+6686	Kort intro	Short intro	Kort intro
+6687	Hvem er du?	Who are you?	Hvem er du?
+6688	Ny virksomhed eller skifter du system?	New company or switching systems?	Ny virksomhet eller bytter du system?
+6689	Virksomhed og udtryk	Company and look	Virksomhet og uttrykk
+6690	CVR, firmaoplysninger, logo og farve	CVR, company details, logo and colour	Org.nr., firmaopplysninger, logo og farge
+6691	Regnskabsår og moms	Fiscal year and VAT	Regnskapsår og mva.
+6692	Startdato og momsperiode	Start date and VAT period	Startdato og mva.-periode
+6693	Din faktura	Your invoice	Din faktura
+6694	Bank, betalingsbetingelser og forhåndsvisning	Bank, payment terms and preview	Bank, betalingsbetingelser og forhåndsvisning
+6695	Inviter kolleger	Invite colleagues	Inviter kolleger
+6696	Bogholder, ejer eller medarbejdere	Accountant, owner or staff	Regnskapsfører, eier eller ansatte
+6697	Færdig	Done	Ferdig
+6698	Opsummering	Summary	Oppsummering
+6699	Opsætning	Setup	Oppsett
+6700	Du kan altid lukke og fortsætte senere. Intet går tabt.	You can always close and continue later. Nothing is lost.	Du kan alltid lukke og fortsette senere. Ingenting går tapt.
+6701	Trin %s af %s	Step %s of %s	Trinn %s av %s
+6702	Luk og fortsæt senere	Close and continue later	Lukk og fortsett senere
+6703	Kom i gang	Get started	Kom i gang
+6704	Tilbage	Back	Tilbake
+6705	Spring over	Skip	Hopp over
+6706	Næste	Next	Neste
+6707	Hej, og velkommen til Saldi	Hi, and welcome to Saldi	Hei, og velkommen til Saldi
+6708	Lad os få dig godt og trygt i gang, så du får en god oplevelse. Det tager ca. 10 minutter, og du kan til enhver tid lukke og fortsætte senere.	Let us get you started safely and comfortably so you have a good experience. It takes about 10 minutes, and you can close and continue later at any time.	La oss få deg godt og trygt i gang, så du får en god opplevelse. Det tar ca. 10 minutter, og du kan når som helst lukke og fortsette senere.
+6709	Dit firma og logo	Your company and logo	Ditt firma og logo
+6710	Dine kolleger	Your colleagues	Dine kolleger
+6711	To hurtige spørgsmål, så guiden kan tilpasse sig dig.	Two quick questions so the guide can adapt to you.	To raske spørsmål, så guiden kan tilpasse seg deg.
+6712	Din situation	Your situation	Din situasjon
+6713	Ny virksomhed	New company	Ny virksomhet
+6714	Vi starter fra en ren tavle med Saldis standardopsætning.	We start from a clean slate with Saldi's standard setup.	Vi starter med blanke ark og Saldis standardoppsett.
+6715	Skifter fra et andet system	Switching from another system	Bytter fra et annet system
+6716	Vi hjælper med nummerserier og, i næste del, import af dine data.	We help with number series and, in the next part, importing your data.	Vi hjelper med nummerserier og, i neste del, import av dataene dine.
+6717	Hvilket system kommer du fra?	Which system are you coming from?	Hvilket system kommer du fra?
+6718	Din rolle	Your role	Din rolle
+6719	Jeg driver virksomheden	I run the company	Jeg driver virksomheten
+6720	Vi foreslår at invitere din bogholder senere.	We suggest inviting your accountant later.	Vi foreslår å invitere regnskapsføreren din senere.
+6721	Jeg er bogholder/revisor for virksomheden	I am the company's accountant/auditor	Jeg er regnskapsfører/revisor for virksomheten
+6722	Vi foreslår at invitere ejeren senere.	We suggest inviting the owner later.	Vi foreslår å invitere eieren senere.
+6723	Din virksomhed og dit udtryk	Your company and your look	Din virksomhet og ditt uttrykk
+6724	Slå dit CVR-nummer op, så udfylder vi det meste. Du kan rette alt.	Look up your CVR number and we fill in most of it. You can change everything.	Slå opp organisasjonsnummeret, så fyller vi ut det meste. Du kan endre alt.
+6725	Slå op	Look up	Slå opp
+6726	Henter navn og adresse fra CVR-registret.	Fetches name and address from the CVR register.	Henter navn og adresse fra registeret.
+6727	Træk dit logo hertil eller klik for at vælge	Drag your logo here or click to choose	Dra logoen hit eller klikk for å velge
+6728	png eller jpg	png or jpg	png eller jpg
+6729	Farve	Colour	Farge
+6730	Egen farve	Own colour	Egen farge
+6731	Farven bruges i menuen og på knapperne. Du ser det med det samme.	The colour is used in the menu and on the buttons. You see it straight away.	Fargen brukes i menyen og på knappene. Du ser det med en gang.
+6732	Logo og farve kan altid ændres under Indstillinger.	Logo and colour can always be changed under Settings.	Logo og farge kan alltid endres under Innstillinger.
+6733	De to ting, der er besværlige at ændre, når du først har bogført. Tag dem nu, hvis du kan.	The two things that are hard to change once you have posted. Do them now if you can.	De to tingene som er vanskelige å endre når du først har bokført. Ta dem nå hvis du kan.
+6734	Regnskabsåret starter	The fiscal year starts	Regnskapsåret starter
+6735	Regnskabsåret slutter	The fiscal year ends	Regnskapsåret slutter
+6736	Er virksomheden momsregistreret?	Is the company VAT registered?	Er virksomheten mva.-registrert?
+6737	Ja	Yes	Ja
+6738	Nej	No	Nei
+6739	Momsperiode	VAT period	Mva.-periode
+6740	Månedlig	Monthly	Månedlig
+6741	Kvartalsvis	Quarterly	Kvartalsvis
+6742	Halvårlig	Half-yearly	Halvårlig
+6743	Står på din registreringsbekræftelse fra Skattestyrelsen.	Stated on your registration confirmation from the Danish Tax Agency.	Står på registreringsbekreftelsen fra Skatteetaten.
+6744	Hvorfor nu?	Why now?	Hvorfor nå?
+6745	Regnskabsår og momsperiode styrer, hvordan alle posteringer grupperes. Springer du over, markerer tjeklisten trinnet som Vigtigt.	The fiscal year and VAT period control how all postings are grouped. If you skip, the checklist marks the step as Important.	Regnskapsår og mva.-periode styrer hvordan alle posteringer grupperes. Hopper du over, merker sjekklisten trinnet som Viktig.
+6746	Regnskabet har allerede et regnskabsår med posteringer. Det ændres under Regnskabsår.	The ledger already has a fiscal year with postings. Change it under Fiscal years.	Regnskapet har allerede et regnskapsår med posteringer. Det endres under Regnskapsår.
+6747	Åbn Regnskabsår	Open Fiscal years	Åpne Regnskapsår
+6748	Kom godt i gang	Getting started	Kom godt i gang
+6749	Et par korte trin, så Saldi ser ud som dit firma og er klar til din første faktura.	A few short steps so Saldi looks like your company and is ready for your first invoice.	Noen korte trinn, så Saldi ser ut som firmaet ditt og er klar for den første fakturaen.
+6750	%s af %s trin færdige	%s of %s steps done	%s av %s trinn ferdige
+6751	Start opsætning	Start setup	Start oppsett
+6752	Fortsæt: %s	Continue: %s	Fortsett: %s
+6753	Skjul tjekliste	Hide checklist	Skjul sjekkliste
+6754	Vigtigt	Important	Viktig
+6755	Kommer snart	Coming soon	Kommer snart
+6756	Opsætningen er ikke færdig – bed administrator om at gøre den færdig.	Setup is not finished – ask the administrator to complete it.	Oppsettet er ikke ferdig – be administratoren fullføre det.
+6757	Alt er sat op. Godt gået!	Everything is set up. Well done!	Alt er satt opp. Godt jobbet!
+6758	Gennemse opsætning	Review setup	Gå gjennom oppsettet
+6759	Del 2	Part 2	Del 2
+6760	Kontoplan	Chart of accounts	Kontoplan
+6761	Åbningsbalance	Opening balance	Åpningsbalanse
+6762	Debitorer og kreditorer	Customers and suppliers	Kunder og leverandører
+6763	Varer og lager	Items and stock	Varer og lager
+6764	Slutdatoen skal ligge efter startdatoen.	The end date must be after the start date.	Sluttdatoen må ligge etter startdatoen.
+6765	Logoet skal være en png- eller jpg-fil på højst 5 MB.	The logo must be a png or jpg file of at most 5 MB.	Logoen må være en png- eller jpg-fil på maks. 5 MB.
+6766	Ugyldig dato	Invalid date	Ugyldig dato
+6767	Firmanavn skal udfyldes	Company name is required	Firmanavn må fylles ut
+6768	Behold standard, vælg skabelon eller importér	Keep the standard, choose a template or import	Behold standard, velg mal eller importer
+6769	Saldobalance og åbne poster	Trial balance and open items	Saldobalanse og åpne poster
+6770	Importér kunder og leverandører	Import customers and suppliers	Importer kunder og leverandører
+6771	Importér varer og beholdning	Import items and stock	Importer varer og beholdning
+6772	Regneark	Spreadsheet	Regneark
+6773	Andet	Other	Annet
+6774	Skjul	Hide	Skjul
+6775	Opsætning færdig	Setup complete	Oppsett ferdig
+6776	Logoet kunne ikke gemmes. Prøv igen.	The logo could not be saved. Try again.	Logoen kunne ikke lagres. Prøv igjen.

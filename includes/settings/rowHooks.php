@@ -21,6 +21,8 @@
 //                  usage, the year creation shared with the onboarding guide (onboarding spec step 3 and §153: one
 //                  function, no copy of regnskabskort.php), and exchange-rate changes that show the postings they
 //                  make and need a confirmation before they are booked (audit V9).
+// 20261006 Sawaneh Onboarding part 1: settings_fiscal_year_set_first() gives the first year a new period while nothing
+//                  is posted; the date checks are shared with the year creation.
 
 // ---------------------------------------------------------------- fiscal years (grupper art RA)
 
@@ -157,6 +159,64 @@ function settings_fiscal_year_suggestion(): array
 }
 
 /**
+ * What is wrong with a fiscal-year period: [text id, args], or null when it is valid.
+ *
+ * @return array{0: int, 1: array<int, mixed>}|null
+ */
+function settings_fy_period_error(int $startMonth, int $startYear, int $endMonth, int $endYear): ?array
+{
+	$lo = (int) date('Y') - 20;
+	$hi = (int) date('Y') + 10;
+	if ($startMonth < 1 || $startMonth > 12 || $endMonth < 1 || $endMonth > 12) {
+		return array(6562, array());
+	}
+	if ($startYear < $lo || $startYear > $hi || $endYear < $lo || $endYear > $hi) {
+		return array(6563, array($lo, $hi));
+	}
+	if ($endYear * 100 + $endMonth <= $startYear * 100 + $startMonth) {
+		return array(6561, array());
+	}
+	return null;
+}
+
+/**
+ * The first fiscal year's period while nothing is posted yet (shared with the onboarding guide): the ledger's only year
+ * gets the new start and end, or the first year is created when there is none.
+ *
+ * @return array{error: int|null, error_args: array<int, mixed>, kodenr: int, id: int}
+ */
+function settings_fiscal_year_set_first(int $startMonth, int $startYear, int $endMonth, int $endYear): array
+{
+	$err = settings_fy_period_error($startMonth, $startYear, $endMonth, $endYear);
+	if ($err) {
+		return array('error' => $err[0], 'error_args' => $err[1], 'kodenr' => 0, 'id' => 0);
+	}
+	$q = db_select("select * from grupper where art = 'RA' order by cast(kodenr as integer)", __FILE__ . " linje " . __LINE__);
+	$years = array();
+	while ($r = db_fetch_array($q)) {
+		$years[] = $r;
+	}
+	if (!$years) {
+		return settings_fiscal_year_create($startMonth, $startYear, $endMonth, $endYear, '', true);
+	}
+	if (count($years) > 1 || settings_fy_count("select count(*) as n from transaktioner")) {
+		return array('error' => 6746, 'error_args' => array(), 'kodenr' => 0, 'id' => 0);
+	}
+	$r = $years[0];
+	$old = json_encode(array('start' => sprintf('%02d-%04d', (int) $r['box1'], (int) $r['box2']), 'slut' => sprintf('%02d-%04d', (int) $r['box3'], (int) $r['box4'])));
+	$new = json_encode(array('start' => sprintf('%02d-%04d', $startMonth, $startYear), 'slut' => sprintf('%02d-%04d', $endMonth, $endYear)));
+	if ($old !== $new) {
+		$oldName = (string) $r['box2'] . ((string) $r['box2'] !== (string) $r['box4'] ? '/' . $r['box4'] : '');
+		$name = trim((string) $r['beskrivelse']) === '' || trim((string) $r['beskrivelse']) === $oldName
+			? (string) $startYear . ($startYear !== $endYear ? '/' . $endYear : '') : (string) $r['beskrivelse'];
+		db_modify("update grupper set beskrivelse = '" . db_escape_string($name) . "', box1 = '" . sprintf('%02d', $startMonth) . "', box2 = '$startYear', box3 = '"
+			. sprintf('%02d', $endMonth) . "', box4 = '$endYear' where id = " . (int) $r['id'], __FILE__ . " linje " . __LINE__);
+		SettingsService::auditRow('company.fiscal_years', 'years', 'company.fiscal_years.years#' . (int) $r['kodenr'], $old, $new, 'setting.row_updated');
+	}
+	return array('error' => null, 'error_args' => array(), 'kodenr' => (int) $r['kodenr'], 'id' => (int) $r['id']);
+}
+
+/**
  * Create a fiscal year (spec G1.2; shared with the onboarding guide). After the first year the start is fixed to the
  * month after the latest year, the year-dependent groups and the chart of accounts are copied from it, and balance
  * accounts open with last year's balance until the opening balance is reviewed. The first year also gets the voucher
@@ -174,16 +234,9 @@ function settings_fiscal_year_create(int $startMonth, int $startYear, int $endMo
 		$startMonth = $sug['start_month'];
 		$startYear = $sug['start_year'];
 	}
-	$lo = (int) date('Y') - 20;
-	$hi = (int) date('Y') + 10;
-	if ($startMonth < 1 || $startMonth > 12 || $endMonth < 1 || $endMonth > 12) {
-		return $fail(6562);
-	}
-	if ($startYear < $lo || $startYear > $hi || $endYear < $lo || $endYear > $hi) {
-		return $fail(6563, array($lo, $hi));
-	}
-	if ($endYear * 100 + $endMonth <= $startYear * 100 + $startMonth) {
-		return $fail(6561);
+	$err = settings_fy_period_error($startMonth, $startYear, $endMonth, $endYear);
+	if ($err) {
+		return $fail($err[0], $err[1]);
 	}
 	$description = trim($description);
 	if ($description === '') {

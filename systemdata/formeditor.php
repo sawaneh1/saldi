@@ -394,43 +394,12 @@ if ($fe_action === 'logo_upload') {
 	header('Content-Type: application/json; charset=utf-8');
 	if (empty($db_id)) { http_response_code(401); print json_encode(array('ok'=>false,'error'=>'session')); exit; }
 
-	if (empty($_FILES['logo']) || !is_uploaded_file($_FILES['logo']['tmp_name'])) {
-		http_response_code(400); print json_encode(array('ok'=>false,'error'=>'nofile')); exit;
+	$res = fe_logo_store($db_id, isset($_FILES['logo']['tmp_name']) ? (string) $_FILES['logo']['tmp_name'] : '', isset($_FILES['logo']['size']) ? (int) $_FILES['logo']['size'] : 0);
+	if (!$res['ok']) {
+		if ($res['error'] === 'nofile') http_response_code(400);
+		print json_encode(array('ok'=>false,'error'=>$res['error'])); exit;
 	}
-	$tmp = $_FILES['logo']['tmp_name'];
-	if ((int) $_FILES['logo']['size'] > 5 * 1024 * 1024) { print json_encode(array('ok'=>false,'error'=>'toobig')); exit; }
-	$info = @getimagesize($tmp);
-	if (!$info || !in_array($info['mime'], array('image/png','image/jpeg','image/jpg'), true)) {
-		print json_encode(array('ok'=>false,'error'=>'badtype')); exit;
-	}
-	$w = (int) $info[0]; $h = (int) $info[1];
-	if ($w < 1 || $h < 1) { print json_encode(array('ok'=>false,'error'=>'badimg')); exit; }
-
-	$dir = "../logolib/$db_id";
-	if (!is_dir($dir)) @mkdir($dir, 0775, true);
-	$png = "$dir/fe_logo.png";
-
-	// Re-encode via ImageMagick to strip any embedded scripts/metadata (NR-8),
-	// and cap the size. Fall back to a plain move if convert is unavailable.
-	$ok = false;
-	if (function_exists('shell_exec')) {
-		@shell_exec("convert " . escapeshellarg($tmp) . "[0] -strip -background none -resize '1500x1500>' " . escapeshellarg($png) . " 2>/dev/null");
-		if (file_exists($png)) $ok = true;
-	}
-	if (!$ok) { $ok = @move_uploaded_file($tmp, $png); }
-	if (!$ok || !file_exists($png)) { print json_encode(array('ok'=>false,'error'=>'store')); exit; }
-
-	// IMPORTANT: do NOT write ../logolib/logo_<db_id>.eps here. The print engine
-	// auto-stamps that file on every form without a background PDF, which would
-	// silently change printed output (e.g. orders). The uploaded logo stays
-	// editor-only until an explicit, opt-in compositing step is built. We also
-	// remove any stale EPS a previous version of this endpoint may have created,
-	// so existing printing is restored.
-	@unlink("../logolib/logo_$db_id.eps");
-	// refresh natural size from the normalised file
-	$ni = @getimagesize($png); if ($ni) { $w = (int) $ni[0]; $h = (int) $ni[1]; }
-
-	print json_encode(array('ok'=>true, 'w'=>$w, 'h'=>$h, 'url'=>"../logolib/$db_id/fe_logo.png?t=".time()));
+	print json_encode(array('ok'=>true, 'w'=>$res['w'], 'h'=>$res['h'], 'url'=>$res['url']));
 	exit;
 }
 

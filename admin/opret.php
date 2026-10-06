@@ -110,6 +110,7 @@
 // 20260818 CL/LH Corrected Stripe table boolean default definitions
 // 20260908 CL/NTR Reject account names over 60 and usernames over 80 characters (is_input_too_long)
 // 20261002 Sawaneh The unused notifications table (msg, read_status) is no longer created; see includes/betweenUpdates.php.
+// 20261006 Sawaneh A new ledger starts the welcome guide: settings onboarding_state = new (onboarding spec §4).
 //                  before creating the account, matching login.php and varchar(60) on regnskab.regnskab
 // 20260918 CDX/PHR Add ordrer.performed_by when creating a new account.
 
@@ -821,6 +822,9 @@ if ($db_type=="mysql" or $db_type=="mysqli") {
 		}
 	}
 	fclose($fp);
+	$qtxt = "insert into settings(var_name,var_grp,var_value,var_description,user_id) ";
+	$qtxt.= "values ('onboarding_state','onboarding','new','Onboarding guide','0')";
+	db_modify($qtxt, __FILE__ . " linje " . __LINE__);
 	if ($std_kto_plan) {
 #	 include("../includes/kontoplan.php"); 
 		if (file_exists("../importfiler/egen_kontoplan.txt")) $fp=fopen("../importfiler/egen_kontoplan.txt","r");
