@@ -6426,3 +6426,24 @@
 6824	Opret dansk standardsæt	Create the Danish standard set	Opprett dansk standardsett
 6825	Tilføj selv	Add your own	Legg til selv
 6826	Standardsættet er indsat – ret det til, og gem.	The standard set has been inserted – adjust it and save.	Standardsettet er satt inn – juster det og lagre.
+6827	Varianter som farve og størrelse, og de værdier en vare kan have. Værdierne vælges på varekortet.	Variants such as colour and size, and the values an item can have. The values are chosen on the item card.	Varianter som farge og størrelse, og verdiene en vare kan ha. Verdiene velges på varekortet.
+6828	Varianttyper	Variant types	Varianttyper
+6829	Værdier	Values	Verdier
+6830	Fx Farve eller Størrelse. Sletter du en variant, slettes dens værdier også.	E.g. Colour or Size. Deleting a variant also deletes its values.	F.eks. Farge eller Størrelse. Sletter du en variant, slettes også verdiene.
+6831	Tilføj variant	Add variant	Legg til variant
+6832	Ingen varianter endnu	No variants yet	Ingen varianter ennå
+6833	Variant	Variant	Variant
+6834	Navnet findes allerede	The name already exists	Navnet finnes allerede
+6835	Vælg en variant for at se og rette dens værdier, fx Rød og Blå.	Choose a variant to see and edit its values, e.g. Red and Blue.	Velg en variant for å se og endre verdiene, f.eks. Rød og Blå.
+6836	Tilføj værdi	Add value	Legg til verdi
+6837	Ingen værdier for denne variant endnu	No values for this variant yet	Ingen verdier for denne varianten ennå
+6838	Værdi	Value	Verdi
+6839	Importér varianter fra CSV	Import variants from CSV	Importer varianter fra CSV
+6840	Varianttyper (én pr. linje) eller værdier (variant;værdi).	Variant types (one per line) or values (variant;value).	Varianttyper (én per linje) eller verdier (variant;verdi).
+6841	%s variantvarer	%s variant items	%s variantvarer
+6842	(+%s)	(+%s)	(+%s)
+6843	Importeret: %s varianttyper. Sprunget over, da de findes allerede: %s.	Imported: %s variant types. Skipped because they already exist: %s.	Importert: %s varianttyper. Hoppet over fordi de finnes allerede: %s.
+6844	Importeret: %s værdier. Sprunget over, da de findes allerede: %s. Variant ikke fundet: %s.	Imported: %s values. Skipped because they already exist: %s. Variant not found: %s.	Importert: %s verdier. Hoppet over fordi de finnes allerede: %s. Variant ikke funnet: %s.
+6845	Varianttyper	Variant types	Varianttyper
+6846	Én variant pr. linje.	One variant per line.	Én variant per linje.
+6847	Én værdi pr. linje: variant;værdi. Varianten skal findes i forvejen.	One value per line: variant;value. The variant must already exist.	Én verdi per linje: variant;verdi. Varianten må finnes fra før.

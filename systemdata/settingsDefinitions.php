@@ -21,6 +21,8 @@
 // 20260930 Sawaneh Field links use ?field= so they work through the shell (spec §8.11).
 // 20261002 Sawaneh Phase 4b batch 1: G2.5 cash journal & payments, G3.6 mySale, G5.6 consignment, G5.7 packaging,
 //                  G6.4 print, G7.4 commission; 'module' gates a section, 'on_save' names a follow-up, type 'date'.
+// 20261006 Sawaneh 4c G5.3 Varianter: variant types and their values as rows (values filtered by type), usage from
+//                  variant items, CSV import through importer_varianter.php; diverse.php?sektion=variant_valg redirects.
 // 20261006 Sawaneh §8.13: 'standard' on the VAT, VAT report, debtor/creditor/item group and unit tables ("Opret dansk standardsæt").
 // 20261006 Sawaneh Onboarding step 4 (acceptance 6): payment terms and days on Firmaoplysninger (company row betalingsbet/
 //                  betalingsdage), used by a new customer card while there are no customers yet.
@@ -287,6 +289,27 @@ if (!function_exists('getSettingsSections')) {
 				'legacy' => array(array(781)), 'old' => array('enheder' => array(781)),
 				'context' => array('lager/varekort.php'),
 				'keywords' => array('enheder', 'units', 'enhed', 'unit', 'materialer', 'materials', 'densitet', 'density'),
+			),
+			'items.variants' => array(
+				'group' => 'items', 'section' => 'variants', 'number' => 'G5.3', 'label' => 472, 'icon' => 'bx-palette', 'kind' => 'rows',
+				'lead' => 6827, 'subsections' => array('types' => 6828, 'values' => 6829, 'import' => 1356),
+				'tables' => array(
+					'types' => array('sub' => 'types', 'label' => 6828, 'help' => 6830, 'add' => 6831, 'empty' => 6832,
+						'storage' => array('table', 'varianter'), 'code_col' => 'beskrivelse', 'usage' => 'variant_type', 'on_delete' => 'variant_type_values', 'order' => 'beskrivelse, id',
+						'columns' => array(
+							'beskrivelse' => array('label' => 6833, 'type' => 'text', 'required' => true, 'unique_text' => 6834),
+							'values' => array('label' => 6829, 'type' => 'derived', 'derive' => 'variant_values'),
+						)),
+					'values' => array('sub' => 'values', 'label' => 6829, 'help' => 6835, 'add' => 6836, 'empty' => 6837,
+						'storage' => array('table', 'variant_typer'), 'code_col' => 'beskrivelse', 'usage' => 'variant_value', 'order' => 'beskrivelse, id',
+						'filter' => array('param' => 'type', 'column' => 'variant_id', 'label' => 6833, 'options' => 'variant_types'),
+						'columns' => array(
+							'beskrivelse' => array('label' => 6838, 'type' => 'text', 'required' => true, 'unique_text' => 6834),
+						)),
+				),
+				'legacy' => array(array(788)), 'old' => array('variant_valg' => array(788)),
+				'context' => array('lager/varekort.php'),
+				'keywords' => array('varianter', 'variants', 'variant', 'farve', 'color', 'størrelse', 'size', 'varianttyper', 'variantværdier', 'variantrelaterede valg', 'import varianter'),
 			),
 			'finance.vat' => array(
 				'group' => 'finance', 'section' => 'vat', 'number' => 'G2.2', 'label' => 770, 'icon' => 'bx-receipt', 'kind' => 'rows',
@@ -924,6 +947,7 @@ if (!function_exists('getSettingsSections')) {
 			'import_export.data.addresses_import' => array('sub' => 'addresses', 'type' => 'link', 'label' => 6654, 'href' => 'importer_adresser.php', 'button' => 1356, 'audit' => false),
 			'import_export.data.items_export' => array('sub' => 'items', 'type' => 'link', 'label' => 6655, 'href' => 'exporter_varer.php', 'button' => 1355, 'audit' => false),
 			'import_export.data.items_import' => array('sub' => 'items', 'type' => 'link', 'label' => 6656, 'href' => 'importer_varer.php', 'button' => 1356, 'audit' => false),
+			'items.variants.import' => array('sub' => 'import', 'type' => 'link', 'label' => 6839, 'help' => 6840, 'href' => 'importer_varianter.php', 'button' => 1356, 'audit' => false, 'permission' => 'settings.import_export'),
 			'import_export.data.variants_export' => array('sub' => 'items', 'type' => 'link', 'label' => 6657, 'href' => 'exporter_variantvarer.php', 'button' => 1355, 'audit' => false),
 			'import_export.data.variants_import' => array('sub' => 'items', 'type' => 'link', 'label' => 6658, 'href' => 'importer_variantvarer.php', 'button' => 1356, 'audit' => false),
 			'import_export.data.forms_export' => array('sub' => 'forms', 'type' => 'link', 'label' => 6660, 'href' => 'exporter_formular.php', 'button' => 1355, 'audit' => false),
@@ -1701,7 +1725,7 @@ if (!function_exists('getSettingsSections')) {
 			array('old' => array($d, 784), 'to' => array(array('organisation', 'organisation.commission', null))),
 			array('old' => array($d, 786), 'to' => array(array('sales', 'sales.orders', null), array('sales', 'sales.debtor_card', null), array('purchase', 'purchase.orders', null), array('items', 'items.stock', null), array('personal', null, 'personalSettings.php'))),
 			array('old' => array($d, 787), 'to' => array(array('items', 'items.stock', null), array('items', 'items.consignment', null), array('items', 'items.packaging', null))),
-			array('old' => array($d, 788), 'to' => array(array('items', null, 'diverse.php?sektion=variant_valg'))),
+			array('old' => array($d, 788), 'to' => array(array('items', 'items.variants', null))),
 			array('old' => array($d, 790), 'to' => array(array('integrations', 'integrations.connections', null))),
 			array('old' => array($d, 791), 'to' => array(array('items', null, 'diverse.php?sektion=labels'))),
 			array('old' => array($d, 792), 'to' => array(array('purchase', 'purchase.pricelists', null))),

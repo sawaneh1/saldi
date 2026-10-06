@@ -113,6 +113,8 @@
 //                  now redirects there and the Diverse menu entry links to the new page.
 // 20260916 Sawaneh Phase 3: SQL tool, API, SMTP/e-mail, integrations and import/export sections
 //                  gated by their own permission keys via require_permission().
+// 20261006 Sawaneh Varianter (G5.3) moved to settingsSection.php?s=items.variants: variant_valg redirects (its GET deletes and
+//                  unescaped POST saves are no longer reachable); the CSV imports return there with the result.
 
 @session_start();
 $s_id = session_id();
@@ -180,6 +182,7 @@ $landedSections = array(
 	'variantvarer_io'=> 'settingsSection.php?s=import_export.data&moved=div_io#sub-items',
 	'formular_io'    => 'settingsSection.php?s=import_export.data&moved=div_io#sub-forms',
 	'solar_io'       => 'settingsSection.php?s=import_export.data&moved=div_io',
+	'variant_valg'   => 'settingsSection.php?s=items.variants&moved=variant_valg',
 );
 if (isset($landedSections[$sektion]) && !($sektion == 'api_valg' && !empty($_GET['varesync']))) {
 	print "<meta http-equiv=\"refresh\" content=\"0;URL=" . $landedSections[$sektion] . "\">";
@@ -451,8 +454,8 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 				fclose($handle);
 			}
 		}
-		$_SESSION['variant_import_message'] = "Importeret: $imported varianttyper. Sprunget over (eksisterer allerede): $skipped";
-		header("Location: diverse.php?sektion=variant_valg");
+		$_SESSION['settings_flash'] = array('ok', sprintf(findtekst('6843|Importeret: %s varianttyper. Sprunget over, da de findes allerede: %s.', $sprog_id), $imported, $skipped));
+		header("Location: settingsSection.php?s=items.variants");
 		exit;
 	#######################################################################################
 	} elseif ($sektion == 'variant_valg_import_values') {
@@ -507,8 +510,8 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 				fclose($handle);
 			}
 		}
-		$_SESSION['variant_import_message'] = "Importeret: $imported værdier. Sprunget over (eksisterer allerede): $skipped. Variant ikke fundet: $not_found";
-		header("Location: diverse.php?sektion=variant_valg");
+		$_SESSION['settings_flash'] = array('ok', sprintf(findtekst('6844|Importeret: %s værdier. Sprunget over, da de findes allerede: %s. Variant ikke fundet: %s.', $sprog_id), $imported, $skipped, $not_found));
+		header("Location: settingsSection.php?s=items.variants#sub-values");
 		exit;
 	#######################################################################################
 	} 

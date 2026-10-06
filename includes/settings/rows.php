@@ -265,6 +265,16 @@ function settings_rows_usage(array $t, array $row): array
 				$g = isset($row['raw']['gruppe']) ? (int) $row['raw']['gruppe'] : 0;
 				$add("select count(*) as n from transaktioner where cast(valuta as text) = '$g' and transdate >= '$esc'", 6423);
 				break;
+			case 'variant_type':
+			case 'variant_value':
+				if (function_exists('settings_variant_item_count')) {
+					$n = settings_variant_item_count($t['usage'] === 'variant_value' ? array((int) $row['id']) : settings_variant_value_ids((int) $row['id']));
+					if ($n > 0) {
+						$parts[] = sprintf(st_txt(6841), number_format($n, 0, ',', '.'));
+						$total += $n;
+					}
+				}
+				break;
 		}
 	}
 	return array('count' => $total, 'text' => implode(' · ', $parts));

@@ -21,6 +21,8 @@
 //                  usage, the year creation shared with the onboarding guide (onboarding spec step 3 and §153: one
 //                  function, no copy of regnskabskort.php), and exchange-rate changes that show the postings they
 //                  make and need a confirmation before they are booked (audit V9).
+// 20261006 Sawaneh 4c G5.3 variants: type options for the values filter, value list per type, usage from variant items,
+//                  a type's values deleted with it.
 // 20261006 Sawaneh Onboarding part 1: settings_fiscal_year_set_first() gives the first year a new period while nothing
 //                  is posted; the date checks are shared with the year creation.
 
@@ -501,6 +503,13 @@ function settings_rows_derived_extra(string $name, array $row): ?string
 	global $regnaar;
 	$raw = isset($row['raw']) ? $row['raw'] : array();
 	switch ($name) {
+		case 'variant_values':
+			$names = array();
+			$q = db_select("select beskrivelse from variant_typer where variant_id = " . (int) $row['id'] . " order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
+			while ($r = db_fetch_array($q)) {
+				$names[] = trim((string) $r['beskrivelse']);
+			}
+			return count($names) > 4 ? implode(', ', array_slice($names, 0, 4)) . ' ' . sprintf(st_txt(6842), count($names) - 4) : implode(', ', $names);
 		case 'fy_period':
 			list($s, $e) = settings_fy_dates($raw);
 			return date('j/n-Y', strtotime($s)) . ' – ' . date('j/n-Y', strtotime($e));
@@ -606,6 +615,10 @@ function settings_rows_on_delete(string $hook, array $t, array $row): void
 		if ($name !== '' && strcasecmp($name, 'Dansk') !== 0) {
 			db_modify("delete from formularer where sprog = '" . db_escape_string($name) . "'", __FILE__ . " linje " . __LINE__);
 		}
+		return;
+	}
+	if ($hook === 'variant_type_values') {
+		db_modify("delete from variant_typer where variant_id = " . (int) $row['id'], __FILE__ . " linje " . __LINE__);
 		return;
 	}
 	if ($hook === 'fiscal_year_empty') {
@@ -743,6 +756,14 @@ function settings_rows_create_submit(string $hook, array $post): array
  */
 function settings_rows_filter_options(string $name): array
 {
+	if ($name === 'variant_types') {
+		$out = array();
+		$q = db_select("select id, beskrivelse from varianter order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$out[(int) $r['id']] = (string) $r['beskrivelse'];
+		}
+		return $out;
+	}
 	return $name === 'currencies' ? settings_currency_options() : array();
 }
 
@@ -752,4 +773,45 @@ function settings_rows_help_text(array $t): string
 		return sprintf(st_txt($t['help']), settings_base_currency());
 	}
 	return st_txt($t['help']);
+}
+
+// ---------------------------------------------------------------- variants (G5.3)
+
+/**
+ * The value ids of a variant type (varianter.id -> variant_typer.variant_id).
+ *
+ * @return array<int, int>
+ */
+function settings_variant_value_ids(int $typeId): array
+{
+	$ids = array();
+	$q = db_select("select id from variant_typer where variant_id = $typeId", __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		$ids[] = (int) $r['id'];
+	}
+	return $ids;
+}
+
+/**
+ * Variant items (variant_varer) using any of these values. variant_type holds one value id, or several joined by tabs
+ * (written by the product card), so it is read as text and split here.
+ */
+function settings_variant_item_count(array $valueIds): int
+{
+	$valueIds = array_values(array_filter(array_map('intval', $valueIds)));
+	if (!$valueIds) {
+		return 0;
+	}
+	$like = array();
+	foreach ($valueIds as $id) {
+		$like[] = "cast(variant_type as text) like '%$id%'";
+	}
+	$n = 0;
+	$q = db_select("select variant_type from variant_varer where " . implode(' or ', $like), __FILE__ . " linje " . __LINE__);
+	while ($r = db_fetch_array($q)) {
+		if (array_intersect(array_map('intval', preg_split('/\t+/', trim((string) $r['variant_type']))), $valueIds)) {
+			$n++;
+		}
+	}
+	return $n;
 }

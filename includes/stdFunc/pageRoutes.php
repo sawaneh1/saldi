@@ -201,6 +201,7 @@ return array(
 		'systemdata/tekster.php' => array('m' => 'system', 'l' => '581|Tekster', 'p' => ''),
 		'systemdata/personalSettings.php' => array('m' => 'system', 'l' => '5500|Personlige indstillinger', 'p' => ''),
 		'systemdata/importer_kontoplan.php' => array('m' => 'system', 'l' => '6652|Importér kontoplan', 'p' => ''),
+		'systemdata/importer_varianter.php' => array('m' => 'system', 'l' => '6839|Importér varianter fra CSV', 'p' => ''),
 		'systemdata/importAccountMap.php' => array('m' => 'system', 'l' => '2336|Importer mappingfil til offentlig standard kontoplan', 'p' => ''),
 		'systemdata/exporter_kontoplan.php' => array('m' => 'system', 'l' => '1353|Eksportér kontoplan', 'p' => ''),
 		'systemdata/exporter_adresser.php' => array('m' => 'system', 'l' => '1384|Eksporter adresser', 'p' => ''),
