@@ -114,6 +114,7 @@
 // 20260907 CDX/LH Sanitize the return parameter once before navigation and order-context handling.
 // 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 // 20261006 Sawaneh A new customer gets the company's own payment terms (Firmaoplysninger / onboarding step 4) while there are no customers.
+// 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
 @session_start();
 $s_id = session_id();
 
@@ -1846,7 +1847,7 @@ if ($gruppe) {
 	$r = db_fetch_array(db_select("select beskrivelse from grupper where art='DG' and kodenr='$gruppe' and fiscal_year='$regnaar'", __FILE__ . " linje " . __LINE__));
 	print "<option>$gruppe:$r[beskrivelse]</option>\n";
 }
-$q = db_select("select * from grupper where art='DG' and kodenr!='$gruppe' AND fiscal_year='$regnaar' order by kodenr", __FILE__ . " linje " . __LINE__);
+$q = db_select("select * from grupper where art='DG' and kodenr!='$gruppe' AND fiscal_year='$regnaar' and coalesce(inaktiv, false) = false order by kodenr", __FILE__ . " linje " . __LINE__);
 
 while ($r = db_fetch_array($q)) {
 	print "<option>$r[kodenr]:$r[beskrivelse]</option>\n";

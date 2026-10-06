@@ -32,6 +32,7 @@
 //             (int)'' compared to '' is now a string comparison ("0" != ""), true, where PHP 7
 //             compared both as 0. Skip the check when the field is blank, same fix as
 //             debitor/debkort_save.php (SD-513)
+// 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
 
 
 @session_start();
@@ -379,7 +380,7 @@ $q = db_select("select beskrivelse from grupper where art='KG' and kodenr='$grup
 $r = db_fetch_array($q);
 print "<td><SELECT NAME=gruppe value=\"$gruppe\"  onchange=\"javascript:docChange = true;\">\n";
 print "<option>$gruppe:$r[beskrivelse]</option>\n";
-$q = db_select("select * from grupper where art='KG' and kodenr!='$gruppe'  and fiscal_year = '$regnaar' order by kodenr", __FILE__ . " linje " . __LINE__);
+$q = db_select("select * from grupper where art='KG' and kodenr!='$gruppe'  and fiscal_year = '$regnaar' and coalesce(inaktiv, false) = false order by kodenr", __FILE__ . " linje " . __LINE__);
 while ($r = db_fetch_array($q)) {
 	print "<option>$r[kodenr]:$r[beskrivelse]</option>\n";
 }

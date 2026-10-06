@@ -17,6 +17,7 @@
 //
 // Copyright (c) 2026 saldi.dk aps
 // ----------------------------------------------------------------------
+// 20261006 Sawaneh Row actions may show per-row confirm text ('confirm_args') and ask for one value ('input', posted as arg).
 // 20261006 Sawaneh §8.13: an empty table with a standard set offers "Opret dansk standardsæt" and "Tilføj selv".
 // 20261005 Sawaneh 4d: read-only columns and locked rows, row actions (with password for danger-zone ones), a parent
 //                  picker above a filtered table, a create card below a table and the confirmation of posted amounts.
@@ -240,6 +241,7 @@ function settings_rows_render(array $c): void
       <input type="hidden" name="table" value="">
       <input type="hidden" name="id" value="">
       <input type="hidden" name="value" value="">
+      <label class="st-dialog-pw" id="st-dialog-arg" hidden><span></span><input class="st-input" type="text" name="arg" autocomplete="off" inputmode="numeric"></label>
       <label class="st-dialog-pw" id="st-dialog-pw" hidden><span><?= st_t(6546) ?></span><input class="st-input" type="password" name="password" autocomplete="current-password"></label>
       <div class="st-dialog-btns">
         <button type="button" class="st-btn st-btn-quiet" id="st-dialog-cancel"><?= st_t(5) ?></button>
@@ -250,7 +252,7 @@ function settings_rows_render(array $c): void
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsRows.js?v=3"></script>
+<script src="../javascript/settingsRows.js?v=4"></script>
 	<?php
 }
 
@@ -362,7 +364,8 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 						continue;
 					}
 					if (!empty($a['href'])) { ?><a class="st-ricon st-ricon-txt" href="<?= st_h(sprintf($a['href'], (int) $id)) ?>"><?= st_t($a['label']) ?></a><?php continue; }
-					?><button type="button" class="st-ricon st-ricon-txt<?= !empty($a['danger']) ? ' st-ricon-danger' : '' ?>" data-row-action="<?= st_h($an) ?>"<?= !empty($a['confirm_title']) ? ' data-title="' . st_h(sprintf(st_txt($a['confirm_title']), $code)) . '" data-body="' . st_t($a['confirm']) . '"' : '' ?><?= !empty($a['danger']) ? ' data-danger="1"' : '' ?><?= !empty($a['danger_zone']) ? ' data-password="1"' : '' ?> data-verb="<?= st_t($a['label']) ?>"><?= st_t($a['label']) ?></button><?php
+					$body = !empty($a['confirm_args']) && function_exists('settings_rows_action_args') ? st_h(vsprintf(st_txt($a['confirm']), settings_rows_action_args((string) $a['confirm_args'], $row))) : (!empty($a['confirm']) ? st_t($a['confirm']) : '');
+					?><button type="button" class="st-ricon st-ricon-txt<?= !empty($a['danger']) ? ' st-ricon-danger' : '' ?>" data-row-action="<?= st_h($an) ?>"<?= !empty($a['confirm_title']) ? ' data-title="' . st_h(sprintf(st_txt($a['confirm_title']), $code)) . '" data-body="' . $body . '"' : '' ?><?= !empty($a['input']) ? ' data-input="' . st_t($a['input']) . '"' : '' ?><?= !empty($a['danger']) ? ' data-danger="1"' : '' ?><?= !empty($a['danger_zone']) ? ' data-password="1"' : '' ?> data-verb="<?= st_t($a['label']) ?>"><?= st_t($a['label']) ?></button><?php
 				} ?>
 				<?php if ($t['inactive']) { ?><button type="button" class="st-ricon" data-inactive="<?= $row['inactive'] ? '0' : '1' ?>" title="<?= st_t($row['inactive'] ? 6434 : 6433) ?>" aria-label="<?= st_t($row['inactive'] ? 6434 : 6433) ?>"><i class='bx <?= $row['inactive'] ? 'bx-show' : 'bx-hide' ?>' aria-hidden="true"></i></button><?php } ?>
 				<?php if (empty($row['locked'])) { ?><button type="button" class="st-ricon st-ricon-del" data-del title="<?= st_t(1099) ?>" aria-label="<?= st_t(1099) ?>"><i class='bx bx-trash' aria-hidden="true"></i></button><?php } ?>

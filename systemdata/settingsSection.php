@@ -225,6 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				audit_log('setting.action_refused', 'password', 'indstilling', $sectionId . '.' . $tableId . '.' . $name);
 				$_SESSION['settings_error'] = st_txt(6545);
 			} elseif (isset($rows[$rid])) {
+				$GLOBALS['settings_row_action_arg'] = isset($_POST['arg']) ? trim((string) $_POST['arg']) : '';
 				$res = settings_rows_row_action($sectionId, $tableId, $t, $rows[$rid], $name);
 				$_SESSION['settings_flash'] = $res['flash'];
 				if (!empty($res['reload_shell'])) {

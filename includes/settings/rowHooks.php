@@ -21,6 +21,7 @@
 //                  usage, the year creation shared with the onboarding guide (onboarding spec step 3 and §153: one
 //                  function, no copy of regnskabskort.php), and exchange-rate changes that show the postings they
 //                  make and need a confirmation before they are booked (audit V9).
+// 20261006 Sawaneh 4c B-D06: moving a debtor/creditor group's control account as a confirmed action.
 // 20261006 Sawaneh 4c G3.5 part A: item count, usage and "Anvend på varer" for price, campaign and quantity-discount groups.
 // 20261006 Sawaneh 4c G5.3 variants: type options for the values filter, value list per type, usage from variant items,
 //                  a type's values deleted with it.
@@ -671,6 +672,8 @@ function settings_rows_action_visible(string $name, array $row): bool
 			return settings_fy_archive_refusal($raw) === '';
 		case 'group_apply':
 			return settings_group_item_count($raw) > 0;
+		case 'move_control':
+			return trim((string) $raw['box2']) !== '' && settings_fy_count("select count(*) as n from adresser where art = '" . (substr((string) $raw['art'], 0, 1) === 'K' ? 'K' : 'D') . "' and cast(gruppe as text) = '" . (int) $raw['kodenr'] . "'") > 0;
 	}
 	return false;
 }
@@ -689,6 +692,10 @@ function settings_rows_row_action(string $sectionId, string $tableId, array $t, 
 		return $out;
 	}
 	$objekt = $sectionId . '.' . $tableId . '#' . $k;
+	if ($name === 'move_control') {
+		$out['flash'] = settings_control_move($sectionId, $tableId, $raw, isset($GLOBALS['settings_row_action_arg']) ? (string) $GLOBALS['settings_row_action_arg'] : '');
+		return $out;
+	}
 	if ($name === 'group_apply') {
 		$n = settings_group_apply($raw);
 		SettingsService::auditRow($sectionId, $tableId . '.' . $name, $objekt, '', (string) $n, 'setting.action');
@@ -912,4 +919,81 @@ function settings_group_apply(array $raw): int
 		db_modify("update varer set " . implode(', ', $set) . " where $col = $k", __FILE__ . " linje " . __LINE__);
 	}
 	return $set ? $n : 0;
+}
+
+// ---------------------------------------------------------------- moving a group's control account (B-D06)
+
+/**
+ * The open items of the accounts in a debtor or creditor group, in the base currency (what the control account holds).
+ */
+function settings_control_move_amount(array $raw): float
+{
+	$a = substr((string) $raw['art'], 0, 1) === 'K' ? 'K' : 'D';
+	$k = (int) $raw['kodenr'];
+	$r = db_fetch_array(db_select("select sum(o.amount * 100 / (case when coalesce(o.valutakurs, 0) = 0 then 100 else o.valutakurs end)) as s from openpost o, adresser a where a.id = o.konto_id and a.art = '$a' and cast(a.gruppe as text) = '$k' and o.udlignet = '0'", __FILE__ . " linje " . __LINE__));
+	return $r ? round((float) $r['s'], 2) : 0.0;
+}
+
+/**
+ * Texts for a row action's confirmation (the dialog says what will happen before it does).
+ *
+ * @return array<int, string>
+ */
+function settings_rows_action_args(string $name, array $row): array
+{
+	if ($name === 'move_control') {
+		return array(number_format(abs(settings_control_move_amount($row['raw'])), 2, ',', '.'), trim((string) $row['raw']['box2']));
+	}
+	return array();
+}
+
+/**
+ * Move a debtor/creditor group's control account (audit B-D06): the open items are moved from the old account to the
+ * new one with one posting each way, the group gets the new account and its currency, and the year's balances are
+ * recalculated - after the user has seen the amount and confirmed. Nothing is written when the account or its currency
+ * is unknown (the old page could stop half-way).
+ *
+ * @return array<int, string> flash
+ */
+function settings_control_move(string $sectionId, string $tableId, array $raw, string $new): array
+{
+	global $regnaar, $brugernavn;
+	$old = trim((string) $raw['box2']);
+	if ($new === '' || st_account_name($new) === null) {
+		return array('err', sprintf(st_txt(6888), $new));
+	}
+	if ($new === $old) {
+		return array('err', st_txt(6889));
+	}
+	$valuta = 'DKK';
+	$r = db_fetch_array(db_select("select valuta from kontoplan where regnskabsaar = '" . (int) $regnaar . "' and kontonr = '" . db_escape_string($new) . "'", __FILE__ . " linje " . __LINE__));
+	if ($r && (int) $r['valuta']) {
+		$v = db_fetch_array(db_select("select box1 from grupper where art = 'VK' and kodenr = '" . (int) $r['valuta'] . "'", __FILE__ . " linje " . __LINE__));
+		if (!$v || trim((string) $v['box1']) === '') {
+			return array('err', st_txt(6890));
+		}
+		$valuta = trim((string) $v['box1']);
+	}
+	$amount = settings_control_move_amount($raw);
+	$letter = substr((string) $raw['art'], 0, 1) === 'K' ? 'K' : 'D';
+	$text = db_escape_string("Samlekonto $letter" . (int) $raw['kodenr'] . " flyttet fra konto $old til $new af $brugernavn");
+	$today = date('Y-m-d');
+	$now = date('H:i');
+	transaktion('begin');
+	if ($amount != 0) {
+		$fromSide = $amount > 0 ? 'kredit' : 'debet';
+		$toSide = $amount > 0 ? 'debet' : 'kredit';
+		$n = abs($amount);
+		foreach (array(array($old, $fromSide), array($new, $toSide)) as $p) {
+			db_modify("insert into transaktioner (kontonr, bilag, transdate, logdate, logtime, beskrivelse, {$p[1]}, faktura, kladde_id, afd, ansat, projekt, valuta, valutakurs, ordre_id, moms) values ('" . db_escape_string($p[0]) . "', '0', '$today', '$today', '$now', '$text', '$n', '0', '0', '0', '0', '', '0', '100', '0', '0')", __FILE__ . " linje " . __LINE__);
+		}
+	}
+	db_modify("update grupper set box2 = '" . db_escape_string($new) . "', box3 = '" . db_escape_string($valuta) . "' where id = " . (int) $raw['id'], __FILE__ . " linje " . __LINE__);
+	transaktion('commit');
+	include_once(__DIR__ . '/../genberegn.php');
+	if (function_exists('genberegn')) {
+		genberegn((int) $regnaar);
+	}
+	SettingsService::auditRow($sectionId, $tableId . '.box2', $sectionId . '.' . $tableId . '#' . (int) $raw['kodenr'], $old, $new, 'setting.row_updated');
+	return array('ok', $amount != 0 ? sprintf(st_txt(6891), $new, number_format(abs($amount), 2, ',', '.')) : sprintf(st_txt(6892), $new));
 }

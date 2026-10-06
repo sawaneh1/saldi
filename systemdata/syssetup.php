@@ -77,8 +77,8 @@ $landedValg = array(
 	'debitor'    => 'settingsSection.php?s=sales.debtor_groups&moved=debitor',
 	'varer'      => 'settingsSection.php?s=items.item_groups&moved=varer',
 );
-// legacy=1 keeps the old group page reachable for moving a control account with postings (not built in the new editor yet).
-if (isset($_GET['valg']) && isset($landedValg[$_GET['valg']]) && !($_GET['valg'] === 'debitor' && !empty($_GET['legacy']))) {
+// 20261006 Sawaneh B-D06: moving a control account is now a confirmed action in the new editor, so legacy=1 is gone.
+if (isset($_GET['valg']) && isset($landedValg[$_GET['valg']])) {
 	header("Location: " . $landedValg[$_GET['valg']]);
 	exit;
 }

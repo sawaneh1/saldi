@@ -36,6 +36,7 @@
 // 20250619 PHR - Somebody broke the code by omitting || in several if statements
 // 20260206	PHR	- discal_year
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
 
 @session_start();
 $s_id = session_id();
@@ -519,7 +520,7 @@ if ($kontotype == 'D' || $kontotype == 'S') {
 	print "<td colspan=2><SELECT NAME = 'moms' style = 'width:70px'>";
 	print "<OPTION>$moms</OPTION>\n";
 	$qtxt = "select kode, kodenr from grupper ";
-	$qtxt.= "where (art = 'KM' or art = 'SM' or art = 'EM' or art = 'YM') and fiscal_year = '$regnaar'";
+	$qtxt.= "where (art = 'KM' or art = 'SM' or art = 'EM' or art = 'YM') and fiscal_year = '$regnaar' and coalesce(inaktiv, false) = false";
 	$q = db_select($qtxt, __FILE__ . " linje " . __LINE__);
 	if ($moms)
 		print "<OPTION></OPTION>\n";

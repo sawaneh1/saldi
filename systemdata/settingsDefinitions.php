@@ -25,6 +25,7 @@
 //                  & prisgrupper; saving no longer rewrites item prices - "Anvend på varer" per group does, after a confirmation.
 //                  Part B: customer and item discount groups (DRG/DVRG) and the discount matrix (virtual discount_matrix, by
 //                  group number); rabatgrupper.php redirects.
+// 20261006 Sawaneh 4c B-D06: "Flyt samlekonto" on debtor/creditor groups as a confirmed row action (amount shown first).
 // 20261006 Sawaneh 4c G5.3 Varianter: variant types and their values as rows (values filtered by type), usage from
 //                  variant items, CSV import through importer_varianter.php; diverse.php?sektion=variant_valg redirects.
 // 20261006 Sawaneh §8.13: 'standard' on the VAT, VAT report, debtor/creditor/item group and unit tables ("Opret dansk standardsæt").
@@ -373,13 +374,13 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'sales', 'section' => 'debtor_groups', 'number' => 'G3.1', 'label' => 1008, 'icon' => 'bx-group', 'kind' => 'rows',
 				'lead' => 6505, 'subsections' => array('groups' => 1008),
 				'tables' => array(
-					'groups' => array('sub' => 'groups', 'label' => 1008, 'add' => 6475, 'empty' => 6478, 'storage' => array('grupper', 'DG'), 'standard' => 'grupper', 'kode' => 'D',
+					'groups' => array('sub' => 'groups', 'label' => 1008, 'add' => 6475, 'empty' => 6478, 'storage' => array('grupper', 'DG'), 'standard' => 'grupper', 'row_actions' => array('move_control' => array('label' => 6503, 'confirm_title' => 6503, 'confirm' => 6885, 'confirm_args' => 'move_control', 'input' => 6886, 'danger' => true)),  'kode' => 'D',
 						'fiscal' => true, 'usage' => 'debtor_group', 'inactive' => true, 'propagate' => array('box10'), 'defaults' => array('box3' => 'DKK'),
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),
 							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
 							'box1' => array('label' => 1011, 'type' => 'select', 'options_from' => 'vat_codes_sales', 'options_literal' => true, 'help' => 2447),
-							'box2' => array('label' => 2448, 'type' => 'account', 'required' => true, 'help' => 2449, 'locked_if_used' => 6502),
+							'box2' => array('label' => 2448, 'type' => 'account', 'required' => true, 'help' => 2449, 'locked_if_used' => 6887),
 							'box3' => array('label' => 776, 'type' => 'select', 'options_from' => 'currencies', 'options_literal' => true, 'empty_value' => 'DKK'),
 							'box4' => array('label' => 801, 'type' => 'select', 'options_from' => 'form_language_names', 'options_literal' => true, 'help' => 1010),
 							'box6' => array('label' => 6481, 'type' => 'decimal', 'help' => 6482),
@@ -396,13 +397,13 @@ if (!function_exists('getSettingsSections')) {
 				'group' => 'purchase', 'section' => 'creditor_groups', 'number' => 'G4.1', 'label' => 2458, 'icon' => 'bx-group', 'kind' => 'rows',
 				'lead' => 6506, 'subsections' => array('groups' => 2458),
 				'tables' => array(
-					'groups' => array('sub' => 'groups', 'label' => 2458, 'add' => 6476, 'empty' => 6479, 'storage' => array('grupper', 'KG'), 'standard' => 'grupper', 'kode' => 'K',
+					'groups' => array('sub' => 'groups', 'label' => 2458, 'add' => 6476, 'empty' => 6479, 'storage' => array('grupper', 'KG'), 'standard' => 'grupper', 'row_actions' => array('move_control' => array('label' => 6503, 'confirm_title' => 6503, 'confirm' => 6885, 'confirm_args' => 'move_control', 'input' => 6886, 'danger' => true)),  'kode' => 'K',
 						'fiscal' => true, 'usage' => 'creditor_group', 'inactive' => true, 'propagate' => array('box10'), 'defaults' => array('box3' => 'DKK'),
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),
 							'beskrivelse' => array('label' => 914, 'type' => 'text', 'required' => true),
 							'box1' => array('label' => 1011, 'type' => 'select', 'options_from' => 'vat_codes_purchase', 'options_literal' => true, 'help' => 2459),
-							'box2' => array('label' => 2448, 'type' => 'account', 'required' => true, 'help' => 2460, 'locked_if_used' => 6502),
+							'box2' => array('label' => 2448, 'type' => 'account', 'required' => true, 'help' => 2460, 'locked_if_used' => 6887),
 							'box3' => array('label' => 776, 'type' => 'select', 'options_from' => 'currencies', 'options_literal' => true, 'empty_value' => 'DKK'),
 							'box6' => array('label' => 2463, 'type' => 'select', 'options_from' => 'vat_codes_sales', 'options_literal' => true, 'help' => 2462),
 							'box9' => array('label' => 2457, 'type' => 'bool', 'help' => 2465, 'requires' => array('box6', 6500)),
@@ -1131,8 +1132,6 @@ if (!function_exists('getSettingsSections')) {
 			'company.data.employees' => array('sub' => 'gdpr', 'type' => 'link', 'label' => 1262, 'help' => 6516, 'href' => 'settingsSection.php?s=organisation.employees', 'button' => 6504, 'audit' => false),
 
 			// ---------------------------------------------------------------- 4c: links for what stays on the old pages for now
-			'sales.debtor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
-			'purchase.creditor_groups.move_control' => array('sub' => 'groups', 'type' => 'link', 'label' => 6503, 'help' => 6502, 'href' => 'syssetup.php?valg=debitor&legacy=1', 'button' => 6504, 'audit' => false),
 			'items.item_groups.price_groups' => array('sub' => 'prices', 'type' => 'link', 'label' => 6508, 'help' => 6874, 'href' => 'settingsSection.php?s=sales.discounts', 'button' => 6504, 'audit' => false,
 				'keywords' => array('prisgrupper', 'price groups', 'tilbudsgrupper', 'rabatgrupper')),
 

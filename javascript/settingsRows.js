@@ -1,4 +1,5 @@
-// ---- javascript/settingsRows.js --- lap 5.0.0 --- 2026.10.05 ---
+// ---- javascript/settingsRows.js --- lap 5.0.0 --- 2026.10.06 ---
+// 20261006 Sawaneh A row action can ask for one value in its dialog (data-input), e.g. the new control account.
 // 20261005 Sawaneh 4d: row action buttons (set active, delete a year with data...) post through the dialog form;
 //                  a danger-zone action asks for the user's password there.
 // 20261005 Sawaneh Settings redesign phase 4c (spec §8.2): the row editor. Enter moves down the column (and adds a
@@ -143,7 +144,7 @@
 		refresh();
 	});
 
-	function openDialog(title, body, verb, values, danger, password) {
+	function openDialog(title, body, verb, values, danger, password, inputLabel) {
 		returnFocus = document.activeElement;
 		document.getElementById('st-dialog-title').textContent = title;
 		document.getElementById('st-dialog-body').textContent = body;
@@ -159,7 +160,9 @@
 		if (pw) { pw.hidden = !password; pw.querySelector('input').value = ''; pw.querySelector('input').required = !!password; }
 		dialog.hidden = false;
 		backdrop.hidden = false;
-		if (password && pw) { pw.querySelector('input').focus(); } else { document.getElementById('st-dialog-cancel').focus(); }
+		var arg = document.getElementById('st-dialog-arg');
+		if (arg) { arg.hidden = !inputLabel; arg.querySelector('span').textContent = inputLabel || ''; arg.querySelector('input').value = ''; arg.querySelector('input').required = !!inputLabel; }
+		if (inputLabel && arg) { arg.querySelector('input').focus(); } else if (password && pw) { pw.querySelector('input').focus(); } else { document.getElementById('st-dialog-cancel').focus(); }
 	}
 	function closeDialog() {
 		dialog.hidden = true;
@@ -203,7 +206,7 @@
 			var vals = { action: 'row_action', table: card3.dataset.table, id: tr3.dataset.row, value: act.dataset.rowAction };
 			if (act.dataset.title) {
 				document.getElementById('st-dialog-cancel').textContent = cfg.cancel || '';
-				openDialog(act.dataset.title, act.dataset.body || '', act.dataset.verb || '', vals, act.dataset.danger === '1', act.dataset.password === '1');
+				openDialog(act.dataset.title, act.dataset.body || '', act.dataset.verb || '', vals, act.dataset.danger === '1', act.dataset.password === '1', act.dataset.input || '');
 				return;
 			}
 			dform.elements.action.value = vals.action;
