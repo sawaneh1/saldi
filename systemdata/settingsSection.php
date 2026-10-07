@@ -65,7 +65,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261006b";
+$css = "../css/unified-components.css?v=20261006c";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -100,6 +100,9 @@ $canWrite = perm_can($permission, 'write');
 
 $defs = settings_section_definitions($sectionId);
 SettingsService::preload(array_keys($defs));
+if (!empty($section['guide']) && function_exists('page_help')) {
+	page_help(array('guide' => (string) $section['guide']));
+}
 // Opened from a module page through the gear in the sub-bar (spec §8.11): a path inside Saldi only, kept through saves.
 $returnTo = isset($_GET['back']) ? (string) $_GET['back'] : (isset($_POST['back']) ? (string) $_POST['back'] : '');
 if (!preg_match('#^/[a-z_]+/[A-Za-z0-9_\-]+\.php(\?[A-Za-z0-9_\-=&%.+]*)?$#', $returnTo)) {
@@ -513,7 +516,7 @@ function settings_section_view(string $sectionId, array $section, array $defs, a
   <a class="st-skip" href="#st-form"><?= st_t(5751) ?></a>
   <section class="st-phead">
     <div>
-      <h1><?= st_t($section['label']) ?></h1>
+      <h1><?= st_t($section['label']) ?><?= st_section_help($section) ?></h1>
       <p class="st-lead"><?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
     </div>
   </section>

@@ -25,6 +25,8 @@
 // 20260929 Sawaneh Settings redesign phase 4a (spec §7.3, §8.1): the components every generated
 //                  settings form is built from, and the conversion between a posted field and
 //                  the stored string. Styles live in css/unified-components.css (.st-*).
+// 20261006 Sawaneh §8.14: "?" in the section header (guide or SALDI Assist with the section as context) and a field's
+//                  "Læs mere" expander ('more' text id).
 // 20261006 Sawaneh G3.5: field type 'matrix' - the discount grid (customer groups × item groups), kept as one value in a
 //                  hidden input, stored through virtual storage (discount_matrix).
 // 20261001 Sawaneh Accessibility §8.6: readable text on a user-chosen button colour, darker shade for links/outlines.
@@ -699,6 +701,20 @@ function st_ht_key(string $var): string
  *
  * @param array<string, mixed> $state value (form value), original, error (text id), readonly, locked (text id), visible, mine
  */
+/**
+ * The "?" in a section header (spec §8.14): opens the section's guide when it has one ('guide' in the registry), otherwise
+ * SALDI Assist with the section as context.
+ */
+function st_section_help(array $section): string
+{
+	$id = (string) $section['group'] . '.' . (string) $section['section'];
+	$guide = isset($section['guide']) ? (string) $section['guide'] : '';
+	return ' <button type="button" class="st-qhelp" data-section-help="' . st_h($id) . '" data-guide="' . st_h($guide) . '" title="' . st_t(6893) . '" aria-label="' . st_t(6893) . '">?</button>'
+		. '<script>(function () { var b = document.querySelector(\'[data-section-help]\'); if (!b || b.dataset.bound) { return; } b.dataset.bound = 1;'
+		. ' b.addEventListener(\'click\', function () { if (window.parent && window.parent !== window) { window.parent.postMessage({ type: \'saldi:assist-ask\', section: b.dataset.sectionHelp }, window.location.origin); }'
+		. ' else if (b.dataset.guide) { window.open(b.dataset.guide, \'_blank\', \'noopener\'); } }); })();</script>';
+}
+
 function st_render_field(array $def, array $state): void
 {
 	$key = $def['key'];
@@ -758,6 +774,9 @@ function st_render_field(array $def, array $state): void
     </span>
 	<?php if ($help !== '' || $defaultText !== '') { ?>
     <span class="st-help"><?= st_h($help) ?><?= ($help !== '' && $defaultText !== '') ? ' ' : '' ?><?php if ($defaultText !== '') { ?><span class="st-default"><?= st_h($defaultText) ?></span><?php } ?><?php if ($hasDefault && !$disabled) { ?> <button type="button" class="st-reset" data-reset hidden><?= st_t(5717) ?></button><?php } ?></span>
+	<?php } ?>
+	<?php if (!empty($def['more'])) { ?>
+    <details class="st-more"><summary><?= st_t(6894) ?></summary><p><?= st_t($def['more']) ?></p></details>
 	<?php } ?>
 	<?php if (!empty($state['locked'])) { ?>
     <span class="st-locked"><i class='bx bx-lock-alt' aria-hidden="true"></i> <?= st_t($state['locked']) ?></span>

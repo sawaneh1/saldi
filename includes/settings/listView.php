@@ -86,7 +86,7 @@ function settings_list_render(array $c): void
   <a class="st-skip" href="#st-list"><?= st_t(5751) ?></a>
   <section class="st-phead">
     <div>
-      <h1><?= st_t($section['label']) ?></h1>
+      <h1><?= st_t($section['label']) ?><?= st_section_help($section) ?></h1>
       <p class="st-lead"><?= st_t($section['lead']) ?>. <?= st_t(5706) ?> <?= st_h(st_company()) ?>.</p>
     </div>
 	<?php if (!empty($section['add_action']) && $canWrite) { ?>
