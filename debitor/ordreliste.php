@@ -73,6 +73,7 @@
 // 20261005 LOE SD-687 The order type filter repeated what the menu already sets; it is replaced by a department filter, and an empty result now says so (text 2730).
 // 20261005 LOE SD-687 Department names are escaped where the filter options are built.
 // 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
+// 20261008 Sawaneh The list sits under the new page head (page_bar): grid height adjusted.
 
 @session_start();
 $s_id = session_id();
@@ -2006,7 +2007,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 
 
 

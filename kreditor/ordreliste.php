@@ -39,6 +39,7 @@
 //                  isn't scoped to the current user (see comment at its call site).
 // 20261008 Sawaneh WP-3.6: order rows and the row click return to ordreliste.php with valg and the creditor filter (encoded).
 // 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
+// 20261008 Sawaneh The list sits under the new page head (page_bar): grid height adjusted.
 
 
 ob_start();
@@ -692,7 +693,7 @@ $grid_data = [
     'rowAttributes' => $rowAttributes
 ];
 
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 // Render the datagrid
 $rows = create_datagrid("kredorliste_$valg", $grid_data);
 

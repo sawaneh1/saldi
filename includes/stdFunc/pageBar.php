@@ -25,8 +25,8 @@
 if (!function_exists('page_bar')):
 
 /**
- * Print the page head. $o: 'title', 'tabs' => [['label', 'href', on(bool)], ...], 'actions' => [['label', 'href', icon class],
- * ...], 'primary' => ['label', 'href', 'onclick' => '...'], 'back' => href, 'help' => bool (a hidden tour trigger).
+ * Print the page head. $o: 'title', 'tabs' => [['label', 'href', on(bool)], ...], 'actions' => [['label', 'href', icon class,
+ * target, 'onclick' => ...], ...], 'primary' => ['label', 'href', 'onclick' => '...'], 'back' => href, 'help' => bool (a hidden tour trigger).
  *
  * @param array<string, mixed> $o
  */
@@ -59,7 +59,7 @@ function page_bar(array $o): void
 	}
 	print "<span class='pg-grow'></span><span class='pg-acts'>";
 	foreach (isset($o['actions']) ? $o['actions'] : array() as $a) {
-		print "<a class='pg-act' href='" . $h($a[1]) . "'>" . (!empty($a[2]) ? "<i class='bx " . $h($a[2]) . "'></i>" : '') . $h($a[0]) . "</a>";
+		print "<a class='pg-act' href='" . $h($a[1]) . "'" . (!empty($a[3]) ? " target='" . $h($a[3]) . "' rel='noopener'" : '') . (!empty($a['onclick']) ? " onclick=\"" . $h($a['onclick']) . " return false;\"" : '') . ">" . (!empty($a[2]) ? "<i class='bx " . $h($a[2]) . "'></i>" : '') . $h($a[0]) . "</a>";
 	}
 	if (!empty($o['help'])) {
 		print "<button type='button' id='tutorial-help' class='pg-hidden' aria-hidden='true' tabindex='-1'></button>";
