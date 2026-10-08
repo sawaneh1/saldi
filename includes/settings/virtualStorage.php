@@ -22,6 +22,8 @@
 // 20261004 Sawaneh G10.1: seed_post_each_sale, the starting value of the per-till postEachSale list.
 // 20261004 Sawaneh Settings redesign: a setting whose value is derived from several stored fields (storage
 //                  'virtual'). Read and written here, audited like any other setting by SettingsService.
+// 20261008 Sawaneh Settings decision 20: the matrix reads and writes only rows marked 'NR' (debitorart/vareart, by group
+//                  number); settings_discount_transfer() moves one old row (stored by position) into it. No automatic migration.
 
 /**
  * The value of a virtual setting.
@@ -186,7 +188,7 @@ function settings_discount_matrix_read(): string
 	$axes = settings_discount_axes();
 	$cells = array();
 	$types = array();
-	$q = db_select("select debitor, vare, rabat, rabatart from rabat order by id", __FILE__ . " linje " . __LINE__);
+	$q = db_select("select debitor, vare, rabat, rabatart from rabat where debitorart = 'NR' and vareart = 'NR' order by id", __FILE__ . " linje " . __LINE__);
 	while ($r = db_fetch_array($q)) {
 		$d = (string) (int) $r['debitor'];
 		$v = (string) (int) $r['vare'];
@@ -271,8 +273,8 @@ function settings_discount_matrix_normalise(string $posted): array
 }
 
 /**
- * Write the matrix to table rabat by group number (spec G3.5, audit R6). Only cells of the groups shown are touched;
- * rows for other groups (e.g. stored by the old page by position) stay as they are.
+ * Write the matrix to table rabat by group number, marked 'NR' (spec G3.5, audit R6, decision 20). Only 'NR' cells of
+ * the groups shown are touched; the old page's rows (by position) stay as they are and are listed as inactive.
  */
 function settings_discount_matrix_write(string $raw): void
 {
@@ -288,7 +290,7 @@ function settings_discount_matrix_write(string $raw): void
 		}
 	}
 	$have = array();
-	$q = db_select("select id, debitor, vare from rabat order by id", __FILE__ . " linje " . __LINE__);
+	$q = db_select("select id, debitor, vare from rabat where debitorart = 'NR' and vareart = 'NR' order by id", __FILE__ . " linje " . __LINE__);
 	while ($r = db_fetch_array($q)) {
 		$have[(string) (int) $r['debitor']][(string) (int) $r['vare']][] = (int) $r['id'];
 	}
@@ -300,7 +302,7 @@ function settings_discount_matrix_write(string $raw): void
 				if ($ids) {
 					db_modify("update rabat set rabat = '$n', rabatart = '$type' where id = " . array_shift($ids), __FILE__ . " linje " . __LINE__);
 				} else {
-					db_modify("insert into rabat (rabat, debitorart, debitor, vareart, vare, rabatart) values ('$n', 'DG', '$d', 'VG', '$v', '$type')", __FILE__ . " linje " . __LINE__);
+					db_modify("insert into rabat (rabat, debitorart, debitor, vareart, vare, rabatart) values ('$n', 'NR', '$d', 'NR', '$v', '$type')", __FILE__ . " linje " . __LINE__);
 				}
 			}
 			foreach ($ids as $id) {
@@ -308,4 +310,85 @@ function settings_discount_matrix_write(string $raw): void
 			}
 		}
 	}
+}
+
+/**
+ * The axes the old discount page showed, by position (1, 2, ...) as it stored them: customer discount groups of the
+ * active year, else debtor groups; item discount groups of the active year, else item groups; by group number.
+ *
+ * @return array{rows: array<int, array{0: string, 1: string}>, cols: array<int, array{0: string, 1: string}>}
+ */
+function settings_discount_legacy_axes(): array
+{
+	static $axes = null;
+	if ($axes !== null) {
+		return $axes;
+	}
+	global $regnaar;
+	$y = (int) $regnaar;
+	$read = function (string $art, string $name) use ($y) {
+		$out = array();
+		$q = db_select("select kodenr, $name as navn from grupper where art = '$art' and fiscal_year = $y order by cast(kodenr as integer)", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$out[count($out) + 1] = array((string) (int) $r['kodenr'], trim((string) $r['navn']));
+		}
+		return $out;
+	};
+	$rows = $read('DRG', 'box1');
+	if (!$rows) {
+		$rows = $read('DG', 'beskrivelse');
+	}
+	$cols = $read('DVRG', 'box1');
+	if (!$cols) {
+		$cols = $read('VG', 'beskrivelse');
+	}
+	$axes = array('rows' => $rows, 'cols' => $cols);
+	return $axes;
+}
+
+/**
+ * The group numbers an old discount row moves to: the groups at its positions, when both are in today's matrix.
+ *
+ * @return array{0: string, 1: string}|null
+ */
+function settings_discount_transfer_target(array $raw): ?array
+{
+	$old = settings_discount_legacy_axes();
+	$now = settings_discount_axes();
+	$p = (int) $raw['debitor'];
+	$q = (int) $raw['vare'];
+	if (!isset($old['rows'][$p]) || !isset($old['cols'][$q])) {
+		return null;
+	}
+	$d = $old['rows'][$p][0];
+	$v = $old['cols'][$q][0];
+	return (isset($now['rows'][$d]) && isset($now['cols'][$v])) ? array($d, $v) : null;
+}
+
+/**
+ * "Overfør" on an old discount row (decision 20): the discount moves into the matrix by group number. Refused when the
+ * two groups already have a discount, or the customer group's discounts are of the other type.
+ *
+ * @return array<int, string> flash entry
+ */
+function settings_discount_transfer(string $sectionId, string $tableId, array $raw): array
+{
+	$target = settings_discount_transfer_target($raw);
+	if ($target === null) {
+		return array('err', st_txt(5719));
+	}
+	list($d, $v) = $target;
+	$type = trim((string) $raw['rabatart']) === 'amount' ? 'amount' : '%';
+	$n = (float) $raw['rabat'];
+	$clash = db_fetch_array(db_select("select id from rabat where debitorart = 'NR' and vareart = 'NR' and debitor = $d and (vare = $v or coalesce(rabatart, '%') <> '$type') limit 1", __FILE__ . " linje " . __LINE__));
+	if ($clash) {
+		return array('err', st_txt(6904));
+	}
+	transaktion('begin');
+	db_modify("insert into rabat (rabat, debitorart, debitor, vareart, vare, rabatart) values ('$n', 'NR', '$d', 'NR', '$v', '$type')", __FILE__ . " linje " . __LINE__);
+	db_modify("delete from rabat where id = " . (int) $raw['id'], __FILE__ . " linje " . __LINE__);
+	transaktion('commit');
+	SettingsService::auditRow($sectionId, $tableId . '.discount_transfer', $sectionId . '.' . $tableId . '#' . (int) $raw['id'],
+		json_encode(array('position' => array((int) $raw['debitor'], (int) $raw['vare']))), json_encode(array('debitor' => $d, 'vare' => $v, 'rabat' => $n, 'type' => $type)), 'setting.action');
+	return array('ok', st_txt(6903));
 }

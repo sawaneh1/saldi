@@ -24,6 +24,7 @@
 //                  Stage 2: step 4 invoice (bank, payment terms, next invoice number, sender, footer, live preview, logo on
 //                  the invoice), step 5 invitations through user_invite() (source 'onboarding'), step 6 summary with a
 //                  test invoice printed from a rolled-back order.
+// 20261008 Sawaneh Step 3 VAT period values month|quarter|halfyear, as vat.period in G2.2 (settings decision 19).
 
 @session_start();
 $s_id = session_id();
@@ -528,7 +529,7 @@ if ($step === 'fiscal') {
 		. "<label><input type='radio' name='vat_reg' value='on'" . ($vatReg !== 'off' ? ' checked' : '') . " onchange='onbVat()'>" . $h($tx('6737|Ja')) . "</label>"
 		. "<label><input type='radio' name='vat_reg' value='off'" . ($vatReg === 'off' ? ' checked' : '') . " onchange='onbVat()'>" . $h($tx('6738|Nej')) . "</label></div></div>";
 	print "<div class='f' id='vatBox'" . ($vatReg === 'off' ? " style='display:none'" : '') . "><label class='l'>" . $h($tx('6739|Momsperiode')) . "</label><select name='vat_period'>";
-	foreach (array('M' => '6740|Månedlig', 'K' => '6741|Kvartalsvis', 'H' => '6742|Halvårlig') as $k => $t) {
+	foreach (array('month' => '6740|Månedlig', 'quarter' => '6741|Kvartalsvis', 'halfyear' => '6742|Halvårlig') as $k => $t) {
 		print "<option value='$k'" . ($vatPeriod === $k ? ' selected' : '') . ">" . $h($tx($t)) . "</option>";
 	}
 	print "</select><div class='hint'>" . $h($tx('6743|Står på din registreringsbekræftelse fra Skattestyrelsen.')) . "</div></div>";

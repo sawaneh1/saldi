@@ -27,6 +27,8 @@
 //                  a type's values deleted with it.
 // 20261006 Sawaneh Onboarding part 1: settings_fiscal_year_set_first() gives the first year a new period while nothing
 //                  is posted; the date checks are shared with the year creation.
+// 20261008 Sawaneh Settings decision 20: old discount rows (G3.5) - group names by the old page's positions, the value,
+//                  and the per-row Overfør; row_locked 'always'.
 
 // ---------------------------------------------------------------- fiscal years (grupper art RA)
 
@@ -497,6 +499,9 @@ function settings_currency_step_effect(array $t, array $step): array
 
 function settings_rows_hook_locked(string $hook, array $row): bool
 {
+	if ($hook === 'always') {
+		return true;
+	}
 	return $hook === 'fiscal_year_deleted' && settings_fy_deleted($row['raw']);
 }
 
@@ -508,6 +513,14 @@ function settings_rows_derived_extra(string $name, array $row): ?string
 		case 'group_items':
 			$n = settings_group_item_count($raw);
 			return $n ? sprintf(st_txt(6427), number_format($n, 0, ',', '.')) : '';
+		case 'legacy_discount_debtor':
+		case 'legacy_discount_item':
+			$axes = settings_discount_legacy_axes();
+			$pos = (int) ($name === 'legacy_discount_debtor' ? $raw['debitor'] : $raw['vare']);
+			$axis = $axes[$name === 'legacy_discount_debtor' ? 'rows' : 'cols'];
+			return isset($axis[$pos]) ? $axis[$pos][0] . ' ' . $axis[$pos][1] : '#' . $pos;
+		case 'legacy_discount_value':
+			return str_replace('.', ',', (string) (float) $raw['rabat']) . (trim((string) $raw['rabatart']) === 'amount' ? ' kr/stk' : ' %');
 		case 'variant_values':
 			$names = array();
 			$q = db_select("select beskrivelse from variant_typer where variant_id = " . (int) $row['id'] . " order by beskrivelse, id", __FILE__ . " linje " . __LINE__);
@@ -672,6 +685,8 @@ function settings_rows_action_visible(string $name, array $row): bool
 			return settings_fy_archive_refusal($raw) === '';
 		case 'group_apply':
 			return settings_group_item_count($raw) > 0;
+		case 'discount_transfer':
+			return settings_discount_transfer_target($raw) !== null;
 		case 'move_control':
 			return trim((string) $raw['box2']) !== '' && settings_fy_count("select count(*) as n from adresser where art = '" . (substr((string) $raw['art'], 0, 1) === 'K' ? 'K' : 'D') . "' and cast(gruppe as text) = '" . (int) $raw['kodenr'] . "'") > 0;
 	}
@@ -686,12 +701,16 @@ function settings_rows_action_visible(string $name, array $row): bool
 function settings_rows_row_action(string $sectionId, string $tableId, array $t, array $row, string $name): array
 {
 	$raw = $row['raw'];
-	$k = (int) $raw['kodenr'];
+	$k = isset($raw['kodenr']) ? (int) $raw['kodenr'] : (int) $raw['id'];
 	$out = array('flash' => array('err', st_txt(5719)), 'redirect' => '');
 	if (!settings_rows_action_visible($name, $row)) {
 		return $out;
 	}
 	$objekt = $sectionId . '.' . $tableId . '#' . $k;
+	if ($name === 'discount_transfer') {
+		$out['flash'] = settings_discount_transfer($sectionId, $tableId, $raw);
+		return $out;
+	}
 	if ($name === 'move_control') {
 		$out['flash'] = settings_control_move($sectionId, $tableId, $raw, isset($GLOBALS['settings_row_action_arg']) ? (string) $GLOBALS['settings_row_action_arg'] : '');
 		return $out;

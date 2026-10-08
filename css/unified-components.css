@@ -1104,6 +1104,12 @@ body:has(.st-page) { margin: 0; background: #eef3fb !important; }
 .st-input.st-input-date, .st-dbody .st-input.st-input-date { width: 124px; }
 .st-qhelp { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-left: 8px; border-radius: 50%; border: 1px solid var(--st-border, #d5dbe6); background: transparent; color: var(--st-text-2); font-size: 13px; font-weight: 600; cursor: pointer; vertical-align: middle; }
 .st-qhelp:hover { color: var(--st-link, #114691); border-color: currentColor; }
+.st-qwrap { position: relative; display: inline-block; vertical-align: middle; }
+.st-qpop { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: 320px; max-width: calc(100vw - 32px); padding: 12px 14px; border: 1px solid var(--st-border); border-radius: var(--st-r, 10px); background: var(--st-surface); box-shadow: var(--st-shadow); color: var(--st-text); font-size: 14px; font-weight: 400; line-height: 1.45; letter-spacing: 0; }
+.st-qpop[hidden] { display: none; }
+.st-qpop-t { display: block; }
+.st-qpop-guides { display: inline-block; margin-top: 8px; color: var(--st-link, #114691); font-weight: 600; }
+@media (max-width: 600px) { .st-qpop { position: fixed; top: auto; left: 16px; right: 16px; width: auto; } }
 .st-more { margin-top: 4px; font-size: 13px; color: var(--st-text-2); }
 .st-more summary { cursor: pointer; color: var(--st-link, #114691); }
 .st-more p { margin: 6px 0 0; }

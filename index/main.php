@@ -62,6 +62,7 @@
 //                  Alt+L; 44 px bar except Oversigt; avatar-only chip below 1240 px.
 // 20261004 Sawaneh topbarSetGear(): the gear in the sub-bar opens the settings section that governs the page in the frame (§8.11).
 // 20261006 Sawaneh saldi:assist-ask from a settings section's "?": its guide, or Assist with the section as context.
+// 20261008 Sawaneh saldi:guides-open from a settings section's "?" opens Guides (settings decision 21; replaces saldi:assist-ask).
 // 20261006 Sawaneh Onboarding part 1: the welcome guide's overlay; a new ledger's first login by a user with the Settings
 //                  permission opens it and sets the state to started (Requirements_onboarding_welcome_EN.md §4, §8).
 @session_start();
@@ -631,11 +632,10 @@ function brightenColor($color, $amount = 0.2) {
     if (e.data.type === 'saldi:breadcrumb') { topbarCrumbMsg = e.data; topbarRenderCrumb(e.data); }
     if (e.data.type === 'saldi:navigate-ack') { clearTimeout(topbarNavTimer); }
     if (e.data.type === 'saldi:back') { topbarGoBack(); }
-    if (e.data.type === 'saldi:assist-ask') {
-      // A settings section's "?" (settings spec §8.14): its guide when it has one, otherwise Assist about the section.
-      if (topbarCrumbMsg && topbarCrumbMsg.help && topbarCrumbMsg.help.guide) { topbarAssistRun('guide'); return; }
-      if (window.SaldiAssist) { window.SaldiAssist.pageContext = Object.assign(topbarAssistContext(), { section: String(e.data.section || '') }); }
-      topbarOpenAssist();
+    if (e.data.type === 'saldi:guides-open') {
+      // The Guides link in a settings section's "?" (settings spec §8.14, decision 21).
+      const overlay = document.getElementById('guideOverlay');
+      if (overlay) { topbarCloseAll(); overlay.classList.add('active'); }
     }
   });
   document.addEventListener('keydown', (e) => {

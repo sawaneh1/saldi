@@ -77,6 +77,9 @@
 //                  storage (the EXISTING location and encoding), permission, dependencies.
 //                  Section pages, save logic, search, change history and the "moved" page are
 //                  generated from this file. Included by settingsRegistry.php.
+// 20261008 Sawaneh Settings decisions 19-20: vat.registered and vat.period at the top of G2.2 (settings var_grp 'vat',
+//                  company scope); the discount matrix keeps only rows marked 'NR' (by group number), older rows are
+//                  listed as inactive in G3.5 with a per-row Overfør.
 //
 // Storage encodings mirror the current writer (risk review R23):
 //   onEmpty  'on' / ''        onOff  'on' / 'off'        oneZero  '1' / '0'        raw  as typed
@@ -318,7 +321,7 @@ if (!function_exists('getSettingsSections')) {
 			),
 			'finance.vat' => array(
 				'group' => 'finance', 'section' => 'vat', 'number' => 'G2.2', 'label' => 770, 'icon' => 'bx-receipt', 'kind' => 'rows',
-				'lead' => 6468, 'subsections' => array('sales' => 994, 'purchase' => 996, 'services' => 997, 'goods' => 998, 'report' => 1009),
+				'lead' => 6468, 'subsections' => array('registration' => 6898, 'sales' => 994, 'purchase' => 996, 'services' => 997, 'goods' => 998, 'report' => 1009),
 				'tables' => array(
 					'sales' => array('sub' => 'sales', 'label' => 994, 'help' => 2247, 'add' => 6469, 'empty' => 6470, 'storage' => array('grupper', 'SM'), 'standard' => 'grupper', 'kode' => 'S',
 						'fiscal' => true, 'usage' => 'vat', 'inactive' => true,
@@ -521,7 +524,7 @@ if (!function_exists('getSettingsSections')) {
 			),
 			'sales.discounts' => array(
 				'group' => 'sales', 'section' => 'discounts', 'number' => 'G3.5', 'label' => 6851, 'icon' => 'bx-purchase-tag-alt', 'kind' => 'rows',
-				'lead' => 6854, 'subsections' => array('prices' => 2471, 'campaigns' => 2472, 'quantity' => 6855, 'debtor_groups' => 6878, 'item_groups' => 6879, 'matrix' => 6875),
+				'lead' => 6854, 'subsections' => array('prices' => 2471, 'campaigns' => 2472, 'quantity' => 6855, 'debtor_groups' => 6878, 'item_groups' => 6879, 'matrix' => 6875, 'old_discounts' => 6900),
 				'tables' => array(
 					'prices' => array('sub' => 'prices', 'label' => 2471, 'help' => 6856, 'add' => 6857, 'empty' => 6858, 'storage' => array('grupper', 'VPG'),
 						'usage' => 'price_group', 'row_actions' => array('group_apply' => array('label' => 6852, 'confirm_title' => 6852, 'confirm' => 6853)),
@@ -566,6 +569,14 @@ if (!function_exists('getSettingsSections')) {
 						'columns' => array(
 							'kodenr' => array('label' => 2248, 'type' => 'code'),
 							'box1' => array('label' => 646, 'type' => 'text', 'required' => true),
+						)),
+					'old_discounts' => array('sub' => 'old_discounts', 'label' => 6900, 'help' => 6901, 'empty' => 6858, 'storage' => array('table', 'rabat'),
+						'exclude' => "coalesce(debitorart, '') <> 'NR' or coalesce(vareart, '') <> 'NR'", 'order' => 'debitor, vare, id',
+						'no_add' => true, 'hide_empty' => true, 'row_locked' => 'always', 'row_actions' => array('discount_transfer' => array('label' => 6902)),
+						'columns' => array(
+							'debitor' => array('label' => 374, 'type' => 'derived', 'derive' => 'legacy_discount_debtor'),
+							'vare' => array('label' => 6230, 'type' => 'derived', 'derive' => 'legacy_discount_item'),
+							'rabat' => array('label' => 428, 'type' => 'derived', 'derive' => 'legacy_discount_value'),
 						)),
 				),
 				'legacy' => array(array(2471), array(2472), array(1006), array(775)),
@@ -849,6 +860,15 @@ if (!function_exists('getSettingsSections')) {
 			'items.stock.batch_expiry' => array('sub' => 'card', 'type' => 'bool', 'label' => 6051, 'help' => 6052, 'default' => false,
 				'storage' => array('settings', 'items', 'batchExpiryEnabled', 'onOff'), 'legacy' => $vare,
 				'keywords' => array('batch', 'batch management', 'batch control', 'expiry date', 'due date', 'shelf life', 'fefo', 'batchstyring', 'udløbsdato', 'holdbarhed', 'batchkontrol')),
+
+			// ---------------------------------------------------------------- G2.2 VAT registration
+			'vat.registered' => array('group' => 'finance', 'section' => 'vat', 'sub' => 'registration', 'type' => 'bool', 'label' => 6895, 'help' => 6896, 'default' => true,
+				'storage' => array('settings', 'vat', 'vat_registered', 'onOff'),
+				'keywords' => array('momsregistreret', 'momspligtig', 'vat registered', 'mva-registrert')),
+			'vat.period' => array('group' => 'finance', 'section' => 'vat', 'sub' => 'registration', 'type' => 'select', 'label' => 6739, 'help' => 6897, 'default' => 'quarter',
+				'options' => array('month' => 6740, 'quarter' => 6741, 'halfyear' => 6742),
+				'storage' => array('settings', 'vat', 'vat_period', 'raw'), 'visible_if' => array('setting', 'vat.registered', true),
+				'keywords' => array('momsperiode', 'vat period', 'mva-periode', 'kvartal', 'halvår', 'måned')),
 
 			// ---------------------------------------------------------------- G2.5 Cash journal & payments
 			'finance.cash_journal.different_dates_same_voucher' => array('sub' => 'journal', 'type' => 'bool', 'label' => 708, 'help' => 709, 'default' => false,

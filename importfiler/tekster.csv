@@ -6490,4 +6490,28 @@
 6892	Samlekontoen er flyttet til %s.	The control account has been moved to %s.	Samlekontoen er flyttet til %s.
 6893	Hjælp til denne side	Help for this page	Hjelp til denne siden
 6894	Læs mere	Read more	Les mer
+6895	Momsregistreret	VAT registered	Mva-registrert
+6896	Vælg Nej, hvis virksomheden ikke er momsregistreret. Så skjules momsperioden, og påmindelser om moms slås fra.	Choose No if the company is not VAT registered. The VAT period is then hidden and VAT reminders are switched off.	Velg Nei hvis virksomheten ikke er mva-registrert. Da skjules mva-perioden, og påminnelser om mva slås av.
+6897	Bruges som standardperiode i momsangivelsen og på oversigten.	Used as the default period of the VAT return and on the dashboard.	Brukes som standardperiode i mva-meldingen og på oversikten.
+6898	Momsregistrering	VAT registration	Mva-registrering
+6899	Momsangivelse %s	VAT return %s	Mva-melding %s
+6900	Tidligere rabatter (ikke aktive)	Previous discounts (not active)	Tidligere rabatter (ikke aktive)
+6901	Disse rabatter var sat op, men har ikke virket på grund af en fejl. Overfør dem, du stadig vil bruge.	These discounts were set up but have not worked because of an error. Transfer the ones you still want to use.	Disse rabattene var satt opp, men har ikke virket på grunn av en feil. Overfør dem du fortsatt vil bruke.
+6902	Overfør	Transfer	Overfør
+6903	Rabatten er overført til rabatmatrixen.	The discount has been transferred to the discount matrix.	Rabatten er overført til rabattmatrisen.
+6904	Kan ikke overføres: de to grupper har allerede en rabat, eller kundegruppens rabatter er af en anden type.	Cannot be transferred: the two groups already have a discount, or the customer group's discounts are of another type.	Kan ikke overføres: de to gruppene har allerede en rabatt, eller kundegruppens rabatter er av en annen type.
+6930	Jeg forstår, at regnskabet bliver overskrevet med sikkerhedskopien.	I understand that the ledger will be overwritten with the backup.	Jeg forstår at regnskapet blir overskrevet med sikkerhetskopien.
+6931	Sæt flueben for at bekræfte, at regnskabet må overskrives.	Tick the box to confirm that the ledger may be overwritten.	Kryss av for å bekrefte at regnskapet kan overskrives.
+6932	Adgang nægtet	Access denied	Ingen tilgang
+6933	Regnskabets database findes ikke. Opret regnskabet, før en sikkerhedskopi indlæses.	The ledger's database does not exist. Create the ledger before loading a backup.	Regnskapets database finnes ikke. Opprett regnskapet før en sikkerhetskopi lastes inn.
+6934	Filen er en MySQL-sikkerhedskopi. Den kan kun indlæses som flytning fra MySQL i adminpanelet på et tomt regnskab.	The file is a MySQL backup. It can only be loaded as a move from MySQL in the admin panel, on an empty ledger.	Filen er en MySQL-sikkerhetskopi. Den kan bare lastes inn som flytting fra MySQL i adminpanelet på et tomt regnskap.
+6935	Flyt fra MySQL	Move from MySQL	Flytt fra MySQL
+6936	Til kunder, der flytter fra deres egen installation: MySQL-sikkerhedskopien indlæses, og dette tomme regnskab erstattes. Tag først en sikkerhedskopi af regnskabet.	For customers moving from their own installation: the MySQL backup is loaded and this empty ledger is replaced. Take a backup of the ledger first.	For kunder som flytter fra sin egen installasjon: MySQL-sikkerhetskopien lastes inn, og dette tomme regnskapet erstattes. Ta en sikkerhetskopi av regnskapet først.
+6937	Din adgangskode	Your password	Ditt passord
+6938	Forkert adgangskode - intet er ændret.	Wrong password - nothing has been changed.	Feil passord - ingenting er endret.
+6939	Flytning fra MySQL kan kun ske fra adminpanelet på et tomt regnskab (uden posteringer, ordrer og kassekladdelinjer).	A move from MySQL can only be done from the admin panel on an empty ledger (no postings, orders or journal lines).	Flytting fra MySQL kan bare gjøres fra adminpanelet på et tomt regnskap (uten posteringer, ordrer og bilagslinjer).
+6940	Formularen er udløbet. Hent siden igen, og prøv igen.	The form has expired. Reload the page and try again.	Skjemaet er utløpt. Last inn siden på nytt og prøv igjen.
+6941	Udfyld MySQL-database (kun bogstaver, tal og _) og MySQL-bruger.	Fill in the MySQL database (letters, digits and _ only) and the MySQL user.	Fyll ut MySQL-database (bare bokstaver, tall og _) og MySQL-bruker.
+6942	Filen er ikke en MySQL-sikkerhedskopi.	The file is not a MySQL backup.	Filen er ikke en MySQL-sikkerhetskopi.
+6943	Start flytning	Start the move	Start flytting
 6950	Kunden har ingen jobkort. Vil du oprette et?	The customer has no job cards. Do you want to create one?	Kunden har ingen jobbkort. Vil du opprette et?

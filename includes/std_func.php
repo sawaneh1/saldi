@@ -88,6 +88,7 @@
 // 20261001 Sawaneh update_settings_value() treats NULL and 0 (user, till, group) as the same key, as the unique
 // 20261005 Sawaneh stdFunc/pageChrome.php: page_breadcrumb() / page_help() for the shell's breadcrumb and Assist menu.
 //                  index on settings does; a concurrent insert of the same key is dropped (ON CONFLICT DO NOTHING).
+// 20261008 Sawaneh vat_registration() and vat_period_range(): vat.registered / vat.period (settings decision 19).
 
 include(__DIR__ . '/stdFunc/dkDecimal.php');
 include(__DIR__ . '/stdFunc/nrCast.php');
@@ -3391,5 +3392,54 @@ if (!function_exists('moms_periode_luk_ensure_schema')) {
 
         return $status;
     }
+}
+
+if (!function_exists('vat_registration')) {
+	/**
+	 * The company's VAT registration (settings vat.registered / vat.period, var_grp 'vat', company scope): registered
+	 * unless set to off; period 'month', 'quarter' or 'halfyear' (quarter by default).
+	 *
+	 * @return array{registered: bool, period: string}
+	 */
+	function vat_registration() {
+		$out = array('registered' => true, 'period' => 'quarter');
+		$q = db_select("select var_name, var_value from settings where var_grp = 'vat' and var_name in ('vat_registered', 'vat_period') and (user_id is null or user_id = 0) order by id", __FILE__ . " linje " . __LINE__);
+		while ($r = db_fetch_array($q)) {
+			$v = trim((string) $r['var_value']);
+			if ($r['var_name'] === 'vat_registered') {
+				$out['registered'] = ($v !== 'off');
+			} else {
+				$legacy = array('M' => 'month', 'K' => 'quarter', 'H' => 'halfyear');
+				$v = isset($legacy[$v]) ? $legacy[$v] : $v;
+				if (in_array($v, array('month', 'quarter', 'halfyear'), true)) {
+					$out['period'] = $v;
+				}
+			}
+		}
+		return $out;
+	}
+}
+
+if (!function_exists('vat_period_range')) {
+	/**
+	 * The calendar VAT period holding $date ('Y-m-d'), or with $previous the one before it.
+	 *
+	 * @return array{0: string, 1: string} first and last day
+	 */
+	function vat_period_range($period, $date, $previous = false) {
+		$months = $period === 'month' ? 1 : ($period === 'halfyear' ? 6 : 3);
+		$y = (int) substr($date, 0, 4);
+		$m = (int) substr($date, 5, 2);
+		$start = $m - (($m - 1) % $months);
+		if ($previous) {
+			$start -= $months;
+			if ($start < 1) {
+				$start += 12;
+				$y--;
+			}
+		}
+		$from = sprintf('%04d-%02d-01', $y, $start);
+		return array($from, date('Y-m-t', strtotime($from . ' +' . ($months - 1) . ' months')));
+	}
 }
 ?>

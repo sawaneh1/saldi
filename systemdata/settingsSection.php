@@ -46,6 +46,7 @@
 // 20261003 Sawaneh G6.3: a section may carry its own permission key (settings.email).
 // 20261002 Sawaneh Phase 4b batch 2 (G9): a section of 'kind' list renders includes/settings/listView.php - rows with a drawer
 //                  per integration, each drawer its own form; an empty secret leaves the stored value (P8); item kept over redirects.
+// 20261008 Sawaneh The Assist menu's guide is the section's installed guide (settings decision 21).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -65,7 +66,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 
 $title = "Indstillinger";
-$css = "../css/unified-components.css?v=20261006c";
+$css = "../css/unified-components.css?v=20261008a";
 $modulnr = 0; // the section's own permission key is required below
 $permission_key = 'any';
 $permission_post_read = false;
@@ -100,8 +101,9 @@ $canWrite = perm_can($permission, 'write');
 
 $defs = settings_section_definitions($sectionId);
 SettingsService::preload(array_keys($defs));
-if (!empty($section['guide']) && function_exists('page_help')) {
-	page_help(array('guide' => (string) $section['guide']));
+$sectionGuide = st_section_guide($section);
+if ($sectionGuide !== '' && function_exists('page_help')) {
+	page_help(array('guide' => $sectionGuide));
 }
 // Opened from a module page through the gear in the sub-bar (spec §8.11): a path inside Saldi only, kept through saves.
 $returnTo = isset($_GET['back']) ? (string) $_GET['back'] : (isset($_POST['back']) ? (string) $_POST['back'] : '');

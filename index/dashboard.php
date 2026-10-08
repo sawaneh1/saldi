@@ -33,6 +33,7 @@
 // 20260930 Sawaneh "Review roles" card for administrators after the migration to roles (roles spec §6.3).
 // 20260930 Sawaneh check_permissions() moved to includes/std_func.php (roles spec §4.4).
 // 20261006 Sawaneh Onboarding part 1: the "Kom godt i gang" card at the top (Requirements_onboarding_welcome_EN.md §7).
+// 20261008 Sawaneh The VAT widget is hidden when not VAT registered and shows the current VAT period (decision 19).
 @session_start();
 $s_id = session_id();
 
@@ -306,9 +307,10 @@ if ($ordercount === "on") {
 #
 # #######################################
 
-if ($vat_count == "on") {
+$vatRegistration = vat_registration();
+if ($vat_count == "on" && $vatRegistration['registered']) {
 	include ("dashboardIncludes/vat_func.php");
-	vat_info($regnstart, $regnslut);
+	vat_info($regnstart, $regnslut, $vatRegistration['period']);
 }
 
 # #######################################

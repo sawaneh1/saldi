@@ -137,6 +137,7 @@
 // 20260916 CDX/LH Preserve the import transaction while posting; retain master invoice savepoints.
 // 20261006 Sawaneh WP-2.11-2.13: no stray ?id= on fokus; sag retursides stored plain and urlencoded in the Ny link; the menu-T
 //                  Tilbage uses the given returside (an ordre.php target gets the order's id) instead of always the order list.
+// 20261008 Sawaneh The group discount is read from the discount matrix's 'NR' rows only (settings decision 20).
 
 include_once(__DIR__ . '/stdFunc/fefo.php'); # fefo_order_clause() - used by batch()
 
@@ -4216,7 +4217,7 @@ function opret_ordrelinje($id, $vare_id, $varenr, $antal, $beskrivelse, $pris, $
 				$varerabatgruppe = 0;
 			if (!isset($rabat))
 				$rabat = 0;
-			$qtxt = "select rabat,rabatart from rabat where vare='$varerabatgruppe' and debitor='$debitorrabatgruppe'";
+			$qtxt = "select rabat,rabatart from rabat where debitorart='NR' and vareart='NR' and vare='$varerabatgruppe' and debitor='$debitorrabatgruppe'";
 			if ($r2 = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__))) {
 				$rabat = $r2['rabat'];
 				$rabatart = $r2['rabatart'];

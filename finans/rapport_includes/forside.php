@@ -47,6 +47,7 @@
 // 20260617 PK Placed projekt_fra and projekt_til in the same <td>
 // 20260915 CDX/PHR Handle stale financial years and empty charts of accounts on report entry.
 // 20260917 CL/LH Keep header, menu and footer when no financial year exists, and disable submit when the chart of accounts is empty.
+// 20261008 Sawaneh Choosing Momsangivelse selects the last completed VAT period (vat.period, settings decision 19).
 
 function forside($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til, $dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $ansat_fra, $ansat_til, $afd, $projekt_fra, $projekt_til, $simulering, $lagerbev) {
 
@@ -58,6 +59,7 @@ function forside($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til, $dato_f
 	global $revisor;
 	global $sprog_id;
 	global $top_bund;
+	$vatMonthsGiven = ((string) $maaned_fra !== '');
 	global $buttonColor;
 	global $buttonTxtColor;
 
@@ -531,6 +533,17 @@ if ($maaned_fra < $aktivStartMd) $aar_fra = $aktivSlutAar;
 		print "<option value='$x'>$x.</option>\n";
 	print "</select>";
 	print "</td></tr>\n";
+	$vatReg = vat_registration();
+	if ($vatReg['registered']) {
+		list($vatFrom, $vatTo) = vat_period_range($vatReg['period'], date('Y-m-d'), true);
+		$vatJs = json_encode(array('from' => (int) substr($vatFrom, 0, 4) . '|' . (int) substr($vatFrom, 5, 2), 'to' => (int) substr($vatTo, 0, 4) . '|' . (int) substr($vatTo, 5, 2), 'init' => $rapportart == 'momsangivelse' && !$vatMonthsGiven));
+		print "<script>(function (p) { var q = function (n) { return document.querySelector('select[name=' + n + ']'); }, f = q('maaned_fra'), art = q('rapportart');"
+			. " if (!f || !art) { return; } var has = function (s, v) { if (!s) { return 0; } for (var i = 0; i < s.options.length; i++) { if (s.options[i].value === v) { return i + 1; } } return 0; };"
+			. " var vat = function () { var t = q('maaned_til'), a = has(f, p.from), b = has(t, p.to); if (art.value !== 'momsangivelse' || !a || !b) { return; }"
+			. " f.selectedIndex = a - 1; t.selectedIndex = b - 1; var df = q('dato_fra'), dt = q('dato_til');"
+			. " if (has(df, '1')) { df.selectedIndex = has(df, '1') - 1; } if (has(dt, '31')) { dt.selectedIndex = has(dt, '31') - 1; } };"
+			. " art.addEventListener('change', vat); if (p.init) { vat(); } })(" . $vatJs . ");</script>\n";
+	}
 	#print "<tr><td> ".findtekst(900,$sprog_id)."</td><td colspan=2><select name=Konto (fra)\n";
 	print "<tr><td> " . findtekst(900, $sprog_id) . ":</td><td colspan=2><select name=konto_fra$kontiDisabled>\n"; #20210722
 	if ($antal_konti) {

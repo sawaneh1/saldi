@@ -31,6 +31,7 @@
 //                  definition. Reading, usage counts, validation, saving with one audit row per changed cell,
 //                  delete with usage check, the inaktiv flag and copying a fiscal year live here; the page is drawn
 //                  by rowsView.php and behaves through javascript/settingsRows.js.
+// 20261008 Sawaneh Table option 'hide_empty'; discount group usage counts only the matrix's 'NR' rows (settings decision 20).
 
 /**
  * The tables of a rows section with their defaults filled in.
@@ -44,7 +45,7 @@ function settings_rows_tables(array $section): array
 		$t += array('sub' => $tableId, 'fiscal' => false, 'usage' => null, 'inactive' => false, 'exclude' => '', 'help' => null,
 			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null, 'defaults' => array(),
 			'no_add' => false, 'filter' => null, 'auto_code' => false, 'row_actions' => array(), 'confirm' => null, 'row_check' => null,
-			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null, 'standard' => null);
+			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null, 'standard' => null, 'hide_empty' => false);
 		$st = $t['storage'];
 		$t['kind'] = $st[0] === 'grupper' ? 'grupper' : 'table';
 		$t['art'] = $t['kind'] === 'grupper' ? (string) $st[1] : '';
@@ -268,13 +269,13 @@ function settings_rows_usage(array $t, array $row): array
 			case 'discount_debtor_group':
 				if ($isInt) {
 					$add("select count(*) as n from adresser where art = 'D' and rabatgruppe = $code", 6465);
-					$add("select count(*) as n from rabat where cast(debitor as text) = '$code'", 6877);
+					$add("select count(*) as n from rabat where debitorart = 'NR' and vareart = 'NR' and cast(debitor as text) = '$code'", 6877);
 				}
 				break;
 			case 'discount_item_group':
 				if ($isInt) {
 					$add("select count(*) as n from varer where dvrg = $code", 6427);
-					$add("select count(*) as n from rabat where cast(vare as text) = '$code'", 6877);
+					$add("select count(*) as n from rabat where debitorart = 'NR' and vareart = 'NR' and cast(vare as text) = '$code'", 6877);
 				}
 				break;
 			case 'price_group':

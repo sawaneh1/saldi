@@ -1,5 +1,7 @@
 <?php
-function vat_info($regnstart, $regnslut) {
+// 20261008 Sawaneh Settings decision 19: with a VAT period (vat.period) the widget shows the current VAT period to date,
+//                  compared with the same days last year.
+function vat_info($regnstart, $regnslut, $period = '') {
     # Omsætningsgraf
     global $regnaar, $sprog_id;
 
@@ -11,6 +13,12 @@ function vat_info($regnstart, $regnslut) {
     // Definer første og sidste dag for regnskabsåret
     $firstDayOfYear = date('Y-m-d', strtotime($regnstart)); // Første dag i regnskabsåret
     $lastDayOfYear = date('Y-m-d', strtotime($regnslut)); // Sidste dag i regnskabsåret
+    $title = findtekst('2301|Momsangivelse for året', $sprog_id);
+    if ($period !== '') {
+        list($firstDayOfYear, $periodEnd) = vat_period_range($period, date('Y-m-d'));
+        $lastDayOfYear = min($periodEnd, date('Y-m-d'));
+        $title = sprintf(findtekst('6899|Momsangivelse %s', $sprog_id), date('d.m', strtotime($firstDayOfYear)) . '–' . date('d.m.Y', strtotime($periodEnd)));
+    }
 
     // Beregn første og sidste dag for det foregående regnskabsår
     $firstDayOfLastYear = date('Y-m-d', strtotime('-1 year', strtotime($firstDayOfYear))); // Første dag sidste regnskabsår
@@ -51,6 +59,6 @@ function vat_info($regnstart, $regnslut) {
         : 
         "<span style='color: #ea3c3c'>" . formatNumber(abs($revenue_diff)) . " kr</span> <span style='color: #999'>".findtekst('2386|mindre end sidste år til dato', $sprog_id)."</span>";
 
-    key_value(findtekst('2301|Momsangivelse for året', $sprog_id), formatNumber($revenue ? $revenue : 0)." kr", "<hr style='margin: 1em 0em; background-color: #ddd; border: none; height: 1px'>$revenue_status");
+    key_value($title, formatNumber($revenue ? $revenue : 0)." kr", "<hr style='margin: 1em 0em; background-color: #ddd; border: none; height: 1px'>$revenue_status");
 }
 

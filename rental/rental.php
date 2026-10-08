@@ -27,6 +27,7 @@
 // 20240529 PHR Block for deleteting invoiced orders
 // 20240603 PBLM Fixed booking deletion when invoice is credited
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261008 Sawaneh The group discount is read from the discount matrix's 'NR' rows only (settings decision 20).
 
     @session_start();
     $s_id=session_id();
@@ -1618,7 +1619,7 @@
                 if (!is_numeric($debitorrabatgruppe)) $debitorrabatgruppe=0;
                 if ( !is_numeric($varerabatgruppe)  ) $varerabatgruppe=0;
                 if (!isset($rabat)) $rabat = 0;
-                $qtxt = "select rabat,rabatart from rabat where vare='$varerabatgruppe' and debitor='$debitorrabatgruppe'";
+                $qtxt = "select rabat,rabatart from rabat where debitorart='NR' and vareart='NR' and vare='$varerabatgruppe' and debitor='$debitorrabatgruppe'";
                 if ($r2=db_fetch_array(db_select($qtxt,__FILE__ . " linje " . __LINE__))) {
                     $rabat=$r2['rabat'];
                     $rabatart=$r2['rabatart'];

@@ -21,6 +21,7 @@
 //                  settings table - onboarding_state (new/started/completed/hidden), onboarding_steps (JSON step => done/
 //                  skipped), onboarding_source and onboarding_role. A company without a state counts as completed, so
 //                  existing customers never see the pop-up without an upgrade step. The dashboard card is rendered here.
+// 20261008 Sawaneh Step 3 VAT is the settings vat.registered / vat.period, period month|quarter|halfyear (decision 19).
 
 if (!function_exists('onb_get')):
 
@@ -290,23 +291,20 @@ function onb_neighbours(string $step): array
 }
 
 /**
- * VAT registration and period chosen in step 3. Nothing in Saldi stores them today (finans/moms_periode.php only opens
- * and closes months), so they are kept in settings var_grp 'vat' until a VAT setting takes them over.
+ * VAT registration and period chosen in step 3: the settings vat.registered and vat.period (G2.2, decision 19).
  *
  * @return array{registered: bool, period: string}
  */
 function onb_vat_get(): array
 {
-	$reg = get_settings_value('vat_registered', 'vat', '', 0);
-	$per = get_settings_value('vat_period', 'vat', '', 0);
-	return array('registered' => $reg !== 'off', 'period' => in_array($per, array('M', 'K', 'H'), true) ? $per : 'K');
+	return vat_registration();
 }
 
 function onb_vat_set(bool $registered, string $period): void
 {
-	update_settings_value('vat_registered', 'vat', $registered ? 'on' : 'off', 'VAT registered (onboarding step 3)', 0);
-	if ($registered && in_array($period, array('M', 'K', 'H'), true)) {
-		update_settings_value('vat_period', 'vat', $period, 'VAT period M/K/H (onboarding step 3)', 0);
+	update_settings_value('vat_registered', 'vat', $registered ? 'on' : 'off', 'VAT registered', 0);
+	if ($registered && in_array($period, array('month', 'quarter', 'halfyear'), true)) {
+		update_settings_value('vat_period', 'vat', $period, 'VAT period', 0);
 	}
 }
 

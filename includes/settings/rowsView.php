@@ -25,6 +25,7 @@
 //                  column headers, every cell an input, an always-available "Tilføj" row, trash (with the usage count)
 //                  and the inaktiv eye; ordinary fields of the section above the tables; year selector for per-year
 //                  tables. Behaviour in javascript/settingsRows.js.
+// 20261008 Sawaneh A table with 'hide_empty' and no rows is not shown (old discounts in G3.5).
 
 include_once(__DIR__ . '/rows.php');
 
@@ -263,6 +264,9 @@ function settings_rows_table(array $c, string $tableId, array $t, array $posted,
 {
 	$canWrite = $c['canWrite'];
 	$rows = settings_rows_load($t, $c['year']);
+	if ($t['hide_empty'] && !$rows) {
+		return;
+	}
 	$postedRows = isset($posted[$tableId]) && is_array($posted[$tableId]) ? $posted[$tableId] : array();
 	$hasInactive = false;
 	foreach ($rows as $row) {

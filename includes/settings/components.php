@@ -46,6 +46,8 @@
 // 20261004 Sawaneh G10.6: 'color' type, a #rrggbb text with a colour swatch beside it (empty allowed).
 // 20261002 Sawaneh Phase 4b batch 2 (G9): write-only 'secret' control (masked, Skift), 'info', 'link' and 'mini' rows,
 //                  computed select options, rule 'setting_set', lock 'ht_keys:<var>' for keys the installation manages.
+// 20261008 Sawaneh Settings decision 21: the "?" opens the section's guide (guides/settings/<group>-<section>.html|.pdf)
+//                  when installed, otherwise the section description with a link to Guides.
 
 include_once(__DIR__ . '/SettingsService.php');
 
@@ -702,17 +704,43 @@ function st_ht_key(string $var): string
  * @param array<string, mixed> $state value (form value), original, error (text id), readonly, locked (text id), visible, mine
  */
 /**
- * The "?" in a section header (spec §8.14): opens the section's guide when it has one ('guide' in the registry), otherwise
- * SALDI Assist with the section as context.
+ * The guide of a section (spec §8.14, decision 21): the registry's 'guide' or guides/settings/<group>-<section>, as a
+ * link from systemdata/ when its file (.html or .pdf) is installed, otherwise ''.
+ */
+function st_section_guide(array $section): string
+{
+	$guide = !empty($section['guide']) ? (string) $section['guide'] : 'guides/settings/' . str_replace(array('.', '_'), '-', (string) $section['group'] . '.' . (string) $section['section']);
+	$guide = ltrim(str_replace('..', '', $guide), '/');
+	$root = __DIR__ . '/../../';
+	foreach (pathinfo($guide, PATHINFO_EXTENSION) !== '' ? array('') : array('.html', '.pdf') as $ext) {
+		if (is_file($root . $guide . $ext)) {
+			return '../' . $guide . $ext;
+		}
+	}
+	return '';
+}
+
+/**
+ * The "?" in a section header (spec §8.14, decision 21): opens the section's guide when one is installed, otherwise
+ * shows the section's description with a link to Guides.
  */
 function st_section_help(array $section): string
 {
-	$id = (string) $section['group'] . '.' . (string) $section['section'];
-	$guide = isset($section['guide']) ? (string) $section['guide'] : '';
-	return ' <button type="button" class="st-qhelp" data-section-help="' . st_h($id) . '" data-guide="' . st_h($guide) . '" title="' . st_t(6893) . '" aria-label="' . st_t(6893) . '">?</button>'
+	$guide = st_section_guide($section);
+	if ($guide !== '') {
+		return ' <a class="st-qhelp" href="' . st_h($guide) . '" target="_blank" rel="noopener" title="' . st_t(6893) . '" aria-label="' . st_t(6893) . '">?</a>';
+	}
+	$groups = getSettingsGroups();
+	$desc = !empty($section['lead']) ? st_txt($section['lead']) : (isset($groups[$section['group']]['description']) ? st_txt($groups[$section['group']]['description']) : '');
+	return ' <span class="st-qwrap"><button type="button" class="st-qhelp" data-section-help aria-expanded="false" aria-controls="st-qpop" title="' . st_t(6893) . '" aria-label="' . st_t(6893) . '">?</button>'
+		. '<span class="st-qpop" id="st-qpop" role="note" hidden><span class="st-qpop-t">' . st_h($desc) . '</span> <a href="#" class="st-qpop-guides" data-guides hidden>' . st_t(5504) . '</a></span>'
 		. '<script>(function () { var b = document.querySelector(\'[data-section-help]\'); if (!b || b.dataset.bound) { return; } b.dataset.bound = 1;'
-		. ' b.addEventListener(\'click\', function () { if (window.parent && window.parent !== window) { window.parent.postMessage({ type: \'saldi:assist-ask\', section: b.dataset.sectionHelp }, window.location.origin); }'
-		. ' else if (b.dataset.guide) { window.open(b.dataset.guide, \'_blank\', \'noopener\'); } }); })();</script>';
+		. ' var pop = document.getElementById(\'st-qpop\'), g = pop.querySelector(\'[data-guides]\'), inShell = window.parent && window.parent !== window;'
+		. ' if (inShell) { g.hidden = false; g.addEventListener(\'click\', function (e) { e.preventDefault(); window.parent.postMessage({ type: \'saldi:guides-open\' }, window.location.origin); }); }'
+		. ' var show = function (on) { pop.hidden = !on; b.setAttribute(\'aria-expanded\', on ? \'true\' : \'false\'); };'
+		. ' b.addEventListener(\'click\', function (e) { e.stopPropagation(); show(pop.hidden); });'
+		. ' document.addEventListener(\'click\', function (e) { if (!pop.hidden && !pop.contains(e.target)) { show(false); } });'
+		. ' document.addEventListener(\'keydown\', function (e) { if (e.key === \'Escape\' && !pop.hidden) { show(false); b.focus(); } }); })();</script></span>';
 }
 
 function st_render_field(array $def, array $state): void
