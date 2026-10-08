@@ -35,6 +35,7 @@
 //                  level and the label the next page's came-from chip shows (addendum §5).
 // 20261008 Sawaneh The breadcrumb handlers moved to javascript/pageChrome.js; the head carries only window.saldiPageChrome
 //                  (and the shell-nav style), so a page that redirects after online.php stays under the output buffer.
+// 20261008 Sawaneh The came-from chip keeps the whole path of a page in a subfolder (lager/lister/vareliste.php gave a 404).
 
 if (!function_exists('page_breadcrumb')):
 
@@ -236,8 +237,14 @@ function page_came_from(array $items)
 	$label = page_label_for($prev);
 	$href = $prev;
 	if (strpos($href, '/') === 0) {
-		// The stack holds request URIs (/<install>/dir/page.php?...); the chip needs a path from the Saldi root.
-		$href = '/' . $prevPath . (strpos($prev, '?') !== false ? substr($prev, strpos($prev, '?')) : '');
+		// The stack holds request URIs (/<install>/dir/page.php?...); the chip needs the path from the Saldi root,
+		// so only the install prefix (what precedes this page's own key in the request path) is taken off.
+		$key = page_route_key();
+		$reqPath = (string) parse_url(isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH);
+		$prefix = ($key !== '' && substr($reqPath, -strlen('/' . $key)) === '/' . $key) ? substr($reqPath, 0, -strlen('/' . $key)) : '';
+		if ($prefix !== '' && strpos($href, $prefix . '/') === 0) {
+			$href = substr($href, strlen($prefix));
+		}
 	}
 	return array('label' => $label, 'href' => $href);
 }
