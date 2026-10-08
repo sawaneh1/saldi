@@ -169,11 +169,14 @@ $tx = function ($t) use ($sprog_id) {
 $u8 = function ($s) use ($charset) {
 	return $charset === 'UTF-8' ? (string) $s : mb_convert_encoding((string) $s, 'UTF-8', 'ISO-8859-1');
 };
+// Numbers follow the user's language: 1.234,5 in Danish and Norwegian, 1,234.5 in English.
+$GLOBALS['dashDec'] = ((int) $sprog_id === 2) ? '.' : ',';
+$GLOBALS['dashThou'] = ((int) $sprog_id === 2) ? ',' : '.';
 $money = function ($v) {
-	return number_format(round(abs((float) $v)), 0, ',', '.') . ' kr';
+	return number_format(round(abs((float) $v)), 0, $GLOBALS['dashDec'], $GLOBALS['dashThou']) . ' kr';
 };
 
-print "<link rel='stylesheet' href='../css/saldi-theme.css?v=1'>";
+print "<link rel='stylesheet' href='../css/saldi-theme.css?v=2'>";
 if (!check_permissions(array(3,4)) || is_null($regnaar)) {
 	print "<div style='display: flex; flex-direction: column; padding: 2em 1em; gap: 2em;' class='content'>";
 	if (is_null($regnaar)) {
@@ -199,7 +202,7 @@ function dash_kpi_card(string $key, string $title, string $sub, array $k, string
 	if ($k['delta'] !== null) {
 		$up = $k['delta'] >= 0;
 		$arrow = $up ? '<path d="M12 19V5m-6 6 6-6 6 6"/>' : '<path d="M12 5v14m6-6-6 6-6-6"/>';
-		$delta = "<span class='delta " . ($up ? 'up' : 'down') . "'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>$arrow</svg>" . number_format(abs($k['delta']), 1, ',', '.') . " %</span>";
+		$delta = "<span class='delta " . ($up ? 'up' : 'down') . "'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>$arrow</svg>" . number_format(abs($k['delta']), 1, $GLOBALS['dashDec'], $GLOBALS['dashThou']) . " %</span>";
 	}
 	$spark = implode(',', array_map(function ($x) { return round((float) $x); }, $k['spark']));
 	print "<section data-widget='" . $h($key) . "' class='card kpi" . ($on ? '' : ' gone') . "'><h3>" . $h($title) . ($sub !== '' ? " <span class='sub'>" . $h($sub) . "</span>" : '') . "</h3>"

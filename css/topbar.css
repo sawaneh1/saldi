@@ -9,6 +9,7 @@
     --topbar-bg: #ffffff;
     --topbar-line: #e2e6ee;
     --topbar-txt: #1c2431;
+    --topbar-txt-2: var(--topbar-txt-2);
     --topbar-mut: #68738a;
     --topbar-hover: #edf0f6;
     --topbar-red: #e0442c;
@@ -42,7 +43,7 @@
 .topbar-crumb a, .topbar-crumb span { padding: 5px 7px; border-radius: 7px; color: var(--topbar-mut); text-decoration: none; }
 .topbar-crumb a:hover { background: var(--topbar-hover); color: var(--topbar-txt); }
 .topbar-crumb a:focus-visible { outline: 2px solid var(--topbar-accent); outline-offset: 1px; }
-.topbar-crumb i { font-style: normal; font-size: 13px; color: #aab6cc; padding: 0 1px; }
+.topbar-crumb i { font-style: normal; font-size: 13px; color: var(--topbar-mut); padding: 0 1px; }
 .topbar-crumb b { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 5px 7px; color: var(--topbar-txt); font-weight: 600; }
 .topbar-crumb .topbar-from { margin-right: 6px; padding: 4px 9px; border: 1px solid var(--topbar-line); border-radius: 999px; font-size: 12.5px; color: var(--topbar-txt); }
 .topbar-crumb .topbar-crumb-tag { margin-left: 2px; padding: 2px 8px; border-radius: 999px; background: var(--topbar-accent-soft); color: var(--topbar-accent); font-size: 11.5px; font-weight: 600; }
@@ -63,7 +64,7 @@
     border-radius: 9px;
     align-items: center;
     justify-content: center;
-    color: #49546b;
+    color: var(--topbar-txt-2);
     cursor: pointer;
 }
 .topbar-menu-btn i { font-size: 24px; }
@@ -80,7 +81,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #49546b;
+    color: var(--topbar-txt-2);
     padding: 0;
     text-decoration: none;
 }
@@ -120,7 +121,7 @@
     background: transparent;
     border-radius: 10px;
     cursor: pointer;
-    color: #49546b;
+    color: var(--topbar-txt-2);
     font-size: 12.5px;
     font-weight: 700;
     letter-spacing: 0.3px;
@@ -192,7 +193,7 @@
     position: absolute;
     top: calc(100% + 6px);
     right: 0;
-    background: #fff;
+    background: var(--topbar-bg);
     border: 1px solid var(--topbar-line);
     border-radius: 12px;
     box-shadow: var(--topbar-shadow);
@@ -266,8 +267,8 @@
     box-sizing: border-box;
     font-family: inherit;
 }
-.topbar-pop-item i { font-size: 18px; color: #49546b; flex-shrink: 0; }
-.topbar-pop-item:hover:not([disabled]) { background: #f4f6fa; }
+.topbar-pop-item i { font-size: 18px; color: var(--topbar-txt-2); flex-shrink: 0; }
+.topbar-pop-item:hover:not([disabled]) { background: var(--topbar-hover); }
 .topbar-pop-item[disabled] { opacity: 0.45; cursor: default; }
 .topbar-pop-item small { margin-left: auto; color: var(--topbar-mut); font-size: 12px; display: flex; align-items: center; gap: 2px; white-space: nowrap; }
 .topbar-pop-item small i { font-size: 15px; transition: transform 0.2s ease; }
@@ -315,8 +316,8 @@
 .topbar-pop form .topbar-year i { font-size: 15px; color: var(--topbar-mut); }
 .topbar-pop .topbar-year-new { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--topbar-accent); font: inherit; font-size: 12.8px; font-weight: 600; text-align: left; cursor: pointer; }
 .topbar-pop .topbar-year-new i { font-size: 15px; }
-.topbar-pop .topbar-year-new:hover { background: #f4f6fa; }
-.topbar-pop form .topbar-year:hover:not([disabled]) { background: #f4f6fa !important; }
+.topbar-pop .topbar-year-new:hover { background: var(--topbar-hover); }
+.topbar-pop form .topbar-year:hover:not([disabled]) { background: var(--topbar-hover) !important; }
 .topbar-pop form .topbar-year.active { font-weight: 650; color: var(--topbar-accent) !important; background: var(--topbar-accent-soft) !important; cursor: default; opacity: 1; }
 .topbar-pop form .topbar-year.active i { color: var(--topbar-accent); }
 .topbar-pop form .topbar-year small { margin-left: auto; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--topbar-accent); }
@@ -329,15 +330,15 @@
     color: var(--topbar-txt) !important;
 }
 .topbar-pop form .topbar-pop-item.active { color: var(--topbar-accent) !important; }
-.topbar-pop form .topbar-pop-item:hover { background: #f4f6fa !important; }
+.topbar-pop form .topbar-pop-item:hover { background: var(--topbar-hover) !important; }
 
 .topbar-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 16px; color: var(--topbar-mut); font-size: 13px; }
-.topbar-empty i { font-size: 28px; color: #b3bccc; }
+.topbar-empty i { font-size: 28px; color: var(--topbar-mut); }
 
 /* ---- Guides modal (sidebar entry) ---- */
 .guide-overlay { position: fixed; inset: 0; background: rgba(16, 30, 60, 0.35); z-index: 200; display: none; align-items: center; justify-content: center; }
 .guide-overlay.active { display: flex; }
-.guide-modal { background: #fff; border-radius: 12px; width: min(420px, calc(100vw - 32px)); box-shadow: var(--topbar-shadow); overflow: hidden; }
+.guide-modal { background: var(--topbar-bg); border-radius: 12px; width: min(420px, calc(100vw - 32px)); box-shadow: var(--topbar-shadow); overflow: hidden; }
 .guide-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--topbar-line); font-weight: 650; font-size: 15px; }
 .guide-modal-head button { border: none; background: none; font-size: 22px; cursor: pointer; color: var(--topbar-mut); }
 .guide-modal .topbar-pop-item i.topbar-pop-trail { color: var(--topbar-mut); }
@@ -378,20 +379,20 @@ html.topbar-tall { --topbar-h: 48px; }
 .topbar-notif-head b { font-size: 14.5px; }
 .topbar-notif-head button { border: none; background: none; color: var(--topbar-accent) !important; font-size: 12.5px; cursor: pointer; font-weight: 600; font-family: inherit; padding: 0; }
 .topbar-notif-list { max-height: min(60vh, 460px); overflow-y: auto; }
-.topbar-notif { display: flex; gap: 12px; padding: 13px 16px; border-bottom: 1px solid #eef1f6; cursor: pointer; }
+.topbar-notif { display: flex; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--topbar-line); cursor: pointer; }
 .topbar-notif:last-child { border-bottom: none; }
-.topbar-notif:hover { background: #f7f9fc; }
-.topbar-notif.unread { background: #f0f6ff; }
-.topbar-notif.unread:hover { background: #e7f0fd; }
+.topbar-notif:hover { background: var(--topbar-hover); }
+.topbar-notif.unread { background: var(--topbar-accent-soft); }
+.topbar-notif.unread:hover { background: var(--topbar-hover); }
 .topbar-notif-ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .topbar-notif-ic i { font-size: 18px; }
-.topbar-notif-suggestion { background: #e8f0fe; color: var(--topbar-accent); }
+.topbar-notif-suggestion { background: var(--topbar-accent-soft); color: var(--topbar-accent); }
 .topbar-notif-warning { background: #fdf1d8; color: #e8a013; }
 .topbar-notif-system { background: #fde5e0; color: var(--topbar-red); }
 .topbar-notif-news { background: #e2f5ea; color: var(--topbar-green); }
 .topbar-notif-t { font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--topbar-txt); }
 .topbar-notif-b { font-size: 12.5px; color: var(--topbar-mut); line-height: 1.4; margin-top: 2px; }
-.topbar-notif-time { font-size: 11px; color: #98a1b5; margin-top: 4px; }
+.topbar-notif-time { font-size: 11px; color: var(--topbar-mut); margin-top: 4px; }
 
 /* The Assist widget's own sidebar entry is replaced by the cluster button (spec 6). */
 .sidebar li.topbar-assist-hidden { height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; visibility: hidden; }
@@ -442,4 +443,8 @@ html.topbar-tall { --topbar-h: 48px; }
 .topbar-seg button .bx { font-size: 14px; }
 .topbar-seg button:hover { color: var(--topbar-txt); }
 .topbar-seg button[aria-pressed="true"] { background: var(--user-primary, var(--topbar-accent)); color: var(--user-primary-text, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+/* 20261008 Sawaneh Popups follow the shell's text colour, so the dark theme stays readable (fixed greys replaced by variables above). */
+.topbar-pop, .guide-modal, .topbar-search-res { color: var(--topbar-txt); }
+.topbar-pop-item, .topbar-pop form .topbar-year, .topbar-online-user { color: var(--topbar-txt); }
 

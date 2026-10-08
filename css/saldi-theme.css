@@ -51,18 +51,29 @@
 
 /* The shell (index/main.php): its own variables follow the tokens in dark. */
 [data-theme="dark"], [data-theme="system"] {
-	--topbar-bg: var(--surface); --topbar-line: var(--border); --topbar-txt: var(--text); --topbar-mut: var(--text-2);
+	--topbar-bg: var(--surface); --topbar-line: var(--border); --topbar-txt: var(--text); --topbar-txt-2: var(--text-2); --topbar-mut: var(--text-3);
 	--topbar-hover: var(--surface-2); --topbar-accent: var(--link); --topbar-accent-soft: rgba(79,160,238,.16); --topbar-shadow: var(--shadow-up);
 }
 [data-theme="light"], [data-theme="system"] {
-	--topbar-bg: #ffffff; --topbar-line: #e2e6ee; --topbar-txt: #1c2431; --topbar-mut: #68738a; --topbar-hover: #edf0f6;
+	--topbar-bg: #ffffff; --topbar-line: #e2e6ee; --topbar-txt: #1c2431; --topbar-txt-2: #49546b; --topbar-mut: #68738a; --topbar-hover: #edf0f6;
 	--topbar-accent: #114691; --topbar-accent-soft: #e8f0fe; --topbar-shadow: 0 10px 34px rgba(16, 30, 60, 0.16);
 }
 @media (prefers-color-scheme: dark) {
 	[data-theme="system"] {
-		--topbar-bg: var(--surface); --topbar-line: var(--border); --topbar-txt: var(--text); --topbar-mut: var(--text-2);
+		--topbar-bg: var(--surface); --topbar-line: var(--border); --topbar-txt: var(--text); --topbar-txt-2: var(--text-2); --topbar-mut: var(--text-3);
 		--topbar-hover: var(--surface-2); --topbar-accent: var(--link); --topbar-accent-soft: rgba(79,160,238,.16); --topbar-shadow: var(--shadow-up);
 	}
+}
+/* Notification tints and search highlight in the dark theme. */
+[data-theme="dark"] .topbar-notif-warning { background: rgba(232,160,19,.18); }
+[data-theme="dark"] .topbar-notif-system { background: rgba(224,68,44,.18); }
+[data-theme="dark"] .topbar-notif-news { background: rgba(29,158,87,.18); }
+[data-theme="dark"] .topbar-search-it mark { background: rgba(79,160,238,.35); }
+@media (prefers-color-scheme: dark) {
+	[data-theme="system"] .topbar-notif-warning { background: rgba(232,160,19,.18); }
+	[data-theme="system"] .topbar-notif-system { background: rgba(224,68,44,.18); }
+	[data-theme="system"] .topbar-notif-news { background: rgba(29,158,87,.18); }
+	[data-theme="system"] .topbar-search-it mark { background: rgba(79,160,238,.35); }
 }
 html.saldi-shell[data-theme="dark"] body, html.saldi-shell[data-theme="dark"] .home-section { background: var(--page); color: var(--text); }
 @media (prefers-color-scheme: dark) {
