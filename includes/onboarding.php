@@ -22,6 +22,8 @@
 //                  skipped), onboarding_source and onboarding_role. A company without a state counts as completed, so
 //                  existing customers never see the pop-up without an upgrade step. The dashboard card is rendered here.
 // 20261008 Sawaneh Step 3 VAT is the settings vat.registered / vat.period, period month|quarter|halfyear (decision 19).
+// 20261008 Sawaneh Spec 2026-10-07 §7a hand-over to Sally: onb_handover_context() (profile, situation, source system, skipped
+//                  steps, VAT, invited users); the card offers Få hjælp af Sally when the shell reports her not live.
 
 if (!function_exists('onb_get')):
 
@@ -237,6 +239,34 @@ function onb_test_invoice(): array
 /**
  * Who may run the guide: the Indstillinger permission (§8).
  */
+/**
+ * What the guide hands Sally (SALDI Assist) when it ends (spec §7a): who the user is, where they come from, what was
+ * skipped, VAT and invited users - so Sally continues instead of asking again.
+ *
+ * @return array<string, mixed>
+ */
+function onb_handover_context(): array
+{
+	$steps = onb_steps();
+	$skipped = array();
+	foreach (array('company', 'fiscal', 'invoice', 'users') as $k) {
+		if (isset($steps[$k]) && $steps[$k] === 'skipped') {
+			$skipped[] = $k;
+		}
+	}
+	$source = onb_get('onboarding_source');
+	$vat = onb_vat_get();
+	return array(
+		'profile' => onb_get('onboarding_role') === 'accountant' ? 'bookkeeper' : 'owner',
+		'situation' => ($source === '' || $source === 'new') ? 'new' : 'switching',
+		'source_system' => ($source === '' || $source === 'new' || $source === 'switch') ? 'unknown' : $source,
+		'skipped_steps' => $skipped,
+		'vat_registered' => $vat['registered'],
+		'vat_period' => $vat['period'],
+		'invited_users' => (int) onb_get('onboarding_invited'),
+	);
+}
+
 function onb_can_run(): bool
 {
 	return function_exists('perm_can') ? perm_can('settings.company', 'write') : true;
@@ -478,7 +508,12 @@ function onb_render_card(int $userId, int $sprogId): void
 	foreach ($part2 as $p) {
 		print "<div class='onb-step soon'><span class='onb-st'></span><span class='t'><b>" . $h($tx($p[0])) . "</b><span>" . $h($tx($p[1])) . "</span></span><span class='onb-tag'>" . $h($tx('6759|Del 2')) . "</span></div>";
 	}
+	// Spec §7a: while Sally cannot open by herself, the list offers her instead.
+	print "<button type='button' class='onb-step' id='onb-sally' hidden onclick='onbSally()'><span class='onb-st'>?</span><span class='t'><b>" . $h($tx('6915|Få hjælp af Sally')) . "</b><span>" . $h($tx('6916|Sally hjælper med at hente dine data og viser dig rundt i Saldi.')) . "</span></span></button>";
 	print "</div></div></div>";
+	$ctx = json_encode(onb_handover_context(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+	print "<script>var onbSallyCtx = $ctx; function onbSally(){ if (window.parent && window.parent !== window && window.parent.saldiAssistOpen) { window.parent.saldiAssistOpen(onbSallyCtx); } }"
+		. " (function(){ var p = window.parent; if (p && p !== window && typeof p.saldiAssistLive === 'function' && !p.saldiAssistLive()) { var r = document.getElementById('onb-sally'); if (r) { r.hidden = false; } } })();</script>";
 	print "<script>function onbOpen(s){ if (window.parent && window.parent !== window && window.parent.saldiOnboardingOpen) { window.parent.saldiOnboardingOpen(s); } else { location.href = 'onboarding.php?step=' + encodeURIComponent(s); } }</script>";
 }
 

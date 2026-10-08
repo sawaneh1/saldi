@@ -25,6 +25,8 @@
 //                  the invoice), step 5 invitations through user_invite() (source 'onboarding'), step 6 summary with a
 //                  test invoice printed from a rolled-back order.
 // 20261008 Sawaneh Step 3 VAT period values month|quarter|halfyear, as vat.period in G2.2 (settings decision 19).
+// 20261008 Sawaneh Spec 2026-10-07 step 6 / §7a: Sally takes over - the import note is replaced by her message, the first
+//                  Gå til Saldi (once per company, onboarding handover_done) opens SALDI Assist with the hand-over context.
 
 @session_start();
 $s_id = session_id();
@@ -301,6 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					$flash[] = array('link', $data['brugernavn'] . ': ' . user_invite_link((string) $r['token']));
 				}
 			}
+			onb_set('onboarding_invited', (string) ((int) onb_get('onboarding_invited') + count($invites)));
 			$_SESSION['onb_flash'] = $flash;
 		}
 	}
@@ -327,8 +330,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if (($action === 'next' || $action === 'skip') && !$errors) {
 		onb_mark($step, $action === 'next' ? 'done' : 'skipped');
 		$nb = onb_neighbours($step);
+		// Spec §7a: the first "Gå til Saldi" hands over to Sally, once per company.
+		$sally = ($step === 'done' && $action === 'next' && onb_get('handover_done') === '');
+		if ($sally) {
+			onb_set('handover_done', '1');
+		}
 		ob_end_clean();
-		header('Location: onboarding.php?' . ($nb[1] !== '' ? 'step=' . rawurlencode($nb[1]) : 'closed=1'));
+		header('Location: onboarding.php?' . ($nb[1] !== '' ? 'step=' . rawurlencode($nb[1]) : 'closed=1' . ($sally ? '&sally=1' : '')));
 		exit;
 	}
 }
@@ -398,7 +406,8 @@ function onbGo(url) {
 }
 </script>
 <?php if ($closed) { ?>
-<script>onbClose();</script>
+<script><?php if (!empty($_GET['sally'])) { ?>if (window.parent && window.parent !== window && window.parent.saldiAssistHandover) { window.parent.saldiAssistHandover(<?php print json_encode(onb_handover_context(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>); }
+<?php } ?>onbClose();</script>
 </body></html>
 <?php exit; } ?>
 <?php if (isset($_GET['go']) && $_GET['go'] === 'editor') { ?>
@@ -645,11 +654,11 @@ if ($step === 'done') {
 		print "</li>";
 	}
 	print "</ul>";
-	if ($src !== '' && $src !== 'new') {
-		$sysName = isset($systems[$src]) ? (strpos($systems[$src], '|') ? $tx($systems[$src]) : $systems[$src]) : $tx('6791|det gamle system');
-		print "<div class='note' style='margin-top:18px;max-width:540px'><b>" . $h(sprintf($tx('6817|Næste skridt: dine data fra %s.'), $sysName)) . "</b><br>"
-			. $h($tx('6818|Import af kontoplan, åbningsbalance, kunder, leverandører og varer kommer i næste del og ligger klar i tjeklisten på din oversigt.')) . "</div>";
-	}
+	// Spec 2026-10-07 §5 step 6 / §7a: Sally takes over from here.
+	$sysName = ($src !== '' && $src !== 'new') ? (isset($systems[$src]) ? (strpos($systems[$src], '|') ? $tx($systems[$src]) : $systems[$src]) : $tx('6791|det gamle system')) : '';
+	print "<div class='note' style='margin-top:18px;max-width:540px'><b>" . $h($tx('6912|Sally hjælper dig videre herfra')) . "</b><br>"
+		. $h($sysName !== '' ? sprintf($tx('6913|Sally er Saldis assistent (knappen SALDI Assist øverst). Hun hjælper dig med at hente dine data fra %s og viser dig rundt i Saldi.'), $sysName)
+			: $tx('6914|Sally er Saldis assistent (knappen SALDI Assist øverst). Hun viser dig rundt i Saldi og hjælper, når du går i stå.')) . "</div>";
 }
 ?>
 		</div>

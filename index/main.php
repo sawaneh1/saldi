@@ -66,6 +66,8 @@
 // 20261006 Sawaneh Onboarding part 1: the welcome guide's overlay; a new ledger's first login by a user with the Settings
 //                  permission opens it and sets the state to started (Requirements_onboarding_welcome_EN.md §4, §8).
 // 20260930 LOE SST-836 Added the expiry report to the Lager menu where batch/expiry handling is in use.
+// 20261008 Sawaneh Onboarding §7a: saldiAssistHandover()/saldiAssistOpen()/saldiAssistLive() - the guide's hand-over to Sally
+//                  (SALDI Assist) with its context, kept across the shell reload and waited for until the widget is there.
 @session_start();
 $s_id = session_id();
 
@@ -1307,6 +1309,32 @@ $assistVersion = isset($version) ? (string)$version : '';
     window.saldiOnboardingClose(false);
     update_iframe(url.replace(/^\.\.\//, '/'));
   };
+  // Onboarding §7a: Sally (the Assist chat) takes over when the guide ends. The hand-over survives the shell reload the
+  // guide may ask for (sessionStorage) and waits up to 5 s for the chat widget; without it nothing opens.
+  window.saldiAssistLive = function () {
+    return !!(window.SALDI_CHAT && typeof window.SALDI_CHAT.open === 'function') || !!document.getElementById('saldi-chat-launcher');
+  };
+  window.saldiAssistOpen = function (ctx) {
+    if (window.SaldiAssist) { window.SaldiAssist.pageContext = Object.assign(topbarAssistContext(), { onboarding: ctx || null }); }
+    topbarOpenAssist();
+  };
+  function saldiAssistResume(tries) {
+    let ctx = null;
+    try { ctx = JSON.parse(sessionStorage.getItem('saldiAssistHandover') || 'null'); } catch (e) { ctx = null; }
+    if (!ctx) return;
+    if (!window.saldiAssistLive()) {
+      if ((tries || 0) < 25) { setTimeout(() => saldiAssistResume((tries || 0) + 1), 200); }
+      else { try { sessionStorage.removeItem('saldiAssistHandover'); } catch (e) {} }
+      return;
+    }
+    try { sessionStorage.removeItem('saldiAssistHandover'); } catch (e) {}
+    window.saldiAssistOpen(ctx);
+  };
+  window.saldiAssistHandover = function (ctx) {
+    try { sessionStorage.setItem('saldiAssistHandover', JSON.stringify(ctx || {})); } catch (e) {}
+    saldiAssistResume(0);
+  };
+  saldiAssistResume(0);
 <?php if ($onbAutoOpen) { ?>
   window.saldiOnboardingOpen('welcome');
 <?php } ?>
