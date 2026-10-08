@@ -33,6 +33,8 @@
 //                  data-keep-in-shell) - outside the shell the page is unchanged.
 // 20261008 Sawaneh page_title(): the page's heading ("Kundeordre 1234", "Kassekladde 2877") becomes the last breadcrumb
 //                  level and the label the next page's came-from chip shows (addendum §5).
+// 20261008 Sawaneh The breadcrumb handlers moved to javascript/pageChrome.js; the head carries only window.saldiPageChrome
+//                  (and the shell-nav style), so a page that redirects after online.php stays under the output buffer.
 
 if (!function_exists('page_breadcrumb')):
 
@@ -84,43 +86,20 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 		$msg['help'] = $GLOBALS['page_help_items'];
 	}
 	$json = json_encode($msg, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
-	$hide = !empty($GLOBALS['page_chrome_hide_close']) ? "\tif (window.parent && window.parent !== window && !document.getElementById('saldi-shell-nav')) {\n"
-		. "\t\t// Migrated module (step 2): the breadcrumb replaces the old Luk/Tilbage in the shell; it stays in the page for its luk.php link.\n"
+	// Migrated module (step 2): the breadcrumb replaces the old Luk/Tilbage in the shell; it stays in the page for its luk.php link.
+	$hide = !empty($GLOBALS['page_chrome_hide_close']) ? "if (window.parent && window.parent !== window && !document.getElementById('saldi-shell-nav')) {\n"
 		. "\t\tdocument.documentElement.classList.add('saldi-shell-nav');\n"
 		. "\t\tvar st = document.createElement('style'); st.id = 'saldi-shell-nav';\n"
 		. "\t\tst.textContent = 'html.saldi-shell-nav a[accesskey=\"l\" i]:not([data-keep-in-shell]), html.saldi-shell-nav td:has(> a[accesskey=\"l\" i]:not([data-keep-in-shell])), html.saldi-shell-nav input[type=\"button\" i][accesskey=\"l\" i] { display: none !important; }';\n"
 		. "\t\t(document.head || document.documentElement).appendChild(st);\n"
 		. "\t}\n" : '';
-	return '<script>' . "\n" . '(function () {' . "\n"
-		. $hide
-		. "\twindow.saldiPageChrome = $json;\n"
-		. "\tfunction send() { if (window.parent && window.parent !== window) { window.parent.postMessage(window.saldiPageChrome, window.location.origin); } }\n"
-		. "\tif (!window.saldiChromeBound) {\n"
-		. "\t\twindow.saldiChromeBound = true;\n"
-		. "\t\t// The page's old Luk/Tilbage through includes/luk.php releases the record it locked: leave the same way.\n"
-		. "\t\tvar viaLuk = function (href) {\n"
-		. "\t\t\tvar c = document.querySelector('a[accesskey=\"l\"]:not([data-keep-in-shell]), a[accesskey=\"L\"]:not([data-keep-in-shell])');\n"
-		. "\t\t\tif (!c || !/(^|\\/)luk\\.php/.test(c.getAttribute('href') || '')) { return href; }\n"
-		. "\t\t\ttry { var u = new URL(c.href), t = new URL(href); u.searchParams.delete('popup'); u.searchParams.set('returside', t.pathname + t.search); return u.href; } catch (x) { return href; }\n"
-		. "\t\t};\n"
-		. "\t\twindow.addEventListener('message', function (e) {\n"
-		. "\t\t\tif (e.origin !== window.location.origin || !e.data || e.source !== window.parent) { return; }\n"
-		. "\t\t\tif (e.data.type === 'saldi:breadcrumb-request') { send(); }\n"
-		. "\t\t\tif (e.data.type === 'saldi:navigate' && typeof e.data.href === 'string') {\n"
-		. "\t\t\t\twindow.parent.postMessage({ type: 'saldi:navigate-ack' }, window.location.origin);\n"
-		. "\t\t\t\tif (typeof window.saldiNavigate === 'function') { window.saldiNavigate(e.data.href); return; }\n"
-		. "\t\t\t\tif (window.docChange && !window.confirm(e.data.confirm || '')) { return; }\n"
-		. "\t\t\t\twindow.docChange = false;\n"
-		. "\t\t\t\twindow.location.href = viaLuk(e.data.href);\n"
-		. "\t\t\t}\n"
-		. "\t\t});\n"
-		. "\t\t// Alt+L goes back through the shell (§3.2); a page that still shows its old Luk/Tilbage keeps that accesskey.\n"
-		. "\t\tdocument.addEventListener('keydown', function (e) {\n"
-		. "\t\t\tif (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L') && !Array.prototype.some.call(document.querySelectorAll('[accesskey=\"l\"], [accesskey=\"L\"]'), function (c) { return c.offsetParent !== null; })) { e.preventDefault(); window.parent.postMessage({ type: 'saldi:back' }, window.location.origin); }\n"
-		. "\t\t});\n"
-		. "\t}\n"
-		. "\tsend();\n"
-		. "})();\n</script>";
+	// The handlers live in javascript/pageChrome.js so the head only carries the message (a page that redirects
+	// after online.php must stay under PHP's output buffer).
+	$depth = substr_count(page_route_key(), '/');
+	$src = str_repeat('../', $depth) . 'javascript/pageChrome.js?v=20261008';
+	return ($hide !== '' ? '<script>' . "\n" . $hide . '</script>' . "\n" : '')
+		. '<script>window.saldiPageChrome = ' . $json . ';</script>' . "\n"
+		. '<script src="' . htmlspecialchars($src, ENT_QUOTES) . '"></script>';
 }
 
 /**
