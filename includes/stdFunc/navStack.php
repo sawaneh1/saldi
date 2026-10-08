@@ -22,6 +22,9 @@
 // 20260907 CDX/LH Reject raw whitespace and control characters in request return targets.
 // 20260907 CDX/LH Accept malformed request values at the navigation boundary without TypeError.
 // 20261005 Sawaneh Background fetch/XHR requests are not recorded (they filled the stack the came-from chip and search read).
+// 20260921 CL/SZ MB-50: exclude dashboard chart data endpoints (weekly_graph_data.php,
+//                customer_graph_data.php) from the nav stack so Luk on POS-Menuer
+//                never lands on raw JSON.
 
 if (!defined('NAV_STACK_MAX'))   define('NAV_STACK_MAX',   10);
 if (!defined('NAV_DEFAULT_URL')) define('NAV_DEFAULT_URL', '../index/menu.php');
@@ -49,8 +52,12 @@ function _nav_is_recordable(string $url): bool {
     // iframe and nests a second shell (and sidebar) inside the first.
     // udskriv/formularprint/koekkenprint are transient print/action pages: a back
     // button must never resolve to them (it would re-print the document).
+    // weekly_graph_data.php/customer_graph_data.php are dashboard chart data
+    // endpoints fetched by GET, not pages: without this a back button could
+    // land on raw JSON (MB-50).
     foreach (['luk.php', 'logud.php', 'login.php', 'ajax=1', 'index/main.php',
-              'udskriv.php', 'formularprint.php', 'koekkenprint.php'] as $p) {
+              'udskriv.php', 'formularprint.php', 'koekkenprint.php',
+              'weekly_graph_data.php', 'customer_graph_data.php'] as $p) {
         if (strpos($url, $p) !== false) return false;
     }
     return true;

@@ -80,6 +80,8 @@
 // 20261008 Sawaneh Settings decisions 19-20: vat.registered and vat.period at the top of G2.2 (settings var_grp 'vat',
 //                  company scope); the discount matrix keeps only rows marked 'NR' (by group number), older rows are
 //                  listed as inactive in G3.5 with a per-row Overfør.
+// 20261008 Sawaneh Merge of master: hideRevenue (SD-657) in G3.3, the HTML/CSS layout version (forms/htmlLayoutVersion) in
+//                  G6.4, and "Gem kurs uden bogføring" (SST-769) as 'confirm_skip' on the currency rates.
 //
 // Storage encodings mirror the current writer (risk review R23):
 //   onEmpty  'on' / ''        onOff  'on' / 'off'        oneZero  '1' / '0'        raw  as typed
@@ -210,7 +212,7 @@ if (!function_exists('getSettingsSections')) {
 						)),
 					'rates' => array('sub' => 'rates', 'label' => 6587, 'help' => 6588, 'help_args' => 'base_currency', 'add' => 6590, 'empty' => 6591, 'storage' => array('table', 'valuta'),
 						'code_col' => 'valdate', 'filter' => array('param' => 'cur', 'column' => 'gruppe', 'label' => 776, 'options' => 'currencies'),
-						'usage' => 'currency_rate', 'confirm' => 'currency_rate', 'row_check' => 'currency_rate', 'before_row' => 'currency_rate', 'on_save' => 'currency_rates',
+						'usage' => 'currency_rate', 'confirm' => 'currency_rate', 'confirm_skip' => array(5153, 5154), 'row_check' => 'currency_rate', 'before_row' => 'currency_rate', 'on_save' => 'currency_rates',
 						'order' => 'valdate desc, id desc',
 						'columns' => array(
 							'valdate' => array('label' => 635, 'type' => 'date', 'required' => true, 'help' => 1703),
@@ -735,6 +737,9 @@ if (!function_exists('getSettingsSections')) {
 			'sales.orders.discount_decimals' => array('sub' => 'prices', 'type' => 'int', 'label' => 6366, 'help' => 6367, 'default' => 2,
 				'storage' => array('settings', 'ordre', 'rabatdecimal', 'raw'), 'legacy' => $ordre, 'validate' => array('range', 0, 4),
 				'keywords' => array('rabat', 'decimaler', 'discount decimals')),
+			'sales.orders.hide_revenue' => array('sub' => 'invoicing', 'type' => 'bool', 'label' => 5246, 'help' => 5247, 'default' => false,
+				'storage' => array('settings', 'finans', 'hideRevenue', 'onOff'), 'legacy' => $ordre,
+				'keywords' => array('omsætning', 'skjul omsætning', 'turnover', 'hide revenue', 'kasseoptælling')),
 			'sales.orders.quick_invoice' => array('sub' => 'invoicing', 'type' => 'bool', 'label' => 165, 'help' => 190, 'default' => false,
 				'storage' => array('grupper', 'DIV', 3, 'box4', 'onEmpty', 'row_name' => 'Div_valg (Ordrer)'), 'legacy' => $ordre,
 				'locked_if' => 'batch_control', 'locked_text' => 5736,
@@ -949,6 +954,11 @@ if (!function_exists('getSettingsSections')) {
 			'documents.print.html_forms' => array('sub' => 'print', 'type' => 'bool', 'label' => 818, 'help' => 817, 'default' => false,
 				'storage' => array('grupper', 'PV', 1, 'box3', 'onEmpty', 'row_name' => 'Udskrift'), 'legacy' => $divvalg,
 				'keywords' => array('html', 'css', 'postscript', 'formulargenerering')),
+			'documents.print.html_layout_version' => array('sub' => 'print', 'type' => 'select', 'label' => 6905, 'help' => 6906, 'default' => '1',
+				'options' => array('1' => 6907, '2' => 6908),
+				'storage' => array('settings', 'forms', 'htmlLayoutVersion', 'raw'), 'legacy' => $divvalg,
+				'visible_if' => array('setting', 'documents.print.html_forms', true),
+				'keywords' => array('html layout', 'html/css layout', 'layout version', 'formulargenerator html', 'keep existing look', 'form fonts and line thickness', 'skrifter', 'stregtykkelser')),
 			'documents.print.pdf_command' => array('sub' => 'print', 'type' => 'text', 'label' => 6372, 'help' => 6373,
 				'storage' => array('grupper', 'PV', 1, 'box2', 'raw', 'row_name' => 'Udskrift'), 'legacy' => $divvalg,
 				'keywords' => array('ps2pdf', 'pdf', 'printkommando', 'print command')),

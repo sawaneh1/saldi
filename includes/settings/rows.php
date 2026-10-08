@@ -32,6 +32,8 @@
 //                  delete with usage check, the inaktiv flag and copying a fiscal year live here; the page is drawn
 //                  by rowsView.php and behaves through javascript/settingsRows.js.
 // 20261008 Sawaneh Table option 'hide_empty'; discount group usage counts only the matrix's 'NR' rows (settings decision 20).
+// 20261008 Sawaneh Table option 'confirm_skip' (button text, explanation) for the confirm box. Warehouse usage follows
+//                  master's warehouseDeletion.php (history, order lines, departments; duplicates may go).
 
 /**
  * The tables of a rows section with their defaults filled in.
@@ -45,7 +47,7 @@ function settings_rows_tables(array $section): array
 		$t += array('sub' => $tableId, 'fiscal' => false, 'usage' => null, 'inactive' => false, 'exclude' => '', 'help' => null,
 			'propagate' => array(), 'kode' => null, 'on_save' => null, 'row_name' => null, 'defaults' => array(),
 			'no_add' => false, 'filter' => null, 'auto_code' => false, 'row_actions' => array(), 'confirm' => null, 'row_check' => null,
-			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null, 'standard' => null, 'hide_empty' => false);
+			'before_row' => null, 'on_delete' => null, 'order' => null, 'row_locked' => null, 'create' => null, 'standard' => null, 'hide_empty' => false, 'confirm_skip' => null);
 		$st = $t['storage'];
 		$t['kind'] = $st[0] === 'grupper' ? 'grupper' : 'table';
 		$t['art'] = $t['kind'] === 'grupper' ? (string) $st[1] : '';
@@ -219,10 +221,14 @@ function settings_rows_usage(array $t, array $row): array
 				}
 				break;
 			case 'warehouse':
-				if ($isInt) {
+				// As master's warehouseDeletion.php: a duplicate definition of the number may go; otherwise any stock
+				// history, orders, order lines, stock or a department using it keeps the warehouse.
+				if ($isInt && !db_fetch_array(db_select("select id from grupper where art = 'LG' and kodenr = '$code' and id <> " . (int) $row['id'] . " limit 1", __FILE__ . " linje " . __LINE__))) {
 					$add("select count(*) as n from lagerstatus where lager = $code and beholdning <> 0", 6426);
 					$add("select count(*) as n from ordrer where lager = $code", 6422);
-					$add("select count(*) as n from batch_kob where lager = $code and antal <> 0", 6426);
+					$add("select count(*) as n from ordrelinjer where lager = $code", 6911);
+					$add("select (select count(*) from batch_kob where lager = $code) + (select count(*) from batch_salg where lager = $code) + (select count(*) from regulering where lager = $code) as n", 6909);
+					$add("select count(*) as n from grupper where art = 'AFD' and box1 = '$code'", 6910);
 				}
 				break;
 			case 'project':

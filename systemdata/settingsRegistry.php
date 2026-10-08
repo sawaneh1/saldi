@@ -1,5 +1,5 @@
 <?php
-// ----------------systemdata/settingsRegistry.php --- Settings search Phase 1 --- 2026-07-09 ----
+// ----------------systemdata/settingsRegistry.php --- Settings search Phase 1 --- 2026-09-30 ----
 // LICENSE
 //
 // This program is free software. You can redistribute it and / or
@@ -15,11 +15,13 @@
 // but WITHOUT ANY KIND OF CLAIM OR WARRANTY.
 // See GNU General Public License for more details.
 //
-// Copyright (c) 2003-2026 Saldi.dk ApS
+// Copyright (c) 2003-2026 Danosoft ApS
 // ----------------------------------------------------------------------
 // 20260709 SZ Created: hand-maintained registry of Settings pages/keywords for search
 // 20260710 SZ Expanded keywords (deep page content, DA/EN/NO, sys_div_func.php-derived terms)
 // 20260721 Sawaneh Added Opgaveliste/Brug jobkort (task list) search terms to div_valg entry
+// 20260930 CL/NTR Added HTML/CSS layout version search terms to div_valg entry.
+//                 Hid the admin_settings entry outside the master database ('masterDb' rule).
 //
 // Hand-maintained index of Settings pages, used by settingsSearch.php.
 // Each entry:
@@ -35,6 +37,9 @@
 //                    silently showing Danish.
 //   requiresReseller  true => only shown when $revisorregnskab || $forhandlerregnskab is truthy
 //   visibilityRule    null | 'posModule' | 'masterDb' - re-checked live in settingsSearch.php
+//   visibilityRule    null | 'posModule' | 'docubizz' | 'masterDb' - re-checked live in settingsSearch.php
+//                    ('masterDb' => only shown when $db == $sqdb, i.e. logged in to the master database,
+//                    for pages such as admin/admin_settings.php that log everyone else out)
 //   keywords         array of extra search terms describing what's actually configurable on that
 //                    page (field names, synonyms, abbreviations, DA/EN/NO) - matched when the query
 //                    doesn't hit the label itself, so e.g. searching "auditor" finds "Brugere"

@@ -23,6 +23,7 @@
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20260928 Sawaneh Phase 4: top-menu branch removed; side-menu layout is the only one.
+// 20260825 Sawaneh JOB-086: fiscal year from the request is int-cast before use in SQL
 
 @session_start();
 $s_id=session_id();
@@ -35,7 +36,7 @@ $permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");
-$regnskabsaar=$_GET['aar'];
+$regnskabsaar = intval($_GET['aar'] ?? 0);
 
 $returside="../includes/luk.php"; // WP-6.4: opened as a popup from diverse.php; Tilbage closes it
 

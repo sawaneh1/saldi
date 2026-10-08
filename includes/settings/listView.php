@@ -303,6 +303,6 @@ function settings_list_render(array $c): void
   <div class="st-snack" id="st-snack" role="status" hidden></div>
 </div>
 <script>window.SALDI_SETTINGS = <?= json_encode($config) ?>;</script>
-<script src="../javascript/settingsList.js?v=2"></script>
+<script src="../javascript/settingsList.js?v=3"></script>
 	<?php
 }

@@ -122,6 +122,7 @@ ob_end_flush();
 //                  a role, IP list one per line (validated), username locked after creation.
 // 20260930 Sawaneh Roles stage 2 (§7.2): audit log with filters, search, pages and CSV export; Roles tab behind
 //                  settings.roles.manage, Log tab behind settings.audit.read.
+// 20261008 Sawaneh SD-657 (from master's brugere.php): losing the Indstillinger right on save switches hideRevenue on.
 
 // ================================================================== controller
 
@@ -287,6 +288,12 @@ function ur_save_user(array $post, int $selfId, int $regnaar): string
 		}
 	}
 	perm_sync_user($id);
+	// SD-657: taking the Indstillinger right away switches hideRevenue on, once, so that user stops seeing turnover.
+	$after = $current ? db_fetch_array(db_select("select rettigheder from brugere where id = $id", __FILE__ . " linje " . __LINE__)) : null;
+	if ($after && substr((string) $current['rettigheder'], 1, 1) == '1' && substr((string) $after['rettigheder'], 1, 1) != '1'
+		&& get_settings_value('hideRevenue', 'finans', 'off') !== 'on') {
+		update_settings_value('hideRevenue', 'finans', 'on', 'Set when a user lost access to Settings');
+	}
 
 	if ($ansatId > 0) {
 		$r = db_fetch_array(db_select("select afd from ansatte where id = $ansatId", __FILE__ . " linje " . __LINE__));

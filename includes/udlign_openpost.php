@@ -4,7 +4,7 @@
 //                        \__ \/ _ \| |_| |) | |
 //                        |___/_/ \_|___|___/|_|
 
-// ----------includes/udlign_openpost.php-------patch 5.0.0 ----2026-09-23---
+// ----------includes/udlign_openpost.php-------patch 5.0.0 ----2026-09-25---
 //                           LICENSE
 //
 // This program is free software. You can redistribute it and / or
@@ -57,6 +57,7 @@
 // 20261005 Sawaneh WP-4.4/4.11-4.14: returside sanitised and urlencoded in every back link (no double urldecode),
 //                  back to the report the user came from (rapportart) with the date range, error refresh with a
 //                  0-second delay and real report parameters, hidden retur/returside fields quoted and escaped.
+// 20260925 CDX/PHR Preserve the account-chart filter through settlement forms, period changes and return links.
  
 @session_start();
 $s_id=session_id();
@@ -79,6 +80,7 @@ require_once __DIR__ . '/alignOpenpostIncludes/period.php';
 // that reload can still carry forward the in-progress selections and invoice-reference draft below,
 // instead of silently losing them (they'd otherwise only ever be read from $_POST).
 $periodRequest = isset($_POST['submit']) ? $_POST : $_GET;
+$kilde = (ifset($periodRequest, 'kilde') === 'show_all') ? 'show_all' : 'openpost';
 $requestedPeriodFrom = ifset($periodRequest, 'period_from');
 $requestedPeriodTo = ifset($periodRequest, 'period_to');
 $pendingInvoiceReference = null;
@@ -170,7 +172,7 @@ $retur = nav_sanitize_returside((string) $retur);
 if ($retur === '') {
 	$retur = '../debitor/rapport.php';
 }
-$reportBack = "rapportart=$fraRapport&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&submit=ok$layoutParam";
+$reportBack = "rapportart=$fraRapport&kilde=$kilde&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&submit=ok$layoutParam";
 
 $query = db_select("select * from openpost where id='$post_id[0]'",__FILE__ . " linje " . __LINE__); #$post_id[0] er den post som skal udlignes.
 if ($row = db_fetch_array($query)) {
@@ -450,7 +452,7 @@ if (isset($submit) && $submit=='udlign') {
 renderOpenpostSettlementPeriod($settlementPeriod, [
 	'post_id' => $post_id[0], 'dato_fra' => $dato_fra, 'dato_til' => $dato_til,
 	'konto_fra' => $konto_fra, 'konto_til' => $konto_til,
-	'retur' => $retur, 'returside' => $returside, 'layout' => $layout, 'rapportart' => $fraRapport,
+	'retur' => $retur, 'returside' => $returside, 'layout' => $layout, 'rapportart' => $fraRapport, 'kilde' => $kilde,
 ], $selectedPostIds, $insertInvoiceNumbers, $manualInvoiceReference);
 print "<form name='alignOpenpost' action='../includes/udlign_openpost.php' method='post'>";
 $invoiceEditedValue = $invoiceReferenceEdited ? '1' : '0';
@@ -547,6 +549,7 @@ print "<input type = hidden name=konto_til value=$konto_til>";
 print "<input type = hidden name=retur value='" . htmlspecialchars((string) $retur, ENT_QUOTES) . "'>";
 print "<input type = hidden name=rapportart value='" . htmlspecialchars($fraRapport, ENT_QUOTES) . "'>";
 print "<input type = hidden name=layout value=$layout>";
+print "<input type='hidden' name='kilde' value='$kilde'>";
 print "<input type='hidden' name='findmatch_timelimit' id='findmatch_timelimit' value='$findMatchTimeLimit'>";
 print "<input type = hidden name=diff value=$diff>";
 print "<input type = hidden name=dkkdiff value=$dkkdiff>";

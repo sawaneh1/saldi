@@ -4,7 +4,7 @@
 //               \__ \/ _ \| |_| |) | | _ | |) |  <
 //               |___/_/ \_|___|___/|_||_||___/|_\_\
 //
-// --- index/login.php --- patch 5.0.0 --- 2026-07-07 ---
+// --- index/login.php --- patch 5.0.0 --- 2026-09-24 ---
 // LICENSE
 //
 // This program is free software. You can redistribute it and / or
@@ -21,7 +21,7 @@
 // See GNU General Public License for more details.
 // http://www.saldi.dk/dok/GNU_GPL_v2.html
 //
-// Copyright (c) 2003-2026 Danosoft.ApS
+// Copyright (c) 2003-2026 Danosoft ApS
 // ----------------------------------------------------------------------
 
 // 20220118 PHR - Added 'if ($db != $sqdb && $dbver > '4.0.4')'
@@ -67,6 +67,7 @@
 // 20260930 Sawaneh Indexes on online.session_id and online.logtime (roles spec §4.7, without the primary key: see comment);
 //                  created only when missing.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20260924 Sawaneh SST-757: A user without regnskabsaar takes the fiscal year online.php falls back to.
 
 if (isset($_GET['invite'])) {
 	$inviteToken = preg_match('/^\d{1,9}-[a-f0-9]{48}$/', (string) $_GET['invite']) ? (string) $_GET['invite'] : '';
@@ -790,6 +791,7 @@ if ($userId) {
 			audit_log('session.forced_logout', $brugernavn . ' -> ' . $forcedLogoutOf, 'session', (string) $db);
 		}
 	}
+	if (!$regnskabsaar && $db != $sqdb) $regnskabsaar = if_isset($regnaar, '');
 
 	# ###################################################
 	#
@@ -909,7 +911,7 @@ if ($userId) {
 	# ###################################################
 	}
 	if ($post_max && $db!=$sqdb) {
-		$r=db_fetch_array(db_select("select box6 from grupper where art = 'RA' and kodenr = '$regnskabsaar'",__FILE__ . " linje " . __LINE__));
+		$r=db_fetch_array(db_select("select box6 from grupper where art = 'RA' and kodenr = '".(int)$regnskabsaar."'",__FILE__ . " linje " . __LINE__));
 		$post_antal=$r['box6']*1;
 #		if (($sqdb=="saldi" || $sqdb=="gratis" || $sqdb=="udvikling") && $post_max<=9000 && $post_max < $post_antal ) {
 			$diff=$post_antal-$post_max;

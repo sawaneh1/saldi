@@ -4,7 +4,7 @@
 //               \__ \/ _ \| |_| |) | | _ | |) |  <
 //               |___/_/ \_|___|___/|_||_||___/|_\_\
 //
-// --- systemdata/diverse.php -----patch 4.1.1 ----2026-09-17------------
+// --- systemdata/diverse.php -----patch 4.1.1 ----2026-09-29------------
 //                           LICENSE
 //
 // This program is free software. You can redistribute it and / or
@@ -115,6 +115,8 @@
 //                  gated by their own permission keys via require_permission().
 // 20261006 Sawaneh Varianter (G5.3) moved to settingsSection.php?s=items.variants: variant_valg redirects (its GET deletes and
 //                  unescaped POST saves are no longer reachable); the CSV imports return there with the result.
+// 20260924 LOE SD-657 Save the setting that keeps turnover from users without the Indstillinger right.
+// 20260929 CDX/PHR Save explicit HTML layout version choices without resetting older settings forms.
 
 @session_start();
 $s_id = session_id();
@@ -291,6 +293,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 	} elseif ($sektion == 'ordre_valg') {
 		$vatPrivateCustomers  = if_isset($_POST['vatPrivateCustomers']);
 		$vatBusinessCustomers = if_isset($_POST['vatBusinessCustomers']);
+		$hideRevenue          = (ifset($_POST, 'hideRevenue') === 'on') ? 'on' : 'off'; #SD-657
 		$box2                 = if_isset($_POST['box2']); #Rabatvarenr
 		$box3                 = if_isset($_POST['box3']); #folge_s_tekst
 		$box4                 = if_isset($_POST['box4']); #hurtigfakt
@@ -380,6 +383,7 @@ if ($_POST && $_SERVER['REQUEST_METHOD'] == "POST") {
 		// Save VAT options to settings table
 		update_settings_value("vatPrivateCustomers", "ordre", $vatPrivateCustomers, "Show VAT on orders for private customers");
 		update_settings_value("vatBusinessCustomers", "ordre", $vatBusinessCustomers, "Show VAT on orders for business customers");
+		update_settings_value("hideRevenue", "finans", $hideRevenue, "Keep turnover from users without access to Settings");
 		
 		if ($r = db_fetch_array(db_select("select id from grupper WHERE art = 'DIV' and kodenr='5'", __FILE__ . " linje " . __LINE__))) {
 			$id = $r['id'];

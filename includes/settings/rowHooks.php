@@ -29,6 +29,7 @@
 //                  is posted; the date checks are shared with the year creation.
 // 20261008 Sawaneh Settings decision 20: old discount rows (G3.5) - group names by the old page's positions, the value,
 //                  and the per-row Overfør; row_locked 'always'.
+// 20261008 Sawaneh SST-769 from master: with Gem kurs uden bogføring the rate is saved and no adjustment is posted.
 
 // ---------------------------------------------------------------- fiscal years (grupper art RA)
 
@@ -576,7 +577,7 @@ function settings_rows_row_check(string $hook, array $t, array $clean, ?array $c
 		return array('valdate' => 6595);
 	}
 	$effect = settings_currency_step_effect($t, $current === null ? array('insert', '', $clean) : array('update', '', $current, $clean));
-	if ($effect['postings']) {
+	if ($effect['postings'] && !settings_currency_skip_posting()) {
 		$vk = db_fetch_array(db_select("select box3 from grupper where art = 'VK' and cast(kodenr as integer) = $gruppe", __FILE__ . " linje " . __LINE__));
 		if (!$vk || trim((string) $vk['box3']) === '') {
 			return array('kurs' => 6596);
@@ -620,10 +621,18 @@ function settings_rows_before_row(string $hook, array $t, array $step): void
 		}
 		return;
 	}
-	if ($hook === 'currency_rate') {
+	if ($hook === 'currency_rate' && !settings_currency_skip_posting()) {
 		$effect = settings_currency_step_effect($t, $step);
 		settings_currency_book($effect, $effect['date']);
 	}
+}
+
+/**
+ * "Gem kurs uden bogføring" in the confirm box (SST-769 from master): the rate is saved, no adjustment is posted.
+ */
+function settings_currency_skip_posting(): bool
+{
+	return isset($_POST['confirmed']) && $_POST['confirmed'] === 'skip';
 }
 
 function settings_rows_on_delete(string $hook, array $t, array $row): void

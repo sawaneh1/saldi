@@ -26,6 +26,7 @@
 //                  and the inaktiv eye; ordinary fields of the section above the tables; year selector for per-year
 //                  tables. Behaviour in javascript/settingsRows.js.
 // 20261008 Sawaneh A table with 'hide_empty' and no rows is not shown (old discounts in G3.5).
+// 20261008 Sawaneh A table's 'confirm_skip' adds a second confirm button (master's SST-769 Gem kurs uden bogføring).
 
 include_once(__DIR__ . '/rows.php');
 
@@ -158,6 +159,12 @@ function settings_rows_render(array $c): void
         </ul>
         <p><?= st_t(6600) ?></p>
         <button type="submit" class="st-btn st-btn-primary" name="confirmed" value="1"><?= st_t(6599) ?></button>
+				<?php foreach ($tables as $t) {
+					if (!empty($t['confirm_skip'])) { ?>
+        <button type="submit" class="st-btn" name="confirmed" value="skip"><?= st_t($t['confirm_skip'][0]) ?></button>
+        <p><?= st_t($t['confirm_skip'][1]) ?></p>
+				<?php break; }
+				} ?>
       </div>
 			<?php } ?>
 			<?php if ($state['conflict']) { ?>

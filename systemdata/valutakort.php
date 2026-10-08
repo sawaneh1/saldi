@@ -30,6 +30,10 @@
 // 20210802 LOE - Translated title and alert texts
 // 20220614 MSC - Implementing new design
 // 20350507 PHR - PHP 8
+// 20260911 MJ SST-769 Added an explicit "save rate without posting" action. The existing button
+//             still saves and posts the adjustment; the new one writes rate history only, with no
+//             transaktioner rows and no kontoplan change. Cast $_GET kodenr/id, which reached SQL raw.
+// 20260914 CDX/LH Recalculate account balances only after posting a currency adjustment.
  
 // 20261005 Sawaneh Currencies and rates live in Indstillinger » Finans » Valuta (settings redesign 4d, G2.3; audit V2-V9
 //                  fixed there, a rate change shows its postings before they are booked); this page only redirects.

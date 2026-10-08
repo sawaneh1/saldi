@@ -3,6 +3,7 @@
 //                  integration is a row that opens a drawer with its own form. Dirty tracking and dependency rules per
 //                  drawer, write-only secrets (Skift reveals an empty field), confirmation dialog for actions, the two
 //                  small provider forms sent through our own server, deep links ?item= and ?field=, Esc and Ctrl+S.
+// 20261008 Sawaneh Mini forms send the page's CSRF token (X-CSRF-Token), as master's Flatpay ID save (SST-844) requires.
 (function () {
 	'use strict';
 	var cfg = window.SALDI_SETTINGS || {};
@@ -242,7 +243,8 @@
 		var label = button.textContent;
 		button.disabled = true;
 		button.textContent = cfg.wait;
-		fetch(box.dataset.url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+		var token = document.querySelector('input[name="csrf_token"]');
+		fetch(box.dataset.url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token ? token.value : '' }, body: JSON.stringify(data) })
 			.then(function (r) {
 				return r.text().then(function (t) {
 					var msg = '';
