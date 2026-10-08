@@ -27,6 +27,7 @@
 // 20260922 Sawaneh Language switch action; auditor sessions keep their year in the master revisor table.
 // 20260927 Sawaneh Placement action (cluster_placement setting, spec 2.3).
 // 20261005 Sawaneh Placement action removed: the cluster is always in the top bar (topbar addendum 2026-10-05 §2).
+// 20261008 Sawaneh action=theme stores the user's light/dark/system choice (settings ui/theme).
 
 /**
  * Injected by ../includes/connect.php and ../includes/online.php, included below:
@@ -74,6 +75,20 @@ if ($action === 'fiscal_year') {
 
 // Language (spec 2.1): persisted on the user, on the session row and in the cookie the
 // login page reads, so the choice follows the user across devices.
+if ($action === 'theme') {
+	// Lys / Mørk / System in the user chip (prototype_dashboard_tema v5): a personal setting, answered as JSON when asked by fetch.
+	include_once(__DIR__ . "/../includes/std_func.php");
+	$theme = isset($request['theme']) ? (string) $request['theme'] : '';
+	if (in_array($theme, array('light', 'dark', 'system'), true) && (int) $bruger_id > 0) {
+		update_settings_value('theme', 'ui', $theme, 'UI theme: light, dark or system', (int) $bruger_id);
+	}
+	if (!empty($request['ajax'])) {
+		ob_end_clean();
+		header('Content-Type: application/json; charset=utf-8');
+		print json_encode(array('ok' => true, 'theme' => $theme));
+		exit;
+	}
+}
 if ($action === 'language') {
 	$languageId = (int) (isset($request['language_id']) ? $request['language_id'] : 0);
 	if ($languageId >= 1 && $languageId <= 3) {

@@ -432,3 +432,14 @@ html.topbar-tall { --topbar-h: 48px; }
 .topbar-hello-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--topbar-green); flex: none; }
 .topbar.topbar-tight .topbar-hello-line { display: none; }
 .topbar.topbar-xtight .topbar-hello { display: none; }
+
+/* 20261008 Sawaneh Tema segment in the chip menu (prototype_dashboard_tema v5 .seg). */
+.topbar-pop-row { display: flex; flex-direction: column; gap: 7px; padding: 6px 12px 8px; font-size: 13px; color: var(--topbar-txt); }
+.topbar-pop-lab { display: flex; align-items: center; gap: 10px; }
+.topbar-pop-lab .bx { font-size: 16px; color: var(--topbar-mut); }
+.topbar-seg { display: flex; background: var(--topbar-hover); border: 1px solid var(--topbar-line); border-radius: 10px; padding: 3px; }
+.topbar-seg button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: transparent; color: var(--topbar-mut); font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 7px; cursor: pointer; transition: color .2s, background .2s; }
+.topbar-seg button .bx { font-size: 14px; }
+.topbar-seg button:hover { color: var(--topbar-txt); }
+.topbar-seg button[aria-pressed="true"] { background: var(--user-primary, var(--topbar-accent)); color: var(--user-primary-text, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+

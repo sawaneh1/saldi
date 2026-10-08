@@ -6571,6 +6571,74 @@
 6914	Sally er Saldis assistent (knappen SALDI Assist øverst). Hun viser dig rundt i Saldi og hjælper, når du går i stå.	Sally is Saldi's assistant (the SALDI Assist button at the top). She shows you around Saldi and helps when you get stuck.	Sally er Saldis assistent (knappen SALDI Assist øverst). Hun viser deg rundt i Saldi og hjelper når du står fast.
 6915	Få hjælp af Sally	Get help from Sally	Få hjelp av Sally
 6916	Sally hjælper med at hente dine data og viser dig rundt i Saldi.	Sally helps you bring your data over and shows you around Saldi.	Sally hjelper deg med å hente dataene dine og viser deg rundt i Saldi.
+6917	Lys	Light	Lys
+6918	Mørk	Dark	Mørk
+6919	Lys eller mørk visning. System følger din enheds indstilling.	Light or dark display. System follows your device setting.	Lys eller mørk visning. System følger enhetens innstilling.
+6920	Omsætning denne uge	Revenue this week	Omsetning denne uken
+6921	Omsætning denne måned	Revenue this month	Omsetning denne måneden
+6922	ex moms	ex VAT	eks. mva
+6923	Momsangivelse for perioden	VAT return for the period	Mva-melding for perioden
+6924	%s mere end samme uge sidste år	%s more than the same week last year	%s mer enn samme uke i fjor
+6925	%s mindre end samme uge sidste år	%s less than the same week last year	%s mindre enn samme uke i fjor
+6926	Frist %s	Due %s	Frist %s
+6927	Se angivelse	See the return	Se melding
+6928	Omsætning pr. måned	Revenue per month	Omsetning per måned
+6929	ekskl. moms	excl. VAT	ekskl. mva
+6944	Vis som tabel	Show as table	Vis som tabell
+6945	Vis som graf	Show as chart	Vis som graf
+6946	%s mod %s	%s vs %s	%s mot %s
+6947	Kun %s	Only %s	Bare %s
+6948	(sidste år)	(last year)	(i fjor)
+6949	Bedste måned	Best month	Beste måned
+6951	Kunder pr. time	Customers per hour	Kunder per time
+6952	%s dage	%s days	%s dager
+6953	Få	Few	Få
+6954	Mange	Many	Mange
+6955	Omsætning pr. dag	Revenue per day	Omsetning per dag
+6956	Uge %s	Week %s	Uke %s
+6957	Uge %s, %s	Week %s, %s	Uke %s, %s
+6958	Samme uge %s	Same week %s	Samme uke %s
+6959	Bedste dag	Best day	Beste dag
+6960	Omsætning pr. varegruppe	Revenue per item group	Omsetning per varegruppe
+6961	regnskabsåret	the fiscal year	regnskapsåret
+6962	Se alle %s	See all %s	Se alle %s
+6963	mio. kr i alt	million kr in total	mill. kr i alt
+6964	Øvrige (%s grupper)	Others (%s groups)	Øvrige (%s grupper)
+6965	Aktive inden for den sidste time	Active within the last hour	Aktive den siste timen
+6966	30 dage	30 days	30 dager
+6967	Gå til ordrer	Go to orders	Gå til ordrer
+6968	Forslag klar til bekræftelse	Suggestions ready to confirm	Forslag klare til bekreftelse
+6969	Notifikationer med forslag, der venter på dig	Notifications with suggestions waiting for you	Varsler med forslag som venter på deg
+6970	Gennemgå forslag	Review suggestions	Gjennomgå forslag
+6971	I år	This year	I år
+6972	Sidste år	Last year	I fjor
+6973	mod sidste år	vs last year	mot i fjor
+6974	Gns. kunder pr. time	Avg. customers per hour	Gj.sn. kunder per time
+6975	Andel	Share	Andel
+6976	Ændring	Change	Endring
+6977	Vælg, hvad du vil se på din forside. Ændringer vises og gemmes med det samme.	Choose what to show on your front page. Changes are shown and saved at once.	Velg hva du vil se på forsiden. Endringer vises og lagres med en gang.
+6978	Vis oversigten	Show the overview	Vis oversikten
+6979	Slå fra, hvis du hellere vil starte på en tom forside	Switch off to start on an empty front page instead	Slå av hvis du heller vil starte på en tom forside
+6980	Beløb og frist for perioden	Amount and deadline for the period	Beløp og frist for perioden
+6981	Hvem der har været aktive den sidste time	Who has been active in the last hour	Hvem som har vært aktive den siste timen
+6982	Ordrer fra de sidste 30 dage	Orders from the last 30 days	Ordrer fra de siste 30 dagene
+6983	Sammenlignet med sidste år	Compared with last year	Sammenlignet med i fjor
+6984	Ugen dag for dag	The week day by day	Uken dag for dag
+6985	Hvornår på ugen der er travlt	When in the week it is busy	Når i uken det er travelt
+6986	Fordeling i regnskabsåret	Split in the fiscal year	Fordeling i regnskapsåret
+6987	Omsætningskonti	Revenue accounts	Omsetningskontoer
+6988	Gælder hele regnskabet	Applies to the whole company	Gjelder hele regnskapet
+6989	Fra kontonr.	From account no.	Fra kontonr.
+6990	Til kontonr.	To account no.	Til kontonr.
+6991	Bestemmer, hvilke konti der tæller som omsætning i nøgletal og grafer. Er du i tvivl?	Decides which accounts count as revenue in key figures and charts. Not sure?	Bestemmer hvilke kontoer som teller som omsetning i nøkkeltall og grafer. Er du i tvil?
+6992	Se guiden	See the guide	Se guiden
+6993	Oversigten er skjult	The overview is hidden	Oversikten er skjult
+6994	Du kan altid slå den til igen.	You can always switch it on again.	Du kan alltid slå den på igjen.
+6995	Vis oversigt	Show overview	Vis oversikt
+6996	kl.	at	kl.
+6997	mio. kr	million kr	mill. kr
+6998	mio.	m	mill.
+6999	t.	k	t.
 6930	Jeg forstår, at regnskabet bliver overskrevet med sikkerhedskopien.	I understand that the ledger will be overwritten with the backup.	Jeg forstår at regnskapet blir overskrevet med sikkerhetskopien.
 6931	Sæt flueben for at bekræfte, at regnskabet må overskrives.	Tick the box to confirm that the ledger may be overwritten.	Kryss av for å bekrefte at regnskapet kan overskrives.
 6932	Adgang nægtet	Access denied	Ingen tilgang

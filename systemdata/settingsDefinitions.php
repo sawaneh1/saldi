@@ -82,6 +82,7 @@
 //                  listed as inactive in G3.5 with a per-row Overfør.
 // 20261008 Sawaneh Merge of master: hideRevenue (SD-657) in G3.3, the HTML/CSS layout version (forms/htmlLayoutVersion) in
 //                  G6.4, and "Gem kurs uden bogføring" (SST-769) as 'confirm_skip' on the currency rates.
+// 20261008 Sawaneh personal.profile.theme: light, dark or system (prototype_dashboard_tema v5), settings ui/theme per user.
 //
 // Storage encodings mirror the current writer (risk review R23):
 //   onEmpty  'on' / ''        onOff  'on' / 'off'        oneZero  '1' / '0'        raw  as typed
@@ -1575,6 +1576,11 @@ if (!function_exists('getSettingsSections')) {
 				'type' => 'bool', 'label' => 6377, 'help' => 6378, 'default' => false, 'permission' => 'any',
 				'storage' => array('settings', 'bank_integration', 'show_status', 'oneZero'), 'visible_if' => array('module', 'bank'),
 				'keywords' => array('bank', 'bankstatus', 'kassekladde')),
+			'personal.profile.theme' => array('group' => 'personal', 'section' => 'profile', 'sub' => 'profile', 'scope' => 'user',
+				'type' => 'select', 'label' => 1075, 'help' => 6919, 'default' => 'light', 'permission' => 'any',
+				'options' => array('light' => 6917, 'dark' => 6918, 'system' => 2377),
+				'storage' => array('settings', 'ui', 'theme', 'raw'),
+				'keywords' => array('tema', 'theme', 'mørk tilstand', 'dark mode', 'lys', 'mørk', 'udseende')),
 			'personal.print.local_print' => array('group' => 'personal', 'section' => 'print', 'sub' => 'print', 'scope' => 'user',
 				'type' => 'bool', 'label' => 6007, 'help' => 6008, 'default' => false, 'permission' => 'any',
 				'storage' => array('settings', 'print', 'localPrint', 'onEmpty'), 'legacy' => $divvalg,

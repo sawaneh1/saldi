@@ -68,6 +68,9 @@
 // 20260930 LOE SST-836 Added the expiry report to the Lager menu where batch/expiry handling is in use.
 // 20261008 Sawaneh Onboarding §7a: saldiAssistHandover()/saldiAssistOpen()/saldiAssistLive() - the guide's hand-over to Sally
 //                  (SALDI Assist) with its context, kept across the shell reload and waited for until the widget is there.
+// 20261008 Sawaneh Tema: css/saldi-theme.css tokens on the shell (html.saldi-shell), topbarThemeSet() stores the user's choice
+//                  and applies it to the shell and the page in the frame.
+// 20261008 Sawaneh Oversigt rebuilt (prototype_dashboard_tema v5): Skjul/Rediger oversigt act on the page in place (drawer).
 @session_start();
 $s_id = session_id();
 
@@ -203,7 +206,9 @@ function brightenColor($color, $amount = 0.2) {
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="icon" href="../img/saldiLogo.png">
 <link href='../css/sidebar_style.css?v=24' rel='stylesheet'>
-<link href='../css/topbar.css?v=17' rel='stylesheet'>
+<link href='../css/topbar.css?v=18' rel='stylesheet'>
+<link href='../css/saldi-theme.css?v=1' rel='stylesheet'>
+<script>document.documentElement.classList.add('saldi-shell');</script>
 <link href='../css/onboarding.css?v=1' rel='stylesheet'>
 <meta name="viewport" content="width=device-width, initial-scale=0.8">
 
@@ -501,6 +506,15 @@ function brightenColor($color, $amount = 0.2) {
     }
   }
 
+  // Tema (prototype_dashboard_tema v5): applied to the shell and the page in the frame at once, stored for the user.
+  function topbarThemeSet(theme) {
+    document.documentElement.dataset.theme = theme;
+    document.querySelectorAll('[data-theme-opt]').forEach((b) => { b.setAttribute('aria-pressed', b.dataset.themeOpt === theme ? 'true' : 'false'); });
+    try { const doc = document.querySelector('.content-iframe').contentDocument; if (doc && doc.documentElement) { doc.documentElement.dataset.theme = theme; } } catch (e) { /* other origin */ }
+    const fd = new FormData();
+    fd.append('action', 'theme'); fd.append('theme', theme); fd.append('ajax', '1');
+    fetch('topbarAction.php', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(() => {});
+  }
   function topbarToggleSub(event, subId) {
     event.stopPropagation();
     const sub = document.getElementById(subId);
@@ -958,12 +972,25 @@ function brightenColor($color, $amount = 0.2) {
     const iframe = document.querySelector('.content-iframe');
     const hidden = document.querySelector('.topbar-dash [class*="bx-show"]') !== null;
     topbarCloseAll();
+    // The rebuilt Oversigt hides itself in place (prototype_dashboard_tema v5); older copies reload through ?hidden=.
+    try { const w = iframe.contentWindow; if (w && typeof w.saldiDashSetHidden === 'function') { w.saldiDashSetHidden(!hidden); topbarDashIcon(!hidden); return; } } catch (e) { /* other origin */ }
     iframe.src = (location + '').split('/').splice(0, 4).join('/') + '/index/dashboard.php?inframe=1&hidden=' + (hidden ? '0' : '1');
     setTimeout(() => location.reload(), 600);
   }
+  function topbarDashIcon(hidden) {
+    const ic = document.querySelector('.topbar-dash[data-dash-hide] i');
+    if (ic) { ic.className = 'bx ' + (hidden ? 'bx-show' : 'bx-hide'); }
+    const lab = document.querySelector('.topbar-dash[data-dash-hide] .topbar-dash-hide-label');
+    if (lab && lab.dataset.show && lab.dataset.hide) { lab.textContent = hidden ? lab.dataset.show : lab.dataset.hide; }
+  }
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'saldi:dash-hidden') return;
+    topbarDashIcon(!!e.data.hidden);
+  });
   function topbarDashEdit() {
     const iframe = document.querySelector('.content-iframe');
     topbarCloseAll();
+    try { const w = iframe.contentWindow; if (w && typeof w.saldiDashDrawer === 'function') { w.saldiDashDrawer(true); return; } } catch (e) { /* other origin */ }
     try {
       const popup = iframe.contentWindow.document.getElementById('settingpopup');
       if (popup) { popup.style.display = 'block'; }

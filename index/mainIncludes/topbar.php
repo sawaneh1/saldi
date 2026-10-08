@@ -39,6 +39,7 @@
 // 20261005 Sawaneh Topbar addendum 2026-10-05: no sidebar placement (move button and cluster_placement gone).
 // 20261004 Sawaneh Gear link next to the breadcrumb: the settings section that governs the page in the frame (settings redesign §8.11).
 // 20261002 Sawaneh Breadcrumb element in the left side, filled by the shell on settings pages (settings redesign §8.0).
+// 20261008 Sawaneh Tema (Lys / Mørk / System) as a segment in the chip menu, prototype_dashboard_tema v5.
 
 /**
  * Sessions in the master `online` table that belong to the caller's company and
@@ -426,6 +427,16 @@ function topbar_render(array $ctx, int $sprogId): void
             <?php } ?>
           </div>
           <?php } ?>
+
+          <?php $uiThemeNow = isset($GLOBALS['uiTheme']) ? (string) $GLOBALS['uiTheme'] : 'light'; ?>
+          <div class="topbar-pop-row topbar-theme">
+            <span class="topbar-pop-lab"><i class='bx bx-palette'></i><?= $t('1075|Tema') ?></span>
+            <div class="topbar-seg" role="group" aria-label="<?= $t('1075|Tema') ?>">
+              <button type="button" data-theme-opt="light" aria-pressed="<?= $uiThemeNow === 'light' ? 'true' : 'false' ?>" onclick="topbarThemeSet('light')"><i class='bx bx-sun'></i><?= $t('6917|Lys') ?></button>
+              <button type="button" data-theme-opt="dark" aria-pressed="<?= $uiThemeNow === 'dark' ? 'true' : 'false' ?>" onclick="topbarThemeSet('dark')"><i class='bx bx-moon'></i><?= $t('6918|Mørk') ?></button>
+              <button type="button" data-theme-opt="system" aria-pressed="<?= $uiThemeNow === 'system' ? 'true' : 'false' ?>" onclick="topbarThemeSet('system')"><i class='bx bx-desktop'></i><?= $t('2377|System') ?></button>
+            </div>
+          </div>
 
           <div class="topbar-pop-section topbar-dash" hidden><?= $t('2224|Oversigt') ?></div>
           <button type="button" class="topbar-pop-item topbar-dash" role="menuitem" data-dash-hide="1" onclick="topbarDashHide()" hidden><i class='bx <?= $ctx['dashHidden'] ? 'bx-show' : 'bx-hide' ?>'></i><span class="topbar-dash-hide-label"><?= $ctx['dashHidden'] ? $t('5604|Vis oversigt') : $t('5603|Skjul oversigt') ?></span></button>
