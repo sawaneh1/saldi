@@ -91,6 +91,7 @@ $relativePath = str_repeat('../', max(0, $slashCount - 2));
 
 // 20261005 Sawaneh The timezone cookie is gone (settings redesign G1.3): the setting below decides.
 // 20261006 Sawaneh Every page prints its breadcrumb for the shell (page_auto_breadcrumb(), stdFunc/pageChrome.php).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 date_default_timezone_set('Europe/Copenhagen');
 	#$r=db_fetch_array(db_select("select lukket,version from regnskab where id='1'",__FILE__ . " linje " . __LINE__)); # 20190605
 $r = db_fetch_array(db_select("select id, var_value from settings where var_name='timezone'", __FILE__ . " linje " . __LINE__));
@@ -362,11 +363,6 @@ if (isset($db_id) && isset($db) && isset($sqdb) && $db != $sqdb) { #20200928
 			# $bgcolor5="#e0e0f0";
 		}
 		if (!isset($bgnuance1)) $bgnuance1 = "+01+01-55"; # Aendring af nuancen til gult ved skiftende linjer
-	}
-	if ($menu == 'T') {
-		$header = 'nix';
-		$bg = 'nix';
-		$css = NULL;
 	}
 	if (($rettigheder) && ($modulnr) && (substr($rettigheder, $modulnr, 1) < '1')) { #20190529
 		include($relativePath . "includes/std_func.php");

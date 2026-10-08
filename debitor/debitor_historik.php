@@ -23,6 +23,7 @@
 //
 // Copyright (c) 2003-2025 Saldi.dk ApS
 // ----------------------------------------------------------------------
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // Historik view - separate file for better grid differentiation
 
 #ob_start();
@@ -232,24 +233,9 @@ if (!$sort) $sort = "firmanavn";
 $sort=str_replace("adresser.","",$sort);
 $sortering=$sort;
 
-if ($menu=='T') {
-	$title= "".findtekst(907,$sprog_id)."";
-} else {
-	$title="Historik";
-}
+$title="Historik";
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\">&nbsp;&nbsp;&nbsp;</div>";   
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">";
-	print "<a accesskey=V href='debitorvisning.php?valg=$valg' title='Ændre visning'><i class='fa fa-gear fa-lg'></i></a> &nbsp; ";
-	print "<a accesskey=N href='ordre.php?konto_id=$konto_id&returside=ordreliste.php?konto_id=$konto_id' title='Opret nyt kundekort'><i class='fa fa-plus-square fa-lg'></i></a></div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu=='S') include_once 'debLstIncludes/topLine.php';
+if ($menu=='S') include_once 'debLstIncludes/topLine.php';
 else include_once 'debLstIncludes/oldTopLine.php';
 
 // Use grid system for historik view
@@ -555,11 +541,7 @@ if ($current_menu == "main") {
 }
 print "</div>";
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 ?>
 

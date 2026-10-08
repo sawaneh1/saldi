@@ -41,6 +41,7 @@
 //                  transfer query built with = instead of .=), F5 (the previous year was tested as the year itself),
 //                  F7 (dead lock-stock redirect), F8 (aaben unchecked), F9 (posted values cast/escaped).
 // 20261006 Sawaneh Back link has accesskey L, so the shell's breadcrumb replaces it (breadcrumb step 2).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -63,42 +64,24 @@ if (!(int) if_isset($_GET['id'], 0) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/confirmclose.js\"></script>";
-if ($menu=='T') {
-		#	print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">";
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-		print "<div id=\"header\">";
-		print "<div class=\"headerbtnLft headLink\"><a href=regnskabsaar.php accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst('30|Tilbage', $sprog_id)."</a></div>";
-		print "<div class=\"headerTxt\">$title</div>";
-		print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-		print "</div>";
-		print "<div class='content-noside'>";
-		print "<div id=\"leftmenuholder\">";
-		include_once 'left_menu.php';
-		print "</div><!-- end of leftmenuholder -->\n";
-		print "<div class=\"maincontentLargeHolder\">\n";
-		print "<div class='divSys'>";
-		print "<table class='dataTableSys' cellpadding=0 cellspacing=0 border=1 width='100%' bordercolor='$bgcolor5'><tbody>\n"; ############################	##table 3b start
+include("top.php");
+	print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"1\"><tbody>";
+	print "<table width=100% height=100% border=0 cellspacing=0 cellpadding=0><tbody>"; ####################table 1a start.
+	print "<tr><td align='center' valign=top>";
+	print "<a accesskey='L' href=\"javascript:confirmClose('regnskabsaar.php','". findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id) ."')\">";
+	if ($menu=='S') {
+		print "<button style = '$buttonStyle; width: 10%' onMouseOver=\"this.style.cursor='pointer'\">";
 	} else {
-		include("top.php");
-		print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"1\"><tbody>";
-		print "<table width=100% height=100% border=0 cellspacing=0 cellpadding=0><tbody>"; ####################table 1a start.
-		print "<tr><td align='center' valign=top>";
-		print "<a accesskey='L' href=\"javascript:confirmClose('regnskabsaar.php','". findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id) ."')\">";
-		if ($menu=='S') {
-			print "<button style = '$buttonStyle; width: 10%' onMouseOver=\"this.style.cursor='pointer'\">";
-		} else {
-			print "<button style = 'width: 80px;'>";
-		}
-		print findtekst('2172|Luk', $sprog_id)."</button></a>";
-		print "<table width=100% align='center' border=0 cellspacing=4 cellpadding=0><tbody>\n"; ##############table 2b start
-		print "<tr>\n";
-		print "</tbody></table>\n"; #####################################################table 2b slut.
-		print "</td></tr>\n";
-		print "<tr>\n";
-		print "<td align = center valign = center>";
-		print "<table class='dataTable2' cellpadding=0 cellspacing=0 border=1><tbody>\n"; ############################	##table 3b start
+		print "<button style = 'width: 80px;'>";
 	}
+	print findtekst('2172|Luk', $sprog_id)."</button></a>";
+	print "<table width=100% align='center' border=0 cellspacing=4 cellpadding=0><tbody>\n"; ##############table 2b start
+	print "<tr>\n";
+	print "</tbody></table>\n"; #####################################################table 2b slut.
+	print "</td></tr>\n";
+	print "<tr>\n";
+	print "<td align = center valign = center>";
+	print "<table class='dataTable2' cellpadding=0 cellspacing=0 border=1><tbody>\n"; ############################	##table 3b start
 
 $id=if_isset($_GET['id']);
 

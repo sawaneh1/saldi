@@ -35,6 +35,7 @@
 // 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
 // 20261008 Sawaneh WP-3.2/3.7: Tilbage goes to the plain returside (an order keeps id, fokus and the creditor), returside
 //                  sanitised and encoded, one confirm text for every Tilbage, the junk dialog text and the broken S-menu Ny link fixed.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 
 @session_start();
@@ -205,28 +206,7 @@ if (strpos($returside, 'ordre.php') !== false) {
 	$backHref .= (strpos($returside, '?') === false ? '?' : '&') . "id=" . (int) $ordre_id . "&fokus=" . urlencode((string) $fokus) . "&konto_id=" . (int) $id;
 }
 $tekst = findtekst(154, $sprog_id);
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$backHref','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-	print "
-	<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style='width:100%' class='dataTableSmall'><tbody>
-	<tr><td style='width:50%'>
-	<input type='button' style='width:150px;' onclick=\"location.href='rapport.php?rapportart=kontokort&layout=grid&konto_fra=$kontonr&konto_til=$kontonr&returside=../kreditor/kreditorkort.php?id=$id'\" value='" . findtekst(133, $sprog_id) . "'>
-	</td>
-	<td style='width:50%; text-align:right;'>
-	<input type='button' style='width:150px;' onclick=\"location.href='ordreliste.php?konto_id=$id&kontonumre=$kontonr&valg=faktura&returside=../kreditor/kreditorkort.php?id=$id'\" value='" . findtekst(134, $sprog_id) . "'>
-	</td></tr>
-	</tbody>
-	</table>
-	";
-	print "<table cellpadding=\"0\" cellspacing=\"10\" border=\"0\" class='dataTableForm' style='width:100%'><tbody>\n"; #tabel 1.2 start
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 
 	################
 	$tilbage_icon  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
@@ -290,11 +270,9 @@ if ($menu == 'T') {
 print "<div class='outer-datatable-wrapper'>";
 print "<div class='datatable-wrapper'>";
 
-if ($menu != 'T') {
-	// START A NEW TABLE with the same properties:
-	print "<table cellpadding=\"0\" cellspacing=\"10\" border=\"0\" class='dataTableForm' style='width:100%'><tbody>\n"; #tabel 1.2 start
+// START A NEW TABLE with the same properties:
+print "<table cellpadding=\"0\" cellspacing=\"10\" border=\"0\" class='dataTableForm' style='width:100%'><tbody>\n"; #tabel 1.2 start
 
-}
 
 
 if ($id > 0) {
@@ -486,25 +464,15 @@ if (db_fetch_array($q)) $slet = "NO";
 $q = db_select("select id from ansatte where konto_id = '$id'", __FILE__ . " linje " . __LINE__);
 if (db_fetch_array($q)) $slet = "NO";
 
-if ($menu == 'T') {
-	if ($slet == "NO") {
-		print "<tr><td colspan=3 align = center><input style='width:150px; border-radius:4px;' class='button green medium'  type=submit accesskey=\"g\" value=\"" . findtekst(471, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\"></td>\n";
-	} else {
-		print "<tr><td colspan=3 align = center><input style='width:150px; border-radius:4px;' class='button green medium'  type=submit accesskey=\"g\" value=\"" . findtekst(471, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\">&nbsp;&nbsp;&nbsp;<input style='border-radius:4px;' type=submit accesskey=\"s\" value=\"" . findtekst(1099, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\"></td>\n";
-	}
+if ($slet == "NO") {
+	print "<tr bgcolor=$bg><td colspan=3 align = center><input style='border-radius:4px;' type=submit accesskey=\"g\" value=\"" . findtekst(471, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\"></td>\n";
 } else {
-	if ($slet == "NO") {
-		print "<tr bgcolor=$bg><td colspan=3 align = center><input style='border-radius:4px;' type=submit accesskey=\"g\" value=\"" . findtekst(471, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\"></td>\n";
-	} else {
-		print "<tr bgcolor=$bg><td colspan=3 align = center><input style='border-radius:4px;' type=submit accesskey=\"g\" value=\"" . findtekst(471, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\">&nbsp;&nbsp;&nbsp;<input style='border-radius:4px;' type=submit accesskey=\"s\" value=\"" . findtekst(1099, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\"></td>\n";
-	}
+	print "<tr bgcolor=$bg><td colspan=3 align = center><input style='border-radius:4px;' type=submit accesskey=\"g\" value=\"" . findtekst(471, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\">&nbsp;&nbsp;&nbsp;<input style='border-radius:4px;' type=submit accesskey=\"s\" value=\"" . findtekst(1099, $sprog_id) . "\" name=\"submit\" onclick=\"javascript:docChange = false;\"></td>\n";
 }
 print	"</tbody></table>"; #tabel 1.2.3 slut
 print	"</td></tr>";
 print	"</tbody></table>"; #tabel 1.2 slut
-if ($menu == 'T') {
-	print "";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 
 	print "<tr><td colspan='3'>";
 	print "<table width='100%' align='center' border='0' cellspacing='0' cellpadding='0'><tbody>"; #tabel 1.3. start
@@ -543,11 +511,7 @@ if (isset($_GET['cvrnr']) && $cvrnr) {
 }
 
 
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>
 
 

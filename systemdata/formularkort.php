@@ -64,6 +64,7 @@
 // 20260921 CDX/MJ SST-745 Match VSPR sprog case-insensitively when saving et formularkort, so a
 //                          different capitalisation no longer creates a duplicate sprogrække.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 @session_start();
 $s_id=session_id();
 
@@ -281,24 +282,7 @@ $fe_link = "formeditor.php?form_nr=".urlencode(($form_nr ?? '') ?: 4)."&amp;spro
 $fe_label = ($sprog_id == 1) ? 'Visuel editor' : 'Visual editor';
 $fe_title = ($sprog_id == 1) ? 'Ny visuel formulareditor (træk og slip)' : 'New visual form editor (drag & drop)';
 
-if ($menu=='T') {  # 20150331 start
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">\n";
-	print "<div class=\"headerbtnLft\">";
-    print "<a title=\"$fe_title\" class='button green small left' href=\"$fe_link\">$fe_label</a> &nbsp;";
-    print "<a class='button blue small' class=\"button red small left\" href=\"formular_indlaes_std.php\">".findtekst('572|Genindlæs standardformularer', $sprog_id)."</a> &nbsp;";
-    print "<a title=\"".findtekst('1779|Opret eller nedlæg sprog', $sprog_id)."\" class='button blue small' class=\"button red small left\" href=\"formularkort.php?nyt_sprog=yes\" accesskey=\"s\">Bg.".findtekst('646|Navn', $sprog_id)."</a> &nbsp;";
-    print "<a title=\"Email indstillinger for sprog\" class='button blue small' href=\"settingsSection.php?s=documents.email\" accesskey=\"e\">Email</a></div>\n";
-	print "<span class=\"headerTxt\"></span>\n";     
-	print "<div class=\"headerbtnRght\"><a title=\"".findtekst('1780|Indlæs eller fjern baggrundsfil', $sprog_id)."\" class='button blue small' href=logoupload.php?upload=yes accesskey=\"u\">".findtekst('571|Baggrund', $sprog_id)."</a></div>";    
-	print "</div><!-- end of header -->";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontentLargeHolder\">\n";
-	print "<table border=\"1\" cellspacing=\"0\" id=\"dataTable\" class=\"dataTable2\"><tbody>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<html>\n";
 	print "<head>\n";
 	print "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>\n";
@@ -1210,7 +1194,7 @@ if (!$r=db_fetch_array(db_select("select * from formularer where formular = '$fo
 			drop_down($y,$form_nr,$art_nr,$formularsprog,$r['id'],$r['beskrivelse'],$r['xa'],$z,"2","-",$r['str'],$r['color'],$r['justering'],$r['font'],$r['fed'],$r['kursiv'],$r['side']);  
 			print "\n";
 		}
-		if (!$menu=='T') print "<tr><td colspan=11><hr></td></tr>";  # 20150331
+		if (!$menu) print "<tr><td colspan=11><hr></td></tr>";  # 20150331
 	 	print "</tbody></table></td></tr>";
 		$x=$x+$footer;
 	}
@@ -1233,9 +1217,7 @@ function kopier_alt($form_nr,$art_nr,$formularsprog,$kilde) {
 	}
 }
 
-if ($menu=='T') {
-	print "";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<tr><td width='100%' height='2.5%' align='center' valign='bottom'>\n";		
 	print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>\n";
 
@@ -1272,7 +1254,7 @@ print "onMouseOver=\"this.style.cursor = 'pointer'\" ><u>Slet logo</u></td> -->\
 print "</tbody></table>\n";
 print "</td></tr>\n";
 print "</tbody></table>\n";
-if ($menu=='T') print "</div>\n</div>\n";  # 20150331
+  # 20150331
 print "</body></html>\n";
 
 function get_background_file($form_type, $sprog) {

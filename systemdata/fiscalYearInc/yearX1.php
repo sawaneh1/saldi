@@ -3,6 +3,7 @@
 //                  fixed this page is really shown, so it was rewritten: the old one printed rows from undefined
 //                  arrays. The previous year's postings are gone, so the opening balance is shown as it stands and
 //                  cannot be transferred again; only description, end and "posting allowed" are saved.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 function yearX1($id, $kodenr, $beskrivelse, $startmd, $startaar, $slutmd, $slutaar, $aaben, $aut_lager) {
 	global $sprog_id, $menu;
 
@@ -41,10 +42,6 @@ function yearX1($id, $kodenr, $beskrivelse, $startmd, $startaar, $slutmd, $sluta
 	print "</form>";
 	print "</tbody></table></td></tr>\n";
 	print "</tbody></table></div></div>";
-	if ($menu == 'T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 	exit;
 }

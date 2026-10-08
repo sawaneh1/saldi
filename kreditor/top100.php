@@ -26,6 +26,7 @@
 // 20190205 PHR $sum=dkdecimal(!isset ($r['totalsum'])) ændret til $sum=if_isset ($r['totalsum']); 
 // 20201121 PHR added valutakurs 
 // 20251112 LOE From debitor/top100
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -59,25 +60,8 @@ $from=usdate($fra);
 $to=usdate($til);
 $fra=dkdato($from);
 $til=dkdato($to);
-if ($menu=='T') {
-	print "<center><table width = 75% cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody>";
-} else {
-	print "<center><table width = 100% cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody>";
-}
-if ($menu=='T') {
-	$leftbutton="<a class='button red small' title=\"Klik her for at komme til startsiden\" href=\"../kreditor/rapport.php\" accesskey=\"L\">Luk</a>";
-	$rightbutton=NULL;
-	$vejledning=NULL;
-	include("../includes/top_header.php");
-	include("../includes/top_menu.php");
-	print "<div id=\"header\"> 
-	<div class=\"headerbtnLft\">$leftbutton</div>
-	<span class=\"headerTxt\">Top 100</span>";     
-	print "<div class=\"headerbtnRght\"></div>";       
-	print "</div><!-- end of header -->";
-	print "<div class=\"maincontentLargeHolder\">\n";
-	print "<table class='dataTable2' cellpadding=\"1\" cellspacing=\"1\" border=\"0\" align=\"center\"><tbody>\n";
-} elseif ($menu=='S') {
+print "<center><table width = 100% cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody>";
+if ($menu=='S') {
 	print "<tr><td colspan=\"4\" height=\"8\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"3\" cellpadding=\"0\"><tbody>"; #B
 

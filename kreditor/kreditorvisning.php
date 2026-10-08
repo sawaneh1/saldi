@@ -31,6 +31,7 @@
 // 20261002 Sawaneh Saving the list columns updates only the kreditor view row (kode) instead of every KLV row of the user.
 // 20261008 Sawaneh WP-3.4: in a popup (popup=1) Tilbage closes it through luk.php, otherwise the returside or the creditor
 //                  list; the forms keep the popup flag.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 	
 @session_start();
 $s_id=session_id();
@@ -143,16 +144,7 @@ global $sprog_id;
 
 include("../includes/topline_settings.php");
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\"><a href='$backAttr' accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst('30|Tilbage', $sprog_id)."</a></div>";     
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<td width='10%' align=center><a href='$backAttr' accesskey=L>
 		   <button style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">".findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 	print "<td width='80%' align=center style='$topStyle'>".findtekst('1189|Kreditorvisning', $sprog_id)."</a></td>
@@ -344,11 +336,7 @@ function sektion_4() {
 	print "</form>";
 }
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 
 ?>

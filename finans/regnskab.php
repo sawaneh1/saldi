@@ -64,6 +64,7 @@
 //                as anchors. Texts 3500-3503 added to importfiler/tekster.csv.
 // 20261005 Sawaneh WP-4.2/4.16: returside sanitised and urlencoded towards budget.php; a Luk (popup) or Tilbage
 //                  (opened with a returside) button again.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -598,11 +599,7 @@ print "</div>";
 fclose($csv);
 
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 // Tutorial setup - the help button in the top bar (#tutorial-help) does nothing without this
 $steps = array();

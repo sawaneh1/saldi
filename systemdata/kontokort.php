@@ -37,6 +37,7 @@
 // 20260206	PHR	- discal_year
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -368,17 +369,7 @@ elseif ($kontotype == 'X')
 	$kontotype = 'Sideskift';
 */
 
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-  print "<div class=\"headerbtnLft headLink\"><a href=kontoplan.php accesskey=L title='".findtekst('2551|Klik her for at komme tilbage', $sprog_id)."'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-	print "<center><table class='dataTableSmall' border='0' cellspacing='1' align='center' style='width:700px;'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td align=\"center\"  height=1% valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
@@ -608,7 +599,7 @@ print "</tbody>";
 print "</table>";
 print "</td></tr>";
 print "<tr><td align = 'center' valign = 'bottom'>";
-if ($menu == 'T' || $menu == 'S') {
+if ($menu == 'S') {
 
 } else {
 	print "<table width='100%' align='center' border='1' cellspacing='0' cellpadding='0'><tbody>";
@@ -618,10 +609,6 @@ if ($menu == 'T' || $menu == 'S') {
 print "</td></tr>";
 print "</tbody></table>";
 
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 ?>

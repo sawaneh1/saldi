@@ -17,6 +17,7 @@
 // Copyright (c) 2004-2009 DANOSOFT ApS
 // -----------------------------------------------------------------------------------
 // 20250516 Sulayman make sure the back button redirect to the previous page rather than the dashboard
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -50,18 +51,7 @@ if ($backUrl === '') $backUrl = 'javascript:window.history.go(-1);';
 if ($popup) $returside="../includes/luk.php";
 else $returside=$backUrl;
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\"><a accesskey=N href='modtagelse.php?returside=modtageliste.php&tjek=-1' title='Klik her for at oprette en ny modtagelse'><i class='fa fa-plus-square fa-lg'></i></a></div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-	print "<table cellpadding=\"1\" cellspacing=\"1\" border=\"0\" width=\"100%\" valign = \"top\">";
-
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>
 		   <tr><td height = \"25\" align=\"center\" valign=\"top\">
 		   <table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>

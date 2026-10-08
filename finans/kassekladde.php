@@ -134,6 +134,7 @@
 // 20261005 LOE SST-856 Only a click on a header link may change the saved sorting: a form action
 //                  sent kksort without kkdir, which reset a descending choice to ascending.
 // 20261008 Sawaneh "Kassekladde <id>" is the page's last breadcrumb level (page_title, topbar addendum §5).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 require_once __DIR__ . '/kassekladde_includes/journalHistory.php';
 require_once __DIR__ . '/kassekladde_includes/saveReplay.php';
 require_once __DIR__ . '/kassekladde_includes/bilagNumber.php';
@@ -1733,25 +1734,10 @@ if (!$simuler) {
 	if ($udskriv) {
 		print "<div class='print-view'>";
 	}
-	if ($menu != 'T') {
-		#print "<table class='outerTable' width='100%' $height border='0' cellspacing='1' cellpadding='0'><tbody>"; # Tabel 1 -> Hovedramme
-	}
+	#print "<table class='outerTable' width='100%' $height border='0' cellspacing='1' cellpadding='0'><tbody>"; # Tabel 1 -> Hovedramme
 	if (!$udskriv) {
 		if (function_exists('page_title')) print page_title(findtekst('1072|Kassekladde', $sprog_id) . ' ' . $kladde_id);
-		if ($menu == 'T') {
-			include_once '../includes/top_header.php';
-			include_once '../includes/top_menu.php';
-
-			$tekst = findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id);
-			print "<div id='header'>";
-			$backTarget = $kladdeLukBase . "&returside=" . urlencode($backUrl);
-			print "<div class='headerbtnLft headLink'><a href=\"javascript:confirmClose('" . htmlspecialchars($backTarget, ENT_QUOTES, $charset) . "','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-			print "<div class='headerTxt'>$title &nbsp;•&nbsp; $kladde_id</div>";
-			print "<div class='headerbtnRght headLink'><a accesskey=N href=\"javascript:confirmClose('" . htmlspecialchars($kladdeLukBase . "&returside=" . urlencode('../finans/kassekladde.php'), ENT_QUOTES, $charset) . "','$tekst')\" title='TEXTHERE'><i class='fa fa-plus-square fa-lg'></i></a></div>";
-			print "</div>";
-			print "<div class='content-noside'>";
-
-		} elseif ($menu=='S') {
+		if ($menu=='S') {
 			include_once 'kassekladde_includes/topLineKassekladde.php';
 		} else {
 			print "<tr><td height='1%' align='center' valign='top' class='top-header'>";
@@ -3181,11 +3167,7 @@ if (($bogfort && $bogfort != '-') || $udskriv) {
 	include_once("../includes/stdFunc/fiscalYear.php");
 	list($regnstart, $regnslut) = explode(":", fiscalYear($regnaar));
 
-	if ($menu == 'T') {
-		$de_fok = "";
-	} else {
-		$de_fok="onfocus=\"fokuser(this,'#000000','#EFEFEF');\" onblur=\"defokuser(this,'#000000','#FFFFFF');\"";
-	}
+	$de_fok="onfocus=\"fokuser(this,'#000000','#EFEFEF');\" onblur=\"defokuser(this,'#000000','#FFFFFF');\"";
 	if ($kontrolkonto) {
 		$control_next_date = '9999-12-31';
 		$kontrolkonto = $kontrolkonto * 1;
@@ -3729,13 +3711,9 @@ if (($bogfort && $bogfort != '-') || $udskriv) {
 	print "</tbody></table></center></div>";   # Tabel 1.3 <- Kladdelinjer
 	print "</td></tr>\n";
 	print "<div class='kassekladde-footer'>";
-	if ($menu == 'T') {
-		print "<table width='900px' border='0' cellspacing='0' cellpadding='1'><tbody><tr>"; # Tabel 1.4 -> Knapper
-	} else {
 	print "<table id='buttonTable' style='margin: 0 auto; width:800px;' border='0' cellspacing='0' cellpadding='1'><tbody>
        <tr>";
  	# Tabel 1.4 -> Knapper
-	}
 	if (!$udskriv) {
 		if ($bogfort == 'V') {
 			#		print "<input type=hidden name=ny_kladdenote value='$kladdenote'>";

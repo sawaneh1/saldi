@@ -148,6 +148,7 @@
 // 20260916 CDX/LH Preserve the import transaction while posting; retain master invoice savepoints.
 // 20261006 Sawaneh WP-2.11-2.13: no stray ?id= on fokus; sag retursides stored plain and urlencoded in the Ny link; the menu-T
 //                  Tilbage uses the given returside (an ordre.php target gets the order's id) instead of always the order list.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // 20261008 Sawaneh sidehoved(): the order heading is also the page's last breadcrumb level (page_title, addendum §5).
 // 20261008 Sawaneh The group discount is read from the discount matrix's 'NR' rows only (settings decision 20).
 
@@ -3813,11 +3814,7 @@ function ansatopslag($sort, $fokus, $id)
 	$txt646 = findtekst(646, $sprog_id); // Navn
 
 
-	if ($menu == 'T') {
-		include_once '../includes/top_menu.php';
-	} else {
-
-	}
+	
 
 	if (!$id)
 		$id = '0';
@@ -3863,11 +3860,7 @@ function ansatopslag($sort, $fokus, $id)
 	}
 	print "</tbody></table></td></tr></tbody></table>";
 
-	if ($menu == 'T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 	exit;
 }
 ######################################################################################################################################
@@ -4815,11 +4808,7 @@ function tekstopslag($sort, $id)
 	print "</body>\n";
 	print "</html>\n";
 
-	if ($menu == 'T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 
 	exit;
 }
@@ -4865,21 +4854,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst)
 	$alerttekst = findtekst(154, $sprog_id);
 
 	include("../includes/topline_settings.php");
-	if ($menu == 'T' && !$sag_id) {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-		print "<div id=\"header\">";
-		// WP-2.13: back to the given returside (was always the order list); an ordre.php target needs the order's id.
-		$topBack = $returside;
-		if (strpos($topBack, 'ordre.php') !== false) {
-			$topBack .= ((strpos($topBack, '?') !== false) ? '&' : '?') . 'id=' . (int) $id;
-		}
-		print "<div class=\"headerbtnLft headLink\"><a href=\"" . htmlspecialchars($topBack, ENT_QUOTES) . "\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
-		print "<div class=\"headerTxt\">$tekst</div>";
-		print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-		print "</div>";
-		print "<div class='content-noside'>";
-	} elseif ($sag_id) {
+	if ($sag_id) {
 		$bg = "nix";
 		$header = 'nix';
 

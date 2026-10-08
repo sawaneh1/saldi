@@ -62,6 +62,7 @@
 //                  Column widths are now declared, and the date column is
 //                  nowrap, so a posting cannot break over two lines.
 //                  Texts 5325-5326 added to importfiler/tekster.csv.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 function kontokort($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
                    $dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart,
@@ -260,19 +261,7 @@ function kontokort($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
 		: findtekst('133|Kontokort', $sprog_id), ENT_QUOTES, 'UTF-8');
 	$titUdskriv = htmlspecialchars(findtekst('5325|Udskriv alle linjer', $sprog_id), ENT_QUOTES, 'UTF-8');
 
-	if ($menu == 'T') {
-		$leftbutton = "<a title=\"Klik her for at komme til forsiden af rapporter\" href=\"rapport.php?rapportart=kontokort&regnaar=$regnaar&dato_fra=$startdato&maaned_fra=$mf&aar_fra=$aar_fra&dato_til=$slutdato&maaned_til=$mt&aar_til=$aar_til&konto_fra=$konto_fra&konto_til=$konto_til&ansat_fra=$ansat_fra&ansat_til=$ansat_til&afd=$afd&projekt_fra=$projekt_fra&projekt_til=$projekt_til&simulering=$simulering&lagerbev=$lagerbev\" accesskey=\"L\"><i class='fa fa-close fa-lg'></i> &nbsp;Luk</a>";
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-		print "<div id=\"header\">";
-		print "<div class=\"headerbtnLft headLink\">$leftbutton</div>";
-		print "<div class=\"headerTxt\">$title</div>";
-		$rightbutton = $udskriv ? "&nbsp;&nbsp;&nbsp;"
-			: "<a href=\"javascript:void(0);\" onclick=\"$udskrivJs\" title=\"$titUdskriv\"><i class='fa fa-print fa-lg'></i> $txtUdskriv</a>";
-		print "<div class=\"headerbtnRght headLink\">$rightbutton</div>";
-		print "</div>";
-		print "<div class='content-noside'>";
-	} elseif ($menu == 'S') {
+	if ($menu == 'S') {
 		
 		#########
 		$tilbage_icon  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
@@ -483,7 +472,7 @@ if ($projekt_fra) {
         print "$projekt_fra, $prj_navn_fra";
     print "</td></tr>";
 }
-if ($menu != 'T') print "</tbody></table>";
+print "</tbody></table>";
 print "<tr><td colspan=5><big><b>cvr: $vatNo | $firmanavn</b></big></td></tr>";
 print "</tbody></table>";   // close the info table
 
@@ -1222,11 +1211,7 @@ print "<tbody>";
 
 	fclose($csv);
 
-	if ($menu == 'T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 }# endfunc kontokort
 #################################################################################################
 ?>

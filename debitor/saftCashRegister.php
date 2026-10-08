@@ -27,6 +27,7 @@
 // 20260615 LOE  Fax updated to Mobile
 // 20260709 SZ Added Grid Framework sticky header to SAF-T Cash Register report
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -1144,19 +1145,7 @@ $periodDateTo = $txt2137 . ' ' . $endDay . '. ' . $endMonth . ' ' . $endYear;
 /***************************************************************************************************** */
 
 $newTitle = findtekst('2320|SAF-T', $sprog_id)." ".findtekst('2226|Kasse', $sprog_id);
-if ($menu == 'T') {
-    $title = findtekst('1142|Rapport', $sprog_id)." • $newTitle";
-
-    include_once '../includes/top_header.php';
-    include_once '../includes/top_menu.php';
-    print "<div id=\"header\">";
-    print "<div class=\"headerbtnLft headLink\"><a href=\"rapport.php\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-    print "<div class=\"headerTxt\">$title</div>";
-    print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-    print "</div>";
-    print "<div class='content-noside'>";
-    print "<table class='dataTable' border='0' cellspacing='1' width='100%'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     // Grid Framework header — mirrors Finance -> Reports -> SAF-T (finans/saft.php's $menu=='S'
     // block): a position:sticky wrapper div around the header bar, icon back button (left-aligned,
     // widened to 10% to match Debtors -> Orders/Accounts), 10/85/5 layout.
@@ -1386,9 +1375,5 @@ if ($fileExist) {
     }
 </script>
 <?php
-if ($menu == 'T') {
-    include_once '../includes/topmenu/footer.php';
-} else {
-    include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>

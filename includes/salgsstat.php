@@ -31,6 +31,7 @@
 // 20231213 MSC - Copy pasted new design into code
 // 20260704 SZ Added Grid Framework sticky header and footer to Sales Statistics report
 // 20260704 SZ Fixed misaligned columns in Sales Statistics report list
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -98,16 +99,7 @@ if ($popup) $luk="../includes/luk.php";
 elseif ($art=='D') $luk="../debitor/rapport.php";
 else $luk="../kreditor/rapport.php";
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\"><a href=$luk accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst('30|Tilbage', $sprog_id)."</a></div>";     
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	// Grid Framework header — mirrors Debtors -> Reports -> Open items / Account balance / General ledger
 	// (openpost()/kontosaldo()/kontokort() in includes/rapportfunc.php). The whole page is one flex
 	// column: header bar (auto height) + column-title row (auto height, printed just below, before the
@@ -260,15 +252,7 @@ if ($menu=='S') {
 	$ssGlobalRowIndex=0;
 }
 
-if ($menu=='T') {
-	print "<center style='padding-bottom:5px;'>	<input onclick=\"location.href='#nav'\" style='width:450px;' type=\"button\" title='Klik her for at søge' value=\"".findtekst('913|Søg', $sprog_id)."\">";
-	print "<div class='expandableSearch' id='nav' style='padding-top:5px;'>";
-	begraens($dato_fra,$dato_til,$konto_fra,$konto_til,$kontonr,$firmanavn,$adresse,$postnr,$bynavn,$varenr,$varetekst,$detaljer,$art);
-	print "</div>";
-	print "</center>";
-} else {
-	print "";
-}
+print "";
 
 for ($x=0;$x<count($q_konto_id);$x++) {
 	if ($menu=='S') {
@@ -331,22 +315,14 @@ for ($x=0;$x<count($q_konto_id);$x++) {
 	}
 	print"<div class='dataTablediv'><table width=\"100%\" class='dataTable'><tbody>";
 #	print "<tr><td>$konto_id[$x]</td></tr>";
-	if ($menu=='T') {
-		if ($x) print "<br>";
-	} else {
-		if ($x) print "<tr><td colspan=\"$cols\"><hr></td></tr>";
-	}
+	if ($x) print "<tr><td colspan=\"$cols\"><hr></td></tr>";
 	print "<tr><td width=10%><b>".findtekst('284|Kontonr', $sprog_id).":</b></td><td>$q_kontonr[$x]</td></tr>";
 	print "<tr><td width=10%><b>".findtekst('360|Firmanavn', $sprog_id).":</b></td><td>$q_firmanavn[$x]</td></tr>";
 	if (isset($periode)) print "<tr><td><b>".findtekst('899|Periode.', $sprog_id)."</b></td><td>$periode</td></tr>";
 	print "<tr>";
 	if (!$summeret) print "</td><td align=\"left\"><b>".findtekst('635|Dato', $sprog_id)."</b></td>";
 
-	if ($menu=='T') {
-		print "<tr><td colspan=10 class='border-hr-bottom'></td></tr>\n";
-	} else {
-		print "<tr><td colspan=10><hr></td></tr>\n";
-	}
+	print "<tr><td colspan=10><hr></td></tr>\n";
 
 	print"<table width=\"100%\" class='dataTableNTH'><thead>";
 	print "<th>".findtekst('917|Varenr.', $sprog_id)."</th><th>".findtekst('914|Beskrivelse', $sprog_id)."</th><th class='text-right'>".findtekst('916|Antal', $sprog_id)."</th><th class='text-right'>".findtekst('915|Pris', $sprog_id)."</th>";
@@ -482,11 +458,7 @@ for ($x=0;$x<count($q_konto_id);$x++) {
 		print "</div>\n"; // close #ssPageFlex
 	}
 
-	if ($menu=='T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 
 function begraens($dato_fra,$dato_til,$konto_fra,$konto_til,$kontonr,$firmanavn,$adresse,$postnr,$bynavn,$varenr,$varetekst,$detaljer,$art) {
 	global $db;
@@ -505,15 +477,9 @@ function begraens($dato_fra,$dato_til,$konto_fra,$konto_til,$kontonr,$firmanavn,
 	print "<tr><td width=50%><b>".findtekst('920|Vis detaljer', $sprog_id).":</b></td><td align=\"right\"><label class='checkContainerVisning' style='padding-left: 20px;'><input type=\"checkbox\" name=\"detaljer\" $detaljer><span class='checkmarkVisning'></span></label></td></tr>";
 	print "<tr><td>&nbsp;</td></tr>";
 	print "<tr><td colspan=\"2\" align=\"center\">";
-	if ($menu=='T') {
-		print "<input type=\"submit\" name=\"find\" value=\"".findtekst('913|Søg', $sprog_id)."\">";
-		print "&nbsp;•&nbsp;";
-		print "<input onclick=\"location.href='#luk'\" type=\"button\" value=\"".findtekst('159|Fortryd', $sprog_id)."\">";
-	} else {
-		print "<input style=\"width:80px\" type=\"submit\" name=\"find\" value=\"".findtekst('913|Søg', $sprog_id)."\">";
-		print "&nbsp;";
-		print "<input style=\"width:80px\" type=\"submit\" name=\"fortryd\" value=\"".findtekst('159|Fortryd', $sprog_id)."\">";
-	}
+	print "<input style=\"width:80px\" type=\"submit\" name=\"find\" value=\"".findtekst('913|Søg', $sprog_id)."\">";
+	print "&nbsp;";
+	print "<input style=\"width:80px\" type=\"submit\" name=\"fortryd\" value=\"".findtekst('159|Fortryd', $sprog_id)."\">";
 	print "</td></tr>";
 
 	print "</tbody></table>";

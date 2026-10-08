@@ -139,6 +139,7 @@ if ($menu == "S") {
 }
 	
 // 20260904 Sawaneh WP-1.3c: luk.php only when THIS window is a popup (popup=1 flag),
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // not on the user's popup preference — inline/iframe use otherwise ends on luk.php.
 $isPopupRequest = !empty($_GET['popup']);
 $returside = $isPopupRequest ? '../includes/luk.php' : nav_sanitize_returside($_GET['returside'] ?? null);
@@ -437,22 +438,7 @@ $txt3102 = findtekst(3102,$sprog_id); # Opret en ny vare
 $txt3103 = findtekst(3103,$sprog_id); #Luk varelisten....
 $txt3105 = findtekst(3105,$sprog_id); #Opret indkøbsforslag /....
 $txt3101 = findtekst(3101,$sprog_id); #Vælg hvilke varegrupper.....
-if ($menu=='T') {
-#	print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">";
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">\n";
-	print "<div class=\"headerbtnLft\"></div>\n";
-#	print "<span class=\"headerTxt\">Systemsetup</span>\n";     
-#	print "<div class=\"headerbtnRght\"><!--<a href=\"index.php?page=../debitor/debitorkort.php;title=debitor\" class=\"button green small right\">Ny debitor</a>--></div>";       
-	print "</div><!-- end of header -->";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontent\">\n";
-	print "<table border=\"0\" cellspacing=\"0\" id=\"dataTable\" class=\"dataTable\"><tbody>"; # -> 1
-
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	print "<table style='width:100%;height:100%;' border='0' cellspacing='0' cellpadding='0'><tbody>\n";
 	print "<tr><td height = '25' align='center' valign='top'>\n";
 	print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>\n";

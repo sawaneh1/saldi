@@ -118,6 +118,7 @@
 // 20261006 Sawaneh WP-2.9/2.10: job list links carry an urlencoded returside with the card's id; Tilbage to an order hands it
 //                  returside=ordreliste.php instead of the order's own URL.
 // 20260617 MJ Keep account-card report return links tied to the source order when opened from orders
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 @session_start();
 $s_id = session_id();
 
@@ -1344,34 +1345,7 @@ if (strpos($returside, 'ordre.php') !== false && $ordre_id) {
 	if ($fokus) $kontokortReturside .= "&fokus=" . rawurlencode($fokus);
 }
 $kontokortRetursideParam = rawurlencode($kontokortReturside);
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	## add onClick=\"JavaScript:opener.location.reload();\" but still get style from headlink MALENE
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($backReturside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a>";
-	if ($jobkort) {
-		print "&nbsp;&nbsp;";
-	} else {
-		print "";
-	}
-	print "</div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\"><a href='historikkort.php?id=$id&returside=" . urlencode("debitorkort.php?id=$id") . "' title='" . findtekst('131|Historik', $sprog_id) . "'><i class='fa fa-history fa-lg'></i></a>&nbsp;&nbsp;<a href='rapport.php?rapportart=kontokort&layout=grid&konto_fra=$kontonr&konto_til=$kontonr&returside=$kontokortRetursideParam' title='" . findtekst('133|Kontokort', $sprog_id) . "'><i class='fa fa-vcard fa-lg'></i></a>";
-	if (substr($rettigheder, 5, 1) == '1') {
-		print "&nbsp;&nbsp;<a href='ordreliste.php?konto_id=$id&account_context=1&valg=faktura&returside=../debitor/debitorkort.php?id=$id' title='" . findtekst('134|Fakturaliste', $sprog_id) . "'><i class='fa fa-dollar fa-lg'></i></a>";
-	} else {
-		print "";
-	}
-	if ($jobkort) {
-		print "&nbsp;&nbsp;<a href='jobliste.php?konto_id=$id&returside=" . urlencode("debitorkort.php?id=$id") . "' title='" . findtekst('38|Opgaveliste', $sprog_id) . "'><i class='fa fa-list-ul fa-lg'></i></a>";
-	} else {
-		print "";
-	}
-	print "</div></div>";
-	print "<div class='content-noside'>";
-	print  "<table border='0' cellspacing='1' class='dataTableForm' width='100%'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	############################ 
 	$icon_back = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
 	$help_icon = '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#FFFFFF"><path d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>';
@@ -1431,10 +1405,8 @@ if ($menu == 'T') {
 
 print "<div class='outer-datatable-wrapper'>";
 print "<div class='form-wrapper'>"; // CHANGED: specific class for form area
-if ($menu != 'T') {
-	// START A NEW TABLE with the same properties:
-	print "<table cellpadding=\"0\" cellspacing=\"10\" border=\"0\" width=\"100%\"><tbody>\n"; # NEW TABEL 1.2 ->
-}
+// START A NEW TABLE with the same properties:
+print "<table cellpadding=\"0\" cellspacing=\"10\" border=\"0\" width=\"100%\"><tbody>\n"; # NEW TABEL 1.2 ->
 
 // JavaScript validation to prevent form submit (and page reload) when required fields are empty
 $js_alert_name = findtekst('346|Navn skal angives', $sprog_id);
@@ -2583,8 +2555,7 @@ print "</tbody></table></td></tr>"; # <- TABEL 1.2
 print "</div>"; // Close form-wrapper
 
 print "<tr><td align = 'center' valign = 'bottom'>\n";
-if ($menu == 'T') {
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 
 ##############
 
@@ -2996,11 +2967,7 @@ SCRIPT;
 
 ##################
 
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 $steps = array();
 $steps[] = array(

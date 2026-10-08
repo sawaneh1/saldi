@@ -129,6 +129,7 @@ include("../includes/std_func.php");
 require_once __DIR__ . '/../includes/stdFunc/unlockRecord.php';
 // 20260923 SZ SST-755 (CodeRabbit): one random per-render token, reused by both sidehoved()'s
 // 20261008 Sawaneh sidehoved(): the order heading is also the page's last breadcrumb level (page_title, addendum §5).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // exit link and the unload beacon further down (see refresh_lock_token() in unlockRecord.php).
 $sessionLockToken = bin2hex(random_bytes(16));
 
@@ -1447,10 +1448,6 @@ function ansatopslag($sort, $fokus, $id){
 	global $memu;
 	global $sprog_id;
 
-	if ($menu=='T') {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-	}
 
 	sidehoved($id, "../kreditor/ordre.php", "../kreditor/kreditorkort.php", $fokus, "Leverand&oslash;rordre $id");
 	# print"<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
@@ -1497,11 +1494,7 @@ function ansatopslag($sort, $fokus, $id){
 
 	print "</tbody></table></td></tr></tbody></table>";
 
-	if ($menu=='T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 
 	exit;
 }
@@ -1514,10 +1507,6 @@ function vareopslag($sort, $fokus, $id, $vis, $ref, $find, $lager) {
 	global $menu;
 	global $sprog_id,$x; #20210716
 
-	if ($menu=='T') {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-	}
 
 	if ($find) $find=str_replace("*","%",$find);
 
@@ -1683,11 +1672,7 @@ function vareopslag($sort, $fokus, $id, $vis, $ref, $find, $lager) {
 	</table>";
 	print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/confirmclose.js\"></script>";
 
-	if ($menu=='T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
 
 	exit;
 }
@@ -1725,42 +1710,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst) {
 	include("../includes/topline_settings.php");
 	print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/confirmclose.js\"></script>";
 
-	if ($menu=='T') {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-		print "<div id=\"header\">";
-		if ($kort) print "<div class=\"headerbtnLft headLink\"><a href=../kreditor/ordre.php?id=$id&fokus=$fokus
-				accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i>
-				&nbsp;".findtekst(30,$sprog_id)."</a></div>";
-		else print "<div class=\"headerbtnLft headLink\"><a
-				href=\"javascript:confirmClose('../includes/luk.php?returside=" . urlencode((string) $returside) . "&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst')\"
-				accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i>
-				&nbsp;".findtekst(30,$sprog_id)."</a></div>";
-		print "<div class=\"headerTxt\">$title</div>";
-		if (($kort!="../lager/varekort.php" && $returside != "ordre.php")&&($id)) {
-			print "<div class=\"headerbtnRght
-				headLink\"><a accesskey=N
-				href=\"javascript:confirmClose('ordre.php?returside=ordreliste.php','$alerttekst')\"
-				title='Klik her for at lave ny ordre'><i class='fa fa-plus-square fa-lg'></i></a></div>";
-		} elseif (($kort=="../lager/varekort.php" && $returside == "ordre.php")&&($id)) {
-			print "<div
-				class=\"headerbtnRghtheadLink\"><a accesskey=N href=\"$kort?returside=$returside&ordre_id=$id\"
-				title='Klik her for at lave ny ordre'><i class='fa fa-plus-square fa-lg'></i></a></div>";
-		} elseif ($kort=="../kreditor/kreditorkort.php") {
-			print "<div class=\"headerbtnRght headLink\"><a accesskey=V href=kreditorvisning.php
-				title='Klik her for at ændre visning'><i class='fa fa-gear fa-lg'></i></a> &nbsp; <a accesskey=N
-				href=\"javascript:confirmClose('$kort?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus','$alerttekst')\"
-				title='Klik her for at lave ny ordre'><i class='fa fa-plus-square fa-lg'></i></a></div>";
-		}
-		elseif (($id)||($kort!="../lager/varekort.php")) {
-			print "<div class=\"headerbtnRght headLink\"><a accesskey=N
-				href=\"javascript:confirmClose('$kort?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus','$alerttekst')\"
-				title='Klik her for at lave ny ordre'><i class='fa fa-plus-square fa-lg'></i></a></div>";
-		} else {print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";}
-		print "</div>";
-		print "<div class='content-noside'>";
-
-	} elseif ($menu=='k') {
+	if ($menu=='k') {
 		print "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"><html><head><title>".findtekst(547,$sprog_id)."</title><meta http-equiv=\"content-type\" content=\"text/html; charset=ISO-8859-1\"></head>";
 		print "<body bgcolor=\"#339999\" link=\"#000000\" vlink=\"#000000\" alink=\"#000000\" center=\"\">";
 		print "<div align=\"center\">";
@@ -1890,10 +1840,6 @@ print "</tbody></table>
 </td></tr>
 </tbody></table>";
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-	print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/confirmclose.js\"></script>";
-}
 
 ?>
 

@@ -31,6 +31,7 @@
 // 20260826 LOE Linked to debitor/ordre.php instead of finans/ordre.php
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20261005 Sawaneh WP-4.6: order and journal drill-downs return to the same account and month (raw month).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 
 $fakturanr = array();
@@ -117,19 +118,7 @@ $txt2131 = findtekst('2131|konto', $sprog_id);
 $txt2132 = findtekst('2132|bilag', $sprog_id);
 
 // Top navigation
-if ($menu == 'T') {
-    include_once '../includes/top_header.php';
-    include_once '../includes/top_menu.php';
-    print "<div id=\"header\">"; 
-    print "<div class=\"headerbtnLft headLink\"><a href=regnskab.php accesskey=L title='Klik for at komme tilbage til regnskab'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";     
-    print "<div class=\"headerTxt\">" . findtekst(1196, $sprog_id) . " ";
-    if ($kontonr) print "$txt2131: $kontonr";
-    if ($bilag) print "$txt2132: $bilag";
-    print "</div>";     
-    print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-    print "</div>";
-    print "<div class='content-noside'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     ############################
      $icon_back = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
 
@@ -858,11 +847,7 @@ function lagerbev($kontonr, $varekob, $varelager_i, $varelager_u, $regnstart, $r
 print "</td></tr></tbody></table>";
 
 
-if ($menu == 'T') {
-    include_once '../includes/topmenu/footer.php';
-} else {
-    include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>
 <style>
 

@@ -48,6 +48,7 @@ include("../includes/grid.php");
 $title = findtekst('3360|Salg pr. postnummer', $sprog_id);
 
 // 20260714 SZ - rapport.php's redirect into this page (the only entry point - see
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // lager/rapport.php's "Salg pr. postnummer" submit branch) never carries offset[salg_rapport]/
 // sort[salg_rapport]/rowcount[salg_rapport]/search[salg_rapport], since those are this grid's own
 // state params, not rapport.php's filters. includes/grid.php's create_datagrid() persists that state
@@ -161,18 +162,11 @@ if ($srGridMode) {
     print "</div>\n"; // close flex:0 header wrapper
 } else {
     print "<center><table width='100%' cellpadding='0' cellspacing='0' border='0'><tbody>";
-    if ($menu == 'T') {
-        $leftbutton = "<a class='button red small' href='../lager/rapport.php' accesskey='L'>Luk</a>";
-        include("../includes/top_header.php");
-        include("../includes/top_menu.php");
-        print "<div id='header'><div class='headerbtnLft'>$leftbutton</div><span class='headerTxt'>$title</span><div class='headerbtnRght'></div></div><div class='maincontentLargeHolder'>";
-    } else {
-        print "<tr><td colspan='4' height='8'><table width='100%' align='center' border='0' cellspacing='3' cellpadding='0'><tbody><tr>
+    print "<tr><td colspan='4' height='8'><table width='100%' align='center' border='0' cellspacing='3' cellpadding='0'><tbody><tr>
             <td width='10%' $top_bund><a href='../lager/rapport.php' accesskey='L'>Luk</a></td>
             <td width='80%' $top_bund>$title</td>
             <td width='10%' $top_bund></td>
         </tr></tbody>...</td></tr>";
-    }
 }
 
 /* ============================================================
@@ -623,7 +617,6 @@ if ($srGridMode) {
     print "</div>\n"; // close flex:1 datagrid wrapper opened above
     print "</div>\n"; // close srPageFlex
 } else {
-    if ($menu == 'T') print "</div>";
     print "</tbody></table></center>";
 }
 ?>

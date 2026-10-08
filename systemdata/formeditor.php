@@ -27,6 +27,7 @@
 //                  and drafts in the settings table via includes/formEditorState.php (FE3); the background link opens
 //                  in the same window and the upload page returns here (FE5).
 // 20261006 Sawaneh Back link has accesskey L, so the shell's breadcrumb replaces it (breadcrumb step 2).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 //
 // New visual (drag & drop) form editor - phase 1, increment 1.
 //
@@ -841,31 +842,13 @@ function fe_render_besk_labels($besk) {
 //  PAGE CHROME (modern top menu, mirrors formularkort.php / logoupload.php)
 // ---------------------------------------------------------------------------
 $menu = isset($menu) ? $menu : '';
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">\n";
-	print "<div class=\"headerbtnLft\">";
-	print "<a class='button gray small' accesskey='L' href=\"" . htmlspecialchars($returside) . "\">" . findtekst('30|Tilbage', $sprog_id) . "</a> &nbsp;";
-	print "<a class='button blue small' href=\"formularkort.php\">" . findtekst('573|Formularkort', $sprog_id) . "</a>";
-	print "</div>";
-	print "<span class=\"headerTxt\">Formulareditor</span>\n";
-	print "<div class=\"headerbtnRght\"></div>";
-	print "</div><!-- end of header -->";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontentLargeHolder\">\n";
-} else {
-
-	print "<div id=\"fe-header\">";
-	print "<table width=\"100%\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody><tr>";
-	print "<td width=\"170\"><a href=\"" . htmlspecialchars($returside) . "\" accesskey=\"L\"><button type=\"button\" style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">" . findtekst('30|Tilbage', $sprog_id) . "</button></a></td>";
-	print "<td align=\"center\" style='$topStyle'>" . htmlspecialchars($title) . "<br></td>";
-	print "<td width=\"170\" style='$topStyle'><br></td>";
-	print "</tr></tbody></table>";
-	print "</div>";
-}
+print "<div id=\"fe-header\">";
+print "<table width=\"100%\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody><tr>";
+print "<td width=\"170\"><a href=\"" . htmlspecialchars($returside) . "\" accesskey=\"L\"><button type=\"button\" style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">" . findtekst('30|Tilbage', $sprog_id) . "</button></a></td>";
+print "<td align=\"center\" style='$topStyle'>" . htmlspecialchars($title) . "<br></td>";
+print "<td width=\"170\" style='$topStyle'><br></td>";
+print "</tr></tbody></table>";
+print "</div>";
 ?>
 <style>
   #fe-wrap { font-family: Arial, Helvetica, sans-serif; }
@@ -3988,8 +3971,5 @@ if ($menu == 'T') {
 </script>
 
 <?php
-if ($menu == 'T') {
-	print "</div>\n"; // maincontentLargeHolder
-}
 print "</body></html>\n";
 ?>

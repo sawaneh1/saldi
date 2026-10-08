@@ -22,6 +22,7 @@
 // ----------------------------------------------------------------------------
 // 
 // 20140704 Oprydning og sproglig forbedring                                 ca
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -83,13 +84,7 @@ if ($popup) $luk="../includes/luk.php";
 else $luk="rapport.php";
 
 print "<table width = 100% cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody>";
-if ($menu=='T') {
-	$leftbutton="<a title=\"Klik her for at lukke\" href=\"../includes/luk.php\" accesskey=\"L\" accesskey=\"L\">Luk</a>";
-	$rightbutton="<a  title='$rtekst' href=\"salgsstat.php?begraens=$begraens&ret=on\" accesskey=\"B\">Søgning</a>";
-	$vejledning=NULL;
-	include("../includes/topmenu.php");
-	print "<div id=\"topmenu\" style=\"position:absolute;top:6px;right:0px\">";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	print "<table width = 100% cellpadding='0' cellspacing='0' border='0'><tbody>";
 	print "<tr><td colspan='4' height='8'>";
 	print "<table width='100%' align='center' border='0' cellspacing='3' cellpadding='0'><tbody>"; #B

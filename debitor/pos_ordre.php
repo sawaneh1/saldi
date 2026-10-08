@@ -116,6 +116,7 @@
 //             json_encode() instead of a manual string-replace, matching index/login.php's
 //             existing pattern for the same problem.
 // 20260928 Sawaneh Declared $permission_key = 'pos.kasse' (point-of-sale access per role).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 @session_start();
 $s_id = session_id();
 ob_start();
@@ -191,77 +192,6 @@ if (get_settings_value("mobilepos", "POS", "off", NULL, $kasse = $_COOKIE["saldi
 	print "<meta name='viewport' content='width=$width, initial-scale=$zoom, maximum-scale=$zoom, user-scalable=0'>";
 }
 global $menu;
-if ($menu == 'T') {
-	if (!$bgcolor)
-		$bgcolor = "#000000";
-	print "<body bgcolor=\"$bgcolor\" link=\"#000000\" vlink=\"#000000\" alink=\"#000000\">\n";
-	print "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n
-	<html>\n
-	<head><title>$title</title><meta http-equiv=\"content-type\" content=\"text/html; charset=$charset;\">\n
-	<meta http-equiv=\"content-language\" content=\"da\">\n
-	<meta name=\"google\" content=\"notranslate\">\n";
-	global $meta_returside;
-	if ($meta_returside)
-		print "$meta_returside"; #20140502
-	if ($css)
-		print "<link rel=\"stylesheet\" type=\"text/css\" href=\"$css\">\n";
-	else
-		print "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/saldimenu.css\"/>\n";
-	if (substr($title, 0, 3) == 'POS') { # 21071009
-		($title == 'POS_ordre' && isset($_COOKIE['saldi_pfs'])) ? $pfs = $_COOKIE['saldi_pfs'] : $pfs = 10;
-		print "<style> body {font-family: Arial, Helvetica, sans-serif;font-size: " . $pfs . "pt;} </style>";
-		print "<style> table {font-family: Arial, Helvetica, sans-serif;font-size: " . $pfs . "pt;} </style>";
-	}
-	print "<script type=\"text/javascript\" src=\"../javascript/jquery-1.8.0.min.js\"></script>\n"; #20140502
-	print "<script type=\"text/javascript\" src=\"../javascript/jquery.autosize.js\"></script>\n"; #20140502
-	print "<script LANGUAGE=\"JavaScript\" SRC=\"../javascript/overlib.js\"></script>\n";
-	print "<script language=\"javascript\" type=\"text/javascript\" src=\"../javascript/confirmclose.js\"></script>\n"; #20140502
-#	print "<script src=\"../javascript/sweetalert.min.js\"></script>";
-#	print "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/sweetalert.css\">";
-
-	#print "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/main.css\"/>\n";
-	print "
-	<script type=\"text/javascript\">
-	
-	var linje_id=0;
-	var vare_id=0;
-	var antal=0;
-	function serienummer(linje_id,antal){
-		window.open(\"serienummer.php?linje_id=\"+ linje_id,\"\",\"left=10,top=10,width=400,height=400,scrollbars=yes,resizable=yes,menubar=no,location=no\")
-	}
-	function batch(linje_id,antal){
-		window.open(\"batch.php?linje_id=\"+ linje_id,\"\",\"left=10,top=10,width=400,height=400,scrollbars=yes,resizable=yes,menubar=no,location=no\")
-	}
-	function stykliste(vare_id){
-		window.open(\"../lager/fuld_stykliste.php?id=\"+ vare_id,\"\",\"left=10,top=10,width=400,height=400,scrollbars=yes,resizable=yes,menubar=no,location=no\")
-	}
-	
-	</script>";
-	#20140502 -->
-	?> 
-	
-	<script type="text/javascript">
-		// jQuery funktion til autosize på textarea 
-		$(document).ready(function () {
-
-			if(typeof $('.autosize') !== 'undefined' && typeof $('.autosize').autosize !== 'undefined') $('.autosize').autosize();
-		});
-		// jQuery funktion til ordrelinjer i ordre.php. Ved tryk på enter submitter formen og ved shift+enter laver den ny linje i textarea
-		$(function () {
-			$('textarea.comment').keyup(function (e) {
-				if (e.which == 13 && !e.shiftKey) {
-					$("#submit").click();
-				}
-			});
-		});
-		// $(document).on('focus', 'textarea', function(){
-		//            autosize($('textarea'));  //20201218
-		//});	
-	</script>
-	<?php
-	# <-- 20140502
-	print "</head>\n";
-}
 
 
 $receipt_id = if_isset($_GET['receipt_id'], 0);

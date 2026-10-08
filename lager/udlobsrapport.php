@@ -25,6 +25,7 @@
 // Expiry report - shows items expiring within X days or already expired.
 // 20260930 LOE SST-836 The report has menu entries now, so it takes its return page from the link
 //                  that opened it and offers the per-item batch overview from the item number.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -70,16 +71,7 @@ $show_expired = isset($_GET['udloebet']) ? $_GET['udloebet'] : '';
 $export_csv = isset($_GET['csv']) ? $_GET['csv'] : '';
 
 // Header
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href='$returhref' accesskey='L'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	print "<table width='100%' cellspacing='2'><tbody>";
 	print "<tr><td colspan='9'>";
 	print "<table width='100%' cellspacing='2'><tbody>";
@@ -231,8 +223,5 @@ print "<td></td></tr>";
 
 print "</tbody></table>";
 
-if ($menu == 'T') {
-	print "</div>";
-}
 ?>
 </body></html>

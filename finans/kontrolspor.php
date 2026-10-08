@@ -36,6 +36,7 @@
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20261005 Sawaneh WP-4.9: CSV links quoted and without the space, so the filters reach the export; the project
 //                  correction link (WP-4.15) passes this view as returside.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 
 ob_start();
@@ -166,16 +167,7 @@ if (!isset ($ansat_til)) $ansat_til = 0;
 if (!isset ($projekt_fra)) $projekt_fra = 0;
 if (!isset ($projekt_til)) $projekt_til = 0;
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\"><a href=rapport.php accesskey=L title='Klik for at komme tilbage til rapporter'><i class='fa fa-close'></i> &nbsp;".findtekst(30,$sprog_id)."</a></div>";     
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<table width=100% height=100% cellpadding=\"0\" cellspacing=\"0px\" border=\"0\" valign = \"top\" align='center'> ";
 	print "<tr><td height = 25 align=center valign=top>";
 	print "<table width=100% align=center border=0 cellspacing=2 cellpadding=0><tbody>";
@@ -510,11 +502,7 @@ print "
 </tbody></table>
 ";
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 ?>
 

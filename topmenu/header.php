@@ -4,18 +4,9 @@ global $menu;
 
 if ($rapportart == "openpost") $title = "Poster";
 
-if ($menu=='T') {
-  $top_bund = "";
-  #Top table padding
-  $padding = "style='padding: 25px 20px 10px 20px;'";
-  #Info table padding
-  $padding2 = "style='padding: 20px 10px 5px 10px;'";
-  $padding1_5 = "padding: 20px 10px 5px 10px;";
-} else {
-  $top_bund = $top_bund;
+$top_bund = $top_bund;
   $padding = "";
   $padding2 = "";
-}
 
 ?>
 

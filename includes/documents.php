@@ -40,6 +40,7 @@
 //                  Delete, unlink, move and the pool are handed back to the journal tab, so a line is never edited in two places.
 // 20261005 CL/SZ SD-701 The voucher tab opens on the first of the line's documents whose file is still on the server,
 //                  instead of always the first regardless, so a missing first file no longer hides the others.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 @session_start();
 $s_id=session_id();
 $css="../css/std.css";
@@ -242,30 +243,7 @@ if (isset($_SESSION['poolUploadNotice'])) {
 }
 
 // Render the header before any content
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	
-	// Determine back URL based on source
-	if ($source == "kassekladde") {
-		$backUrl = "../finans/kassekladde.php?kladde_id=$kladde_id&id=$sourceId&fokus=$fokus";
-	} elseif ($source == "debitorOrdrer") {
-		$backUrl = "../debitor/ordre.php?id=$sourceId&fokus=$fokus";
-	} elseif ($source == "creditorOrder") {
-		$backUrl = "../kreditor/ordre.php?id=$sourceId&fokus=$fokus";
-	} else {
-		$backUrl = "../debitor/historikkort.php?id=$sourceId&fokus=$fokus";
-	}
-	
-	$headerTitle = findtekst('1408|Dokumenter', $sprog_id);
-	
-	print "<div id='header'>";
-	print "<div class='headerbtnLft headLink'><a href='$backUrl' accesskey='L' title='".findtekst('30|Tilbage', $sprog_id)."'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-	print "<div class='headerTxt'>$headerTitle</div>";
-	print "<div class='headerbtnRght headLink'></div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($source == 'kassekladde' || $source == 'creditorOrder' || $source == 'debitorOrdrer') {
+if ($source == 'kassekladde' || $source == 'creditorOrder' || $source == 'debitorOrdrer') {
 	// Don't render header here - docPool.php handles it for non-modern layouts
 } elseif ($menu == 'S') {
 	// Sidebar menu - use topLineDocuments.php matching the grid framework structure
@@ -1059,9 +1037,6 @@ print "</td></tr>";
 print "</tbody></table>";
 
 // Close content div if using modern menu
-if ($menu == 'T') {
-	print "</div>"; // Close content-noside div
-}
 
 print "</body></html>";
 ?>

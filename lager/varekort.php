@@ -132,6 +132,7 @@
 //                  had been commented out, so on an account with warehouses a location typed
 //                  for a new item vanished without a message and could never reach the picking
 //                  list. An empty field still creates nothing.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 //
 ob_start(); //Starts output buffering
 
@@ -1286,17 +1287,7 @@ if ($saveItem && $beskrivelse[0] != $oldDescription) {
 include("../includes/topline_settings.php");
 
 print "<center><table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>\n";
-if ($menu == 'T') {
-    include_once '../includes/top_menu.php';
-    include_once '../includes/top_header.php';
-    print "<div id=\"header\"> 
-    <div class=\"headerbtnLft\"><a title=\"Klik her for at lukke varekortet\" class=\"button red small left\" href=$returside accesskey=\"L\">Luk</a></div>
-    <span class=\"headerTxt\">$title</span>";
-    print "<div class=\"headerbtnRght\"></div>";
-    print "</div><!-- end of header -->
-        <div class=\"maincontentLargeHolder\">\n";
-    print "<center><table border='0' cellspacing='1' width='75%' align='center';>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     print "<tr><td align=\"center\" valign=\"top\">\n";
     print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>\n";
 
@@ -2050,11 +2041,7 @@ if (!$varenr) {
 if (!isset($kostpris[0]))
     $kostpris[0] = 0;
 
-if ($menu == 'T') {
-    $hrlinje = "<hr width=75%>";
-} else {
-    $hrlinje = "<hr width=100%>";
-}
+$hrlinje = "<hr width=100%>";
 print "<tr><td colspan=4><center>$hrlinje</td></tr>";
 print "<tr><td colspan=4 align=center><table width=100%><tbody>";
 
@@ -2293,20 +2280,7 @@ function kontoopslag($sort, $fokus, $id)
     include("../includes/topline_settings.php");
 
     # Malenes topmenu
-    if ($menu == 'T') {
-        include_once '../includes/top_header.php';
-        include_once '../includes/top_menu.php';
-        print "<div id=\"headerSmallWindow\">
-        <div class=\"headerLittlebtnLft\"><a class=\"button red small right\" href=$returside accesskey=L>Luk</a></div>
-        <span class=\"headerLittleTxt\">Varekort</span>";
-        print "<div class=\"headerLittlebtnRght\"></div>";
-        print "</div><!-- end of header -->
-            <div class=\"maincontentLargeHolder\">\n";
-        print "<table class='dataTable2' cellpadding=\"1\" cellspacing=\"1\" border=\"0  \" width=\"100%\" valign = \"top\">";
-        print "<tbody><tr><td colspan=8>";
-        print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
-
-    } elseif ($menu == 'S') {
+    if ($menu == 'S') {
         print "<table width='100%'><tbody>";
 
         print "<td width=\"10%\">
@@ -2365,18 +2339,7 @@ function kontoopslag($sort, $fokus, $id)
     print "</tbody></table></td></tr></tbody></table>";
     exit;
 }
-if ($menu == 'T') {
-    print "</tbody>
-    </table>
-    </td></tr>
-    <tr><td align = \"center\" valign = \"bottom\">
-            <table width=\"75%\" align=\"center\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>
-                <td width=\"75%\"><br></td>
-            </tbody></table>
-    </td></tr>
-    </tbody></table></body></html>
-    ";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     print "</tbody>
     </table>
     </td></tr>

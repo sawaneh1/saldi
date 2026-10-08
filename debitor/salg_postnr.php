@@ -25,6 +25,7 @@
 //20260526 LOE Created new report using new datagrid based on postnr.php where department column and date range filter have been added.
 //20260709 SZ Replaced old top menu with Grid Framework header on Sales by Zip Code report
 //20260709 SZ Fixed header/footer styling to match Finance -> Reports -> Balance
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 
@@ -107,12 +108,7 @@ $query = "
  * 4. PAGE HEADER
  * ============================================================ */
 print "<center><table width='100%' cellpadding='0' cellspacing='0' border='0'><tbody>";
-if ($menu == 'T') {
-    $leftbutton = "<a class='button red small' href='../debitor/rapport.php' accesskey='L'>Luk</a>";
-    include("../includes/top_header.php");
-    include("../includes/top_menu.php");
-    print "<div id='header'><div class='headerbtnLft'>$leftbutton</div><span class='headerTxt'>$title</span><div class='headerbtnRght'></div></div><div class='maincontentLargeHolder'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     // Grid Framework header — same back-button/title-bar styling as Finance -> Reports -> Balance
     // (kontosaldo() in includes/rapportfunc.php). Sticky behaviour + footer/pagination for this
     // report are already handled by create_datagrid() below, so only the header visuals change here.
@@ -567,6 +563,5 @@ create_datagrid('salg_postnr', $grid_data);
 </script>
 
 <?php
-if ($menu == 'T') print "</div>";
 print "</tbody></table></center>";
 ?>

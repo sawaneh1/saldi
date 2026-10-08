@@ -28,6 +28,7 @@
 // 20260904 Sawaneh WP-1.3c: luk.php returside now set on the popup=1 request flag, not the popup preference
 // 20261006 Sawaneh WP-2.4/2.5: Tilbage uses the returside (historikkort had no luk handler -> dashboard); Ny opens a blank
 //                  card that returns here (was: the same customer, returning without id).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -279,18 +280,7 @@ if (!$id) print "<meta http-equiv=\"refresh\" content=\"0;URL=../index/dashboard
 if (strstr($returside, 'historikkort.php')) $returside = "historik.php";
 if ($returside == 'debitorkort.php') $returside.= "?id=$id";
 
-if ($menu == 'T') {
-	$center = "align=center";
-	$width = "width=20%";
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$returside')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     ############################
      $icon_back = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
 
@@ -592,11 +582,7 @@ print "</tbody>
 </tbody></table>";
 print "</div>"; //datatable-wrapper
 print "</div>"; //outer-datatable-wrapper
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>
 
 

@@ -83,6 +83,7 @@ $is_admin = !empty($revisor) || (function_exists('perm_can') ? perm_can('setting
 
 // 20260928 Sawaneh Security 4.0 (A3, R22): only the known background/attachment names, with an optional
 //                  language prefix, may be written or deleted under logolib/<db_id>/[<department>/].
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 function logo_name_ok($name) {
 	return (bool) preg_match('/^(?:\p{L}+_)?(bg|tilbud_bg|ordrer_bg|faktura_bg|tilbud_bilag|ordrer_bilag|faktura_bilag)$/u', (string) $name);
 }
@@ -186,21 +187,7 @@ if ($selected_department > 0 && !isset($departments[$selected_department]) && !$
 
 
 print "<div align=\"center\">";
-if ($menu=='T') {
-#	print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">";
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">\n";
-	print "<div class=\"headerbtnLft\"></div>\n";
-#	print "<span class=\"headerTxt\">Systemsetup</span>\n";     
-#	print "<div class=\"headerbtnRght\"><!--<a href=\"index.php?page=../debitor/debitorkort.php;title=debitor\" class=\"button green medium right\">Ny debitor</a>--></div>";       
-	print "</div><!-- end of header -->";
-	print "<div id=\"leftmenuholder\">";
-	include_once 'left_menu.php';
-	print "</div><!-- end of leftmenuholder -->\n";
-	print "<div class=\"maincontentLargeHolder\">\n";
-	print "<table border=\"1\" cellspacing=\"0\" id=\"dataTable\" class=\"dataTable2\"><tbody>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";

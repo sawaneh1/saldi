@@ -38,6 +38,7 @@
 // 20260512 NTR Merged Live/POS into prod_test.
 // 20260513 PK Fixed style on csv button.
 // 20260915 CDX/PHR Paginate posted and simulated VAT rows together, including the final date.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 function kontokort_moms ($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til, $dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $ansat_fra, $ansat_til, $afd, $projekt_fra, $projekt_til, $simulering, $lagerbev, $page = 1, $per_page = 50) {
 
@@ -580,11 +581,7 @@ print "</table>";
     </div>"; // closes scrollable div
 	fclose($csv);
 
-	if ($menu=='T') {
-		include_once '../includes/topmenu/footer.php';
-	} else {
-		include_once '../includes/oldDesign/footer.php';
-	}
+	include_once '../includes/oldDesign/footer.php';
  
 #################################################################################################
 } //end function

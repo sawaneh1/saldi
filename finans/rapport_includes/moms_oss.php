@@ -41,6 +41,7 @@
 //                 OSS-oversigt filtreres til B2C-EU; oevrige vises separat.
 // 20260729 NTR - Reported by CodeRabbit - topline-settings should be before print not after.
 //              - Reported by CodeRabbit - transactions that's not a varer nor a service doesn't add up to total as neither beloab_varer nor beloab_ydelser gets assigned, now beloab_andet takes the unknown transactions, for future use.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 function moms_oss($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
                   $dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart,
@@ -121,16 +122,7 @@ function moms_oss($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
         . "}</style>";
 
 
-    if ($menu == 'T') {
-        include_once '../includes/top_header.php';
-        include_once '../includes/top_menu.php';
-        print "<div id=\"header\">";
-        print "<div class=\"headerbtnLft headLink\"><a href=\"$back_url\" accesskey=\"L\"><i class='fa fa-close fa-lg'></i> Luk</a></div>";
-        print "<div class=\"headerTxt\">OSS B2C EU-salg</div>";
-        print "<div class=\"headerbtnRght headLink\">$csv_btn</div>";
-        print "</div>";
-        print "<div class='content-noside'>";
-    } elseif ($menu == 'S') {
+    if ($menu == 'S') {
         $back_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
         print "<table bgcolor='#eeeef0' width='100%' cellpadding='0' cellspacing='0' border='0'><tbody><tr><td colspan=8 align=center>";
         print "<table width='100%' align='center' border='0' cellspacing='4' cellpadding='0'><tbody>";
@@ -179,11 +171,7 @@ function moms_oss($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
         print "Gaa til <a href='../systemdata/syssetup.php?valg=moms'>Indstillinger &rarr; Moms</a> ";
         print "og udfyld feltet <b>Land (OSS)</b> for de SM-momskoder, der vedrører salg til EU-privatpersoner.";
         print "</div>";
-        if ($menu == 'T') {
-            include_once '../includes/topmenu/footer.php';
-        } else {
-            include_once '../includes/oldDesign/footer.php';
-        }
+        include_once '../includes/oldDesign/footer.php';
         fclose($csv);
         return;
     }
@@ -630,10 +618,6 @@ function moms_oss($regnaar, $maaned_fra, $maaned_til, $aar_fra, $aar_til,
 
     fclose($csv);
 
-    if ($menu == 'T') {
-        include_once '../includes/topmenu/footer.php';
-    } else {
-        include_once '../includes/oldDesign/footer.php';
-    }
+    include_once '../includes/oldDesign/footer.php';
 }
 ?>

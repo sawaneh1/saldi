@@ -54,6 +54,7 @@
 // 20260408 PHR Trimming $_POST & made a quickfix for missing or wrong 'tidspkt'
 // 20260509 PHR '$svis_saet' was fetched from 'kodenr' 1. Changed to kodenr 2 and added fiscal_year
 // 20260709 SZ Added Grid Framework sticky header to Kassespor report
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 ob_start();
 @session_start();
@@ -206,16 +207,7 @@ if ($menu == 'S') {
 	print "</tr></tbody></table>";
 	print "</div>\n"; // close flex:0 header bar
 }
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=rapport.php  accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst(30,$sprog_id)."</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	// Header already printed above, before this table opened — see comment there. Wrapped in
 	// flex:0 0 auto (a second fixed sibling below the header bar, above the scrolling grid) so the
 	// prev/linjeantal/next controls row (filled in further below by the same shared code the
@@ -302,24 +294,7 @@ if (!isset($kontoid)) $kontoid = NULL;
 
 	print "<form name=bonliste action=kassespor.php method=post>";
 
-if ($menu=='T') {
-	print "<table width=100% class='dataTable'><tbody>";
-	if (!$linjeantal) $linjeantal=50;
-	$next=udskriv($fakturadatoer,$logtimes,$afdelinger,$sort,$nysort,$idnumre,$fakturanumre,$summer,$betalinger,$betalinger2,$modtagelser,$modtagelser2,$kasser,$refs,$linjeantal,$start,'',$borde,$status);
-	if ($start>=$linjeantal) {
-		$tmp=$start-$linjeantal;
-		print "<td class='imgNoTextDeco'><a href='kassespor.php?sort=$sort&start=$tmp'><img class='imgInvert imgFade' src=../ikoner/left.png style=\"border: 0px solid; width: 15px; height: 15px;\"></a></td>\n";
-	} else print  "<td></td>\n";
-	print "<td align=center valign=top style='width:90%'><span title= '".findtekst(1609, $sprog_id)."'><input class=\"inputbox\" type=text style=\"text-align:right;width:50px; text-align:center;\" name=\"linjeantal\" value=\"$linjeantal\"></td>\n";
-	$tmp=$start+$linjeantal;
-	if ($next>0) {
-		print "<td class='imgNoTextDeco' align=right><a href='kassespor.php?sort=$sort&start=$tmp'><img class='imgInvert imgFade' src=../ikoner/right.png style=\"border: 0px solid; width: 15px; height: 15px;\"></a></td>\n";
-	} else {
-		print "<td></td>\n";
-	}
-	print "</tr>\n";
-	print "</tbody></table>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	if (!$linjeantal) $linjeantal=50;
 	$next=udskriv($fakturadatoer,$logtimes,$afdelinger,$sort,$nysort,$idnumre,$fakturanumre,$summer,$betalinger,$betalinger2,$modtagelser,$modtagelser2,$kasser,$refs,$linjeantal,$start,'',$borde,$status);
 	if ($start>=$linjeantal) {
@@ -362,11 +337,7 @@ if ($menu=='T') {
 	print "</tbody></table>";
 }
 
-if ($menu=='T') {
-	print "<div class='dataTablediv'>";
-} else {
-	print "";
-}
+print "";
 
 if ($menu == 'S') {
 	// #ksGridTable's <thead> holds TWO rows (column titles, then the search/filter row right below
@@ -384,7 +355,7 @@ if ($menu == 'S') {
 }
 print "<table id='ksGridTable' cellpadding=1 cellspacing=1 border=0 valign = top class='dataTable' width='100%'>";
 
-if ($menu=='T' || $menu == 'S') {
+if ($menu == 'S') {
 	print "<thead>";
 } else {
 	print "<tbody>";
@@ -494,7 +465,7 @@ print "<th class='text-center'><span title= '".findtekst(1812, $sprog_id)."'><in
 print "<th></th><th width=5% class='text-center'><input class='button blue small' type=submit value=\"OK\" name=\"submit\"></th>\n";
 print "</form></tr>\n";
 
-if ($menu=='T' || $menu == 'S') {
+if ($menu == 'S') {
 	print "</thead><tbody>";
 } else {
 	print "";
@@ -502,7 +473,7 @@ if ($menu=='T' || $menu == 'S') {
 
 
 udskriv($fakturadatoer,$logtimes,$afdelinger,$sort,$nysort,$idnumre,$fakturanumre,$summer,$betalinger,$betalinger2,$modtagelser,$modtagelser2,$kasser,$refs,$linjeantal,$start,'skriv',$borde,$status);
-if ($menu=='T' || $menu == 'S') {
+if ($menu == 'S') {
 	print "</tbody><tfoot>";
 } else {
 	print "<tr><td colspan=20><hr></td></tr>\n";
@@ -796,10 +767,7 @@ if (!isset ($y)) $y = NULL;
 
 <?php
 
-if ($menu=='T') {
-	print "</tfoor></table></div>";
-	include_once '../includes/topmenu/footer.php';
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	// Close the data <tfoot>/<table> (opened above), then #ksGridWrapper (opened right after the
 	// controls row), then #ksPageFlex (opened at the very top of the S-mode header block). The
 	// controls-row wrapper's own <center><table>...<td></tr></tbody></table> was already closed

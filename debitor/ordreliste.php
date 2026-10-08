@@ -72,6 +72,7 @@
 // 20260925 LOE SST-806 The date field accepts shorthand dates and intervals again (210926, 010926:300926).
 // 20261005 LOE SD-687 The order type filter repeated what the menu already sets; it is replaced by a department filter, and an empty result now says so (text 2730).
 // 20261005 LOE SD-687 Department names are escaped where the filter options are built.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -539,8 +540,7 @@ if ($r = db_fetch_array(db_select("select distinct id from ordrer where projekt 
 
 
 
-if ($menu == 'T') include_once 'ordLstIncludes/topMenu.php';
-elseif ($menu == 'S') include_once 'ordLstIncludes/topLine.php';
+if ($menu == 'S') include_once 'ordLstIncludes/topLine.php';
 else include_once 'ordLstIncludes/oldTopLine.php';
 include(get_relative() . "includes/orderFuncIncludes/grid_order.php"); 
 include(get_relative() . "includes/orderFuncIncludes/dateRangeSearch.php"); 

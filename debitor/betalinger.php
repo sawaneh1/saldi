@@ -42,6 +42,7 @@
 // 20230618 PHR BUG correction: When fetch from 'kontokort' the CURRENT list is now updated, if account exists in list.  
 // 20220901 MSC - Implementing new design
 // 20231213 MSC - Implementing new design
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 $dan_liste = $gem = $listenote = $slet_ugyldige = $udskriv = NULL;
 
@@ -140,17 +141,7 @@ $txt2 = findtekst('2738|Betalinger til bank', $sprog_id);
 $txt3 = findtekst('2739|Fra liste', $sprog_id);
 $txt4 = findtekst('2740|Fra kontokort', $sprog_id);
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-	print "<div class='dataTablediv'><table cellpadding='1' cellspacing='0' border='0' width='100%' valign = 'top' class='dataTable'><thead>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<table width='100%' height='100%' border='0' cellspacing='0' cellpadding='0'><tbody>";
 	print "<tr><td height = '25' align='center' valign='top'>";
 	print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>";
@@ -397,28 +388,13 @@ if ($udskriv) {
 	print "<tr>";
 	if ($bogfort != '-') {
 		print "<td colspan=11 align='center'><b>$listenote</b></td></tr>";
-		if ($menu == 'T') {
-			print "<tr><td colspan=11 class='border-hr-bottom'></td></tr>\n";
-		} else {
-			print "<tr><td colspan=11><hr></td></tr>\n";
-		}
+		print "<tr><td colspan=11><hr></td></tr>\n";
 	} else {
 		$txt1 = findtekst('391|Bemærkning', $sprog_id);
 		$txt2 = findtekst('1559|Her kan du skrive en bemærkning til kladden', $sprog_id);
 		print "<td><b> <span title= '$txt2'>$txt1:</b></td>";
 		print "<td colspan=10><input type='text' style='width:100%;' name=listenote value='$listenote'></td></tr>";
-		if ($menu == 'T') {
-			$r = db_fetch_array(db_select("select bogfort from betalingsliste where id='$liste_id'", __FILE__ . " linje " . __LINE__));
-			if ($r['bogfort'] == '-') {
-				print "<center><select name = 'find' style = 'width:50%;' onchange='this.form.submit()'>";
-				print "<option value=''></option>";
-				print "<option value='fromList'>Fra liste</option>";
-				print "<option value='saldo'>Fra kontokort</option>";
-				print "</select></center>";
-			}
-		} else {
-			print "";
-		}
+		print "";
 	}
 	#print"<tr><td colspan=11><hr></td></tr>";
 	$paytitle = findtekst('2741|Sæt en  i slutningen af datoen i det øverste datofelt for at sætte alle datoer til denne dato. F.eks.: 01042021', $sprog_id);
@@ -449,11 +425,7 @@ if ($udskriv) {
 		<th align='center' class='text-center'><span title='$txt11'><b>$txt10</b></span></td>";
 	if ($bogfort != 'V') print "<th align='center'><span title='$txt13'><b>$txt12</b></span></th>";
 	print "</tr>";
-	if ($menu == 'T') {
-		print "</thead><tbody>";
-	} else {
-		print "";
-	}
+	print "";
 
 
 	#print"<tr><td colspan=11><hr></td></tr>";
@@ -570,11 +542,7 @@ if ($udskriv) {
 		}
 	}
 
-	if ($menu == 'T') {
-		print "</tbody><tfoot>";
-	} else {
-		print "";
-	}
+	print "";
 
 	$modtagerantal = $x;
 	#($kn_kontrol)?$modtagerantal=0:$modtagerantal=$x;
@@ -626,13 +594,8 @@ if ($udskriv) {
 
 print "</td></tr>";
 
-if ($menu == 'T') {
-	print "</tfoot></table></div>";
-	include_once '../includes/topmenu/footer.php';
-} else {
-	print "</tbody></table>";
-	include_once '../includes/oldDesign/footer.php';
-}
+print "</tbody></table>";
+include_once '../includes/oldDesign/footer.php';
 
 // Add JavaScript for "Update Dates" popup functionality
 print "<script>

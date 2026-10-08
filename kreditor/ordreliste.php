@@ -38,6 +38,7 @@
 // 20260908 SZ SST-755: replaced the blanket per-user lock sweep with an age-based one that
 //                  isn't scoped to the current user (see comment at its call site).
 // 20261008 Sawaneh WP-3.6: order rows and the row click return to ordreliste.php with valg and the creditor filter (encoded).
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 
 ob_start();
@@ -193,21 +194,7 @@ while ($r = db_fetch_array($q)) {
 ob_end_flush();
 
 // Render header
-if ($menu == 'T') {
-    include_once '../includes/top_header.php';
-    include_once '../includes/top_menu.php';
-    print "<div id=\"header\">";
-    print "<div class=\"headerbtnLft headLink\">&nbsp;&nbsp;&nbsp;</div>";
-    print "<div class=\"headerTxt\">$title</div>";
-    print "<div class=\"headerbtnRght headLink\">";
-    $ny_konto_param = ($konto_id) ? "&konto_id=$konto_id" : "";
-    print "<a accesskey=N href='ordre.php?returside=ordreliste.php$ny_konto_param' title='Opret ny ordre'><i class='fa fa-plus-square fa-lg'></i></a>";
-    print "</div>";
-    print "</div>";
-    print "<div class='content-noside'>";
-} else {
- include_once '../includes/kreditorOrderFuncIncludes/topLine.php';
-}
+include_once '../includes/kreditorOrderFuncIncludes/topLine.php';
 
 ////// Tutorial //////
 
@@ -759,11 +746,7 @@ SCRIPT;
 
 ##################
 
-if ($menu == 'T') {
-    include_once '../includes/topmenu/footer.php';
-} else {
-    include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>
 
 <script>

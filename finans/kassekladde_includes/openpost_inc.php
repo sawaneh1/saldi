@@ -28,6 +28,7 @@
 // 20230828 PHR Gets Company name from inviince instead of order.
 // 20250509 PHR Fiscal year
 // 20250626 PHR '==' replaved by '='
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 function openpost($find,$sort,$fokus,$opslag_id,$id,$kladde_id,$bilag,$dato,$beskrivelse,$d_type,$debet,$k_type,$kredit,$faktura,$belob,$momsfri,$afd,$projekt,$ansat,$valuta,$forfaldssato,$betailngs_id,$lobenr){
 # ($find,$sort,$fokus,$opslag_id,$id,$kladde_id,$bilag,$dato,$beskrivelse,$d_type,$debet,$k_type,$kredit,$faktura,$belob,$momsfri,$afd,$projekt,$ansat,$valuta,$forfaldssato,$betailngs_id,$lobenr) {
@@ -76,16 +77,7 @@ print "<center>";
 	$lnktxt = "&funktion=openpost&x=$x&fokus=$fokus&kladde_id=$kladde_id&id=$id&bilag=$bilag&dato=$dato&";
 	$lnktxt.= "beskrivelse=".urlencode($beskrivelse)."&d_type=$d_type&debet=$debet&k_type=$k_type&kredit=$kredit&faktura=$faktura";
 	$lnktxt.= "&belob=$belob&momsfri=$momsfri&afd=$afd&projekt=$projekt&ansat=$ansat&valuta=$valuta&lobenr=$lobenr&find=$find";
-	if ($menu=='T') {
-		include_once '../includes/top_menu.php';
-		include_once '../includes/top_header.php';
-		print "<div id=\"header\"><div class=\"headerbtnLft\">";
-		print "<a href='../finans/kassekladde.php?$lnktxt' class=\"button red small left\" accesskey=L>".findtekst('2172|Luk', $sprog_id)."</a></div>";
-		print "<span class=\"headerTxt\">".findtekst('441|Åbne poster', $sprog_id)."</span>";
-		print "<div class=\"headerbtnRght\"></div>";
-		print "</div><!-- end of header --><div class=\"maincontentLargeHolder\">\n";
-		print  "<table class='dataTable2' border='0' cellspacing='1' align='center';>";
-	} elseif ($menu=='S') {
+	if ($menu=='S') {
 		print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
 
 		print "<td width=\"10%\"><a href='../finans/kassekladde.php?$lnktxt' accesskey=L>

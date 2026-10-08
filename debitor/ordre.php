@@ -148,6 +148,7 @@
 // 20260918 CDX/PHR Store Udført af in performed_by independently of the system field hvem.
 // 20260919 CDX/PHR Preserve three-decimal unit prices when displaying and saving orders.
 // 20260921 CDX/LH Reconcile employee-field history with master's navigation and price fixes.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // 20261002 Sawaneh Print to local printer remembered as a personal setting (settings redesign G6.4) instead of a saldi.dk cookie.
 // 20261004 Sawaneh Danske Fragtmænd settings are read from their own group DFM as well as the old GLS group (settings redesign B-D5).
 // 20261006 Sawaneh WP-2.11/2.12: no stray ?id= on fokus; a sag order's returside is stored plain and urlencoded only where it is
@@ -3387,11 +3388,6 @@ function ordreside($id, $regnskab)
 	
 
 
-	if ($menu == 'T') {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-	#  } else {
-	}
 
 	$dkb = 0; #dækningsbidrag;
 
@@ -4814,13 +4810,8 @@ function ordreside($id, $regnskab)
 		$alerttekst = findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id);
 		$spantekst = findtekst('198|Klik her for at skifte til forrige ordre på ordrelisten - husk at gemme eventuelle ændringer først.', $sprog_id);
 
-		if ($menu == 'T') {
-			$widthTable = 'width=100%';
-			$styleTable = "class='dataTableForm'";
-		} else {
-			$widthTable = '';
-			$styleTable = "bordercolor=\"#FFFFFF\" border=\"1\"";
-		}
+		$widthTable = '';
+		$styleTable = "bordercolor=\"#FFFFFF\" border=\"1\"";
 		print "<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" valign = \"top\"><tbody>\n"; #Tabel 3 ->
 
 		if ($prev_id)  print "<tr><td width=\"50%\" title=\"$spantekst\" class='imgNoTextDeco' style='margin-left: 5px;'><a href=\"javascript:confirmClose('ordre.php?id=$prev_id&returside=" . urlencode($returside) . "','$alerttekst')\"><img class='imgInvert imgFade' src=\"../ikoner/left.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td>\n";
@@ -7340,11 +7331,7 @@ if ($fokus) {
 
 
 
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 ?>
 <!--  -->

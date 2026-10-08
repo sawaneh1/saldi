@@ -42,6 +42,7 @@
 // 20260525 CL/PHR - Debitor/kreditor bruger debet/kredit(konto) som fallback hvis feltet er tomt
 // 20260525 CL/PHR - Kolonnevalg gemmes nu også ved Flyt (ikke kun ved Vis)
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -80,22 +81,8 @@ if (($_GET) || ($_POST)) {
 		$datoformat = if_isset($_POST['datoformat']);
 		$fileCharSet = if_isset($_POST['fileCharSet']);
 	}
-	if ($menu=='T') {
-		print "<center><table width=\"75%\" height=\"auto\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
-	} else {
-		print "<center><table width=\"100%\" height=\"auto\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
-	}
-	if ($menu=='T') {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-		print "<div id=\"header\"> 
-				<div class=\"headerbtnLft\"></div>
-				<span class=\"headerTxt\">" . findtekst(1074, $sprog_id) . " " . findtekst(904, $sprog_id) . " " . lcfirst(findtekst(105, $sprog_id)) . " (" . lcfirst(findtekst(105, $sprog_id)) . " $kladde_id)</span>";
-		print "<div class=\"headerbtnRght\"></div>";
-		print "</div><!-- end of header -->
-			<div class=\"maincontentLargeHolder\">\n";
-		print "<center><table border='0' cellspacing='1' width='75%'>";
-	} elseif ($menu=='S') {
+	print "<center><table width=\"100%\" height=\"auto\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
+	if ($menu=='S') {
 		print "<table width='100%' height='100%' border='0' cellspacing='0' cellpadding='0'><tbody>";
 		print "<tr><td height = '25' align='center' valign='top'>";
 		print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>";
@@ -186,11 +173,7 @@ function upload($kladde_id, $bilag)
 {
 	global $charset, $menu, $sprog_id;
 
-	if ($menu == 'T') {
-		$hrlinje = "<hr width=100%>";
-	} else {
-		$hrlinje = "<hr width=30%>";
-	}
+	$hrlinje = "<hr width=30%>";
 
 	print "<tr><td width=100% align=center><table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td width=100% align=center><b>" . findtekst(1074, $sprog_id) . " " . lcfirst(findtekst(1076, $sprog_id)) . "</b></td></tr>"; #20210629

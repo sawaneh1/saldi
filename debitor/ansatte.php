@@ -25,6 +25,7 @@
 // 20260904 Sawaneh WP-1.1: header Historik/Kontokort icon retursides now target this ansatte page (urlencoded, with konto_id)
 // 20261006 Sawaneh WP-2.6-2.8: Tilbage returns to the customer card (not returside?returside=... with the employee id); icons use
 //                  the customer (konto_id, kontonr), nested retursides are urlencoded; id/konto_id cast, returside sanitised.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -231,28 +232,7 @@ $kontonr = $row ? (string) $row['kontonr'] : '';
 
 ########################### 
 
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	## add onClick=\"JavaScript:opener.location.reload();\" but still get style from headlink MALENE
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('debitorkort.php?returside=" . urlencode($returside) . "&id=$konto_id&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a>";
-	
-	print "</div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	// 20260904 WP-1.1: retursides carried the employee id (or no id at all) and only
-	// worked while the nav stack overrode them; back now targets this ansatte page.
-	print "<div class=\"headerbtnRght headLink\"><a href='historikkort.php?id=$konto_id&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "' title='" . findtekst('131|Historik', $sprog_id) . "'><i class='fa fa-history fa-lg'></i></a>&nbsp;&nbsp;<a href='rapport.php?rapportart=kontokort&konto_fra=$kontonr&konto_til=$kontonr&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "' title='" . findtekst('133|Kontokort', $sprog_id) . "'><i class='fa fa-vcard fa-lg'></i></a>";
-	if (substr($rettigheder, 5, 1) == '1') {
-		print "&nbsp;&nbsp;<a href='ordreliste.php?konto_id=$konto_id&valg=faktura&returside=" . urlencode("../debitor/debitorkort.php?id=$konto_id") . "' title='" . findtekst('134|Fakturaliste', $sprog_id) . "'><i class='fa fa-dollar fa-lg'></i></a>";
-	} else {
-		print "";
-	}
-
-	print "</div></div>";
-	print "<div class='content-noside'>";
-	print  "<table border='0' cellspacing='1' class='dataTableForm' width='100%'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>\n"; # TABEL 1 ->
 	print "<tr><td align=\"center\" valign=\"top\">\n";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>"; # TABEL 1.1 ->
@@ -392,9 +372,7 @@ $value= if_isset($value,'');
 print "</tbody></table></td></tr>"; 
 print "<tr><td align = 'center' valign = 'bottom'>\n";
 
-if ($menu == 'T') {
-    // Do nothing
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
     print "<table width='100%' align='center' border='0' cellspacing='1' cellpadding='0'><tbody><tr>";
 
 

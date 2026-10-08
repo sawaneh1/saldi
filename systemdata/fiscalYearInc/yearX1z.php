@@ -65,11 +65,7 @@ function yearX1($id, $kodenr, $beskrivelse, $startmd, $startaar, $slutmd, $sluta
 print "</tbody></table></div></div>";
 
 
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 	exit;
 }
 ?>

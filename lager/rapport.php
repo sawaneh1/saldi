@@ -145,6 +145,7 @@ if ($lokMinMax) {
 	print print "<meta http-equiv=\"refresh\" content=\"0;URL=minmaxstock.php?vgrp=$varegruppe&vnr=$varenr&vname=$varenavn&afd=$afd\">";
 }
 // 20260714 SZ - hydrate from $_GET first (this is the only source for plain navigation - pagination,
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // back button, direct links - which is always a GET request with no $_POST at all), then let an actual
 // form submit (POST) overlay on top. Same "GET baseline, POST overlay" shape as includes/salgsstat.php's
 // input handling, chosen over the previous if($_POST)/else($_GET) fork specifically because that fork
@@ -276,16 +277,7 @@ function forside($date_from,$date_to,$varenr,$varenavn,$varegruppe,$detaljer,$ku
 
 	include("../includes/topline_settings.php");
 
-	if ($menu=='T') {
-		include_once '../includes/top_header.php';
-		include_once '../includes/top_menu.php';
-		print "<div id=\"header\">
-				<div class=\"headerbtnLft\"></div>
-				<span class=\"headerTxt\"></span>";
-		print "<div class=\"headerbtnRght\"></div>";
-		print "</div><!-- end of header -->
-			<div class=\"maincontentLargeHolder\">\n";
-	} elseif ($menu=='S') {
+	if ($menu=='S') {
 		$title = findtekst('3361|Varerapporter', $sprog_id);
 
 		include("../includes/S_topLine.php"); 
@@ -525,17 +517,7 @@ function varegruppe($date_from,$date_to,$varenr,$varenavn,$varegruppe,$detaljer,
 #	else
 
 $luk= "<a class='button red small' accesskey=L href=\"rapport.php?varegruppe=$varegruppe&afd=$afd&lev=$lev&ref=$ref&date_from=$date_from&date_to=$date_to&varenr=$varenr&varenavn=$varenavn&detaljer=$detaljer&kun_salg=$kun_salg&lagertal=$lagertal\">";
-	if ($menu=='T') {
-		include_once '../includes/top_menu.php';
-		include_once '../includes/top_header.php';
-		print "<div id=\"header\">
-		<div class=\"headerbtnLft\">$luk ".findtekst('30|Tilbage', $sprog_id)."</a></div>
-		<span class=\"headerTxt\">Rapport | Varesalg | ".dkdato($date_from)." - ".dkdato($date_to); "</span>";
-		print "<div class=\"headerbtnRght\"></div>";
-		print "</div><!-- end of header -->
-			<div class=\"maincontentLargeHolder\">\n";
-		print "<table class='dataTable' width = 100% cellpadding=\"1\" cellspacing=\"1\" border=\"0\"><tbody>";
-	} elseif ($vrGridMode) {
+	if ($vrGridMode) {
 		// Grid Framework header bar - mirrors includes/salgsstat.php's $ssPageFlex header. The full title
 		// (incl. afd/lev/ref suffixes) and the grid table itself aren't printed until further down, once
 		// $vrTitleExtra / $lagergruppe are known - see the matching branches below.
@@ -595,9 +577,7 @@ $luk= "<a class='button red small' accesskey=L href=\"rapport.php?varegruppe=$va
 			if (!$vrGridMode) print " | $ref_navn";
 		}
 	}
-	if ($menu=='T') {
-
-	} elseif ($vrGridMode) {
+	if ($vrGridMode) {
 		// Full header bar now that $vrTitleExtra/$luk are known - back button (with icon, matching
 		// includes/salgsstat.php) / title / CSV export (reuses the existing CSV feature as the header's
 		// 3rd button).

@@ -38,6 +38,7 @@
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20260601 PHR inserted (float) before Round()
 // 20261005 Sawaneh WP-4.2: the incoming returside is read (sanitised) instead of forced to NULL, and urlencoded in the links.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id=session_id();
@@ -441,10 +442,6 @@ print "</tfoot>";
 print "</table>";
 print "</form>\n";
 print "</div>";
-if ($menu=='T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>
 

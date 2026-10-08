@@ -27,6 +27,7 @@
 // 20250503 LOE reordered mix-up text_id from tekster.csv in findtekst()
 // 20260618 LOE Added sticky header for S-mode and added a scrollable table for the data table in S-mode co-authored by Aj
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -306,19 +307,7 @@ if ($kontoantal_check <= 0) {
 
 if ($rapportart == "regnskabbasis")
     $newTitle = findtekst('2326|Regnskab Basis', $sprog_id);
-if ($menu == 'T') {
-    $title = "Rapport • $newTitle";
-
-    include_once '../includes/top_header.php';
-    include_once '../includes/top_menu.php';
-    print "<div id=\"header\">";
-    print "<div class=\"headerbtnLft headLink\"><a href=\"rapport.php?rapportart=regnskabbasis&regnaar=$regnaar&maaned_fra=$mf&aar_fra=$aar_fra&maaned_til=$mt&aar_til=$aar_til&dato_fra=$startdato&dato_til=$slutdato&konto_fra=$konto_fra&konto_til=$konto_til\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>"; // &ansat_fra=$ansat_fra&ansat_til=$ansat_til&afd=$afd&projekt_fra=$projekt_fra&projekt_til=$projekt_til&simulering=$simulering&lagerbev=$lagerbev
-    print "<div class=\"headerTxt\">$title</div>";
-    print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-    print "</div>";
-    print "<div class='content-noside'>";
-    print "<table class='dataTable' border='0' cellspacing='1' width='100%'>";
-    } elseif ($menu == 'S') {
+if ($menu == 'S') {
         $backUrl = "rapport.php?rapportart=regnskabbasis&regnaar=$regnaar&maaned_fra=$mf&aar_fra=$aar_fra&maaned_til=$mt&aar_til=$aar_til&dato_fra=$startdato&dato_til=$slutdato&konto_fra=$konto_fra&konto_til=$konto_til";
         
         $tilbage_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';

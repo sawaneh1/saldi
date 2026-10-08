@@ -25,6 +25,7 @@
 //
 // Copyright (c) 2004-2016 DANOSOFT ApS
 // ----------------------------------------------------------------------
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // 2013.02.10 Break ændret til break 1
 // 2013.09.16 Tilføjet import fra pulje
 // 2016-12-07 Rettet puljesti - søg nfs_mount
@@ -46,19 +47,7 @@ include("../includes/topline_settings.php");
 if (file_exists("../owncloud")) $nfs_mappe='owncloud';
 elseif (file_exists("../bilag")) $nfs_mappe='bilag';
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	if (isset($_POST['descfil']) || isset($_GET['funktion'])) print "<div class=\"headerbtnLft headLink\"><a href=ordreliste.php accesskey=L title='Klik her for at komme tilbage til forrige side'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst(30,$sprog_id)."</a></div>";
-	else print "<div class=\"headerbtnLft headLink\"><a href=ordre.php accesskey=L title='Klik her for at komme tilbage til forrige side'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst(30,$sprog_id)."</a></div>"; 
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-	print "<table width=\"100%\"  border=\"0\" cellspacing=\"0\" cellpadding=\"0\" class='dataTableSmall'><tbody>";
-
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<div align=\"center\">";
 	print "<table width=\"100%\"  border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\" colspan=\"3\">";

@@ -20,6 +20,7 @@
 // ----------------------------------------------------------------------
 
 //20250910  LOE -Modified the top menu to sync with the rest of the system
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 ob_start();
 @session_start();
 $s_id=session_id();
@@ -114,19 +115,7 @@ $returside = nav_back_url(isset($_GET['returside']) ? $_GET['returside'] : null)
 if (!$valg) $valg = 'jobkort';
 $jobkort = 1; // Enable jobkort view
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\">&nbsp;&nbsp;&nbsp;</div>";   
-	print "<div class=\"headerTxt\">$title</div>";     
-	print "<div class=\"headerbtnRght headLink\">";
-	
-	print "<a href=\"jobliste.php?luk=luk\" accesskey=\"L\">".findtekst('30|Tilbage', $sprog_id)."</a></div>"; 
-	print "<a href=debitor.php>".findtekst('34|Debitorliste', $sprog_id)."</a></div>";     
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu=='S') include_once 'debLstIncludes/topLine.php';
+if ($menu=='S') include_once 'debLstIncludes/topLine.php';
 else include_once 'debLstIncludes/oldTopLine.php'; 
 
 ##########

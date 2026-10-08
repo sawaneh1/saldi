@@ -23,6 +23,7 @@
 // Copyright (c) 2003-2024 saldi.dk ApS
 // --------------------------------------------------------------------
 // 20180328 Tilføjet $vis_lev_felt
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // 2018.11.23 PHR $vis_kostpriser tilføjet
 // 2018.11.26 PHR href på varenr tilføjet
 // 2019.01.07 MSC Rettet isset fejl og tilføjet topmenu design
@@ -98,20 +99,7 @@ if (isset($_POST['gemLuk'])) print "<meta http-equiv=\"refresh\" content=\"0;URL
 print "<div align=\"center\">";
 print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 
-if ($menu=='T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\"> 
-			<div class=\"headerbtnLft\"></div>
-			<span class=\"headerTxt\">Varevisning</span>";     
-	print "<div class=\"headerbtnRght\"></div>";       
-	print "</div><!-- end of header -->
-		<div class=\"maincontentLargeHolder\">\n";
-	print  "<center><table border='0' cellspacing='1' width='75%'>";
-	print "	<tr><td height = \"10\" align=\"center\"></td></tr>";
-	print "	<tr><td height = \"25\" align=\"center\" valign=\"top\">
-	<table width=\"33%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
-} elseif ($menu=='S') {
+if ($menu=='S') {
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">
 		   <table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>
 
@@ -219,11 +207,7 @@ print "<input type='submit' style='width:200px;' accesskey=\"g\" value=\"".findt
 print "<input type='submit' style='width:200px;' accesskey=\"m\" value=\"".findtekst('564|Gem og Luk', $sprog_id)."\" name=\"gemLuk\"></td></tr>\n";
 print "</tbody></table></td>";
 
-if ($menu=='T') {
-	print "<td width=0%></td>";
-} else {
-	print "<td width=25%><br></td>";
-}
+print "<td width=25%><br></td>";
 ?>
 </tbody></table>
 

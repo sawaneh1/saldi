@@ -33,6 +33,7 @@
 // 20260916 CDX/LH Confine bank uploads to the tenant and retain all numeric CSV formats and rows.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20261005 Sawaneh WP-4.10: Tilbage (all menu designs) returns to rapport.php with the received period and accounts.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 ini_set("auto_detect_line_endings", true);
 
@@ -73,16 +74,7 @@ foreach (array('regnaar', 'maaned_fra', 'maaned_til', 'aar_fra', 'aar_til', 'dat
 }
 $rapportBack = htmlspecialchars('rapport.php' . ($rapportBackParams ? '?' . http_build_query($rapportBackParams) : ''), ENT_QUOTES);
 
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href='$rapportBack' accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
-	print "</div>";
-	print "<div class='content-noside'><center>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
@@ -209,11 +201,7 @@ if (isset($_FILES['uploadedfile']) && basename($_FILES['uploadedfile']['name']))
 
 print "</tbody></table>";
 
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 
 ################################################################################################################
 function upload($kladde_id, $bilag)

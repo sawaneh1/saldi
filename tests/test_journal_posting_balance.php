@@ -1,5 +1,6 @@
 <?php
 // 20260924 CDX/PHR Replay journal 2698 in temporary tables and verify balance rollback.
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 // Use a test_34 fixture containing journal 2698; all test writes target temporary tables.
 if (!getenv('SALDI_CHAR_DSN')) {
     echo "SKIP: set SALDI_CHAR_DSN, SALDI_CHAR_PGUSER and SALDI_CHAR_PGPASS for the test_34 fixture.\n";

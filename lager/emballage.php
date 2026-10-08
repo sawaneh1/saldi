@@ -9,6 +9,7 @@
 // LICENS - Same as the rest of the project (GPL v2 with restrictions).
 // Copyright (c) 2003-2026 saldi.dk ApS
 // ----------------------------------------------------------------------
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 @session_start();
 $s_id = session_id();
@@ -112,42 +113,31 @@ table.emb input.weight { text-align:right; }
 
 $lbl_help = $EN ? 'Help' : findtekst('2564|Hjælp', $sprog_id);
 
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('varekort.php?id=$id','$tekst')\" accesskey=L title=\"$h_back\"><i class='fa fa-close fa-lg'></i> &nbsp;$h_back</a></div>";
-	print "<div class=\"headerTxt\">$h_title</div>";
-	print "<div class=\"headerbtnRght headLink\"><a href='varekort.php?id=$id' title='$lbl_help'><i class='fa fa-question-circle fa-lg'></i></a></div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-} else {
-	$icon_back = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
-	$help_icon = '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#FFFFFF"><path d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>';
+$icon_back = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
+$help_icon = '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#FFFFFF"><path d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>';
 
-	print "<table width='100%' border='0' cellspacing='0' cellpadding='0'><tbody>";
-	print "<tr><td align='center' valign='top'>";
-	print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>";
+print "<table width='100%' border='0' cellspacing='0' cellpadding='0'><tbody>";
+print "<tr><td align='center' valign='top'>";
+print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>";
 
-	print "<td width='8%'>
-		<a href=\"javascript:confirmClose('varekort.php?id=$id','$tekst')\" accesskey=L>
-		<button class='center-btn' style='$buttonStyle; width:100%' type='button' onMouseOver=\"this.style.cursor = 'pointer'\">"
-		. $icon_back . $h_back . "</button></a></td>";
+print "<td width='8%'>
+	<a href=\"javascript:confirmClose('varekort.php?id=$id','$tekst')\" accesskey=L>
+	<button class='center-btn' style='$buttonStyle; width:100%' type='button' onMouseOver=\"this.style.cursor = 'pointer'\">"
+	. $icon_back . $h_back . "</button></a></td>";
 
-	print "<td width='84%' style='$topStyle' align='center'>$h_title</td>";
+print "<td width='84%' style='$topStyle' align='center'>$h_title</td>";
 
-	print "<td id='tutorial-help' width='8%' style='$buttonStyle'>";
-	print "<button class='center-btn' style='$buttonStyle; width:100%' type='button' onMouseOver=\"this.style.cursor='pointer'\">";
-	print $help_icon . $lbl_help . "</button></td>";
+print "<td id='tutorial-help' width='8%' style='$buttonStyle'>";
+print "<button class='center-btn' style='$buttonStyle; width:100%' type='button' onMouseOver=\"this.style.cursor='pointer'\">";
+print $help_icon . $lbl_help . "</button></td>";
 
-	print "</tbody></table></td></tr></tbody></table>";
-	?>
-	<style>
-		.headerbtn, .center-btn { display: flex; align-items: center; text-decoration: none; gap: 5px; }
-		a:link { text-decoration: none; }
-	</style>
-	<?php
-}
+print "</tbody></table></td></tr></tbody></table>";
+?>
+<style>
+	.headerbtn, .center-btn { display: flex; align-items: center; text-decoration: none; gap: 5px; }
+	a:link { text-decoration: none; }
+</style>
+<?php
 
 print "<div style='padding:10px;'>";
 if (if_isset($_GET['saved'])) print "<div class='emb-saved'>$h_saved</div>";
@@ -230,4 +220,4 @@ print "</div>";
 print "</form>";
 
 print "</div>";
-if ($menu == 'T') print "</div>"; // close content-noside
+ // close content-noside

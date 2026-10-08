@@ -33,6 +33,7 @@
 // 01072025 PBLM Added openKreditorKort function to open creditor card in same window
 // 20251127 LOE Modified to use grid table structure. 
 // 20260506 sawaneh fixed not directing to new account creation when the look for that account does not exist
+// 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
 
 #ob_start();
 @session_start();
@@ -80,11 +81,7 @@ if (!is_feature_licensed('kreditor')) {
 	exit;
 }
 
-if ($menu == 'T') {
-	$title = "Konti";
-} else {
-	$title = "Kreditorliste";
-}
+$title = "Kreditorliste";
 
 $id = if_isset($_GET,NULL,'id');
 $returside = if_isset($_GET,NULL,'returside');
@@ -105,16 +102,7 @@ if ($popup) $returside = "../includes/luk.php";
 else $returside = $backUrl;
 
 // Top menu rendering
-if ($menu == 'T') {
-	include_once '../includes/top_header.php';
-	include_once '../includes/top_menu.php';
-	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href='$returside' accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
-	print "<div class=\"headerTxt\">$title</div>";
-	print "<div class=\"headerbtnRght headLink\"><a accesskey=V href=kreditorvisning.php?valg=$valg title='Ændre ordrevisnig'><i class='fa fa-gear'></i></a> &nbsp; <a accesskey=N href='kreditorkort.php?returside=kreditor.php' title='Opret nyt leverandør kort'><i class='fa fa-plus-square'></i></a></div>";
-	print "</div>";
-	print "<div class='content-noside'>";
-} elseif ($menu == 'S') {
+if ($menu == 'S') {
 
 	#####################
 
@@ -418,9 +406,5 @@ document.addEventListener('DOMContentLoaded', function() {
 // Close the main content wrapper
 print "</td></tr></tbody></table>";
 
-if ($menu == 'T') {
-	include_once '../includes/topmenu/footer.php';
-} else {
-	include_once '../includes/oldDesign/footer.php';
-}
+include_once '../includes/oldDesign/footer.php';
 ?>
