@@ -44,12 +44,13 @@ function page_bar(array $o): void
 	}
 	$style = "--user-primary:" . $h(!empty($buttonColor) ? $buttonColor : '#114691') . ";--user-primary-text:" . $h(!empty($buttonTxtColor) ? $buttonTxtColor : '#ffffff');
 	print "<div class='pg' style='$style'>";
-	print "<div class='pg-head'><h1>" . $h(isset($o['title']) ? $o['title'] : '') . "</h1>";
+	$title = html_entity_decode(strip_tags(isset($o['title']) ? (string) $o['title'] : ''), ENT_QUOTES, $enc);
+	print "<div class='pg-head'><h1>" . $h(trim(preg_replace('/\s+/', ' ', $title))) . "</h1>";
 	if (!empty($o['back'])) {
 		print "<a class='pg-back' accesskey='L' href='" . $h($o['back']) . "'>&larr; " . $h(findtekst('30|Tilbage', $GLOBALS['sprog_id'])) . "</a>";
 	}
 	print "</div>";
-	print "<div class='pg-subbar'>";
+	print "<div class='pg-subbar" . (empty($o['tabs']) ? ' no-tabs' : '') . "'>";
 	foreach (isset($o['tabs']) ? $o['tabs'] : array() as $t) {
 		if (!empty($t[2])) {
 			print "<span class='pg-tab on' aria-current='page'>" . $h($t[0]) . "</span>";
@@ -66,10 +67,11 @@ function page_bar(array $o): void
 	}
 	if (!empty($o['primary'])) {
 		$p = $o['primary'];
+		$key = !empty($p['accesskey']) ? " accesskey='" . $h($p['accesskey']) . "'" : '';
 		if (!empty($p['onclick'])) {
-			print "<a class='pg-btn' href='#' onclick=\"" . $h($p['onclick']) . " return false;\">+ " . $h($p[0]) . "</a>";
+			print "<a class='pg-btn' href='#'$key onclick=\"" . $h($p['onclick']) . " return false;\">+ " . $h($p[0]) . "</a>";
 		} else {
-			print "<a class='pg-btn' href='" . $h($p[1]) . "'>+ " . $h($p[0]) . "</a>";
+			print "<a class='pg-btn' href='" . $h($p[1]) . "'$key>+ " . $h($p[0]) . "</a>";
 		}
 	}
 	print "</span></div></div>";

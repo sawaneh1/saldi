@@ -12,6 +12,7 @@
 .pg-tab:hover { color: var(--text); }
 .pg-tab.on { color: var(--text); font-weight: 600; }
 .pg-tab.on::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--saldi-blue); }
+.pg-subbar.no-tabs { border-bottom: 0; margin-bottom: 6px; }
 .pg-grow { flex: 1; }
 .pg-acts { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .pg-act { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; transition: border-color .15s, background .15s; }
