@@ -128,6 +128,7 @@ include("../includes/online.php");
 include("../includes/std_func.php");
 require_once __DIR__ . '/../includes/stdFunc/unlockRecord.php';
 // 20260923 SZ SST-755 (CodeRabbit): one random per-render token, reused by both sidehoved()'s
+// 20261008 Sawaneh sidehoved(): the order heading is also the page's last breadcrumb level (page_title, addendum §5).
 // exit link and the unload beacon further down (see refresh_lock_token() in unlockRecord.php).
 $sessionLockToken = bin2hex(random_bytes(16));
 
@@ -1702,6 +1703,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst) {
 	global $sessionLockToken;
 
 	$title= 'Leverandør ordre';
+	if (function_exists('page_title')) print page_title($tekst);
 	$alerttekst=findtekst(154,$sprog_id);
 
 	// 20260908 SZ SST-755: append the row's current tidspkt to every Luk link so

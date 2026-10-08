@@ -16,6 +16,7 @@
 //
 // Copyright (c) 2004-2008 DANOSOFT ApS
 // ----------------------------------------------------------------------
+// 20261008 Sawaneh sidehoved(): the order heading is also the page's last breadcrumb level (page_title, addendum §5).
 
 	@session_start();
 	$s_id=session_id();
@@ -959,6 +960,7 @@ function vareopslag($sort, $fokus, $id, $vis)
 function sidehoved($id, $returside, $kort, $fokus, $tekst)
 {
 global $bgcolor2;
+	if (function_exists('page_title')) print page_title($tekst);
 
 	print "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"><html><head><title>SALDI - ordre</title><meta http-equiv=\"content-type\" content=\"text/html; charset=ISO-8859-1\"></head>";
 	print "<body bgcolor=\"#339999\" link=\"#000000\" vlink=\"#000000\" alink=\"#000000\" center=\"\">";

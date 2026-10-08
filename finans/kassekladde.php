@@ -133,6 +133,7 @@
 //                  The unsaved-changes prompt for the clip is translated (findtekst 5280/5281).
 // 20261005 LOE SST-856 Only a click on a header link may change the saved sorting: a form action
 //                  sent kksort without kkdir, which reset a descending choice to ascending.
+// 20261008 Sawaneh "Kassekladde <id>" is the page's last breadcrumb level (page_title, topbar addendum §5).
 require_once __DIR__ . '/kassekladde_includes/journalHistory.php';
 require_once __DIR__ . '/kassekladde_includes/saveReplay.php';
 require_once __DIR__ . '/kassekladde_includes/bilagNumber.php';
@@ -1736,6 +1737,7 @@ if (!$simuler) {
 		#print "<table class='outerTable' width='100%' $height border='0' cellspacing='1' cellpadding='0'><tbody>"; # Tabel 1 -> Hovedramme
 	}
 	if (!$udskriv) {
+		if (function_exists('page_title')) print page_title(findtekst('1072|Kassekladde', $sprog_id) . ' ' . $kladde_id);
 		if ($menu == 'T') {
 			include_once '../includes/top_header.php';
 			include_once '../includes/top_menu.php';

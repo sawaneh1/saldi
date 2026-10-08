@@ -31,6 +31,8 @@
 //                  Step 2: in a module listed under 'migrated' in the map, the shell hides the page's old Luk/Tilbage
 //                  (a link or plain button with accesskey L; never a submit button, and not a link marked
 //                  data-keep-in-shell) - outside the shell the page is unchanged.
+// 20261008 Sawaneh page_title(): the page's heading ("Kundeordre 1234", "Kassekladde 2877") becomes the last breadcrumb
+//                  level and the label the next page's came-from chip shows (addendum §5).
 
 if (!function_exists('page_breadcrumb')):
 
@@ -69,6 +71,8 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 		$back = page_came_from($items);
 	}
 	page_remember($items);
+	$GLOBALS['page_chrome_items'] = $items;
+	$GLOBALS['page_chrome_charset'] = $charset;
 	$msg = array('type' => 'saldi:breadcrumb', 'items' => $items);
 	if ($tag !== null && $tag !== '') {
 		$msg['tag'] = page_chrome_text($tag, $charset);
@@ -117,6 +121,28 @@ function page_breadcrumb(array $levels, ?string $tag = null, $back = null, strin
 		. "\t}\n"
 		. "\tsend();\n"
 		. "})();\n</script>";
+}
+
+/**
+ * The page's title as the last breadcrumb level (addendum §5: "Kassekladde 2877"), printed where the page composes
+ * its heading, after the breadcrumb itself. Updates the shell and the label remembered for came-from chips.
+ */
+function page_title(string $text, ?string $tag = null): string
+{
+	$items = isset($GLOBALS['page_chrome_items']) ? $GLOBALS['page_chrome_items'] : array();
+	$charset = isset($GLOBALS['page_chrome_charset']) ? (string) $GLOBALS['page_chrome_charset'] : 'UTF-8';
+	$label = trim(preg_replace('/\s+/', ' ', page_chrome_text(strip_tags($text), $charset)));
+	if (!$items || $label === '') {
+		return '';
+	}
+	$items[count($items) - 1]['label'] = $label;
+	$GLOBALS['page_chrome_items'] = $items;
+	page_remember($items);
+	$flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+	$tagJs = ($tag !== null && $tag !== '') ? ' c.tag = ' . json_encode(page_chrome_text($tag, $charset), $flags) . ';' : '';
+	return '<script>(function () { var c = window.saldiPageChrome; if (!c || !c.items || !c.items.length) { return; }'
+		. ' c.items[c.items.length - 1].label = ' . json_encode($label, $flags) . ';' . $tagJs
+		. ' if (window.parent && window.parent !== window) { window.parent.postMessage(c, window.location.origin); } })();</script>';
 }
 
 /**

@@ -148,6 +148,7 @@
 // 20260916 CDX/LH Preserve the import transaction while posting; retain master invoice savepoints.
 // 20261006 Sawaneh WP-2.11-2.13: no stray ?id= on fokus; sag retursides stored plain and urlencoded in the Ny link; the menu-T
 //                  Tilbage uses the given returside (an ordre.php target gets the order's id) instead of always the order list.
+// 20261008 Sawaneh sidehoved(): the order heading is also the page's last breadcrumb level (page_title, addendum §5).
 // 20261008 Sawaneh The group discount is read from the discount matrix's 'NR' rows only (settings decision 20).
 
 include_once(__DIR__ . '/stdFunc/fefo.php'); # fefo_order_clause() - used by batch()
@@ -4840,6 +4841,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst)
 	global $popup;
 
 	$title = $tekst;
+	if (function_exists('page_title')) print page_title($tekst);
 
 	$sag_id = if_isset($_GET,NULL,'sag_id');
 	$konto_id = if_isset($_GET,NULL,'konto_id');
