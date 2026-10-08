@@ -145,6 +145,8 @@
 // 20260921 CDX/LH Reconcile employee-field history with master's navigation and price fixes.
 // 20261002 Sawaneh Print to local printer remembered as a personal setting (settings redesign G6.4) instead of a saldi.dk cookie.
 // 20261004 Sawaneh Danske Fragtmænd settings are read from their own group DFM as well as the old GLS group (settings redesign B-D5).
+// 20261006 Sawaneh WP-2.11/2.12: no stray ?id= on fokus; a sag order's returside is stored plain and urlencoded only where it is
+//                  embedded (form actions, prev/next, view toggles, swap, print, hidden input escaped); old encoded rows are decoded.
 
 @session_start();
 $s_id = session_id();
@@ -787,7 +789,7 @@ if (!strstr($fokus, 'lev_') && isset($_GET['konto_id']) && is_numeric($_GET['kon
 	} elseif ($konto_id) {
 		$alert1 = findtekst('1822|Debitoren er ikke tilknyttet en debitorgruppe', $sprog_id); #20210806
 		print "<BODY onLoad=\"javascript:alert('$alert1')\">\n";
-		print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus?id=$id\">\n";
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus\">\n";
 		exit;
 	}
 
@@ -1795,7 +1797,7 @@ if (($status < 3 || strstr($b_submit, "Kopi") || strstr($b_submit, "Kred")) && $
 			} else {
 				$alert1 = findtekst('1822|Debitoren er ikke tilknyttet en debitorgruppe', $sprog_id);
 				print "<BODY onLoad=\"javascript:alert('$alert1')\">\n";
-				print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus?id=$id\">\n";
+				print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus\">\n";
 				exit;
 			}
 		}
@@ -3374,7 +3376,7 @@ function ordreside($id, $regnskab)
 
 	$sag_id = if_isset($r, NULL, 'sag_id') * 1; #20210719
 	if ($sag_id) {
-		$returside = urlencode("../sager/sager.php?funktion=vis_sag&amp;sag_id=$sag_id&amp;konto_id=$konto_id");
+		$returside = "../sager/sager.php?funktion=vis_sag&sag_id=$sag_id&konto_id=$konto_id";
 	}
 	if (!$returside) {
 		if ($isPopupRequest) $returside = "../includes/luk.php?id=$id&tabel=ordrer";
@@ -3700,7 +3702,12 @@ function ordreside($id, $regnskab)
 			// Stored retursides were written with HTML-escaped separators (&amp;), which
 			// nav_sanitize_returside() rejects outright - decode them back to '&' first so
 			// legitimate multi-parameter return targets survive instead of being dropped.
-			$returside = nav_sanitize_returside(html_entity_decode($row['returside'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+			$storedReturside = html_entity_decode($row['returside'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+			// WP-2.12: sag orders used to store the address URL-encoded (..%2Fsager%2F...); stored plain from now on.
+			if (stripos($storedReturside, '%2F') !== false || stripos($storedReturside, '%3F') !== false) {
+				$storedReturside = rawurldecode($storedReturside);
+			}
+			$returside = nav_sanitize_returside($storedReturside);
 		}
 		$omkunde = if_isset($row, '', 'omvbet') ? 'on' : '';
 		$betalt = if_isset($row, 0, 'betalt');
@@ -3857,9 +3864,9 @@ function ordreside($id, $regnskab)
 		$actionUrl = "ordre.php?id=$id";
 
 		if ($b_submit == 'Kopier' || isset($_POST['copy'])) {
-			$formAction = "ordre.php?sag_id=$sag_id&amp;returside=$returside";
+			$formAction = "ordre.php?sag_id=$sag_id&amp;returside=" . urlencode($returside);
 		} else {
-			$formAction = "ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=$returside";
+			$formAction = "ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=" . urlencode($returside);
 		}
 		print "<form name=\"ordre\" id=\"1\" action=\"$formAction\" method=\"post\">\n";
 		
@@ -3892,7 +3899,7 @@ function ordreside($id, $regnskab)
 		}
 
 		// print "<form name=\"ordre\" id=\"$formId\" action=\"$formAction\" method=\"post\">\n";
-		// print "<form name=\"ordre\" id=\"1\" action=\"ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=$returside\" method=\"post\">\n";
+		// print "<form name=\"ordre\" id=\"1\" action=\"ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=" . urlencode($returside) . "\" method=\"post\">\n";
 
 		print '<input type="hidden" name="dragdrop_json" id="dragdrop_json">';
 		// print '<input type="hidden" name="invoice_dragdrop" value="10">';
@@ -3949,7 +3956,7 @@ function ordreside($id, $regnskab)
 		print "<input type=\"hidden\" name=\"tilbudnr\" value=\"$tilbudnr\">";
 		print "<input type=\"hidden\" name=\"datotid\" value=\"$datotid\">";
 		print "<input type=\"hidden\" name=\"nr\" value=\"$nr\">";
-		print "<input type=\"hidden\" name=\"returside\" value=\"$returside\">";
+		print "<input type=\"hidden\" name=\"returside\" value=\"" . htmlspecialchars($returside, ENT_QUOTES) . "\">";
 		print "<input type=\"hidden\" name=\"omkunde\" value=\"$omkunde\">";
 		print "<input type=\"hidden\" name=\"felt_1\" value=\"$felt_1\">";
 		print "<input type=\"hidden\" name=\"felt_3\" value=\"$felt_3\">";
@@ -3967,10 +3974,10 @@ function ordreside($id, $regnskab)
 		$alerttekst = findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id);
 		$spantekst = findtekst('198|Klik her for at skifte til forrige ordre på ordrelisten - husk at gemme eventuelle ændringer først.', $sprog_id);
 		print "<table cellpadding=\"0\" cellspacing=\"12\" border=\"0\" width=\"100%\" valign = \"top\"><tbody>\n"; #Tabel 1 ->
-		if ($prev_id)  print "<tr><td width=\"50%\" title=\"$spantekst\"><a href=\"javascript:confirmClose('ordre.php?id=$prev_id&returside=$returside','$alerttekst')\"><img src=\"../ikoner/left.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td>\n";
+		if ($prev_id)  print "<tr><td width=\"50%\" title=\"$spantekst\"><a href=\"javascript:confirmClose('ordre.php?id=$prev_id&returside=" . urlencode($returside) . "','$alerttekst')\"><img src=\"../ikoner/left.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td>\n";
 		else print "<tr><td width=\"50%\"></td>\n";
 		$spantekst = findtekst('199|Klik her for at skifte til næste ordre på ordrelisten - husk at gemme eventuelle ændringer først.', $sprog_id);
-		if ($next_id) print "<td width=\"50%\" align=\"right\" title=\"$spantekst\"><a href=\"javascript:confirmClose('ordre.php?id=$next_id&returside=$returside','$alerttekst')\"><img src=\"../ikoner/right.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td></tr>\n";
+		if ($next_id) print "<td width=\"50%\" align=\"right\" title=\"$spantekst\"><a href=\"javascript:confirmClose('ordre.php?id=$next_id&returside=" . urlencode($returside) . "','$alerttekst')\"><img src=\"../ikoner/right.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td></tr>\n";
 		else print "<tr><td width=\"50%\"></td>\n";
 		print "</tbody></table>\n"; # <- Tabel 1
 		##### pile ########
@@ -4159,7 +4166,7 @@ function ordreside($id, $regnskab)
 			print "<tr class='tableTexting'><td><b>$txt666</b></td><td>$lev_postnr $lev_bynavn</td></tr>\n";
 			print "<tr class='tableTexting2'><td><b>" . findtekst('2530|Att.', $sprog_id) . "</b></td><td colspan=\"2\">$lev_kontakt</td></tr>\n";
 			print "<tr><td colspan=\"2\"><b><hr></b></tr>\n";
-			print "<tr><td class='tableTexting' colspan=\"2\"><a href=\"ordre.php?id=$id&returside=$returside&vis_lev_addr=0\">" . findtekst('2533|Vis ekstrafelter', $sprog_id) . "</tr>\n";
+			print "<tr><td class='tableTexting' colspan=\"2\"><a href=\"ordre.php?id=$id&returside=" . urlencode($returside) . "&vis_lev_addr=0\">" . findtekst('2533|Vis ekstrafelter', $sprog_id) . "</tr>\n";
 		} else {
 			print "<tr class='tableTexting'><td colspan = '1'><b>" . findtekst('243|Ekstrafelter', $sprog_id) . "</b></td>";
 			print "<td align='center' colspan = '2'>$jobkort<br>$debitorkort</td></tr>\n";
@@ -4178,7 +4185,7 @@ function ordreside($id, $regnskab)
 			}
 			if ($betalings_id) print "<tr class='tableTexting2'><td><b>" . findtekst('2534|Betalings-ID', $sprog_id) . "</b></td><td align=\"right\">&nbsp;$betalings_id</td></tr>";
 			print "<tr><td colspan=\"2\"><b><hr></b></tr>\n";
-			print "<tr class='tableTexting'><td colspan=\"2\"><a href=\"ordre.php?id=$id&returside=$returside&vis_lev_addr=1\">" . findtekst('355|Vis leveringsadresse', $sprog_id) . "</td></tr>\n";
+			print "<tr class='tableTexting'><td colspan=\"2\"><a href=\"ordre.php?id=$id&returside=" . urlencode($returside) . "&vis_lev_addr=1\">" . findtekst('355|Vis leveringsadresse', $sprog_id) . "</td></tr>\n";
 			// Plukliste buttons
 			// Plukliste buttons — not applicable when the order is viewed inside a scaffolding case.
 			if (!$sag_id) {
@@ -4187,7 +4194,7 @@ function ordreside($id, $regnskab)
 				if (($hurtigfakt == 'on' && $opValue == 'faktura') || ($hurtigfakt != "on" && $opValue != "tilbud")) {
 					$pluklisteEmail = get_settings_value("pluklisteEmail", "ordre", "");
 					$printPopupQuery = nav_popup_query($_GET, $_POST);
-					$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=$returside");
+					$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=" . urlencode($returside));
 					print "<tr><td colspan=\"2\"><hr></td></tr>\n";
 					print "<tr><td colspan=\"2\"><p style='text-align: center;'><b>Plukliste</b></p></td></tr>\n";
 					print "<tr><td colspan=\"2\" style='border:0;height:10px;'></td></tr>\n";
@@ -4216,7 +4223,7 @@ function ordreside($id, $regnskab)
 		}
 		if ($lev_max > 0) {
 			$printPopupQuery = nav_popup_query($_GET, $_POST);
-			$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=$returside");
+			$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=" . urlencode($returside));
 			print "<tr class='tableTexting2'><td colspan=\"2\">&nbsp;</td></tr>\n";
 			for ($levnr = 1; $levnr <= $lev_max; $levnr++) {
 				print "<tr><td colspan=\"2\" style='border:0;border-radius:4px;text-align:center;'><button type='button' onclick=\"window.location.href='udskriftsvalg.php?{$printPopupQuery}id=$id&valg=$levnr&formular=3&returside=$printReturside'\" style='$buttonStyle;cursor: pointer; padding: 0.2rem; width: 125px;'>" . findtekst('576|Følgeseddel', $sprog_id) . " $levnr</button></td></tr>\n";
@@ -4678,7 +4685,7 @@ function ordreside($id, $regnskab)
 		$r = db_fetch_array(db_select($qtxt, __FILE__ . " linje " . __LINE__));
 		($r['antal'] < 0) ? $dan_kn = 1 : $dan_kn = NULL;
 		print "<div class=\"ordreform\">\n";
-		print "<form name=\"ordre\" action=\"ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=$returside\" method=\"post\">\n";
+		print "<form name=\"ordre\" action=\"ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=" . urlencode($returside) . "\" method=\"post\">\n";
 		if (function_exists('is_stock_warning_enabled') && is_stock_warning_enabled()) {
 			$swTextsJson = json_encode(stock_warning_texts(isset($sprog_id) ? $sprog_id : null), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 			if ($swTextsJson === false) $swTextsJson = '{}';
@@ -4781,10 +4788,10 @@ function ordreside($id, $regnskab)
 		}
 		print "<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" valign = \"top\"><tbody>\n"; #Tabel 3 ->
 
-		if ($prev_id)  print "<tr><td width=\"50%\" title=\"$spantekst\" class='imgNoTextDeco' style='margin-left: 5px;'><a href=\"javascript:confirmClose('ordre.php?id=$prev_id&returside=$returside','$alerttekst')\"><img class='imgInvert imgFade' src=\"../ikoner/left.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td>\n";
+		if ($prev_id)  print "<tr><td width=\"50%\" title=\"$spantekst\" class='imgNoTextDeco' style='margin-left: 5px;'><a href=\"javascript:confirmClose('ordre.php?id=$prev_id&returside=" . urlencode($returside) . "','$alerttekst')\"><img class='imgInvert imgFade' src=\"../ikoner/left.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td>\n";
 		else print "<tr><td width=\"50%\"></td>\n";
 		$spantekst = findtekst('199|Klik her for at skifte til næste ordre på ordrelisten - husk at gemme eventuelle ændringer først.', $sprog_id);
-		if ($next_id) print "<td width=\"50%\" align=\"right\" title=\"$spantekst\" class='imgNoTextDeco' style='padding-right: 5px;'><a href=\"javascript:confirmClose('ordre.php?id=$next_id&returside=$returside','$alerttekst')\"><img class='imgInvert imgFade' src=\"../ikoner/right.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td></tr>\n";
+		if ($next_id) print "<td width=\"50%\" align=\"right\" title=\"$spantekst\" class='imgNoTextDeco' style='padding-right: 5px;'><a href=\"javascript:confirmClose('ordre.php?id=$next_id&returside=" . urlencode($returside) . "','$alerttekst')\"><img class='imgInvert imgFade' src=\"../ikoner/right.png\" style=\"border: 0px solid; width: 15px; height: 15px;\"></a></span></td></tr>\n";
 		else print "<tr><td width=\"50%\"></td>\n";
 		print "</tbody></table>\n"; # <- Tabel 3
 		##### pile ########
@@ -4804,14 +4811,14 @@ function ordreside($id, $regnskab)
 				print "onfocus='document.forms[0].fokus.value=this.name;' placeholder='$kontonr' value=''>";
 				print "<input type='hidden' name='kontonr' value='$kontonr'>";
 				$title = findtekst('1463|Klik her for at skifte kunde på denne ordre', $sprog_id);
-				print "<a style='text-decoration: none' href='ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=$returside&art=$art&swap_account=swap'>";
+				print "<a style='text-decoration: none' href='ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=" . urlencode($returside) . "&art=$art&swap_account=swap'>";
 				print "<input class='button gray small' type='submit' title='$title' value=" . findtekst('436|Skift', $sprog_id) . " style='$buttonStyle; width:50px;'>";
 				$fokus = 'newAccountNo';
 			} else {
 				print "<input class='inputbox' type='text' readonly='readonly' style='width:130px;background-color:#ddd;' name='kontonr'";
 				print "onfocus='document.forms[0].fokus.value=this.name;' value=\"$kontonr\">";
 				$title = findtekst('1463|Klik her for at skifte kunde på denne ordre', $sprog_id);
-				print "<a style='text-decoration: none' href='ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=$returside&art=$art&swap_account=swap'>";
+				print "<a style='text-decoration: none' href='ordre.php?id=$id&amp;sag_id=$sag_id&amp;returside=" . urlencode($returside) . "&art=$art&swap_account=swap'>";
 				// print "<a style='text-decoration: none' href='ordre.php?id=$id&returside=$returside'>";
 				print "<button class='button gray small' type='button' title='$title' style='$buttonStyle; width:70px;'>" . findtekst('436|Skift', $sprog_id) . "";
 			}
@@ -5638,7 +5645,7 @@ function ordreside($id, $regnskab)
 		}
 		if ($lev_max > 0) {
 			$printPopupQuery = nav_popup_query($_GET, $_POST);
-			$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=$returside");
+			$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=" . urlencode($returside));
 			print "<tr class='tableTexting2'><td colspan=\"2\">&nbsp;</td></tr>\n";
 			for ($levnr = 1; $levnr <= $lev_max; $levnr++) {
 				include("../includes/topline_settings.php");
@@ -6449,7 +6456,7 @@ function ordreside($id, $regnskab)
 				include("../includes/topline_settings.php");
 				$pluklisteEmail = get_settings_value("pluklisteEmail", "ordre", "");
 				$printPopupQuery = nav_popup_query($_GET, $_POST);
-				$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=$returside");
+				$printReturside = urlencode("../debitor/ordre.php?id=$id&returside=" . urlencode($returside));
 				if (($hurtigfakt == 'on' && $opValue == 'faktura') || ($hurtigfakt != "on" && $opValue != 'tilbud')) {
 					print "<td align=\"center\"><button type='button' onclick=\"window.location.href='udskriftsvalg.php?{$printPopupQuery}id=$id&valg=-1&formular=9&returside=$printReturside'\" style='$buttonStyle;cursor:pointer;border-radius:4px;padding:0.2rem;width:110px;'>Print plukliste</button></td>\n";
 				}

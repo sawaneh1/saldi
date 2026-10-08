@@ -34,6 +34,8 @@
 // 20210709 LOE - Bug fixed findtekst function wasn't working here
 // 20210721 LOE - Did translations on title tags
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
+// 20261005 Sawaneh WP-4.9: CSV links quoted and without the space, so the filters reach the export; the project
+//                  correction link (WP-4.15) passes this view as returside.
 
 
 ob_start();
@@ -88,7 +90,7 @@ $csv =  if_isset($_GET['csv']);
 
 if (!isset ($_POST['submit'])) $_POST['submit'] = 0;
 if (!isset ($valg)) $valg = 0;
-if (!isset ($hreftext)) $hreftext = 0;
+if (!isset ($hreftext)) $hreftext = '';
 if (!isset ($kontoid)) $kontoid = 0;
 if (!isset ($_POST['projektnumre'])) $_POST['projektnumre'] = 0;
 if (!isset ($_POST['beskrivelse'])) $_POST['beskrivelse'] = 0;
@@ -190,7 +192,7 @@ if ($menu=='T') {
 
 	print "<td width=80% align='center' style='$topStyle'>".findtekst(905,$sprog_id)."</td>";
 
-	print "<td width=10%><a href=kontrolspor.php?csv=1&valg=$valg $hreftext' title=\"".findtekst(505,$sprog_id)."\">
+	print "<td width=10%><a href='kontrolspor.php?csv=1&valg=$valg$hreftext' title=\"".findtekst(505,$sprog_id)."\">
 		   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
 			CSV</button></a></td>";
 
@@ -206,7 +208,7 @@ if ($menu=='T') {
 	if ($popup) print "<a href=../includes/luk.php accesskey=L>".findtekst(30,$sprog_id)."</a></td>";
 	else print "<a href=rapport.php accesskey=L>".findtekst(30,$sprog_id)."</a></td>";
 	print "<td width=80% $top_bund>".findtekst(905,$sprog_id)."</td>";
-	print "<td width=10% $top_bund><a href=kontrolspor.php?csv=1&valg=$valg $hreftext' title=\"".findtekst(505,$sprog_id)."\">CSV</a></td>";
+	print "<td width=10% $top_bund><a href='kontrolspor.php?csv=1&valg=$valg$hreftext' title=\"".findtekst(505,$sprog_id)."\">CSV</a></td>";
 	print "</tr>\n";
 	print "</tbody></table></td></tr>";
 	print "<tr style='height: 10px;'><td>";
@@ -468,7 +470,7 @@ function udskriv($idnumre, $bilagsnumre, $kladdenumre, $fakturanumre,$kontonumre
 							else print "<td>&nbsp;</td>";
 							if ($vis_projekt) {
 								($row['projekt'] && $ret_projekt)?$title="".findtekst(1621, $sprog_id)."":$title=NULL;
-								($ret_projekt)?$tmp="<a href=\"../includes/ret_transaktion.php?id=$row[id]&felt=projekt\">$row[projekt]</a>":$tmp=$row['projekt'];
+								($ret_projekt)?$tmp="<a href=\"../includes/ret_transaktion.php?id=$row[id]&felt=projekt&returside=" . urlencode("../finans/kontrolspor.php?sort=$sort&valg=$valg$hreftext") . "\">$row[projekt]</a>":$tmp=$row['projekt'];
 								print "<td align=\"right\" title=\"$title\">$tmp<br></td>";
 							}
 							print "<td align=\"right\">$valuta[$z]<br></td>";

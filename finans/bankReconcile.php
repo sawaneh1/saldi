@@ -32,6 +32,7 @@
 // 20260624 CL/PHR Normalize bank file text encoding when reconciling.
 // 20260916 CDX/LH Confine bank uploads to the tenant and retain all numeric CSV formats and rows.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261005 Sawaneh WP-4.10: Tilbage (all menu designs) returns to rapport.php with the received period and accounts.
 
 ini_set("auto_detect_line_endings", true);
 
@@ -63,12 +64,20 @@ $kladde_id = null;
 $bilag = null;
 $feltnavn = array();
 $feltantal = 0;
+// WP-4.10: Tilbage returns to the report form with the period and accounts it sent (finans/rapport.php).
+$rapportBackParams = array();
+foreach (array('regnaar', 'maaned_fra', 'maaned_til', 'aar_fra', 'aar_til', 'dato_fra', 'dato_til', 'konto_fra', 'konto_til', 'rapportart') as $k) {
+	if (isset($_GET[$k]) && is_string($_GET[$k]) && $_GET[$k] !== '') {
+		$rapportBackParams[$k] = $_GET[$k];
+	}
+}
+$rapportBack = htmlspecialchars('rapport.php' . ($rapportBackParams ? '?' . http_build_query($rapportBackParams) : ''), ENT_QUOTES);
 
 if ($menu == 'T') {
 	include_once '../includes/top_header.php';
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=bankReconcile.php?kladde_id=$kladde_id accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
+	print "<div class=\"headerbtnLft headLink\"><a href='$rapportBack' accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
 	print "<div class=\"headerTxt\">$title</div>";
 	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
 	print "</div>";
@@ -78,7 +87,7 @@ if ($menu == 'T') {
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
 
-	print "<td width=\"10%\"><a href=rapport.php accesskey=L>
+	print "<td width=\"10%\"><a href='$rapportBack' accesskey=L>
 		   <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">"
 		   .findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 
@@ -91,7 +100,7 @@ if ($menu == 'T') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>";
 	print "<tr><td height = \"25\" align=\"center\" valign=\"top\">";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>";
-	print "<td width=\"10%\" $top_bund><a href=rapport.php accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "</a></td>";
+	print "<td width=\"10%\" $top_bund><a href='$rapportBack' accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "</a></td>";
 	print "<td width=\"80%\" $top_bund>".findtekst('2213|Bankafstemning', $sprog_id)."</td>";
 	print "<td width=\"10%\" $top_bund ><br></td>";
 	print "</tbody></table>";

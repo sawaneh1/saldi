@@ -43,6 +43,6 @@ if ($valg == "kalender") {
 
 print "</tbody></table></td>\n"; # <- Tabel 1.1.1
 
-print "<td width=10% style=$buttonStyle><a accesskey=V href=crmvisning.php?returside=$returside>";
+print "<td width=10% style=$buttonStyle><a accesskey=V href='crmvisning.php?returside=" . urlencode($_SERVER['REQUEST_URI']) . "'>"; // WP-2.14: Tilbage from Visning returns here
 print "<button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">".findtekst('813|Visning', $sprog_id)."</button></a></td>\n";
 print "</tbody></table></td></tr>\n"; # <- Tabel 1.1.1

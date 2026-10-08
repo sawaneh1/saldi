@@ -1342,7 +1342,8 @@ print "</div>";
 					if (isNaN(id) || id === '') {
 						alert('Ikke et validt varenummer.');
 					} else {
-					window.location.href = `../lager/varekort.php?id=${id}&returside=${encodeURI(window.location.href)}`;
+					// WP-5.14: a relative, fully encoded return (encodeURI left & and ? raw, and a full URL is refused by the sanitiser)
+					window.location.href = `../lager/varekort.php?id=${id}&returside=${encodeURIComponent('../systemdata/posmenuer.php' + window.location.search)}`;
 					}
 				})
   }

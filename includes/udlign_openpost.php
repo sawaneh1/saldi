@@ -54,6 +54,9 @@
 // 20260923 CDX/PHR Place the invoice insertion option directly after the reference field.
 // 20260923 CDX/PHR Save explicit manual reference edits on Update, separately from automatic insertion.
 // 20261006 Sawaneh Back link has accesskey L, so the shell's breadcrumb replaces it (breadcrumb step 2).
+// 20261005 Sawaneh WP-4.4/4.11-4.14: returside sanitised and urlencoded in every back link (no double urldecode),
+//                  back to the report the user came from (rapportart) with the date range, error refresh with a
+//                  0-second delay and real report parameters, hidden retur/returside fields quoted and escaped.
  
 @session_start();
 $s_id=session_id();
@@ -93,7 +96,7 @@ if (isset($_POST['submit'])) {
 	$konto_fra=$_POST['konto_fra'];
 	$konto_til=$_POST['konto_til']; 
 	$retur=$_POST['retur'];
-	$returside=$_POST['returside'];
+	$returside=nav_sanitize_returside(if_isset($_POST, '', 'returside'));
 	$layout=if_isset($_POST['layout']);
 	$diff=$_POST['diff'];
 	$dkkdiff=$_POST['dkkdiff'];
@@ -153,11 +156,21 @@ if (isset($_POST['submit'])) {
 	$konto_fra=$_GET['konto_fra'];
 	$konto_til=$_GET['konto_til']; 
 	$retur=$_GET['retur'];
-	$returside=$_GET['returside'];
+	$returside=nav_sanitize_returside(if_isset($_GET, '', 'returside'));
 	$layout=if_isset($_GET['layout']);
 }
 
 $layoutParam = $layout ? "&layout=$layout" : '';
+// WP-4.11-4.13: the report the user came from (kontokort or accountChart), the date range, and a safe retur.
+$fraRapport = (string) if_isset($_POST, if_isset($_GET, '', 'rapportart'), 'rapportart');
+if (!in_array($fraRapport, array('kontokort', 'accountChart', 'openpost'), true)) {
+	$fraRapport = 'accountChart';
+}
+$retur = nav_sanitize_returside((string) $retur);
+if ($retur === '') {
+	$retur = '../debitor/rapport.php';
+}
+$reportBack = "rapportart=$fraRapport&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&submit=ok$layoutParam";
 
 $query = db_select("select * from openpost where id='$post_id[0]'",__FILE__ . " linje " . __LINE__); #$post_id[0] er den post som skal udlignes.
 if ($row = db_fetch_array($query)) {
@@ -185,7 +198,9 @@ if ($row = db_fetch_array($query)) {
 	}
 	$udlign[0]='on';
 	print "<input type = hidden name=konto_id[0] value=$konto_id[0]>";
-} else print "<meta http-equiv=\"refresh\" content=\";URL=$retur?rapport=accountChart.php\">";
+} else {
+	print "<meta http-equiv=\"refresh\" content=\"0;URL=$retur?$reportBack\">";
+}
 $konto_id[0]*=1;
 $r = db_fetch_array(db_select("select * from adresser where id=$konto_id[0]",__FILE__ . " linje " . __LINE__)); #Finder kontoinfo
 $betalingsbet=trim($r['betalingsbet']);
@@ -362,9 +377,9 @@ if ($menu=='S') {
 		$contains = true;
 	}
 	if (!isset($_POST['submit'])) {
-		$returside = $_GET['returside'] ?? '';
+		$returside = nav_sanitize_returside(if_isset($_GET, '', 'returside'));
 	}
-	$decoded = urldecode($returside);
+	$decoded = $returside;
 	$parts = parse_url($decoded);
 	parse_str($parts['query'] ?? '', $queryParams); 
 	$id = $queryParams['id'] ?? null;
@@ -376,12 +391,12 @@ if ($menu=='S') {
 			$id = $id ?? $id = $_POST['id'][0] ?? null;	
 		if($id ){
 			print "<td width=\"10%\">$color
-				<a href=\"javascript:confirmClose('../debitor/rapport.php?rapportart=kontokort&layout=grid&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&submit=ok$layoutParam','$alerttekst')\" accesskey=L>
+				<a href=\"javascript:confirmClose('../debitor/rapport.php?rapportart=kontokort&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&submit=ok" . ($layoutParam !== '' ? $layoutParam : '&layout=grid') . "','$alerttekst')\" accesskey=L>
 				<button class='headerbtn' type='button' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 			print "$tilbage_icon" .findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 		}else{
 			print "<td width=\"10%\">$color
-			<a href=\"javascript:confirmClose('../debitor/rapport.php?rapportart=accountChart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&submit=ok$layoutParam','$alerttekst')\" accesskey=L>
+			<a href=\"javascript:confirmClose('../debitor/rapport.php?$reportBack','$alerttekst')\" accesskey=L>
 			<button class='headerbtn' type='button' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 			print "$tilbage_icon" .findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 			
@@ -389,7 +404,7 @@ if ($menu=='S') {
 
 	}else{
 		print "<td width=\"10%\">$color
-			<a href=\"javascript:confirmClose('$retur?rapportart=accountChart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&submit=ok$layoutParam','$alerttekst')\" accesskey=L>
+			<a href=\"javascript:confirmClose('$retur?$reportBack','$alerttekst')\" accesskey=L>
 			<button class='headerbtn' type='button' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 		print "$tilbage_icon" .findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 	}
@@ -422,7 +437,7 @@ if ($menu=='S') {
 print "<table width = 100% cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody>";
 print "<tr><td colspan=8 align=center>";
 print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"4\" cellpadding=\"0\"><tbody>";
-print "<td width=\"10%\" align=center><div class=\"top_bund\"><a accesskey=L href=$retur?rapportart=accountChart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&submit=ok$layoutParam>Luk</a></div></td>";
+print "<td width=\"10%\" align=center><div class=\"top_bund\"><a accesskey=L href='" . htmlspecialchars("$retur?$reportBack", ENT_QUOTES) . "'>Luk</a></div></td>";
 print "<td width=\"80%\" align=center><div class=\"top_bund\">Udlign &aring;bne poster<br></div></td>";
 print "<td width=\"10%\"><div class=\"top_bund\"><br></div></td>";
 print " </tr></tbody></table></td></tr>";
@@ -435,7 +450,7 @@ if (isset($submit) && $submit=='udlign') {
 renderOpenpostSettlementPeriod($settlementPeriod, [
 	'post_id' => $post_id[0], 'dato_fra' => $dato_fra, 'dato_til' => $dato_til,
 	'konto_fra' => $konto_fra, 'konto_til' => $konto_til,
-	'retur' => $retur, 'returside' => $returside, 'layout' => $layout,
+	'retur' => $retur, 'returside' => $returside, 'layout' => $layout, 'rapportart' => $fraRapport,
 ], $selectedPostIds, $insertInvoiceNumbers, $manualInvoiceReference);
 print "<form name='alignOpenpost' action='../includes/udlign_openpost.php' method='post'>";
 $invoiceEditedValue = $invoiceReferenceEdited ? '1' : '0';
@@ -529,8 +544,8 @@ print "<input type = hidden name=dato_fra value=$dato_fra>";
 print "<input type = hidden name=dato_til value=$dato_til>";
 print "<input type = hidden name=konto_fra value=$konto_fra>";
 print "<input type = hidden name=konto_til value=$konto_til>";
-print "<input type = hidden name=retur value=$retur>";
-print "<input type = hidden name=returside value=$returside>";
+print "<input type = hidden name=retur value='" . htmlspecialchars((string) $retur, ENT_QUOTES) . "'>";
+print "<input type = hidden name=rapportart value='" . htmlspecialchars($fraRapport, ENT_QUOTES) . "'>";
 print "<input type = hidden name=layout value=$layout>";
 print "<input type='hidden' name='findmatch_timelimit' id='findmatch_timelimit' value='$findMatchTimeLimit'>";
 print "<input type = hidden name=diff value=$diff>";
@@ -548,9 +563,9 @@ $currentUrl = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 if(!$returside){
 parse_str(parse_url($currentUrl, PHP_URL_QUERY), $params);
 
-$returside = $params['returside'];
+$returside = nav_sanitize_returside(isset($params['returside']) ? $params['returside'] : '');
 }
-print "<input type = hidden name=returside value='$returside'>";
+print "<input type = hidden name=returside value='" . htmlspecialchars((string) $returside, ENT_QUOTES) . "'>";
 print "<tr><td colspan=10 align=center>";
 
 $onclick='';

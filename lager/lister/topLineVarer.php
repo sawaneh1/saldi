@@ -30,13 +30,13 @@
 
 		if ($valg=="Vareliste") {
 		print "<td width = '200px' align=center id='back-btn'>
-			   <a href='vareliste.php?returside=$returside'>
+			   <a href='vareliste.php?returside=" . urlencode($returside) . "'>
 			   <button class='headerbtn navbtn-top' style='$butDownStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">
 			   $icon_vareliste Vareliste
 			   </button></a></td>";
 		} else {
 			print "<td width = '200px' align=center id='back-btn'>
-				<a href='vareliste.php?returside=$returside'>
+				<a href='vareliste.php?returside=" . urlencode($returside) . "'>
 				<button class='headerbtn navbtn-top' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">
 				$icon_vareliste  Vareliste
 				</button></a></td>";
@@ -52,7 +52,7 @@
 					</button></td>";
 			} else {
 				print "<td width = '200px' align=center id='ordrevisning'>
-					<a href='ordrestatus.php?returside=$returside'>
+					<a href='ordrestatus.php?returside=" . urlencode($returside) . "'>
 					<button class='headerbtn navbtn-top' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">
 					$icon_ordre Ordrevisning 
 					</button></a></td>";
@@ -69,7 +69,7 @@
 					</button></td>";
 			} else {
 				print "<td width = '200px' align=center id='indkob'>
-					<a href='indkøb.php?returside=$returside'>
+					<a href='indkøb.php?returside=" . urlencode($returside) . "'>
 					<button class='headerbtn navbtn-top' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">
 					$icon_indkob Indkøb 
 					</button></a></td>";
@@ -85,7 +85,7 @@
 				</button></td>";
 		} else {
 			print "<td width = '200px' align=center id='serial'>
-				<a href='serialnumber.php?returside=$returside'>
+				<a href='serialnumber.php?returside=" . urlencode($returside) . "'>
 				<button class='headerbtn navbtn-top' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">
 				$icon_serialnumber Serienumre 
 				</button></a></td>";
@@ -136,7 +136,7 @@
 	print findtekst('2564|Hjælp', $sprog_id)."</button></td>";
 	if ($valg=="Vareliste") {
 		print "<td id='create-new' width=5% style='$buttonStyle'>
-			<a href=../varekort.php accesskey='L' data-keep-in-shell>
+			<a href='../varekort.php?returside=lister/vareliste.php' accesskey='L' data-keep-in-shell>
 			<button class='center-btn' style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
 				$add_icon".
 				findtekst('39|Ny', $sprog_id)." 

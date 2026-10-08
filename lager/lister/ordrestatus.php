@@ -71,7 +71,7 @@ $columns[] =    array(
     "headerName" => "Navn",
     "width" => "3",
     "render" => function ($value, $row, $column) {
-        $url = "../../lager/varekort.php?id=$row[id]&returside=lister/vareliste.php";
+        $url = "../../lager/varekort.php?id=$row[id]&returside=../lager/lister/ordrestatus.php";
 
         $notes = htmlspecialchars($row['notes'] ?? '', ENT_QUOTES, 'UTF-8');
         return "<td title='$notes' align='$column[align]' onclick=\"window.location.href='$url'\" style='cursor:pointer'>$value</td>";
@@ -112,7 +112,7 @@ $columns[] = array(
         if ($value) {
             foreach (explode("\n", $value) as $lev) {
                 list($id, $kontonr, $name) = explode("\t", $lev);
-                $url = "../../kreditor/kreditorkort.php?id=$id&returside=../lager/lister/indkøb.php";
+                $url = "../../kreditor/kreditorkort.php?id=$id&returside=../lager/lister/ordrestatus.php";
                 $html .= "<span><a href='$url'>$kontonr</a> : $name</span><br>";
             }
         }
@@ -258,7 +258,7 @@ foreach ($warehouseRows as $row) {
                 return "<td align='$column[align]'>0,00</td>";
             }
             if ($value != "0,00") {
-                $url = "../lagerflyt.php?lager=$column[lagerId]&vare_id=$row[id]&returside=../lager/lister/vareliste.php";
+                $url = "../lagerflyt.php?lager=$column[lagerId]&vare_id=$row[id]&returside=../lager/lister/ordrestatus.php";
                 return "<td align='$column[align]'><a href='$url'>$value</a></td>";
             } else {
                 return "<td align='$column[align]'>$value</td>";

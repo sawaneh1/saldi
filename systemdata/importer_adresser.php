@@ -40,7 +40,7 @@ $s_id=session_id();
 $css="../css/standard.css";
 
 $title="Importer_adresser";
-$returside="diverse.php?sektion=div_io";
+$returside="../includes/luk.php"; // WP-6.4: opened as a popup from diverse.php; Tilbage closes it
 include("../includes/connect.php");
 $permission_key = 'settings.import_export';
 include("../includes/online.php");

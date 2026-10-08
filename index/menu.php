@@ -37,6 +37,8 @@
 //                  window is treated as a popup by request, not by user preference.
 // 20260907 CDX/LH Mark the POS launcher as a popup when opening it in a new window.
 // 20260930 Sawaneh Every user passes this page right after login: open to all, or Deny mode would refuse users without Kontoplan.
+// 20261006 Sawaneh WP-6.1/6.2: Tidsreg only linked when the module is installed (quote fixed); the stock button's popup
+//                  returns through luk.php and the inline button is no longer printed as well.
 
 @session_start();	# Skal angives oeverst i filen??!!
 $s_id=session_id();
@@ -275,8 +277,8 @@ function oldmenu() {
 						if ($row= db_fetch_array(db_select("select afd from ansatte where navn = '$ref'",__FILE__ . " linje " . __LINE__))) {
 							if ($row= db_fetch_array(db_select("select beskrivelse, kodenr from grupper where box1='$row[afd]' and art='LG'",__FILE__ . " linje " . __LINE__))) {
 								$lager=$row['kodenr']*1;
-								if ($popup) print "<td $stor_knap_bg onClick=\"javascript:lager=window.open('../lager/beholdningsliste.php?returside=../index/menu.php?returside=../includes/luk.php&popup=1','lager','".$jsvars."');lager.focus();\"	onMouseOver=\"this.style.cursor = 'pointer'\" >".findtekst(111,$sprog_id)."</td>\n";
-								print "<td $stor_knap_bg><a href=\"../lager/beholdningsliste.php?returside=../index/menu.php\">".findtekst(111,$sprog_id)."</td>\n";
+								if ($popup) print "<td $stor_knap_bg onClick=\"javascript:lager=window.open('../lager/beholdningsliste.php?returside=../includes/luk.php&popup=1','lager','".$jsvars."');lager.focus();\"	onMouseOver=\"this.style.cursor = 'pointer'\" >".findtekst(111,$sprog_id)."</td>\n";
+								else print "<td $stor_knap_bg><a href=\"../lager/beholdningsliste.php?returside=../index/menu.php\">".findtekst(111,$sprog_id)."</td>\n";
 						}
 					}
 				}
@@ -327,9 +329,10 @@ function oldmenu() {
 	}
 
 	if ($produktion) {
-		if (substr($rettigheder,15,1)=='1') {
+		// WP-6.1: the tidsreg module is not installed everywhere (a dead link gave a 404); without it the entry is greyed out.
+		if (substr($rettigheder,15,1)=='1' && is_dir(__DIR__ . '/../tidsreg')) {
 			if ($popup) print "<td $stor_knap_bg onClick=\"javascript:k_rapport=window.open('../tidsreg/index.php?returside=../includes/luk.php&popup=1','k_rapport','".$jsvars."');k_rapport.focus();\" onMouseOver=\"this.style.cursor = 'pointer'\" >  Tidsreg</td>\n";
-    		else print "<td $stor_knap_bg title=\"$tekst\"><a href=\"../tidsreg/index.php?returside=../index/menu.php>Tidsreg</a></td>\n";
+    		else print "<td $stor_knap_bg title=\"$tekst\"><a href=\"../tidsreg/index.php?returside=../index/menu.php\">Tidsreg</a></td>\n";
 			} else {
 				print "<td $stor_knap_bg><span style=\"color:#999;\"><a onfocus=\"this.style.color='#888888'\" onblur=\"this.style.color='#888888'\">Tidsreg</td>\n";
 			}

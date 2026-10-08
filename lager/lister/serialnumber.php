@@ -187,7 +187,7 @@ $columns[] = array(
     "render" => function ($value, $row, $column) {
         $html = "<td align='$column[align]'>";
         if ($value) {
-            $url = "../../kreditor/kreditorkort.php?id=$row[salgs_konto]&returside=../lager/lister/serialnumber.php";
+            $url = "../../debitor/debitorkort.php?id=$row[salgs_konto]&returside=../lager/lister/serialnumber.php"; // WP-5.2: the buyer is a customer
             $html .= "<span><a href='$url'>$row[salgs_kontonr]</a> : $row[salgs_firmanavn]</span><br>";
         }
         $html .= "</td>";

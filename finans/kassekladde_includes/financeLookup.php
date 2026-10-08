@@ -1,4 +1,5 @@
 <?php
+// 20261005 Sawaneh WP-4.8: Tilbage carries the date typed on the line ($dato), not the never-set $datodato.
 if (!function_exists('financeLookup')) {
 function financeLookup($find,$sort,$fokus,$opslag_id,$id,$kladde_id,$bilag,$dato,$beskrivelse,$d_type,$debet,$k_type,$kredit,$faktura,$belob,$momsfri,$afd,$projekt,$ansat,$valuta,$forfaldsdato,$betal_id,$lobenr) {
 
@@ -33,7 +34,7 @@ function financeLookup($find,$sort,$fokus,$opslag_id,$id,$kladde_id,$bilag,$dato
 		include_once '../includes/top_menu.php';
 		include_once '../includes/top_header.php';
 		print "<div id=\"header\">
-		<div class=\"headerbtnLft\"><a href='kassekladde.php?fokus=$fokus&kladde_id=$kladde_id&id=$id&bilag=$bilag&dato=$datodato&beskrivelse=$beskrivelse&d_type=$d_type&debet=$debet&k_type=$k_type&kredit=$kredit&faktura=$faktura&belob=$belob&momsfri=$momsfri&afd=$afd&projekt=$projekt&ansat=$ansat&valuta=$valuta&lobenr=$lobenr' class=\"button red small left\" accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></div>
+		<div class=\"headerbtnLft\"><a href='kassekladde.php?fokus=$fokus&kladde_id=$kladde_id&id=$id&bilag=$bilag&dato=" . urlencode((string) $dato) . "&beskrivelse=$beskrivelse&d_type=$d_type&debet=$debet&k_type=$k_type&kredit=$kredit&faktura=$faktura&belob=$belob&momsfri=$momsfri&afd=$afd&projekt=$projekt&ansat=$ansat&valuta=$valuta&lobenr=$lobenr' class=\"button red small left\" accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></div>
 		<span class=\"headerTxt\">".findtekst('2170|Finansopslag', $sprog_id)."</span>";
 		print "<div class=\"headerbtnRght\"></div>";
 		print "</div><!-- end of header -->

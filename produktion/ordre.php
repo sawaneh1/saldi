@@ -934,7 +934,7 @@ function vareopslag($sort, $fokus, $id, $vis)
 			$levquery = db_select("select kontonr, firmanavn from adresser where id=$row2[lev_id]");
 			if ($levrow = db_fetch_array($levquery)){print "<td><small>$font $levrow[kontonr] - $levrow[firmanavn]</small></td>";}
 			else {print "<td></td>";}
-			print "<td align=right><a href=\"../lager/varekort.php?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus&id=$row[id]\">$font<small>Ret</a></td>";
+			print "<td align=right><a href=\"../lager/varekort.php?returside=../produktion/ordre.php&ordre_id=$id&fokus=$fokus&id=$row[id]\">$font<small>Ret</a></td>";
 			print "</tr>";
 			$vist=1;
 		}
@@ -948,7 +948,7 @@ function vareopslag($sort, $fokus, $id, $vis)
 			$kostpris=dkdecimal($row[kostpris]);
 			print "<td align=right><small>$font $kostpris<br></small></td>";
 			print "<td></td><td></td><td></td>";
-			print "<td align=right><a href=\"../lager/varekort.php?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus&id=$row[id]\">$font<small>Ret</a></td>";
+			print "<td align=right><a href=\"../lager/varekort.php?returside=../produktion/ordre.php&ordre_id=$id&fokus=$fokus&id=$row[id]\">$font<small>Ret</a></td>";
 			print "</tr>";
 		}
 	}
@@ -971,7 +971,7 @@ global $bgcolor2;
 	else {print "<td width=\"25%\" bgcolor=\"$bgcolor2\"><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><small><a href=ordre.php?id=$id accesskey=L>Luk</a></small></td>";}
 	print "<td width=\"50%\" bgcolor=\"$bgcolor2\" align=\"center\"><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><small>$tekst</small></td>";
 	if ($returside != "ordre.php") {print "<td width=\"25%\" bgcolor=\"$bgcolor2\" align=\"right\"><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><small><a href=ordre.php?returside=ordreliste.php accesskey=N>Ny</a></small></td>";}
-	else {print "<td width=\"25%\" bgcolor=\"$bgcolor2\" align=\"right\"><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><small><a href=$kort?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus accesskey=N>Ny</a></small></td>";}
+	else {print "<td width=\"25%\" bgcolor=\"$bgcolor2\" align=\"right\"><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><small><a href=$kort?returside=../produktion/ordre.php&ordre_id=$id&fokus=$fokus accesskey=N>Ny</a></small></td>";}
 	print "</tbody></table>";
 	print "</td></tr>";
 	print "<tr><td valign=\"top\" align=center>";

@@ -58,7 +58,7 @@ $permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");
-$returside="diverse.php?sektion=div_io";
+$returside="../includes/luk.php"; // WP-6.4: opened as a popup from diverse.php; Tilbage closes it
 $csvFile = NULL;
 $retailPriceFromPurchasePrice = $salesPriceFromPurchasePrice = $tierPriceFromPurchasePrice = NULL;
 $feltnavn = array();
@@ -858,7 +858,7 @@ print "</tbody></table>";
 print "</td></tr>";
 print "<BODY onLoad=\"javascript:alert('$imp_antal varer importeret, $upd_antal varer opdateret')\">";
 #print "<BODY onLoad=\"javascript:alert('$imp_antal varer importeret')\">";
-print "<meta http-equiv=\"refresh\" content=\"0;URL=diverse.php?sektion=div_io\">";
+print "<meta http-equiv=\"refresh\" content=\"0;URL=../includes/luk.php\">";
 exit;
 } # endfunc overfoer_data
 

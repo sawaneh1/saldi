@@ -26,6 +26,8 @@
 // 20250808 PHR - Added $id to returside 
 // 20251121 LOE - Modified icons to SVG format and buttons to fit the new design
 // 20260904 Sawaneh WP-1.3c: luk.php returside now set on the popup=1 request flag, not the popup preference
+// 20261006 Sawaneh WP-2.4/2.5: Tilbage uses the returside (historikkort had no luk handler -> dashboard); Ny opens a blank
+//                  card that returns here (was: the same customer, returning without id).
 
 @session_start();
 $s_id = session_id();
@@ -283,7 +285,7 @@ if ($menu == 'T') {
 	include_once '../includes/top_header.php';
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('historikkort.php?luk=luk.php')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
+	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$returside')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
 	print "<div class=\"headerTxt\">$title</div>";
 	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
 	print "</div>";
@@ -337,9 +339,9 @@ if ($menu == 'T') {
 	$tekst = findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id);
 	#if ($returside=="debitorkort.php") print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=\"javascript:confirmClose('$returside?id=$id&ordre_id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>Luk</a></div></td>\n";
 	#print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>Luk</a></div></td>\n";
-	print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=\"javascript:confirmClose('historikkort.php?luk=luk.php')\" accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "</a></div></td>\n";
+	print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=\"javascript:confirmClose('$returside')\" accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "</a></div></td>\n";
 	print "<td width=\"80%\" align=center><div class=\"top_bund\">" . findtekst('1668|Historik for debitor', $sprog_id) . "</div></td>\n";
-	print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=\"javascript:confirmClose('debitorkort.php?returside=historikkort.php&id=$id&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=N>" . findtekst('39|Ny', $sprog_id) . "</a><br></div></td>\n";
+	print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=\"javascript:confirmClose('debitorkort.php?returside=" . urlencode("historikkort.php?id=$id") . "&konto_id=0&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=N>" . findtekst('39|Ny', $sprog_id) . "</a><br></div></td>\n";
 	print "</tbody></table>\n"; #tabel2a slut
 	print "</td></tr>\n";
 	print "<tr><td width=\"100%\" valign=\"top\">";

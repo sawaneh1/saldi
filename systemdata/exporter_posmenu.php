@@ -42,7 +42,7 @@ $regnskabsaar=if_isset($_GET['aar']);
 if ($db_encode == "UTF8") $charset = "UTF-8";
 else $charset = "ISO-8859-1";
 
-$returside="diverse.php?sektion=div_io";
+$returside="../includes/luk.php"; // WP-6.4: opened as a popup from diverse.php; Tilbage closes it
 
 $filnavn="../temp/".$db."/".$saldifileformat."_".$saldifileformatversion."_".date("Y-m-d").".csv";
 

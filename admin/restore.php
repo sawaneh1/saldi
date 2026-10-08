@@ -38,6 +38,7 @@
 // 20260127 LOE Updated migrateMySQLToPostgreSQL for some isolated fixes.
 // 20260129 PHR Added some str_replace  and a call to connect.php before lookup in 'regnskab'
 // 20260702 CX/PHR Close target PostgreSQL connection and terminate active sessions before DROP DATABASE in restore
+// 20261006 Sawaneh WP-6.3: Luk returns to the admin account page after a ?db= restore, otherwise to the calling page/backup.php.
 
 @session_start();
 $s_id=session_id();
@@ -78,6 +79,7 @@ if (isset($_GET['db']) && $_GET['db']) {
 		include("../includes/connect.php");
 		$r=db_fetch_array(db_select("select * from regnskab where db='$tmpDb'",__FILE__ . " linje " . __LINE__));
 		$regnskab=$r['regnskab'];
+		$adminRegnskabId = $r ? (int) $r['id'] : 0;
 	}
 	$db=$tmpDb;
 	db_connect($sqhost, $squser, $sqpass, $db, "");
@@ -93,8 +95,14 @@ if(isset($_COOKIE['languageId'])){
  
  
 
-if ($popup) $returside="../includes/luk.php";
-else $returside="../index/menu.php";
+// WP-6.3: from the admin panel (?db=) Luk returns to that account's admin page (it reads db_id), else the account list;
+// otherwise to the page the user came from, luk.php in a popup, else backup.php (was the main menu in both cases).
+if (isset($tmpDb) && $tmpDb) {
+	$returside = !empty($adminRegnskabId) ? "aaben_regnskab.php?db_id=" . (int) $adminRegnskabId : "vis_regnskaber.php";
+} else {
+	$returside = nav_sanitize_returside(if_isset($_GET, NULL, 'returside'));
+	if (!$returside) $returside = $popup ? "../includes/luk.php" : "backup.php";
+}
 
 if (!file_exists("../temp/$db")) mkdir("../temp/$db", 0775);
 

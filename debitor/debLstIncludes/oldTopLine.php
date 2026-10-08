@@ -4,7 +4,10 @@
 	print "<table width=100% height=100% border=0 cellspacing=0 cellpadding=0><tbody>\n";
 	print "<tr><td height = 25 align=center valign=top>";
 	print "<table width=100% align=center border=0 cellspacing=2 cellpadding=0><tbody><td width=10% $top_bund>\n";
-	print "<a href=$returside accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></td>";
+	// WP-2.20: the job card leaves through its navigator (jobkort.php?luk=luk) like its other layouts; a raw returside
+	// such as ordre.php without id opened a blank new order.
+	$oldBack = (basename((string) $_SERVER['PHP_SELF']) === 'jobkort.php') ? 'jobkort.php?luk=luk' : $returside;
+	print "<a href=\"" . htmlspecialchars((string) $oldBack, ENT_QUOTES) . "\" accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></td>";
 	print "<td width=80% $top_bund align=center><table border=0 cellspacing=2 cellpadding=0><tbody>\n";
 
 	if ($valg=='debitor') print "<td width = 20% align=center $knap_ind>".findtekst('908|Debitorer', $sprog_id)."</td>"; #20210701

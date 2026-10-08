@@ -48,16 +48,18 @@ $sort = if_isset($_GET['sort']);
 $nysort = if_isset($_GET['nysort']);
 $konto_id=if_isset($_GET['konto_id'])*1;
 $ordre_id=if_isset($_GET['ordre_id'])*1;
-$returside=if_isset($_GET['returside']);
+$returside=nav_sanitize_returside(if_isset($_GET['returside']));
 $luk=if_isset($_GET['luk']);
 
 if($luk) {
 	if ($r=db_fetch_array(db_select("select * from navigator where bruger_id='$bruger_id' and session_id='$s_id' and side='jobliste.php'",__FILE__ . " linje " . __LINE__))) {
 		db_modify("delete from navigator where bruger_id='$bruger_id' and session_id='$s_id' and side='jobliste.php'",__FILE__ . " linje " . __LINE__);
-		print "<meta http-equiv=\"refresh\" content=\"0;URL=$r[returside]?konto_id=$r[konto_id]&ordre_id=$r[ordre_id]\">";
+		// WP-2.1: the stored page may already carry a query (ansatte.php?konto_id=..., debitorkort.php?id=...).
+		$sep = (strpos((string) $r['returside'], '?') !== false) ? '&' : '?';
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=" . htmlspecialchars($r['returside'] . $sep . 'konto_id=' . (int) $r['konto_id'] . '&ordre_id=' . (int) $r['ordre_id'], ENT_QUOTES) . "\">";
 	} else print "<meta http-equiv=\"refresh\" content=\"0;URL=debitor.php\">";
 	exit;
-} elseif ($returside) db_modify("insert into navigator(bruger_id,session_id,side,returside,ordre_id,konto_id) values ('$bruger_id','$s_id','jobliste.php','$returside','$ordre_id','$konto_id')",__FILE__ . " linje " . __LINE__);
+} elseif ($returside) db_modify("insert into navigator(bruger_id,session_id,side,returside,ordre_id,konto_id) values ('$bruger_id','$s_id','jobliste.php','".db_escape_string($returside)."','$ordre_id','$konto_id')",__FILE__ . " linje " . __LINE__);
 	
 $tidspkt=date("U");
  
@@ -255,7 +257,16 @@ while ($r =db_fetch_array($q)) {
 	print "<td>$felt_1<br></td>";
 	print "</tr>\n";
 }
-if (!$ialt && $konto_id) print "<Body onLoad=\"javascript:job=window.open('jobkort.php?returside=jobliste.php&konto_id=$konto_id&ordre_id=$ordre_id,'job','scrollbars=1,resizable=1');job.focus();\">";
+// WP-2.3: the quote after ordre_id was missing, so this never ran. Opening jobkort.php without an id creates a row at
+// once, so viewing an empty list now asks first instead of creating one silently.
+if (!$ialt && $konto_id) {
+	$askNew = findtekst('6950|Kunden har ingen jobkort. Vil du oprette et?', $sprog_id);
+	if (isset($charset) && strtoupper((string) $charset) !== 'UTF-8') {
+		$askNew = mb_convert_encoding($askNew, 'UTF-8', $charset);
+	}
+	$askNew = json_encode($askNew, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+	print "<script>window.addEventListener('load', function () { if (window.confirm($askNew)) { var job = window.open('jobkort.php?returside=jobliste.php&konto_id=" . (int) $konto_id . "&ordre_id=" . (int) $ordre_id . "', 'job', 'scrollbars=1,resizable=1'); if (job) { job.focus(); } } });</script>";
+}
 $cols=9;
 print "<tr><td colspan=$cols><hr></td></tr>\n";
 print "<tr><td colspan=$cols><hr></td></tr>\n";

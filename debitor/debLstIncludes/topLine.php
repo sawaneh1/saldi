@@ -123,7 +123,7 @@ if ($valg == 'kommission' || $valg == 'historik') {
 			print "<button class='center-btn' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 			print "$add_icon ".findtekst('39|Ny', $sprog_id)."</button></a></td>\n";
 		} else {
-			print "<a href='jobkort.php?returside=jobkort.php&konto_id=$konto_id&ordre_id=$ordre_id'>";
+			print "<a href='jobkort.php?returside=jobliste.php&konto_id=$konto_id&ordre_id=$ordre_id'>"; // WP-2.2: was returside=jobkort.php (a new row on every Tilbage)
 			print "<button class='center-btn' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 			print "$add_icon ".findtekst('39|Ny', $sprog_id)."</button></a></td>\n";
 		}

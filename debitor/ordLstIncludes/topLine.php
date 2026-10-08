@@ -94,7 +94,7 @@ if ($valg == 'pbs') {
 print "</tbody></table></td>\n"; # <- Tabel 1.1.1
 if ($valg == 'pbs') {
 	if ($popup)
-		print "<td width=10% style='$topStyle'> onClick=\"javascript:ordre=window.open('pbs_import.php?returside=x','ordre','scrollbars=1,resizable=1');ordre.focus();\">
+		print "<td width=10% style='$topStyle' onClick=\"javascript:ordre=window.open('pbs_import.php?returside=ordreliste.php','ordre','scrollbars=1,resizable=1');ordre.focus();\">
 				   <a accesskey=N href=ordreliste.php?sort=$sort>
 				   <button class='headerbtn navbtn-top' style='$butDownStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">
 					Import PBS</button></a></td>\n";

@@ -157,7 +157,7 @@ $columns[] = array(
     "field" => "varenr",
     "headerName" => "Vare Nr.",
     "render" => function ($value, $row, $column) {
-        $url = "../../lager/varekort.php?id=$row[id]&returside=lister/vareliste.php";
+        $url = "../../lager/varekort.php?id=$row[id]&returside=../lager/lister/indkøb.php";
 
         $notes = htmlspecialchars($row['notes'] ? $row["notes"] : '', ENT_QUOTES, 'UTF-8');
         return "<td title='$notes' align='$column[align]' onclick=\"window.location.href='$url'\" style='cursor:pointer'><a href='$url'>$value</a></td>";
@@ -169,7 +169,7 @@ $columns[] = array(
     "headerName" => "Navn",
     "width" => "3",
     "render" => function ($value, $row, $column) {
-        $url = "../../lager/varekort.php?id=$row[id]&returside=lister/vareliste.php";
+        $url = "../../lager/varekort.php?id=$row[id]&returside=../lager/lister/indkøb.php";
 
         $notes = htmlspecialchars($row['notes'] ? $row["notes"] : '', ENT_QUOTES, 'UTF-8');
         return "<td title='$notes' align='$column[align]' onclick=\"window.location.href='$url'\" style='cursor:pointer'>$value</td>";

@@ -53,7 +53,7 @@ print "<button class='center-btn' style='$buttonStyle; width:100%' onMouseOver=\
 print "$help_icon " . findtekst('2564|Hjælp', $sprog_id) . "</button></td>";
 
 print "<td width=5% style='$buttonStyle'>
-	   <a href=\"javascript:confirmClose('$kort?returside=$returside&ordre_id=$ny_id&fokus=$fokus','$alerttekst')\" accesskey='N'>
+	   <a href=\"javascript:confirmClose('$kort?returside=" . urlencode($returside) . "&ordre_id=$ny_id&fokus=$fokus','$alerttekst')\" accesskey='N'>
 	   <button class='center-btn' style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
 	   $add_icon " . findtekst(39, $sprog_id) . "</button></a></td>";
 

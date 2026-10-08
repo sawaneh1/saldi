@@ -1,6 +1,7 @@
 <?php
 // --- debitor/generalLedger.php --- patch 5.0.0 --- 2026-03-19 ---
 // 20260908 CDX/LH Restored the reconciled credit entry link for undoing reconciliation.
+// 20261006 Sawaneh WP-2.17: Luk falls back to the customer's card by id (kontonr alone gave a blank card), else rapport; returside sanitised.
 
 function debitorGeneralLedgerEscape($value)
 {
@@ -71,14 +72,16 @@ function renderDebitorGeneralLedgerGrid($dato_fra, $dato_til, $konto_fra, $konto
 		$regnslut = $tmpDay . "-" . trim($r['box3']) . "-" . trim($r['box4']);
 	}
 
-	$backUrl = if_isset($_GET['returside']);
+	$backUrl = nav_sanitize_returside(if_isset($_GET['returside']));
 	if (!$backUrl) {
 		if ($popup) {
 			$backUrl = "../includes/luk.php";
 		} elseif ($kilde == 'openpost') {
 			$backUrl = "rapport.php?rapportart=openpost&submit=ok&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$kilde_kto_fra&konto_til=$kilde_kto_til";
 		} else {
-			$backUrl = "debitorkort.php?kontonr=$konto_fra";
+			// WP-2.17: the card needs its id - kontonr alone opened a blank new-customer form.
+			$cardRow = db_fetch_array(db_select("select id from adresser where art = 'D' and kontonr = '" . db_escape_string((string) $konto_fra) . "' order by id limit 1", __FILE__ . " linje " . __LINE__));
+			$backUrl = $cardRow ? "debitorkort.php?id=" . (int) $cardRow['id'] : "rapport.php";
 		}
 	}
 

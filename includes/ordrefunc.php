@@ -135,6 +135,8 @@
 //             returned error now names the offending account and order instead of a bare generic string.
 // 20260716 CL/LH Added caller-owned transactions for atomic imports.
 // 20260916 CDX/LH Preserve the import transaction while posting; retain master invoice savepoints.
+// 20261006 Sawaneh WP-2.11-2.13: no stray ?id= on fokus; sag retursides stored plain and urlencoded in the Ny link; the menu-T
+//                  Tilbage uses the given returside (an ordre.php target gets the order's id) instead of always the order list.
 
 include_once(__DIR__ . '/stdFunc/fefo.php'); # fefo_order_clause() - used by batch()
 
@@ -4782,7 +4784,12 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst)
 		include_once '../includes/top_header.php';
 		include_once '../includes/top_menu.php';
 		print "<div id=\"header\">";
-		print "<div class=\"headerbtnLft headLink\"><a href=../debitor/ordreliste.php accesskey=L title='Klik her for at komme tilbage til ordreliste'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
+		// WP-2.13: back to the given returside (was always the order list); an ordre.php target needs the order's id.
+		$topBack = $returside;
+		if (strpos($topBack, 'ordre.php') !== false) {
+			$topBack .= ((strpos($topBack, '?') !== false) ? '&' : '?') . 'id=' . (int) $id;
+		}
+		print "<div class=\"headerbtnLft headLink\"><a href=\"" . htmlspecialchars($topBack, ENT_QUOTES) . "\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
 		print "<div class=\"headerTxt\">$tekst</div>";
 		print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
 		print "</div>";
@@ -4874,7 +4881,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst)
 		else
 			print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('$returside?id=$id','$alerttekst')\" accesskey=L>" . findtekst(30, $sprog_id) . "</a></td>";
 		print "<td width=\"80%\" $top_bund> $color$tekst</td>";
-		print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('$kort?returside=$returside&ordre_id=$ny_id&fokus=$fokus','$alerttekst')\" accesskey=N>" . findtekst(39, $sprog_id) . "</a></td>";
+		print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('$kort?returside=" . urlencode($returside) . "&ordre_id=$ny_id&fokus=$fokus','$alerttekst')\" accesskey=N>" . findtekst(39, $sprog_id) . "</a></td>";
 		print "</tbody></table>";
 		print "</td></tr>\n";
 	}
@@ -4944,7 +4951,7 @@ function opret_ordre($sag_id, $konto_id)
 	$sag_id = if_isset($_GET['sag_id']);
 	$konto_id = if_isset($_GET['konto_id']);
 	$tilbud_id = if_isset($_GET['tilbud_id']);
-	$returside = urlencode("../sager/sager.php?funktion=vis_sag&amp;sag_id=$sag_id&amp;konto_id=$konto_id");
+	$returside = "../sager/sager.php?funktion=vis_sag&sag_id=$sag_id&konto_id=$konto_id";
 	//if (!strstr($fokus,'lev_') && isset($_GET['konto_id']) && is_numeric($_GET['konto_id'])) { # <- 20080511
 	//$konto_id=$_GET['konto_id'];
 
@@ -5021,7 +5028,7 @@ function opret_ordre($sag_id, $konto_id)
 		$momssats = $r['box2'] * 1;
 	} elseif ($konto_id) {
 		print "<BODY onLoad=\"javascript:alert('Debitoren er ikke tilknyttet en debitorgruppe')\">\n";
-		print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus?id=$id\">\n";
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus\">\n";
 		exit;
 	}
 	// Her oprettes tilbudsnr
@@ -5140,7 +5147,7 @@ function opret_ordre_kopi($sag_id, $konto_id)
 	$konto_id = $_GET['konto_id'];
 	$sag_id = $_GET['sag_id'];
 	$ordre_id = $_GET['ordre_id'];
-	$returside = urlencode("../sager/sager.php?funktion=vis_sag&amp;sag_id=$sag_id&amp;konto_id=$konto_id");
+	$returside = "../sager/sager.php?funktion=vis_sag&sag_id=$sag_id&konto_id=$konto_id";
 
 	$query = db_select("select * from adresser where id = '$konto_id'", __FILE__ . " linje " . __LINE__);
 	if ($row = db_fetch_array($query)) {
@@ -5214,7 +5221,7 @@ function opret_ordre_kopi($sag_id, $konto_id)
 		$momssats = $r['box2'] * 1;
 	} elseif ($konto_id) {
 		print "<BODY onLoad=\"javascript:alert('Debitoren er ikke tilknyttet en debitorgruppe')\">\n";
-		print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus?id=$id\">\n";
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=debitorkort.php?id=$konto_id&returside=../debitor/ordre.php&ordre_id=$id&fokus=$fokus\">\n";
 		exit;
 	}
 	// Her oprettes tilbudsnr

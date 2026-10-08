@@ -33,7 +33,7 @@ include("../includes/std_func.php");
 include("../includes/topline_settings.php");
 $regnskabsaar=$_GET['aar'];
 
-$returside="diverse.php?sektion=div_io";
+$returside="../includes/luk.php"; // WP-6.4: opened as a popup from diverse.php; Tilbage closes it
 
 $filnavn="../temp/".$db."/"."formularer_".date("Y-m-d").".csv";
 

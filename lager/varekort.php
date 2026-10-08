@@ -125,6 +125,8 @@
 // 20260921 Sawaneh Merge with the 20260902 layout: the batchExpiryEnabled/box9 condition now wraps the
 //                  pcSecExpiry box instead of the old include inside the Diverse box.
 // 20260923 CDX/PHR Deduplicate fiscal-year warehouses and preserve actual warehouse numbers.
+// 20261006 Sawaneh WP-5.8-5.10: back links join their parameters without repeating keys (stykliste/posmenu retursides) and
+//                  leave out an empty order id; Ny passes the order id (not the item id); nested retursides urlencoded.
 //
 ob_start(); //Starts output buffering
 
@@ -1216,6 +1218,22 @@ if ($stockItem) {
 if (!$returside) {
     $returside = $productNavigationQuery !== '' ? "../includes/luk.php?popup=1" : "varer.php";
 }
+// WP-5.8: back links add their parameters with the right separator and never repeat a key the returside already has (a
+// stykliste returside carries the parent's id; a second id=0 opened a blank card), and an empty order id is left out.
+$varekortBack = function (array $add) use ($returside) {
+    $base = (string) $returside;
+    $query = array();
+    if (($p = strpos($base, '?')) !== false) {
+        parse_str(substr($base, $p + 1), $query);
+        $base = substr($base, 0, $p);
+    }
+    foreach ($add as $k => $v) {
+        if (!array_key_exists($k, $query) && (string) $v !== '' && !($k === 'id' && !(int) $v)) {
+            $query[$k] = $v;
+        }
+    }
+    return $query ? $base . '?' . http_build_query($query) : $base;
+};
 $tekst = findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id);
 
 if ($begin)
@@ -1288,13 +1306,13 @@ if ($menu == 'T') {
             } </style>";
     }else{
        if ($opener != 'varer.php') {
-            $confirmUrl = htmlspecialchars(json_encode("$returside?id=$ordre_id&fokus=$fokus&vare_id=$id"), ENT_QUOTES);
+            $confirmUrl = htmlspecialchars(json_encode($varekortBack(array('id' => $ordre_id, 'fokus' => $fokus, 'vare_id' => $id))), ENT_QUOTES);
             print "<td width=\"10%\">
                 <a href=\"javascript:confirmClose($confirmUrl,$confirmTekst)\" accesskey=L>
                 <button type='button' class='center-btn' style='$buttonStyle; width:100%; justify-content:flex-start' onMouseOver=\"this.style.cursor='pointer'\">"
                 . $icon_back . findtekst('30|Tilbage', $sprog_id) . "</button></a></td>\n";
         } else {
-            $confirmUrl = htmlspecialchars(json_encode("$returside?"), ENT_QUOTES);
+            $confirmUrl = htmlspecialchars(json_encode($returside), ENT_QUOTES);
             print "<td /*width=\"10%\"*/ $tmp><a href=\"javascript:confirmClose($confirmUrl,$confirmTekst)\" accesskey=L>
                 <button type='button' class='center-btn' style='$buttonStyle; width:100%; justify-content:flex-start' onMouseOver=\"this.style.cursor='pointer'\">"
                 . $icon_back . findtekst('2172|Luk', $sprog_id) . "</button></a></td>\n";
@@ -1314,7 +1332,7 @@ if ($menu == 'T') {
         <button type='button' class='center-btn' style='$buttonStyle; width:100%; justify-content:flex-start' onMouseOver=\"this.style.cursor='pointer'\">" . $icon_posmenu . "POS menuer" . "</button></a></td>\n";
         }
         # Create new item
-        $confirmNewUrl = htmlspecialchars(json_encode("varekort.php?{$productNavigationQuery}opener=$opener&returside=$returside&ordre_id=$id"), ENT_QUOTES);
+        $confirmNewUrl = htmlspecialchars(json_encode("varekort.php?{$productNavigationQuery}opener=$opener&returside=" . urlencode($returside) . "&ordre_id=$ordre_id"), ENT_QUOTES);
         print "<td width='10%' align='right'>
          <a href=\"javascript:confirmClose($confirmNewUrl,$confirmTekst)\" accesskey=N>
          <button type='button' class='center-btn' style='$buttonStyle; width:100%; justify-content:flex-start' onMouseOver=\"this.style.cursor='pointer'\">" . $add_icon . findtekst('39|Ny', $sprog_id) . "</button></a></td>\n";
@@ -1328,9 +1346,9 @@ if ($menu == 'T') {
     print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>\n";
     $tmp = ($popup) ? "onClick=\"javascript=opener.location.reload();\"" : "";
     if ($opener != 'varer.php')
-        print "<td width=\"10%\" $top_bund><a href=\"javascript:confirmClose('$returside?id=$ordre_id&fokus=$fokus&vare_id=$id','$tekst')\" accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></td>\n";
+        print "<td width=\"10%\" $top_bund><a href=\"javascript:confirmClose('" . htmlspecialchars($varekortBack(array('id' => $ordre_id, 'fokus' => $fokus, 'vare_id' => $id)), ENT_QUOTES) . "','$tekst')\" accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></td>\n";
     else
-        print "<td width=\"10%\" $tmp $top_bund> <a href=\"javascript:confirmClose('$returside?','$tekst')\" accesskey=L>Luk</a></td>\n";
+        print "<td width=\"10%\" $tmp $top_bund> <a href=\"javascript:confirmClose('" . htmlspecialchars($returside, ENT_QUOTES) . "','$tekst')\" accesskey=L>Luk</a></td>\n";
     print "<td width=\"70%\" $top_bund align=\"center\">".findtekst('566|Varekort', $sprog_id)."</td>\n";
 
     # Open pos menus
@@ -1339,7 +1357,7 @@ if ($menu == 'T') {
 
     # Create new item
     if ($id) {
-        print "<td width=\"10%\" $top_bund align=\"right\"><a href=\"javascript:confirmClose('varekort.php?{$productNavigationQuery}opener=$opener&returside=$returside&ordre_id=$id','$tekst')\" accesskey=N>".findtekst('39|Ny', $sprog_id)."</a>\n";
+        print "<td width=\"10%\" $top_bund align=\"right\"><a href=\"javascript:confirmClose('varekort.php?{$productNavigationQuery}opener=$opener&returside=" . urlencode($returside) . "&ordre_id=$ordre_id','$tekst')\" accesskey=N>".findtekst('39|Ny', $sprog_id)."</a>\n";
     }
     print "</td></tbody></table>\n";
     print "</td></tr>\n";
@@ -1984,7 +2002,7 @@ if (!$varenr) {
     # Vises hvis varen indegår i en stykliste
     if ($delvare == 'on') {
         if ($vis_samlevarer) {
-            print "<tr><td valign=top width=10%><span title='Klik her for at lukke oversigten'><a href=varekort.php?{$productNavigationQuery}opener=$opener&id=$id&returside=$returside>Indg&aring;r i</a></td><td></td><td><table width=80% border=0><tbody>";
+            print "<tr><td valign=top width=10%><span title='Klik her for at lukke oversigten'><a href=varekort.php?{$productNavigationQuery}opener=$opener&id=$id&returside=" . urlencode($returside) . ">Indg&aring;r i</a></td><td></td><td><table width=80% border=0><tbody>";
             print "<tr><td> Pos.</td><td width=80> V.nr.</td><td width=300> Beskrivelse</td><td> Antal</td></tr>";
             for ($x = 1; $x <= $ant_indg_i; $x++) {
                 print "<tr><td><input class=\"inputbox\" type = 'text' size=2 name=indg_i_ant[$x] value=$x></td><td><a href='?id=$indg_i_id[$x]'>$indg_i_vnr[$x]</a></td><td>$indg_i_beskrivelse[$x]</td><td align=\"right\">$indg_i_ant[$x]</td></tr>";
@@ -1992,7 +2010,7 @@ if (!$varenr) {
             print "<input type=\"hidden\" name=\"vis_samlevarer\" value=\"on\">";
         } else {
             print "<tr><td colspan=3><table width=100% border='0' cellspacing='1'><tbody>";
-            print "<tr><td width=100% align=center><a href=varekort.php?{$productNavigationQuery}opener=$opener&id=$id&returside=$returside&vis_samlevarer=on>Denne vare indg&aring;r i andre varer - Klik for oversigt</a></td></tr>";
+            print "<tr><td width=100% align=center><a href=varekort.php?{$productNavigationQuery}opener=$opener&id=$id&returside=" . urlencode($returside) . "&vis_samlevarer=on>Denne vare indg&aring;r i andre varer - Klik for oversigt</a></td></tr>";
         }
 
         #   print "<tr><td><input class=\"inputbox\" type = 'text' size=2 name=indg_i_ant[$x] value=$x></td><td colspan=2><SELECT class=\"inputbox\" NAME=indg_i_ant[0]>";
@@ -2272,7 +2290,7 @@ function kontoopslag($sort, $fokus, $id)
         print "<table width='100%'><tbody>";
 
         print "<td width=\"10%\">
-           <a href=varekort.php?opener=$opener&returside=$returside&ordre_id=$ordre_id&vare_id=$id&id=$id&fokus=$fokus accesskey=L>
+           <a href=varekort.php?opener=$opener&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&id=$id&fokus=$fokus accesskey=L>
            <button style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">Luk</button></a></td>";
 
         print "<td width=\"80%\" align='center' style='$topStyle'>Varekort</td>";
@@ -2284,21 +2302,21 @@ function kontoopslag($sort, $fokus, $id)
 
     } else {
         print "<table width='100%'><tbody>";
-        print "<td width=\"10%\" $top_bund><a href=varekort.php?{$productNavigationQuery}opener=$opener&returside=$returside&ordre_id=$ordre_id&vare_id=$id&id=$id&fokus=$fokus accesskey=L>Luk</a></td>";
+        print "<td width=\"10%\" $top_bund><a href=varekort.php?{$productNavigationQuery}opener=$opener&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&id=$id&fokus=$fokus accesskey=L>Luk</a></td>";
         print "<td width=\"80%\" $top_bund align=\"center\">Varekort</td>";
         print "<td width=\"10%\" $top_bund align=\"right\" onMouseOver=\"this.style.cursor = 'pointer'\"; onClick=\"JavaScript:window.open('../kreditor/kreditorkort.php?returside=../includes/luk.php', '', 'statusbar=no,menubar=no,titlebar=no,toolbar=no,scrollbars=yes,resizable=yes');\"><u>Ny</u></td>";
         print "</tbody></table></td></tr>";
     }
     print "<table width='100%'><tbody>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=kontonr&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Kontonr</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=firmanavn&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Navn</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=addr1&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Adresse</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=addr2&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Adresse2</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=postnr&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Postnr</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=bynavn&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>bynavn</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=land&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>land</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=kontonr&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Kontonr</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=firmanavn&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Navn</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=addr1&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Adresse</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=addr2&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Adresse2</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=postnr&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Postnr</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=bynavn&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>bynavn</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=land&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>land</b></td>";
     #   print"<td><b><a href=varekort.php?opener=$opener&sort=kontakt&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Kontaktperson</b></td>";
-    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=tlf&funktion=kontoOpslag&id=$id&returside=$returside&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Telefon</b></td>";
+    print "<td><b><a href=varekort.php?{$productNavigationQuery}opener=$opener&sort=tlf&funktion=kontoOpslag&id=$id&returside=" . urlencode($returside) . "&ordre_id=$ordre_id&vare_id=$id&$fokus=$fokus>Telefon</b></td>";
     print " </tr>";
 
     if (!isset($_GET['sort']))
@@ -2312,7 +2330,7 @@ function kontoopslag($sort, $fokus, $id)
     while ($row = db_fetch_array($q)) {
         $kontonr = str_replace(" ", "", $row['kontonr']);
         print "<tr>";
-        print "<td><a href=varekort.php?{$productNavigationQuery}id=$id&konto_id=$row[id]&returside=$returside&vare_lev_id=$row[id]>$row[kontonr]</a></td>";
+        print "<td><a href=varekort.php?{$productNavigationQuery}id=$id&konto_id=$row[id]&returside=" . urlencode($returside) . "&vare_lev_id=$row[id]>$row[kontonr]</a></td>";
         print "<td>$row[firmanavn]</td>";
         print "<td>$row[addr1]</td>";
         print "<td>$row[addr2]</td>";

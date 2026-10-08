@@ -62,6 +62,8 @@
 // 20260902 CL/NTR Added tutorial steps + create_tutorial("regnskab") so the Hjælp button in the
 //                top bar works (it had no tutorial to restart); ids budget-link/csv-export added
 //                as anchors. Texts 3500-3503 added to importfiler/tekster.csv.
+// 20261005 Sawaneh WP-4.2/4.16: returside sanitised and urlencoded towards budget.php; a Luk (popup) or Tilbage
+//                  (opened with a returside) button again.
 
 @session_start();
 $s_id=session_id();
@@ -82,9 +84,10 @@ include("../includes/row-hover-style.js.php");
 include("../includes/grid.php");
 
 print '<script src="../javascript/chart.js"></script>';
-$backUrl = isset($_GET['returside'])
-? $_GET['returside']
-: '../index/menu.php';
+$backUrl = nav_sanitize_returside(isset($_GET['returside']) ? $_GET['returside'] : '');
+if ($backUrl === '') {
+	$backUrl = '../index/menu.php';
+}
 $beregn_lager=if_isset($_POST, NULL, 'beregn_lager');
 include_once '../includes/oldDesign/header.php';
 include_once '../includes/topline_settings.php';
@@ -134,6 +137,13 @@ $help_icon = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -
 print "<div id='regnskab-topbar'>";
 print "<tr><td height='25' align='center' valign='top'>";
 print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding='0'><tbody>";
+// WP-4.16: a close control again - Luk in a popup window, Tilbage when the page was opened with a returside;
+// opened inline from the menu (no returside) it has none, as before.
+$lukHref = !empty($_GET['popup']) ? '../includes/luk.php' : (nav_sanitize_returside(isset($_GET['returside']) ? $_GET['returside'] : '') !== '' ? $backUrl : '');
+if ($lukHref !== '') {
+	print "<td width='5%' style='$buttonStyle'><a href='" . htmlspecialchars($lukHref, ENT_QUOTES) . "' accesskey='L'>
+    <button class='center-btn' style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">" . findtekst(!empty($_GET['popup']) ? '2172|Luk' : '30|Tilbage', $sprog_id) . "</button></a></td>";
+}
 print "<td width='75%' style='$topStyle' align='left'><table border='0' cellspacing='2' cellpadding='0'><tbody>";
 
 print "<td width='200px' align='center'>
@@ -144,7 +154,7 @@ print "<td width='200px' align='center'>
 print "<td>&nbsp;</td>";
 
 print "<td id='budget-link' width='200px' align='center'>
-    <a href='budget.php?returside=$backUrl'>
+    <a href='budget.php?returside=" . urlencode($backUrl) . "'>
     <button class='headerbtn' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
     $icon_budget Budget
     </button></a></td>";

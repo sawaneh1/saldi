@@ -42,9 +42,11 @@ if (!$sort) {
 	$sort = "id";
 	$rf = "desc";
 }
-$backUrl = isset($_GET['returside'])
-    ? $_GET['returside']
-    : 'javascript:window.history.go(-2);';
+// WP-5.12: back one page, not two (go(-2) skipped the page the user came from); a given returside is sanitised.
+$backUrl = !empty($_GET['returside'])
+    ? nav_sanitize_returside($_GET['returside'])
+    : 'javascript:window.history.go(-1);';
+if ($backUrl === '') $backUrl = 'javascript:window.history.go(-1);';
 if ($popup) $returside="../includes/luk.php";
 else $returside=$backUrl;
 

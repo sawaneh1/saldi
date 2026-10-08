@@ -33,6 +33,7 @@
 // 20260309 PHR Fixed another error in $returside after printing
 // 20260909 Sawaneh SST-759: POST email_fix_from applies the recipient suggestion from send_mails() after explicit acceptance
 // 20260909 Sawaneh JOB-124: accept returside from GET as well as POST.
+// 20261006 Sawaneh WP-2.16: the POSTed returside is sanitised too; leftover debug echo of file/line removed.
 // 20260917 CL/Sawaneh JOB-124: honour the popup=1 request flag when closing after a print.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 
@@ -114,7 +115,7 @@ if (isset($_POST['email_fix_from']) && isset($_POST['id'])) {
     print "<meta http-equiv=\"refresh\" content=\"1;URL=formularprint.php?id=$id&formular=$formular&udskriv_til=email\">";
     exit;
 }
-$returside = ifset($_POST, 'returside');
+$returside = nav_sanitize_returside(ifset($_POST, 'returside'));
 if (!$returside) {
     $returside = nav_sanitize_returside(ifset($_GET, 'returside'));
 }
@@ -189,6 +190,5 @@ if ($returside) {
     print "<meta http-equiv=\"refresh\" content=\"1;URL=ordre.php?id=$id$sag_q\">";
     exit;
 } else {
-echo __file__." ".__line__."<br>";
     print "<meta http-equiv=\"refresh\" content=\"1;URL=ordreliste.php\">";
 }

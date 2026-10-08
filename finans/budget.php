@@ -37,6 +37,7 @@
 // 20220926 MSC Removed a 2 number in title for budget
 // 20250130 migrate utf8_en-/decode() to mb_convert_encoding
 // 20260601 PHR inserted (float) before Round()
+// 20261005 Sawaneh WP-4.2: the incoming returside is read (sanitised) instead of forced to NULL, and urlencoded in the links.
 
 @session_start();
 $s_id=session_id();
@@ -45,12 +46,13 @@ $css="../css/standard.css";
 $modulnr=4;	
 $title="Budget";
 
-$linjebg=$returside=NULL;
+$linjebg=NULL;
 		
 include("../includes/connect.php");
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/finansfunk.php");
+$returside = nav_sanitize_returside(isset($_GET['returside']) ? $_GET['returside'] : '');
 include("../includes/topline_settings.php");
 include("../includes/grid.php");
 
@@ -119,7 +121,7 @@ print "<table width='100%' align='center' border='0' cellspacing='2' cellpadding
 print "<td width='75%' style='$topStyle' align='left'><table border='0' cellspacing='2' cellpadding='0'><tbody>";
 
 print "<td width='200px' align='center'>
-    <a href='regnskab.php?returside=$returside'>
+    <a href='regnskab.php?returside=" . urlencode($returside) . "'>
     <button class='headerbtn' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
     $icon_regnskab ".findtekst('849|Regnskab', $sprog_id)."
     </button></a></td>";
@@ -309,7 +311,7 @@ print "<style>
 </style>";
 
 print "<div class='budget-wrapper' id='budget-wrapper'>";
-print "<form name=budget action='budget.php?regnaar=$regnaar&returside=$returside' method=post>";
+print "<form name=budget action='budget.php?regnaar=$regnaar&returside=" . urlencode($returside) . "' method=post>";
 print "<table width='100%' cellpadding='0' cellspacing='1px' border='0' valign='top'>";
 print "<thead>";
 print "<tr><td><br></td><td colspan=15>".findtekst(806, $sprog_id)." ";

@@ -46,7 +46,7 @@ $id=if_isset($_GET['id']);
 $select_id=if_isset($_GET['select_id']); 
 $konto_id=if_isset($_GET['konto_id'])*1; 
 $ordre_id=if_isset($_GET['ordre_id'])*1; 
-$returside=if_isset($_GET['returside']); 
+$returside=nav_sanitize_returside(if_isset($_GET['returside'])); 
 $opdat17=if_isset($_GET['opdat17']); 
 
 #if ($ordre_id) $returside="ordre.php?id=$ordre_id";
@@ -56,10 +56,12 @@ $opdat17=if_isset($_GET['opdat17']);
 if($luk) {
 	if ($r=db_fetch_array(db_select("select * from navigator where bruger_id='$bruger_id' and session_id='$s_id' and side='jobkort.php'",__FILE__ . " linje " . __LINE__))) {
 		db_modify("delete from navigator where bruger_id='$bruger_id' and session_id='$s_id' and side='jobkort.php'",__FILE__ . " linje " . __LINE__);
-		print "<meta http-equiv=\"refresh\" content=\"0;URL=$r[returside]?konto_id=$r[konto_id]&ordre_id=$r[ordre_id]\">";
+		// WP-2.1: the stored page may already carry a query (ansatte.php?konto_id=..., debitorkort.php?id=...).
+		$sep = (strpos((string) $r['returside'], '?') !== false) ? '&' : '?';
+		print "<meta http-equiv=\"refresh\" content=\"0;URL=" . htmlspecialchars($r['returside'] . $sep . 'konto_id=' . (int) $r['konto_id'] . '&ordre_id=' . (int) $r['ordre_id'], ENT_QUOTES) . "\">";
 	} else print "<meta http-equiv=\"refresh\" content=\"0;URL=debitor.php\">";
 	exit;
-} elseif ($returside) db_modify("insert into navigator(bruger_id,session_id,side,returside,ordre_id,konto_id) values ('$bruger_id','$s_id','jobkort.php','$returside','$ordre_id','$konto_id')",__FILE__ . " linje " . __LINE__);
+} elseif ($returside) db_modify("insert into navigator(bruger_id,session_id,side,returside,ordre_id,konto_id) values ('$bruger_id','$s_id','jobkort.php','".db_escape_string($returside)."','$ordre_id','$konto_id')",__FILE__ . " linje " . __LINE__);
 
 if (!$id && $ordre_id) {
 	$r=db_fetch_array(db_select("select id from jobkort where ordre_id = '$ordre_id'",__FILE__ . " linje " . __LINE__));

@@ -115,6 +115,8 @@
 // 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 // 20261006 Sawaneh A new customer gets the company's own payment terms (Firmaoplysninger / onboarding step 4) while there are no customers.
 // 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
+// 20261006 Sawaneh WP-2.9/2.10: job list links carry an urlencoded returside with the card's id; Tilbage to an order hands it
+//                  returside=ordreliste.php instead of the order's own URL.
 @session_start();
 $s_id = session_id();
 
@@ -1333,12 +1335,14 @@ if (!isset($kontonr)) $kontonr = NULL;
 
 $tekst = findtekst('154|Dine ændringer er ikke blevet gemt! Tryk OK for at forlade siden uden at gemme.', $sprog_id);
 $backSep = (strpos($returside, '?') !== false) ? '&' : '?';
+// WP-2.10: an order gets the order list as returside instead of its own URL.
+$backReturside = (strpos($returside, 'ordre.php') !== false) ? 'ordreliste.php' : $returside;
 if ($menu == 'T') {
 	include_once '../includes/top_header.php';
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">";
 	## add onClick=\"JavaScript:opener.location.reload();\" but still get style from headlink MALENE
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($returside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a>";
+	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($backReturside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a>";
 	if ($jobkort) {
 		print "&nbsp;&nbsp;";
 	} else {
@@ -1406,8 +1410,8 @@ if ($menu == 'T') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>\n"; # TABEL 1 ->
 	print "<tr><td align=\"center\" valign=\"top\">\n";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>"; # TABEL 1.1 ->
-	if ($popup) print "<td onClick=\"JavaScript:opener.location.reload();\" width=\"10%\" $top_bund><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($returside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
-	else print "<td $top_bund><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($returside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L><!--tekst 154-->" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
+	if ($popup) print "<td onClick=\"JavaScript:opener.location.reload();\" width=\"10%\" $top_bund><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($backReturside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
+	else print "<td $top_bund><a href=\"javascript:confirmClose('$returside{$backSep}returside=" . urlencode($backReturside) . "&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L><!--tekst 154-->" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
 	print "<td width=\"80%\"$top_bund>" . findtekst('356|Debitorkort', $sprog_id) . "<!--tekst 356--></td>\n";
 	print "<td width=\"10%\"$top_bund><a href=\"javascript:confirmClose('debitorkort.php?returside=$returside&ordre_id=$ordre_id&fokus=$fokus&konto_id=0','$tekst')\" accesskey=N><!--tekst 154-->" . findtekst('39|Ny', $sprog_id) . "<!--tekst 39--></a></td>\n";
 	print "</tbody></table>"; # <- TABEL 1.1
@@ -2617,7 +2621,7 @@ if (substr($rettigheder, 5, 1) == '1') {
 
 // Stillingsliste button
 if ($jobkort) {
-    $buttons_html .= "<button type='button' onclick=\"window.location.href='jobliste.php?konto_id=$id&amp;returside=../debitor/debitorkort.php?id=$id'\" style='$buttonStyle; padding: 8px 16px; cursor: pointer;' title='$tekst_jobliste'>" . findtekst('38|Opgaveliste', $sprog_id) . "</button>";
+    $buttons_html .= "<button type='button' onclick=\"window.location.href='jobliste.php?konto_id=$id&amp;returside=" . urlencode("../debitor/debitorkort.php?id=$id") . "'\" style='$buttonStyle; padding: 8px 16px; cursor: pointer;' title='$tekst_jobliste'>" . findtekst('38|Opgaveliste', $sprog_id) . "</button>";
 } else {
     $buttons_html .= "<button style='$buttonStyle; padding: 8px 16px; opacity: 0.5; cursor: not-allowed;' disabled>" . findtekst('38|Opgaveliste', $sprog_id) . "</button>";
 }
@@ -2662,7 +2666,7 @@ $buttons_html_escaped = str_replace("\n", "", $buttons_html_escaped);
 	$jobkort = $r['box7'];
 	if ($jobkort) {
 		$tekst = findtekst('312|Klik her for at åbne listen med arbejdskort.', $sprog_id); #Klik her for at åbne listen med arbejdskort
-		print "<td width=\"10%\" $top_bund title=\"$tekst\"><!--tekst 312--><a href=jobliste.php?konto_id=$id&returside=debitorkort.php>" . findtekst('38|Opgaveliste', $sprog_id) . "<!--tekst 38--></td>\n";
+		print "<td width=\"10%\" $top_bund title=\"$tekst\"><!--tekst 312--><a href='jobliste.php?konto_id=$id&returside=" . urlencode("debitorkort.php?id=$id") . "'>" . findtekst('38|Opgaveliste', $sprog_id) . "<!--tekst 38--></td>\n";
 	} else print "<td width=\"10%\"  $top_bund><span style=\"color:#999;\">" . findtekst('38|Opgaveliste', $sprog_id) . "<!--tekst 38--></span></td>\n";
 	print "<td width=\"25%\" $top_bund>&nbsp;</td>\n";
 	print "</td></tbody></table></td></tr>"; # <- TABEL 1.3 

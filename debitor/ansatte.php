@@ -23,6 +23,8 @@
 // 20250913 LEO Added display of existing employees and top menu and "Delete all" button
 // 20260818 LH  MB-14: fixed "Uforudset hændelse" on save (guard missing 'mobile' column like kreditor/ansatte.php, redirect back to account)
 // 20260904 Sawaneh WP-1.1: header Historik/Kontokort icon retursides now target this ansatte page (urlencoded, with konto_id)
+// 20261006 Sawaneh WP-2.6-2.8: Tilbage returns to the customer card (not returside?returside=... with the employee id); icons use
+//                  the customer (konto_id, kontonr), nested retursides are urlencoded; id/konto_id cast, returside sanitised.
 
 @session_start();
 $s_id=session_id();
@@ -36,11 +38,11 @@ include("../includes/std_func.php");
 include("../includes/topline_settings.php");
 
  if ($_GET){
- 	 $id = isset($_GET['id']) ? $_GET['id'] : 0;
- 	 $returside= isset($_GET['returside']) ? $_GET['returside'] : '';
+ 	 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+ 	 $returside= isset($_GET['returside']) ? nav_sanitize_returside($_GET['returside']) : '';
  	 $ordre_id = isset($_GET['ordre_id']) ? $_GET['ordre_id'] : '';
  	 $fokus = isset($_GET['fokus']) ? $_GET['fokus'] : '';
- 	$konto_id= isset($_GET['konto_id']) ? $_GET['konto_id'] : '';
+ 	$konto_id= isset($_GET['konto_id']) ? (int) $_GET['konto_id'] : 0;
 	$_private = if_isset($_GET,NULL,'privat');
 	$_business = if_isset($_GET, NULL, 'erhverv');
  }
@@ -50,7 +52,7 @@ if ($_POST){
  	$submit=addslashes(trim(if_isset($_POST,'','submit')));
 	$delete= if_isset($_POST,NULL,'delete');
 	$deleteAll= if_isset($_POST,NULL,'deleteAll');
- 	$konto_id=$_POST['konto_id'];
+ 	$konto_id=(int) $_POST['konto_id'];
  	$navn=addslashes(trim($_POST['navn']));
  	$addr1=addslashes(trim($_POST['addr1']));
  	$addr2=addslashes(trim($_POST['addr2']));
@@ -63,7 +65,7 @@ if ($_POST){
  	$cprnr=addslashes(trim(if_isset($_POST,'','cprnr')));
  	$notes=addslashes(trim($_POST['notes']));
  	$ordre_id = if_isset($_POST,'','ordre_id');
- 	$returside=$_POST['returside'];
+ 	$returside=nav_sanitize_returside(isset($_POST['returside']) ? $_POST['returside'] : '');
  	$fokus=$_POST['fokus'];
 	$_private = if_isset($_POST,NULL,'privat');
 	$_business = if_isset($_POST,NULL,'erhverv');
@@ -220,8 +222,10 @@ if ($_POST){
 	}
 }
 
-$query = db_select("select firmanavn from adresser where id = '$konto_id'",__FILE__ . " linje " . __LINE__);
+// WP-2.7: the customer's own account number for the header icons (it was never set, so Kontokort opened empty).
+$query = db_select("select firmanavn, kontonr from adresser where id = '" . (int) $konto_id . "'",__FILE__ . " linje " . __LINE__);
 $row = db_fetch_array($query);
+$kontonr = $row ? (string) $row['kontonr'] : '';
 
 
 
@@ -232,15 +236,15 @@ if ($menu == 'T') {
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">";
 	## add onClick=\"JavaScript:opener.location.reload();\" but still get style from headlink MALENE
-	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a>";
+	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('debitorkort.php?returside=" . urlencode($returside) . "&id=$konto_id&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a>";
 	
 	print "</div>";
 	print "<div class=\"headerTxt\">$title</div>";
 	// 20260904 WP-1.1: retursides carried the employee id (or no id at all) and only
 	// worked while the nav stack overrode them; back now targets this ansatte page.
-	print "<div class=\"headerbtnRght headLink\"><a href='historikkort.php?id=$id&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "' title='" . findtekst('131|Historik', $sprog_id) . "'><i class='fa fa-history fa-lg'></i></a>&nbsp;&nbsp;<a href='rapport.php?rapportart=kontokort&konto_fra=$kontonr&konto_til=$kontonr&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "' title='" . findtekst('133|Kontokort', $sprog_id) . "'><i class='fa fa-vcard fa-lg'></i></a>";
+	print "<div class=\"headerbtnRght headLink\"><a href='historikkort.php?id=$konto_id&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "' title='" . findtekst('131|Historik', $sprog_id) . "'><i class='fa fa-history fa-lg'></i></a>&nbsp;&nbsp;<a href='rapport.php?rapportart=kontokort&konto_fra=$kontonr&konto_til=$kontonr&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "' title='" . findtekst('133|Kontokort', $sprog_id) . "'><i class='fa fa-vcard fa-lg'></i></a>";
 	if (substr($rettigheder, 5, 1) == '1') {
-		print "&nbsp;&nbsp;<a href='ordreliste.php?konto_id=$id&valg=faktura&returside=../debitor/debitorkort.php?id=$id' title='" . findtekst('134|Fakturaliste', $sprog_id) . "'><i class='fa fa-dollar fa-lg'></i></a>";
+		print "&nbsp;&nbsp;<a href='ordreliste.php?konto_id=$konto_id&valg=faktura&returside=" . urlencode("../debitor/debitorkort.php?id=$konto_id") . "' title='" . findtekst('134|Fakturaliste', $sprog_id) . "'><i class='fa fa-dollar fa-lg'></i></a>";
 	} else {
 		print "";
 	}
@@ -276,8 +280,8 @@ if ($menu == 'T') {
 	print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>\n"; # TABEL 1 ->
 	print "<tr><td align=\"center\" valign=\"top\">\n";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>"; # TABEL 1.1 ->
-	if ($popup) print "<td onClick=\"JavaScript:opener.location.reload();\" width=\"10%\" $top_bund><a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
-	else print "<td $top_bund><a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L><!--tekst 154-->" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
+	if ($popup) print "<td onClick=\"JavaScript:opener.location.reload();\" width=\"10%\" $top_bund><a href=\"javascript:confirmClose('debitorkort.php?returside=" . urlencode($returside) . "&id=$konto_id&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=L>" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
+	else print "<td $top_bund><a href=\"javascript:confirmClose('debitorkort.php?returside=" . urlencode($returside) . "&id=$konto_id&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=L><!--tekst 154-->" . findtekst('30|Tilbage', $sprog_id) . "<!--tekst 30--></a></td>\n";
 	print "<td width=\"80%\"$top_bund>" . findtekst('356|Debitorkort', $sprog_id) . "<!--tekst 356--></td>\n";
 	print "<td width=\"10%\"$top_bund><a href=\"javascript:confirmClose('debitorkort.php?returside=$returside&ordre_id=$ordre_id&fokus=$fokus&konto_id=0','$tekst')\" accesskey=N><!--tekst 154-->" . findtekst('39|Ny', $sprog_id) . "<!--tekst 39--></a></td>\n";
 	print "</tbody></table>"; # <- TABEL 1.1
@@ -408,7 +412,7 @@ if ($menu == 'T') {
               </td>";
     } elseif ($returside != "historikkort.php") {
         print "<td width='10%' title='$tekst'>
-                <a href='historikkort.php?id=$konto_id&returside=../debitor/ansatte.php?konto_id=$konto_id'
+                <a href='historikkort.php?id=$konto_id&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "'
                    style='$buttonStyle; display:block; text-align:center; text-decoration:none; color:white; width:100%;'>
                     $buttonText
                 </a>
@@ -426,7 +430,7 @@ if ($menu == 'T') {
     $tekst = findtekst('132|Vis Kontokort.', $sprog_id);
     $buttonText = findtekst('133|Kontokort', $sprog_id);
     print "<td width='10%' title='$tekst'>
-            <a href='rapport.php?rapportart=kontokort&konto_fra=&konto_til=&returside=../debitor/ansatte.php?konto_id=$konto_id'
+            <a href='rapport.php?rapportart=kontokort&konto_fra=$kontonr&konto_til=$kontonr&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "'
                style='$buttonStyle; display:block; text-align:center; text-decoration:none; color:white; width:100%;'>
                 $buttonText
             </a>
@@ -437,7 +441,7 @@ if ($menu == 'T') {
     $buttonText = findtekst('134|Fakturaliste', $sprog_id);
     if (substr($rettigheder, 5, 1) == '1') {
         print "<td width='10%' title='$tekst'>
-                <a href='ordreliste.php?konto_id=$konto_id&valg=faktura&returside=../debitor/ansatte.php?konto_id=$konto_id'
+                <a href='ordreliste.php?konto_id=$konto_id&valg=faktura&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "'
                    style='$buttonStyle; display:block; text-align:center; text-decoration:none; color:white; width:100%;'>
                     $buttonText
                 </a>
@@ -454,7 +458,7 @@ if ($menu == 'T') {
     $buttonText = findtekst('38|Opgaveliste', $sprog_id);
     if ($jobkort) {
         print "<td width='10%' title='$tekst'>
-                <a href='jobliste.php?konto_id=$konto_id&returside=../debitor/ansatte.php?konto_id=$konto_id'
+                <a href='jobliste.php?konto_id=$konto_id&returside=" . urlencode("../debitor/ansatte.php?konto_id=$konto_id") . "'
                    style='$buttonStyle; display:block; text-align:center; text-decoration:none; color:white; width:100%;'>
                     $buttonText
                 </a>

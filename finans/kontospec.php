@@ -30,6 +30,7 @@
 // 20260821 CL/SZ Faktura column now links to ordre.php/pos_ordre.php via ordre_id
 // 20260826 LOE Linked to debitor/ordre.php instead of finans/ordre.php
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
+// 20261005 Sawaneh WP-4.6: order and journal drill-downs return to the same account and month (raw month).
 
 
 $fakturanr = array();
@@ -62,6 +63,9 @@ print '<link rel="stylesheet" type="text/css" href="../css/daterangepicker.css" 
 $kontonr = if_isset($_GET, NULL, 'kontonr');
 $month = if_isset($_GET,NULL,'month');
 $bilag = if_isset($_GET,NULL,'bilag');
+// WP-4.6: the drill-downs return to this account and month; the raw month is taken before it is shifted to a
+// calendar month below, or a non-January fiscal year would come back one shift further on every return.
+$kontospecBack = '../finans/kontospec.php?kontonr=' . urlencode((string) $kontonr) . '&month=' . urlencode((string) $month) . ($bilag ? '&bilag=' . urlencode((string) $bilag) : '');
 
 $query = db_select("select * from grupper where art='RA' and kodenr='$regnaar'", __FILE__ . " linje " . __LINE__);
 if ($row = db_fetch_array($query)) {
@@ -459,12 +463,12 @@ $columns = [
         'sortable' => true,
         'searchable' => true,
         'align' => 'right',
-        'render' => function($value, $row, $column) {
+        'render' => function($value, $row, $column) use ($kontospecBack) {
             $title = isset($row['ordrenr']) && $row['ordrenr'] ? "title='Ordrenr: {$row['ordrenr']}'" : '';
             $ordre_id = isset($row['ordre_id']) ? intval($row['ordre_id']) : 0;
             if ($value !== '' && $value !== null && $ordre_id > 0) {
                 $target = (isset($row['pos']) && $row['pos']) ? '../debitor/pos_ordre.php' : '../debitor/ordre.php';
-                return "<td align='right' $title><a href='{$target}?id={$ordre_id}&returside=../finans/kontospec.php' style='text-decoration: underline;'>$value</a></td>";
+                return "<td align='right' $title><a href='{$target}?id={$ordre_id}&returside=" . urlencode($kontospecBack) . "' style='text-decoration: underline;'>$value</a></td>";
             }
             return "<td align='right' $title>$value</td>";
         }
@@ -477,9 +481,9 @@ $columns = [
         'sortable' => true,
         'searchable' => true,
         'align' => 'right',
-        'render' => function($value, $row, $column) {
+        'render' => function($value, $row, $column) use ($kontospecBack) {
 			if ($value) {
-				return "<td align='right'><a href='kassekladde.php?kladde_id=" . urlencode($value) . "&returside=../finans/kontospec.php' style='text-decoration: underline;'>$value</a></td>";
+				return "<td align='right'><a href='kassekladde.php?kladde_id=" . urlencode($value) . "&returside=" . urlencode($kontospecBack) . "' style='text-decoration: underline;'>$value</a></td>";
 			}
 			return "<td align='right'></td>";
        }

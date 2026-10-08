@@ -208,7 +208,7 @@ if ($menu=='T') {
 		if ($linjebg!=$bgcolor){$linjebg=$bgcolor; $color='#000000';}
 		else {$linjebg=$bgcolor5; $color='#000000';}
 		print "<tr bgcolor=\"$linjebg\">";
-		print "<td><a href=\"betalinger.php?liste_id=$r[id]&returside=betalingsliste.php'\">$r[id]</a></td>";
+		print "<td><a href=\"betalinger.php?liste_id=$r[id]&returside=betalingsliste.php\">$r[id]</a></td>";
 #		print "<td><a href=kasseliste.php?liste_id=$r[id]&returside=betalingsliste.php>$r[id]</a><br></td>";
 		$listedato=dkdato($r['listedate']);
 		print "<td>$listedato<br></td>";

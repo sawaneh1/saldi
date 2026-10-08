@@ -38,7 +38,7 @@ $permission_key = 'settings.import_export';
 include("../includes/online.php");
 include("../includes/std_func.php");
 include("../includes/topline_settings.php");
-$returside="diverse.php?sektion=div_io";
+$returside="../includes/luk.php"; // WP-6.4: opened as a popup from diverse.php; Tilbage closes it
 
 print "<table width=\"100%\" height=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>"; #tabel 1 
 print "<tr><td colspan=\"2\" align=\"center\" valign=\"top\">";

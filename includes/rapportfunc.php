@@ -85,6 +85,9 @@
 // 20260807 CL/NTR Added the missing #opGridWrapper opening div (it was only ever closed) so the open items grid gets its intended flex:1/scrollable/padded region instead of no padding at all; gave several tables ids for future reference.
 // 20260824 CL/NTR Flush the openpost topline to the client (ob_flush + flush, draining php.ini's output_buffering) before vis_aabne_poster's heavy queries run, so it renders while the SQL is still working.
 // 20260826 Sawaneh SD-140: openpost() no longer overwrites dato/konto with the stored DRV row when the request
+// 20261005 Sawaneh WP-4.3/4.4/4.5: kontosaldo's back target follows the window's popup flag and is no longer overwritten;
+//                  returside urlencoded in the settle/valutadiff links (which also pass rapportart); the ordre.php
+//                  returside is read from $_GET instead of re-glued from the query string; open-post Tilbage keeps the filters.
 //                  itself carries konto_fra or kontonr (pagination, filter links and the in-report account search).
 include("../includes/reportFunc/showOpenPosts.php");
 
@@ -220,7 +223,8 @@ function openpost($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $ko
 		include_once '../includes/top_header.php';
 		include_once '../includes/top_menu.php';
 		print "<div id=\"header\">";
-		print "<div class=\"headerbtnLft headLink\"><a href=rapport.php accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
+		$openpostBack = 'rapport.php?rapportart=openpost&dato_fra=' . urlencode((string) $dato_fra) . '&dato_til=' . urlencode((string) $dato_til) . '&konto_fra=' . urlencode((string) $konto_fra) . '&konto_til=' . urlencode((string) $konto_til);
+		print "<div class=\"headerbtnLft headLink\"><a href='" . htmlspecialchars($openpostBack, ENT_QUOTES) . "' accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst('30|Tilbage', $sprog_id) . "</a></div>";
 		print "<div class=\"headerTxt\">$title</div>";
 		print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
 		print "</div>";
@@ -252,7 +256,8 @@ a:link{text-decoration:none;}</style>\n";
 		print "<div style='flex:0 0 auto;padding:8px 8px 0 8px;box-sizing:border-box;background-color:$bgcolor;'>\n";
 		print "<table id='openpostHeaderBarTable' width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"3\" cellpadding=\"0\"><tbody><!--Tabel 1.2 start-->\n";
 		$opTilbageIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H9"/></svg>';
-		print "<td width='7%'><a accesskey=l href=\"rapport.php\">
+		$openpostBack = 'rapport.php?rapportart=openpost&dato_fra=' . urlencode((string) $dato_fra) . '&dato_til=' . urlencode((string) $dato_til) . '&konto_fra=' . urlencode((string) $konto_fra) . '&konto_til=' . urlencode((string) $konto_til);
+		print "<td width='7%'><a accesskey=l href=\"" . htmlspecialchars($openpostBack, ENT_QUOTES) . "\">
 			   <button class='center-btn' style='$buttonStyle; width:100%; justify-content:flex-start;' onMouseOver=\"this.style.cursor='pointer'\">$opTilbageIcon" . findtekst('30|Tilbage', $sprog_id) . "</button></a></td>\n";
 		print "<td width='80%' align='center' style='$topStyle'>" . findtekst('1142|Rapport', $sprog_id) . " - $rapportart</td>\n";
 		print "<td width='10%' align='center' style='$topStyle'>\n";
@@ -1376,35 +1381,13 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 			}
 		}
 		
-		#########################
-		$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-		$host = $_SERVER['HTTP_HOST']; 
-		$requestUri = $_SERVER['REQUEST_URI']; 
-		$currentUrl = $protocol . $host . $requestUri;
-		$parts = parse_url($currentUrl);
-
-		// Extract the query string
-		$queryString = $parts['query'] ?? ''; 
-
-		if (strpos($queryString, 'ordre.php') !== false) {
-			$pos = strpos($queryString, 'returside=');
-			if ($pos !== false) {
-				$retursidePart = substr($queryString, $pos);
-				// parse it into array
-				parse_str($retursidePart, $params);
-
-				$returside = $params['returside'] ?? null;
-
-				// Remove 'returside' key itself to get attached parameters
-				unset($params['returside']);
-
-				$attachedQuery = http_build_query($params);
-				$returside = $returside;
-				if (!empty($attachedQuery)) {
-					$returside .= '?' . $attachedQuery;
-				}
-
-			$backUrl = $returside;
+		// WP-4.4: an order page as return target arrives urlencoded (debitorkort.php), so it is read as one value
+		// instead of re-gluing the query string, which added foreign parameters after a second '?'.
+		if (isset($_GET['returside']) && strpos((string) $_GET['returside'], 'ordre.php') !== false) {
+			$fromOrder = nav_sanitize_returside($_GET['returside']);
+			if ($fromOrder !== '') {
+				$returside = $fromOrder;
+				$backUrl = $returside;
 			}
 		}
 		#####################################
@@ -1525,7 +1508,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 						($kontoart == 'D') ? $ffdag = dkdato($forfaldsdag[$y]) : $ffdag = NULL;
 						if ($udlignet[$y] != '1') {
 							$pre_openpost = 1;
-							print "<td valign=\"top\">$ffdag<br></td><td valign=\"top\" align=\"right\" title=\"Klik her for at udligne &aring;bne poster\"><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td><td style=\"text-align:right\">0</td>";
+							print "<td valign=\"top\">$ffdag<br></td><td valign=\"top\" align=\"right\" title=\"Klik her for at udligne &aring;bne poster\"><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&rapportart=$rapportart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td><td style=\"text-align:right\">0</td>";
 						} else {
 							$titletag = "Udlign id=$udlign_id[$y]. Klik for at ophæve udligning";
 							$alink = "rapport.php?rapportart=kontokort&kilde=openpost&kto_fra=$kto_fra&kilde=$kilde
@@ -1538,7 +1521,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 					} else {
 						($kontoart == 'K') ? $ffdag = dkdato($forfaldsdag[$y]) : $ffdag = NULL;
 						if ($udlignet[$y] != '1') {
-							print "<td>$ffdag<br></td><td style=\"text-align:right;\">0</td><td valign=\"top\" align=right title=\"Klik her for at udligne &aring;bne poster\"><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td>";
+							print "<td>$ffdag<br></td><td style=\"text-align:right;\">0</td><td valign=\"top\" align=right title=\"Klik her for at udligne &aring;bne poster\"><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&rapportart=$rapportart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td>";
 							$pre_openpost = 1;
 						} else {
 							$titletag = "Udlign id=$udlign_id[$y]. Klik for at ophæve udligning";
@@ -1580,7 +1563,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 								$title .= "Klik for at regulere værdien i DKK fra " . dkdecimal($dkksum, 2) . " til " . dkdecimal($dkksum + $regulering, 2) . " pr. " . dkdato($transdate[$y]);
 								$tmp2 = "<a href=\"../includes/ret_valutadiff.php?bfdate=$transdate[$y]&";
 								$tmp2 .= "valuta=$valuta&diff=$regulering&post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&";
-								$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\" ";
+								$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\" ";
 								$tmp2 .= "onclick=\"confirmSubmit($confirm)\">$tmp</a>";
 								$tmp = $tmp2;
 							} else
@@ -1590,7 +1573,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 						$title .= "Klik for at regulere værdien i DKK fra " . dkdecimal($dkksum, 2) . " til " . dkdecimal($dkksum + $regulering, 2) . " pr. " . date("d-m-Y");
 						$tmp2 = "<a href=\"../includes/ret_valutadiff.php?bfdate=" . date("Y-m-d") . "&";
 						$tmp2 .= "valuta=$valuta&diff=$regulering&post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&";
-						$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\" ";
+						$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\" ";
 						$tmp2 .= "onclick=\"confirmSubmit($confirm)\">$tmp</a>";
 						$tmp = $tmp2;
 					}
@@ -1658,7 +1641,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 						($kontoart == 'D') ? $ffdag = dkdato($forfaldsdag[$y]) : $ffdag = NULL;
 						if ($udlignet[$y] != '1') {
 							$pre_openpost = 1;
-							print "<td valign=\"top\"><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td  valign=\"top\" align=\"right\" title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td><td style=\"color:$baggrund;text-align:right\">0</td>";
+							print "<td valign=\"top\"><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td  valign=\"top\" align=\"right\" title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&rapportart=$rapportart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td><td style=\"color:$baggrund;text-align:right\">0</td>";
 						} else {
 							$titletag = "Udlign id=$udlign_id[$y]. Klik for at ophæve udligning";
 							$alink = "rapport.php?rapportart=kontokort&kilde=openpost&kto_fra=$kto_fra&kilde=$kilde
@@ -1671,7 +1654,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 					} else {
 						($kontoart == 'K') ? $ffdag = dkdato($forfaldsdag[$y]) : $ffdag = NULL;
 						if ($udlignet[$y] != '1') {
-							print "<td><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td style=\"color:$baggrund;text-align:right\">0</td><td valign=\"top\" align=right title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td>";
+							print "<td><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td style=\"color:$baggrund;text-align:right\">0</td><td valign=\"top\" align=right title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&rapportart=$rapportart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td>";
 							$pre_openpost = 1;
 						} else {
 							$titletag = "Udlign id=$udlign_id[$y]. Klik for at ophæve udligning";
@@ -1714,7 +1697,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 								$title .= "Klik for at regulere værdien i DKK fra " . dkdecimal($dkksum, 2) . " til " . dkdecimal($dkksum + $regulering, 2) . " pr. " . dkdato($transdate[$y]);
 								$tmp2 = "<a href=\"../includes/ret_valutadiff.php?bfdate=$transdate[$y]&";
 								$tmp2 .= "valuta=$valuta&diff=$regulering&post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&";
-								$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\" ";
+								$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\" ";
 								$tmp2 .= "onclick=\"confirmSubmit($confirm)\">$tmp</a>";
 								$tmp = $tmp2;
 							} else
@@ -1724,7 +1707,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 						$title .= "Klik for at regulere værdien i DKK fra " . dkdecimal($dkksum, 2) . " til " . dkdecimal($dkksum + $regulering, 2) . " pr. " . date("d-m-Y");
 						$tmp2 = "<a href=\"../includes/ret_valutadiff.php?bfdate=" . date("Y-m-d") . "&";
 						$tmp2 .= "valuta=$valuta&diff=$regulering&post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&";
-						$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\" ";
+						$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\" ";
 						$tmp2 .= "onclick=\"confirmSubmit($confirm)\">$tmp</a>";
 						$tmp = $tmp2;
 					}
@@ -1801,7 +1784,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 						($kontoart == 'D') ? $ffdag = dkdato($forfaldsdag[$y]) : $ffdag = NULL;
 						if ($udlignet[$y] != '1') {
 							$pre_openpost = 1;
-							print "<td valign=\"top\"><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td  valign=\"top\" align=\"right\" title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td><td style=\"color:$baggrund;text-align:right\">0</td>";
+							print "<td valign=\"top\"><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td  valign=\"top\" align=\"right\" title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&rapportart=$rapportart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td><td style=\"color:$baggrund;text-align:right\">0</td>";
 						} else {
 							$titletag = "Udlign id=$udlign_id[$y]. Klik for at ophæve udligning";
 							$alink = "rapport.php?rapportart=kontokort&kilde=openpost&kto_fra=$kto_fra&kilde=$kilde
@@ -1814,7 +1797,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 					} else {
 						($kontoart == 'K') ? $ffdag = dkdato($forfaldsdag[$y]) : $ffdag = NULL;
 						if ($udlignet[$y] != '1') {
-							print "<td><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td style=\"color:$baggrund;text-align:right\">0</td><td valign=\"top\" align=right title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td>";
+							print "<td><span style='color: rgb(255, 0, 0);'>$ffdag<br></td><td style=\"color:$baggrund;text-align:right\">0</td><td valign=\"top\" align=right title=\"Klik her for at udligne &aring;bne poster\"><span style='color: rgb(255, 0, 0);'><a href=\"../includes/udlign_openpost.php?post_id=$oppId[$y]&rapportart=$rapportart&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\">$tmp</a><br></td>";
 							$pre_openpost = 1;
 						} else {
 							$titletag = "Udlign id=$udlign_id[$y]. Klik for at ophæve udligning";
@@ -1861,7 +1844,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 								$title .= "Klik for at regulere værdien i DKK fra " . dkdecimal($dkksum, 2) . " til " . dkdecimal($dkksum + $regulering, 2) . " pr. " . dkdato($transdate[$y]);
 								$tmp2 = "<a href=\"../includes/ret_valutadiff.php?bfdate=$transdate[$y]&";
 								$tmp2 .= "valuta=$valuta&diff=$regulering&post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&";
-								$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\" ";
+								$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\" ";
 								$tmp2 .= "onclick=\"confirmSubmit($confirm)\">$tmp</a>";
 								$tmp = $tmp2;
 							} else
@@ -1871,7 +1854,7 @@ function kontokort($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $k
 						$title .= "Klik for at regulere værdien i DKK fra " . dkdecimal($dkksum, 2) . " til " . dkdecimal($dkksum + $regulering, 2) . " pr. " . date("d-m-Y");
 						$tmp2 = "<a href=\"../includes/ret_valutadiff.php?bfdate=" . date("Y-m-d") . "&";
 						$tmp2 .= "valuta=$valuta&diff=$regulering&post_id=$oppId[$y]&dato_fra=$dato_fra&dato_til=$dato_til&";
-						$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=$returside&retur=" . $returnpath . "rapport.php\" ";
+						$tmp2 .= "konto_fra=$konto_fra&konto_til=$konto_til&returside=" . urlencode((string) $returside) . "&retur=" . $returnpath . "rapport.php\" ";
 						$tmp2 .= "onclick=\"confirmSubmit($confirm)\">$tmp</a>";
 						$tmp = $tmp2;
 					}
@@ -2014,13 +1997,14 @@ function kontosaldo($dato_fra, $dato_til, $konto_fra, $konto_til, $rapportart, $
 	$kilde = if_isset($_GET['kilde']);
 	$kilde_kto_fra = if_isset($_GET['kilde_kto_fra']);
 	$kilde_kto_til = if_isset($_GET['kilde_kto_til']);
-	if ($popup)
+	// WP-4.3: the window's own popup flag (WP-1.3), not the user's popup preference, and no overwrite afterwards.
+	if (!empty($_GET['popup']) || !empty($_POST['popup'])) {
 		$returside = "../includes/luk.php";
-	elseif ($kilde == 'openpost')
-		$returside = "rapport.php?rapportart=openpost&submit=ok&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$kilde_kto_fra&konto_til=$kilde_kto_til";
-	else
+	} elseif ($kilde == 'openpost') {
+		$returside = "rapport.php?rapportart=openpost&submit=ok&dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=" . urlencode((string) $kilde_kto_fra) . "&konto_til=" . urlencode((string) $kilde_kto_til);
+	} else {
 		$returside = "rapport.php?dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til";
-	$returside = "rapport.php?dato_fra=$dato_fra&dato_til=$dato_til&konto_fra=$konto_fra&konto_til=$konto_til";
+	}
 	$luk = "<a accesskey=L href=\"$returside\">";
 	$currentdate = date("Y-m-d");
 

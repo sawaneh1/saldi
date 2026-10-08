@@ -1,4 +1,5 @@
 <?php
+// 20261005 Sawaneh WP-4.7: Fortryd returns to the open journal instead of the journal list.
 function copy2new($kladde_id,$bilagsnr,$ny_dato,$vend_fortegn) {
 	global $regnaar;
 	global $connection;
@@ -103,7 +104,7 @@ function copy2new($kladde_id,$bilagsnr,$ny_dato,$vend_fortegn) {
 		print "<input style = 'height:50px;width:150px;' class='button green medium' type='submit' accesskey='k' 
 		value='".findtekst(1598, $sprog_id)."' name='copy2new' onclick='javascript:docChange = false'>";
 		print "&nbsp;";
-		print "<input style = 'height:50px;width:150px;' class='button rosy medium' type='button' value='Fortryd' onClick=\"location.href='../finans/kladdeliste.php'\">
+		print "<input style = 'height:50px;width:150px;' class='button rosy medium' type='button' value='Fortryd' onClick=\"location.href='../finans/kassekladde.php?kladde_id=" . (int) $kladde_id . "'\">
 		</span></td></tr>\n";
 		print "</form>";
 
