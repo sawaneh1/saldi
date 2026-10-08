@@ -6641,6 +6641,8 @@
 6999	t.	k	t.
 7000	Ny debitor	New customer	Ny debitor
 7001	Nyt jobkort	New job card	Nytt jobbkort
+7002	Ny kreditor	New supplier	Ny kreditor
+7003	Ny vare	New item	Ny vare
 6930	Jeg forstår, at regnskabet bliver overskrevet med sikkerhedskopien.	I understand that the ledger will be overwritten with the backup.	Jeg forstår at regnskapet blir overskrevet med sikkerhetskopien.
 6931	Sæt flueben for at bekræfte, at regnskabet må overskrives.	Tick the box to confirm that the ledger may be overwritten.	Kryss av for å bekrefte at regnskapet kan overskrives.
 6932	Adgang nægtet	Access denied	Ingen tilgang

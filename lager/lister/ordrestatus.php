@@ -27,6 +27,7 @@
 // 20260807 CL/MS Converted hardcoded Danish UI text to findtekst() calls for multi-language support
 // 20260911 LOE SD-685: filter selections are keyed, column setup follows the code.
 // 20260923 CDX/PHR Generate warehouse columns and joins once per warehouse across fiscal years.
+// 20261008 Sawaneh The list sits under the new page head (topLineVarer.php, page_bar): grid height adjusted.
 
 @session_start();
 $s_id = session_id();
@@ -741,7 +742,7 @@ ORDER BY {{SORT}}
 );
 
 
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 create_datagrid("ordrestat", $data);
 print "</div>";
 

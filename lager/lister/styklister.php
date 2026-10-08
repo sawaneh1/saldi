@@ -25,6 +25,7 @@
 // 20260220 LOE  - Created: Vareliste view filtered to samlevare (stykliste) items.
 // 20260917 CL/LH Sanitise the request-supplied returside through nav_sanitize_returside()
 //                before it reaches the topLineVarer.php nav links.
+// 20261008 Sawaneh The list sits under the new page head (topLineVarer.php, page_bar): grid height adjusted.
 
 @session_start();
 $s_id = session_id();
@@ -371,7 +372,7 @@ ORDER BY {{SORT}}
     "filters" => $filters,
 );
 
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 create_datagrid("styklister", $data);
 print "</div>";
 ?>

@@ -37,6 +37,7 @@
 // 20260929 CL/NTR Cancelling the rename prompt no longer opens the rename confirmation.
 // 20260929 CL/NTR Replaced addslashes() with json_encode() (+ htmlspecialchars() in onclick attributes) for JS string literals, so translated text cannot break out of the script or attribute context.
 // 20260930 CL/NTR JS string literals are built with jsString() from std_func: legacy (non-UTF8) text is converted to UTF-8 part by part and the output stays ASCII.
+// 20261008 Sawaneh The list sits under the new page head (topLineVarer.php, page_bar): grid height adjusted.
 
 @session_start();
 $s_id = session_id();
@@ -397,7 +398,7 @@ HTML;
 );
 
 
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 create_datagrid("serienr", $data);
 print "</div>";
 

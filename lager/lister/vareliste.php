@@ -35,6 +35,7 @@
 // 20260924 CDX/PHR Match the DG sort expression to the DISTINCT select expression.
 // 20260916 Sawaneh Declared $permission_key (roles & permissions, phase 3)
 // 20261005 CDX/PHR Add total webshop stock synchronization to the item-list action dropdown.
+// 20261008 Sawaneh The list sits under the new page head (topLineVarer.php, page_bar): grid height adjusted.
 
 @session_start();
 $s_id = session_id();
@@ -659,7 +660,7 @@ if (!empty($initial_search)) {
 
 ################
 $grid_render_start = microtime(true);
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 create_datagrid("varelst$vatOnItemCard", $data);
 // Keep this item-list action out of the shared grid used by unrelated pages.
 if (substr((string) $rettigheder, 9, 1) === '1') {
