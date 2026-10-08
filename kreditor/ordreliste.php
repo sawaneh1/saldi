@@ -37,6 +37,7 @@
 // 20261001 Sawaneh Settings insert skipped when a parallel request already added the key (unique index on settings).
 // 20260908 SZ SST-755: replaced the blanket per-user lock sweep with an age-based one that
 //                  isn't scoped to the current user (see comment at its call site).
+// 20261008 Sawaneh WP-3.6: order rows and the row click return to ordreliste.php with valg and the creditor filter (encoded).
 
 
 ob_start();
@@ -124,6 +125,8 @@ if (isset($valg)) {
     // Set the cookie to store the 'valg' value
     setcookie("valg", $valg, time() + 3600 * 24, "/"); // Expires in 24 hours
 }
+// WP-3.6: an order opened from the list returns to the same tab and creditor filter (encoded, as luk.php passes it on).
+$rowReturside = urlencode("ordreliste.php?valg=" . urlencode((string) $valg) . ($konto_id ? "&konto_id=" . (int) $konto_id : ""));
 
 # >> Date picker scripts <<
 // Note: jQuery is already loaded by online.php - don't load again to avoid overwriting autosize plugin
@@ -255,7 +258,7 @@ $custom_columns = array(
             return $value;
         },
         "render" => function ($value, $row, $column) {
-            global $brugernavn;
+            global $brugernavn, $rowReturside;
             $in_use = '<span>';
 
             // Match the locking logic from ordre.php (snippet provided)
@@ -267,7 +270,7 @@ $custom_columns = array(
             }
             // 20260603 Sawaneh Real link so the whole line is clickable AND right-clickable
             // (open in new tab/window) via includes/order-row-clickable.js.php.
-            $href = "ordre.php?tjek={$row['id']}&id={$row['id']}&returside=ordreliste.php";
+            $href = "ordre.php?tjek={$row['id']}&id={$row['id']}&returside=$rowReturside";
             return "<td align='$column[align]'><a href='$href' style='display:block;color:inherit;text-decoration:underline;'>$in_use$value</span></a></td>";
         }
     ),
@@ -722,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get the order ID from the data
             const orderId = row.dataset.orderId;
             if (orderId) {
-                window.location.href = 'ordre.php?tjek='+orderId+'&id='+orderId+'&returside=ordreliste.php';
+                window.location.href = 'ordre.php?tjek='+orderId+'&id='+orderId+'&returside={$rowReturside}';
             }
         });
     });

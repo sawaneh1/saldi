@@ -33,6 +33,8 @@
 //             compared both as 0. Skip the check when the field is blank, same fix as
 //             debitor/debkort_save.php (SD-513)
 // 20261006 Sawaneh Inactive groups and VAT codes (Indstillinger, inaktiv) are no longer offered in the dropdown.
+// 20261008 Sawaneh WP-3.2/3.7: Tilbage goes to the plain returside (an order keeps id, fokus and the creditor), returside
+//                  sanitised and encoded, one confirm text for every Tilbage, the junk dialog text and the broken S-menu Ny link fixed.
 
 
 @session_start();
@@ -63,7 +65,8 @@ if (isset($_GET['bank_reg'])) $bank_reg = $_GET['bank_reg'];
 if (isset($_GET['bank_konto'])) $bank_konto = $_GET['bank_konto'];
 
 if (isset($_GET['returside'])) {
-	$returside = $_GET['returside'];
+	$returside = nav_sanitize_returside($_GET['returside']);
+	if (!$returside) $returside = $popup ? "../includes/luk.php" : "kreditor.php";
 	$ordre_id  = if_isset($_GET['ordre_id'], 0);
 	$fokus     = if_isset($_GET['fokus'], 'kontonr');
 } else {
@@ -101,7 +104,8 @@ if ($_POST) {
 		list($gruppe) = explode(':', $_POST['gruppe']);
 		$notes = db_escape_string(trim($_POST['notes']));
 		$ordre_id = $_POST['ordre_id'];
-		$returside = $_POST['returside'];
+		$returside = nav_sanitize_returside($_POST['returside']);
+		if (!$returside) $returside = $popup ? "../includes/luk.php" : "kreditor.php";
 		$fokus = $_POST['fokus'];
 		$posnr = isset($_POST['posnr']) ? $_POST['posnr'] : NULL;
 		$ans_id = isset($_POST['ans_id']) ? $_POST['ans_id'] : NULL;
@@ -195,11 +199,17 @@ if ($_POST) {
 	}
 }
 
+// WP-3.2: Tilbage goes to the returside itself (no self-loop through kreditor.php); an order keeps its id, fokus and creditor.
+$backHref = $returside;
+if (strpos($returside, 'ordre.php') !== false) {
+	$backHref .= (strpos($returside, '?') === false ? '?' : '&') . "id=" . (int) $ordre_id . "&fokus=" . urlencode((string) $fokus) . "&konto_id=" . (int) $id;
+}
+$tekst = findtekst(154, $sprog_id);
 if ($menu == 'T') {
 	include_once '../includes/top_header.php';
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">";
-	print "<div class=\"headerbtnLft headLink\"><a href=javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id') accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
+	print "<div class=\"headerbtnLft headLink\"><a href=\"javascript:confirmClose('$backHref','$tekst')\" accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;" . findtekst(30, $sprog_id) . "</a></div>";
 	print "<div class=\"headerTxt\">$title</div>";
 	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";
 	print "</div>";
@@ -233,14 +243,14 @@ if ($menu == 'T') {
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>\n"; #tabel 1.1 start
 
 	print "<td width='5%'>
-		   <a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst -----------nopoooooooooooo')\" accesskey=L>
+		   <a href=\"javascript:confirmClose('$backHref','$tekst')\" accesskey=L>
 		  <button class='center-btn'style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor = 'pointer'\">"
 		. $tilbage_icon . findtekst(30, $sprog_id) . "</button></a></td>\n";
 
 	print "<td width='75%' style='$topStyle' align='center'>SALDI - " . findtekst(1184, $sprog_id) . "</td>\n";
 
 	print "<td width=5% style='$buttonStyle'>
-	   <a href=\"javascript:confirmClose('$kort?returside=$returside&ordre_id=$ny_id&fokus=$fokus','$alerttekst')\" accesskey='N'>
+	   <a href=\"javascript:confirmClose('kreditorkort.php?returside=" . urlencode($returside) . "&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey='N'>
 	   <button class='center-btn' style='$buttonStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">
 	   $add_icon " . findtekst(39, $sprog_id) . "</button></a></td>";
 
@@ -268,10 +278,10 @@ if ($menu == 'T') {
 	print "<table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tbody>\n"; #tabel 1 start
 	print "<tr bgcolor=$bg><td colspan=\"3\" align=\"center\" valign=\"top\">\n";
 	print "<table width=\"100%\" align=\"center\" border=\"0\" cellspacing=\"2\" cellpadding=\"0\"><tbody>\n"; #tabel 1.1 start
-	if ($popup) print "<td onClick=\"JavaScript:opener.location.reload();\" width=\"10%\" $top_bund><a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>" . findtekst(30, $sprog_id) . "</a></td>";
-	else print "<td $top_bund><a href=\"javascript:confirmClose('$returside?returside=$returside&id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=L>" . findtekst(30, $sprog_id) . "</a></td>";
+	if ($popup) print "<td onClick=\"JavaScript:opener.location.reload();\" width=\"10%\" $top_bund><a href=\"javascript:confirmClose('$backHref','$tekst')\" accesskey=L>" . findtekst(30, $sprog_id) . "</a></td>";
+	else print "<td $top_bund><a href=\"javascript:confirmClose('$backHref','$tekst')\" accesskey=L>" . findtekst(30, $sprog_id) . "</a></td>";
 	print "<td width=\"80%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\">SALDI - " . findtekst(1184, $sprog_id) . "</td>\n";
-	print "<td width=\"10%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><a href=\"javascript:confirmClose('kreditorkort.php?returside=$returside&ordre_id=$ordre_id&fokus=$fokus&konto_id=$id','$tekst')\" accesskey=N>" . findtekst(39, $sprog_id) . "</a><br></td>\n";
+	print "<td width=\"10%\" $top_bund><font face=\"Helvetica, Arial, sans-serif\" color=\"#000066\"><a href=\"javascript:confirmClose('kreditorkort.php?returside=" . urlencode($returside) . "&ordre_id=$ordre_id&fokus=$fokus','$tekst')\" accesskey=N>" . findtekst(39, $sprog_id) . "</a><br></td>\n";
 	print "</tbody></table>\n"; #tabel 1.1 slut
 	print "</td></tr>\n";
 	print "<td></td><td align = center valign = top>\n";
@@ -334,7 +344,7 @@ print "<form name=kreditorkort action=kreditorkort.php method=post>\n";
 print "<input type=hidden name=id value='$id'>\n";
 print "<input type=hidden name=kontonr value='$kontonr'>\n";
 print "<input type=hidden name=ordre_id value='$ordre_id'>\n";
-print "<input type=hidden name=returside value='$returside'>\n";
+print "<input type=hidden name=returside value='" . htmlspecialchars($returside, ENT_QUOTES) . "'>\n";
 print "<input type=hidden name=fokus value='$fokus'>\n";
 $bg = $bgcolor5;
 print "<tr bgcolor=$bg><td valign=\"top\" height=\"250px\"><table border=\"0\" width=\"100%\"><tbody>\n"; # tabel 1.2.1 ->

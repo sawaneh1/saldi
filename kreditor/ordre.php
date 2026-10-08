@@ -87,6 +87,7 @@
 //                superseded MB-36's version of that save logic with Sawaneh's (already
 //                submitted-vs-not-submitted safe, plus date-format validation and a
 //                batch_batch_no length cap that MB-36's version lacked).
+// 20261008 Sawaneh WP-3.6: returside sanitised and urlencoded in the luk.php links; WP-3.4 Visning opens with popup=1.
 
 @session_start();
 $s_id=session_id();
@@ -130,7 +131,7 @@ require_once __DIR__ . '/../includes/stdFunc/unlockRecord.php';
 // exit link and the unload beacon further down (see refresh_lock_token() in unlockRecord.php).
 $sessionLockToken = bin2hex(random_bytes(16));
 
-$returside = if_isset($_GET,NULL,'returside');
+$returside = nav_sanitize_returside(if_isset($_GET,NULL,'returside'));
 ########
 if (isset($_COOKIE['valg'])) {
 	$valg = $_COOKIE['valg']; // coming from ordreliste
@@ -1730,7 +1731,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst) {
 				accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i>
 				&nbsp;".findtekst(30,$sprog_id)."</a></div>";
 		else print "<div class=\"headerbtnLft headLink\"><a
-				href=\"javascript:confirmClose('../includes/luk.php?returside=$returside&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst')\"
+				href=\"javascript:confirmClose('../includes/luk.php?returside=" . urlencode((string) $returside) . "&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst')\"
 				accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i>
 				&nbsp;".findtekst(30,$sprog_id)."</a></div>";
 		print "<div class=\"headerTxt\">$title</div>";
@@ -1768,7 +1769,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst) {
 			print "<td width=10%><a href=../kreditor/ordre.php?id=$id&fokus=$fokus accesskey=L>
 			       <button style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">Luk</button></a></td>";
 		} else {
-			print "<td width=10%><a href=javascript:confirmClose('../includes/luk.php?returside=$returside&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst') accesskey=L>
+			print "<td width=10%><a href=javascript:confirmClose('../includes/luk.php?returside=" . urlencode((string) $returside) . "&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst') accesskey=L>
 				   <button type='button' style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\" onclick=\"loacation.href('ordreliste.php')\">".findtekst(30, $sprog_id)."</button></a></td>";
 		}
 		print "<td width='80%' align='center' style='$topStyle'>$tekst</td>";
@@ -1780,7 +1781,7 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst) {
 				print "<td width='10%'><a href=\"$kort?returside=$returside&ordre_id=$id\" accesskey=N>
 					   <button style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\">".findtekst(39, $sprog_id)."</button></a></td>";
 		} elseif ($kort=="../kreditor/kreditorkort.php") {
-			print "<td width='5%' onClick=\"javascript:kreditor_vis=window.open('kreditorvisning.php','kreditor_vis','scrollbars=1,resizable=1');kreditor_vis.focus();\" onMouseOver=\"this.style.cursor = 'pointer'\">
+			print "<td width='5%' onClick=\"javascript:kreditor_vis=window.open('kreditorvisning.php?popup=1','kreditor_vis','scrollbars=1,resizable=1');kreditor_vis.focus();\" onMouseOver=\"this.style.cursor = 'pointer'\">
 				   <button style='$butUpStyle; width:100%' onMouseOver=\"this.style.cursor='pointer'\" title='".findtekst(1521, $sprog_id)."'>"
 				   .findtekst(813, $sprog_id)."</button></td>"; #20210716
 			print "<td width='5%'>
@@ -1809,12 +1810,12 @@ function sidehoved($id, $returside, $kort, $fokus, $tekst) {
 		#	if ($returside != "ordre.php") {print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('$returside?tabel=ordrer&id=$id','$alerttekst')\" accesskey=L>Luk</a></td>";}
 		#	else {print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('ordre.php?id=$id','$alerttekst')\" accesskey=L>Luk</a></td>";}
 		if ($kort) print "<td width=\"10%\" $top_bund> $color<a href=../kreditor/ordre.php?id=$id&fokus=$fokus accesskey=L>Luk</a></td>";
-		else print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('../includes/luk.php?returside=$returside&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst')\" accesskey=L>".findtekst(30, $sprog_id)."</a></td>";
+		else print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('../includes/luk.php?returside=" . urlencode((string) $returside) . "&tabel=ordrer&id=$id$sidehovedTidspktQs','$alerttekst')\" accesskey=L>".findtekst(30, $sprog_id)."</a></td>";
 		print "<td width=\"80%\" $top_bund> $color$tekst</td>";
 		if (($kort!="../lager/varekort.php" && $returside != "ordre.php")&&($id)) {print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('ordre.php?returside=ordreliste.php','$alerttekst')\" accesskey=N>".findtekst(39, $sprog_id)."</a></td>";}
 		else if (($kort=="../lager/varekort.php" && $returside == "ordre.php")&&($id)) {print "<td width=\"10%\" $top_bund> $color<a href=\"$kort?returside=$returside&ordre_id=$id\" accesskey=N>".findtekst(39, $sprog_id)."</a></td>";}
 		elseif ($kort=="../kreditor/kreditorkort.php") {
-			print "<td width=\"5%\"$top_bund onClick=\"javascript:kreditor_vis=window.open('kreditorvisning.php','kreditor_vis','scrollbars=1,resizable=1');kreditor_vis.focus();\" onMouseOver=\"this.style.cursor = 'pointer'\"> <span title='".findtekst(1521, $sprog_id)."'><u>".findtekst(813, $sprog_id)."</u></span></td>"; #20210716
+			print "<td width=\"5%\"$top_bund onClick=\"javascript:kreditor_vis=window.open('kreditorvisning.php?popup=1','kreditor_vis','scrollbars=1,resizable=1');kreditor_vis.focus();\" onMouseOver=\"this.style.cursor = 'pointer'\"> <span title='".findtekst(1521, $sprog_id)."'><u>".findtekst(813, $sprog_id)."</u></span></td>"; #20210716
 			print "<td width=\"5%\" $top_bund> $color<a href=\"javascript:confirmClose('$kort?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus','$alerttekst')\" accesskey=N>".findtekst(39, $sprog_id)."</a></td>";
 		}	elseif (($id)||($kort!="../lager/varekort.php")) {
 			print "<td width=\"10%\" $top_bund> $color<a href=\"javascript:confirmClose('$kort?returside=../kreditor/ordre.php&ordre_id=$id&fokus=$fokus','$alerttekst')\" accesskey=N>".findtekst(39, $sprog_id)."</a></td>";

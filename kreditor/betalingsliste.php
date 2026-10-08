@@ -19,6 +19,7 @@
 // -----------------------------------------------------------------------------------
 //
 // 20211102 MSC - Implementing new design
+// 20261008 Sawaneh WP-3.5: stray apostrophe removed from the betalinger.php returside.
 
 @session_start();
 $s_id=session_id();
@@ -204,7 +205,7 @@ while ($r = db_fetch_array($q)){
 	if ($linjebg!=$bgcolor){$linjebg=$bgcolor; $color='#000000';}
 	else {$linjebg=$bgcolor5; $color='#000000';}
 	print "<tr bgcolor=\"$linjebg\">";
-	print "<td><a href=\"betalinger.php?liste_id=$r[id]&returside=betalingsliste.php'\">$r[id]</a></td>";
+	print "<td><a href=\"betalinger.php?liste_id=$r[id]&returside=betalingsliste.php\">$r[id]</a></td>";
 	#		print "<td><a href=kasseliste.php?liste_id=$r[id]&returside=betalingsliste.php>$r[id]</a><br></td>";
 	$listedato=dkdato($r['listedate']);
 	print "<td>$listedato<br></td>";

@@ -29,6 +29,8 @@
 // 2023.03.24 PBLM Fixed minor errors
 // 2025.05.17 Fiscal Year
 // 20261002 Sawaneh Saving the list columns updates only the kreditor view row (kode) instead of every KLV row of the user.
+// 20261008 Sawaneh WP-3.4: in a popup (popup=1) Tilbage closes it through luk.php, otherwise the returside or the creditor
+//                  list; the forms keep the popup flag.
 	
 @session_start();
 $s_id=session_id();
@@ -44,8 +46,11 @@ include("../includes/std_func.php");
 
 $sort=trim(if_isset($_GET['sort']));
 
-if ($popup) $returside="../includes/luk.php"; 
-elseif(isset($side)) $returside="$side.php";
+// WP-3.4: opened as a popup (popup=1) Tilbage closes it through luk.php; otherwise the returside, else the creditor list.
+$popupQs = nav_popup_query($_GET, $_POST);
+if ($popupQs) $returside = "../includes/luk.php?popup=1";
+else $returside = nav_sanitize_returside(if_isset($_GET, '', 'returside')) ?: "kreditor.php?sort=" . urlencode($sort);
+$backAttr = htmlspecialchars($returside, ENT_QUOTES);
 
 $sektion=if_isset($_GET['sektion']);
 
@@ -142,19 +147,19 @@ if ($menu=='T') {
 	include_once '../includes/top_header.php';
 	include_once '../includes/top_menu.php';
 	print "<div id=\"header\">"; 
-	print "<div class=\"headerbtnLft headLink\"><a href=kreditor.php?sort=$sort accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst('30|Tilbage', $sprog_id)."</a></div>";     
+	print "<div class=\"headerbtnLft headLink\"><a href='$backAttr' accesskey=L title='Klik her for at komme tilbage'><i class='fa fa-close fa-lg'></i> &nbsp;".findtekst('30|Tilbage', $sprog_id)."</a></div>";     
 	print "<div class=\"headerTxt\">$title</div>";     
 	print "<div class=\"headerbtnRght headLink\">&nbsp;&nbsp;&nbsp;</div>";     
 	print "</div>";
 	print "<div class='content-noside'>";
 } elseif ($menu=='S') {
-	print "<td width='10%' align=center><a href=kreditor.php?sort=$sort accesskey=L>
+	print "<td width='10%' align=center><a href='$backAttr' accesskey=L>
 		   <button style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">".findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 	print "<td width='80%' align=center style='$topStyle'>".findtekst('1189|Kreditorvisning', $sprog_id)."</a></td>
 		   <td width='10%' align=center style=$topStyle><br></div></td>
 		   </tr>";
 } else {
-print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href=kreditor.php?sort=$sort accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></div></td>
+print "<td width=\"10%\" align=center><div class=\"top_bund\"><a href='$backAttr' accesskey=L>".findtekst('30|Tilbage', $sprog_id)."</a></div></td>
 	   <td width=\"80%\" align=center><div class=\"top_bund\">".findtekst('1189|Kreditorvisning', $sprog_id)."</a></div></td>
 	   <td width=\"10%\" align=center><div class=\"top_bund\"><br></div></td>
 	   </tr>";
@@ -188,7 +193,7 @@ $select=explode(chr(9),$r['box8']);
 #print "</tbody><table></td>"; # <- tabel 1.2.1
 #print "<td width=50%><table border=1><tbody>"; # tabel 1.2.2 ->
 
-print "<form name=sektion_2 action=kreditorvisning.php?sort=$sort&side=$side&sektion=2 method=post>";
+print "<form name=sektion_2 action=kreditorvisning.php?{$popupQs}sort=$sort&side=$side&sektion=2 method=post>";
 print "<tr width=\"500px\"><td>".findtekst('1188|Antal felter på Kreditoroversigten', $sprog_id)."</td><td colspan=\"5\"><input type=text style=\"text-align:right\" size=2 name=vis_feltantal value=$vis_feltantal></td></tr>";
 print "<tr><td>".findtekst('1187|Antal linjer på Kreditoroversigten', $sprog_id)."</td><td colspan=\"5\"><input type=text style=\"text-align:right\" size=2 name=vis_linjeantal value=$vis_linjeantal></td>";
 print "<td><input type=submit value=\"OK\" name=\"submit\"></td></tr>\n";
@@ -220,7 +225,7 @@ function sektion_3() {
 	$cat_liste=explode(chr(9),$r['box2']);
 	($r['box11'])?$skjul_lukkede='checked':$skjul_lukkede=NULL;
 	
-	print "<form name=sektion_3 action=kreditorvisning.php?sort=$sort&sektion=3 method=post>";
+	print "<form name=sektion_3 action=kreditorvisning.php?{$popupQs}sort=$sort&sektion=3 method=post>";
 	print "<tr><td colspan=3><table border=1 width=100%><tbody>";
 	print "<tr><td style='padding:5px;'>".findtekst('1185|Skjul lukkede kreditorer', $sprog_id)."<input name=\"skjul_lukkede\" type=\"checkbox\" $skjul_lukkede></td></tr>";
 	print "<tr><td width=50%><table border=0 width=100%><tbody>";
@@ -286,7 +291,7 @@ function sektion_4() {
 	$vis_feltantal=count($vis_felt)-1;
 	$select=explode(chr(9),$r['box8']);
 	
-	print "<form name=sektion_4 action=kreditorvisning.php?sort=$sort&sektion=4 method=post>";
+	print "<form name=sektion_4 action=kreditorvisning.php?{$popupQs}sort=$sort&sektion=4 method=post>";
 	
 	print "<tr width=\"500px\"><td>".findtekst('1188|Antal felter på Kreditoroversigten', $sprog_id)."</td><td colspan=\"5\"><input type=text style=\"text-align:right\" size=2 name=vis_feltantal value=$vis_feltantal></td></tr>";
 	print "<tr width=\"500px\"><td>".findtekst('1187|Antal linjer på Kreditoroversigten', $sprog_id)."</td><td colspan=\"5\"><input type=text style=\"text-align:right\" size=2 name=vis_linjeantal value=$vis_linjeantal></td><tr>";

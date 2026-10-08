@@ -27,6 +27,8 @@
 //           refresh_lock_token()) - reuse it instead of independently re-querying tidspkt and
 //           building a separate, token-less query string, which let this menu's own Luk links
 //           bypass the whole per-render-token protection sidehoved() otherwise provides.
+// 20261008 Sawaneh WP-3.1: valg is added to the returside only when missing (? or &), no empty konto_id, and the returside
+//                  is urlencoded in both luk.php links. WP-3.4: Visning opens with popup=1.
 
 
 
@@ -63,15 +65,16 @@ print "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"><html><h
 	if ($kort) print "<td width=\"5%\">$color<a href=../kreditor/ordre.php?id=$id&fokus=$fokus accesskey=L>
 					  <button type='button' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">Luk</button></a></td>";
 		  elseif($valg){
-
+			// WP-3.1: valg is added only when the returside lacks it, with ? or & as needed; no empty konto_id.
+			$valgReturside = (strpos((string) $returside, 'valg=') === false) ? $returside . (strpos((string) $returside, '?') === false ? '?' : '&') . 'valg=' . urlencode($valg) : $returside;
 			 print "<td width=\"5%\">$color
-					  <a href=\"javascript:confirmClose('../includes/luk.php?returside=" . urlencode($returside . "?valg=$valg&konto_id=") . "&tabel=ordrer&id=$id$topLineSTidspktQs','$alerttekst')\" accesskey=L>
+					  <a href=\"javascript:confirmClose('../includes/luk.php?returside=" . urlencode($valgReturside) . "&tabel=ordrer&id=$id$topLineSTidspktQs','$alerttekst')\" accesskey=L>
 					  <button class='headerbtn' type='button' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 					print "$tilbage_icon" .findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 
 		  }else{
 			 print "<td width=\"5%\">$color
-					  <a href=\"javascript:confirmClose('../includes/luk.php?returside=$returside&tabel=ordrer&id=$id$topLineSTidspktQs','$alerttekst')\" accesskey=L>
+					  <a href=\"javascript:confirmClose('../includes/luk.php?returside=" . urlencode((string) $returside) . "&tabel=ordrer&id=$id$topLineSTidspktQs','$alerttekst')\" accesskey=L>
 					  <button class='headerbtn' type='button' style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">";
 					 print "$tilbage_icon" .findtekst('30|Tilbage', $sprog_id)."</button></a></td>";
 		  }
@@ -95,7 +98,7 @@ print "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"><html><h
 
 	} elseif ($kort=="../kreditor/kreditorkort.php") {
 		
-		print "<td width=\"5%\" onClick=\"javascript:kreditor_vis=window.open('kreditorvisning.php','kreditor_vis','scrollbars=1,resizable=1');kreditor_vis.focus();\">
+		print "<td width=\"5%\" onClick=\"javascript:kreditor_vis=window.open('kreditorvisning.php?popup=1','kreditor_vis','scrollbars=1,resizable=1');kreditor_vis.focus();\">
 			   <span title='".findtekst(1521, $sprog_id)."'><u>
 			   <button style='$buttonStyle; width: 100%' onMouseOver=\"this.style.cursor = 'pointer'\">"
 			   .findtekst(813, $sprog_id)."</button></u></span></td>"; #20210716
