@@ -24,6 +24,7 @@
 // Copyright (c) 2003-2025 Saldi.dk ApS
 // ----------------------------------------------------------------------
 // 20261008 Sawaneh Settings 4e: the old top-menu ($menu=='T') branches removed; the else legs stay (spec §7.6 R3).
+// 20261008 Sawaneh The list sits under the new page head (debLstIncludes/topLine.php, page_bar): grid height adjusted.
 // Historik view - separate file for better grid differentiation
 
 #ob_start();
@@ -525,7 +526,7 @@ $data = array(
 $table_id = 'debitor_historik';
 
 // Render grid
-print "<div style='width: 100%; height: calc(100vh - 34px - 16px);'>";
+print "<div style='width: 100%; height: calc(100vh - 112px);'>";
 create_datagrid($table_id, $data);
 
 // Add form for historik AFTER the wrapper div - only show when not in settings
